@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Storage Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 800px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .account-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        .no-data {
+            text-align: center;
+            color: #777;
+            font-style: italic;
+            padding: 20px;
+        }
+        .account-info {
+            display: flex;
+            justify-content: space-between;
+        }
+        .export-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        button {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #3367D6;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        .copy-button {
+            background-color: #444;
+            margin-left: 10px;
+        }
+        .success-message {
+            color: #4CAF50;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Local Storage Viewer</h1>
+        
+        <div id="accounts-container">
+            <h2>Registered Accounts</h2>
+            <div id="account-list">
+                <!-- Account data will be displayed here -->
+            </div>
+        </div>
+        
+        <div class="export-section">
+            <h2>Export Data</h2>
+            <p>Copy the following JSON data to use with Google Apps Script:</p>
+            <div>
+                <button id="export-btn">Export JSON</button>
+                <button id="copy-btn" class="copy-button">Copy to Clipboard</button>
+            </div>
+            <pre id="json-output"></pre>
+            <div id="copy-success" class="success-message">Copied to clipboard!</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const accountList = document.getElementById('account-list');
+            const exportBtn = document.getElementById('export-btn');
+            const copyBtn = document.getElementById('copy-btn');
+            const jsonOutput = document.getElementById('json-output');
+            const copySuccess = document.getElementById('copy-success');
+            
+            // Display accounts from localStorage
+            function displayAccounts() {
+                const accounts = getAccounts();
+                accountList.innerHTML = '';
+                
+                if (accounts.length === 0) {
+                    accountList.innerHTML = '<div class="no-data">No accounts found in local storage.</div>';
+                    return;
+                }
+                
+                accounts.forEach((account, index) => {
+                    const accountItem = document.createElement('div');
+                    accountItem.className = 'account-item';
+                    
+                    const accountInfo = document.createElement('div');
+                    accountInfo.className = 'account-info';
+                    
+                    const userInfo = document.createElement('div');
+                    userInfo.innerHTML = `
+                        <strong>Username:</strong> ${account.username}<br>
+                        <strong>Password:</strong> ${'•'.repeat(account.password.length)}
+                    `;
+                    
+                    const indexInfo = document.createElement('div');
+                    indexInfo.innerHTML = `<strong>Index:</strong> ${index}`;
+                    
+                    accountInfo.appendChild(userInfo);
+                    accountInfo.appendChild(indexInfo);
+                    accountItem.appendChild(accountInfo);
+                    accountList.appendChild(accountItem);
+                });
+            }
+            
+            // Get accounts from localStorage
+            function getAccounts() {
+                const accounts = localStorage.getItem('accounts');
+                return accounts ? JSON.parse(accounts) : [];
+            }
+            
+            // Export JSON button click handler
+            exportBtn.addEventListener('click', function() {
+                const accounts = getAccounts();
+                jsonOutput.textContent = JSON.stringify(accounts, null, 2);
+            });
+            
+            // Copy to clipboard button click handler
+            copyBtn.addEventListener('click', function() {
+                const text = jsonOutput.textContent;
+                if (text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        copySuccess.style.display = 'block';
+                        setTimeout(() => {
+                            copySuccess.style.display = 'none';
+                        }, 3000);
+                    });
+                }
+            });
+            
+            // Initialize
+            displayAccounts();
+        });
+      // Add this to the LocalStorage Viewer HTML
+const webAppUrl = 'PASTE_YOUR_WEB_APP_URL_HERE'; // Replace with your actual web app URL
+
+// Add a new button to the page
+const sendToGoogleBtn = document.createElement('button');
+sendToGoogleBtn.textContent = 'Send to Google Sheet';
+sendToGoogleBtn.style.backgroundColor = '#0F9D58';
+sendToGoogleBtn.style.marginLeft = '10px';
+document.querySelector('.export-section div').appendChild(sendToGoogleBtn);
+
+// Add click handler for the new button
+sendToGoogleBtn.addEventListener('click', async function() {
+    const accounts = getAccounts();
+    if (accounts.length === 0) {
+        alert('No accounts to export');
+        return;
+    }
+    
+    try {
+        const response = await fetch(webAppUrl, {
+            method: 'POST',
+            body: JSON.stringify(accounts),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert('Success: ' + result.message);
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        alert('Failed to send data: ' + error.message);
+    }
+});
+    </script>
+</body>
+</html>
