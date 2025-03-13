@@ -78,6 +78,26 @@
             text-align: center;
             display: none;
         }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        }
+        .success-status {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error-status {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -93,13 +113,15 @@
         
         <div class="export-section">
             <h2>Export Data</h2>
-            <p>Copy the following JSON data to use with Google Apps Script:</p>
-            <div>
+            <p>Use the buttons below to export or send your account data:</p>
+            <div class="buttons-container">
                 <button id="export-btn">Export JSON</button>
                 <button id="copy-btn" class="copy-button">Copy to Clipboard</button>
+                <button id="send-to-sheets-btn" style="background-color: #0F9D58;">Send to Google Sheet</button>
             </div>
             <pre id="json-output"></pre>
             <div id="copy-success" class="success-message">Copied to clipboard!</div>
+            <div id="status-message" class="status"></div>
         </div>
     </div>
 
@@ -108,8 +130,13 @@
             const accountList = document.getElementById('account-list');
             const exportBtn = document.getElementById('export-btn');
             const copyBtn = document.getElementById('copy-btn');
+            const sendToSheetsBtn = document.getElementById('send-to-sheets-btn');
             const jsonOutput = document.getElementById('json-output');
             const copySuccess = document.getElementById('copy-success');
+            const statusMessage = document.getElementById('status-message');
+            
+            // Google Apps Script Web App URL
+            const webAppUrl = 'https://script.google.com/macros/s/AKfycby9amL9tmZZBgLzZWMbLfyMhtmYTkv_55_Q4dHaiGPuXTtedsyE_8bk6RCNpdZe4Zcn/exec';
             
             // Display accounts from localStorage
             function displayAccounts() {
@@ -169,46 +196,58 @@
                 }
             });
             
+            // Send to Google Sheets button click handler
+            sendToSheetsBtn.addEventListener('click', async function() {
+                const accounts = getAccounts();
+                
+                if (accounts.length === 0) {
+                    showStatus('No accounts to export', 'error');
+                    return;
+                }
+                
+                try {
+                    // Show loading status
+                    showStatus('Sending data to Google Sheet...', 'success');
+                    
+                    // Send data to Google Apps Script Web App
+                    const response = await fetch(webAppUrl, {
+                        method: 'POST',
+                        body: JSON.stringify(accounts),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    // Parse the response
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        showStatus('Success: ' + result.message, 'success');
+                    } else {
+                        showStatus('Error: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    showStatus('Failed to send data: ' + error.message, 'error');
+                }
+            });
+            
+            // Display status message
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = type === 'success' ? 'status success-status' : 'status error-status';
+                statusMessage.style.display = 'block';
+                
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        statusMessage.style.display = 'none';
+                    }, 5000);
+                }
+            }
+            
             // Initialize
             displayAccounts();
         });
-      // Add this to the LocalStorage Viewer HTML
-const webAppUrl = 'https://script.google.com/macros/s/AKfycby9amL9tmZZBgLzZWMbLfyMhtmYTkv_55_Q4dHaiGPuXTtedsyE_8bk6RCNpdZe4Zcn/exec'; // Replace with your actual web app URL
-
-// Add a new button to the page
-const sendToGoogleBtn = document.createElement('button');
-sendToGoogleBtn.textContent = 'Send to Google Sheet';
-sendToGoogleBtn.style.backgroundColor = '#0F9D58';
-sendToGoogleBtn.style.marginLeft = '10px';
-document.querySelector('.export-section div').appendChild(sendToGoogleBtn);
-
-// Add click handler for the new button
-sendToGoogleBtn.addEventListener('click', async function() {
-    const accounts = getAccounts();
-    if (accounts.length === 0) {
-        alert('No accounts to export');
-        return;
-    }
-    
-    try {
-        const response = await fetch(webAppUrl, {
-            method: 'POST',
-            body: JSON.stringify(accounts),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const result = await response.json();
-        if (result.status === 'success') {
-            alert('Success: ' + result.message);
-        } else {
-            alert('Error: ' + result.message);
-        }
-    } catch (error) {
-        alert('Failed to send data: ' + error.message);
-    }
-});
     </script>
 </body>
 </html>
