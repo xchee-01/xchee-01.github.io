@@ -11,7 +11,7 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f4f4f8;
+            background-color: #f4f4f4;
         }
         h1 {
             color: #2c3e50;
@@ -73,16 +73,25 @@
     </footer>
 
     <script>
-        // Tracking script
-        const pageLoadTime = new Date().toISOString();
+        // Individual Page Tracking Script
+        (function() {
+            // Generate or retrieve a unique user ID
+            function getUserId() {
+                let userId = localStorage.getItem('pageTrackUserId');
+                if (!userId) {
+                    userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('pageTrackUserId', userId);
+                }
+                return userId;
+            }
 
-        window.addEventListener('beforeunload', function() {
-            const endTime = new Date().toISOString();
-            const duration = (new Date(endTime) - new Date(pageLoadTime)) / 1000; // duration in seconds
+            // Track page visit
+            const pageLoadTime = new Date().toISOString();
+            const userId = getUserId();
 
-            // Send data to Google Apps Script
+            // Track initial page load
             try {
-                fetch('https://script.google.com/macros/s/YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL/exec', {
+                fetch('https://script.google.com/macros/s/AKfycbxorOaBfQfxNehTcrHfcwCyvG0VFijji4kKUob371-sJSU-jX3TYD380azEcWB3AXl0/exec', {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: {
@@ -91,14 +100,40 @@
                     body: JSON.stringify({
                         page: 'DNA',
                         startTime: pageLoadTime,
-                        endTime: endTime,
-                        duration: duration
+                        endTime: pageLoadTime,
+                        duration: 0,
+                        userId: userId
                     })
                 });
             } catch (error) {
-                console.error('Tracking failed:', error);
+                console.error('Initial tracking failed:', error);
             }
-        });
+
+            // Track page time when leaving
+            window.addEventListener('beforeunload', function() {
+                const endTime = new Date().toISOString();
+                const duration = (new Date(endTime) - new Date(pageLoadTime)) / 1000;
+
+                try {
+                    fetch('https://script.google.com/macros/s/AKfycbxorOaBfQfxNehTcrHfcwCyvG0VFijji4kKUob371-sJSU-jX3TYD380azEcWB3AXl0/exec', {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            page: 'DNA',
+                            startTime: pageLoadTime,
+                            endTime: endTime,
+                            duration: duration,
+                            userId: userId
+                        })
+                    });
+                } catch (error) {
+                    console.error('Final tracking failed:', error);
+                }
+            });
+        })();
     </script>
 </body>
 </html>
