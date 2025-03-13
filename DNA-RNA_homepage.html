@@ -1,113 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DNA and RNA Learning Hub</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f8;
-            line-height: 1.6;
-            text-align: center;
+// Homepage Tracking Script
+(function() {
+    // Generate or retrieve a unique user ID
+    function getUserId() {
+        let userId = localStorage.getItem('pageTrackUserId');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('pageTrackUserId', userId);
         }
-        .container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        return userId;
+    }
+
+    // Track page visit
+    const pageLoadTime = new Date().toISOString();
+    const userId = getUserId();
+
+    // Track link clicks
+    function trackLinkClick(page) {
+        const endTime = new Date().toISOString();
+        const duration = (new Date(endTime) - new Date(pageLoadTime)) / 1000;
+
+        try {
+            fetch('https://script.google.com/macros/s/AKfycbxorOaBfQfxNehTcrHfcwCyvG0VFijji4kKUob371-sJSU-jX3TYD380azEcWB3AXl0/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    page: 'Homepage',
+                    startTime: pageLoadTime,
+                    endTime: endTime,
+                    duration: duration,
+                    userId: userId
+                })
+            });
+        } catch (error) {
+            console.error('Tracking failed:', error);
         }
-        .nav-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-        }
-        .btn {
-            background-color: #3498db;
-            color: white;
-            text-decoration: none;
-            padding: 15px 30px;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-        }
-        .btn:hover {
-            background-color: #2980b9;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Explore DNA and RNA</h1>
-        <p>Choose a topic to learn more about these fundamental molecules of life!</p>
-        
-        <div class="nav-buttons">
-            <a href="https://xchee-01.github.io/DNA.html" class="btn" id="dna-link">Learn about DNA</a>
-            <a href="https://xchee-01.github.io/RNA.html" class="btn" id="rna-link">Learn about RNA</a>
-        </div>
-    </div>
+    }
 
-    <script>
-        // Capture start time when page loads
-        const pageLoadTime = new Date().toISOString();
-
-        // Function to track page visit
-        function trackPageVisit(page) {
-            // Store page and start time in session storage
-            sessionStorage.setItem('visitedPage', page);
-            sessionStorage.setItem('pageStartTime', pageLoadTime);
-        }
-
-        // Function to log page time
-        function logPageTime(page) {
-            const startTime = sessionStorage.getItem('pageStartTime');
-            const visitedPage = sessionStorage.getItem('visitedPage');
-
-            if (startTime && visitedPage) {
-                const endTime = new Date().toISOString();
-                const duration = (new Date(endTime) - new Date(startTime)) / 1000; // duration in seconds
-
-                // Send data to Google Apps Script
-                try {
-                    fetch('https://script.google.com/macros/s/AKfycbxorOaBfQfxNehTcrHfcwCyvG0VFijji4kKUob371-sJSU-jX3TYD380azEcWB3AXl0/exec', {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            page: visitedPage,
-                            startTime: startTime,
-                            endTime: endTime,
-                            duration: duration
-                        })
-                    });
-                } catch (error) {
-                    console.error('Tracking failed:', error);
-                }
-
-                // Clear session storage
-                sessionStorage.removeItem('visitedPage');
-                sessionStorage.removeItem('pageStartTime');
-            }
-        }
-
-        // Add event listeners to links
-        document.getElementById('dna-link').addEventListener('click', function() {
-            trackPageVisit('DNA');
-        });
-
-        document.getElementById('rna-link').addEventListener('click', function() {
-            trackPageVisit('RNA');
-        });
-
-        // Track time spent on homepage
-        window.addEventListener('beforeunload', function() {
-            logPageTime('Homepage');
-        });
-    </script>
-</body>
-</html>
+    // Add event listeners to links
+    document.getElementById('dna-link').addEventListener('click', () => trackLinkClick('DNA'));
+    document.getElementById('rna-link').addEventListener('click', () => trackLinkClick('RNA'));
+})();
