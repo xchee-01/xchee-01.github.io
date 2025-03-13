@@ -151,7 +151,7 @@
                 return accounts ? JSON.parse(accounts) : [];
             }
             
-            // Export button click handler
+            // Export button click handler - Direct approach
             exportBtn.addEventListener('click', function() {
                 const accounts = getAccounts();
                 
@@ -165,43 +165,22 @@
                 loadingDiv.style.display = 'block';
                 statusMessage.style.display = 'none';
                 
-                // Create a form to submit data
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = webAppUrl;
-                form.target = '_blank'; // Open response in new tab
+                // Create JSON string for easy copy
+                const jsonData = JSON.stringify(accounts);
                 
-                // Create an input for the data
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'payload';
-                input.value = JSON.stringify(accounts);
+                // Open the web app with the data as a query parameter
+                const encodedData = encodeURIComponent(jsonData);
+                const url = `${webAppUrl}?data=${encodedData}`;
                 
-                // Add the input to the form
-                form.appendChild(input);
+                // Open in new tab
+                window.open(url, '_blank');
                 
-                // Add the form to the body and submit it
-                document.body.appendChild(form);
-                
-                try {
-                    form.submit();
-                    
-                    // Show success message after a short delay
-                    setTimeout(() => {
-                        showStatus('Data exported successfully! Check the new tab for results.', 'success');
-                        loadingDiv.style.display = 'none';
-                        exportBtn.disabled = false;
-                    }, 2000);
-                } catch (error) {
-                    showStatus('Error exporting data: ' + error.message, 'error');
+                // Show success message after a short delay
+                setTimeout(() => {
+                    showStatus('Data exported! Check the new tab.', 'success');
                     loadingDiv.style.display = 'none';
                     exportBtn.disabled = false;
-                }
-                
-                // Remove the form from the document
-                setTimeout(() => {
-                    document.body.removeChild(form);
-                }, 100);
+                }, 1500);
             });
             
             // Display status message
