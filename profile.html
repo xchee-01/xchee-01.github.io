@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+</head>
+<body>
+    <h2>User Profile</h2>
+    <div id="userInfo"></div>
+
+    <script>
+        // Function to retrieve user data from different storage mechanisms
+        function getUserData() {
+            // Check localStorage first
+            let username = localStorage.getItem('username');
+            let password = localStorage.getItem('password');
+
+            // If not in localStorage, check sessionStorage
+            if (!username) {
+                username = sessionStorage.getItem('username');
+                password = sessionStorage.getItem('password');
+            }
+
+            // If not in sessionStorage, try IndexedDB
+            if (!username) {
+                const dbName = 'UserDatabase';
+                const request = indexedDB.open(dbName, 1);
+
+                request.onsuccess = function(event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['users'], 'readonly');
+                    const store = transaction.objectStore('users');
+                    const getAllRequest = store.getAll();
+
+                    getAllRequest.onsuccess = function() {
+                        if (getAllRequest.result.length > 0) {
+                            const user = getAllRequest.result[0];
+                            displayUserInfo(user.username, user.password);
+                        } else {
+                            displayUserInfo('No user found', 'N/A');
+                        }
+                    };
+                };
+            } else {
+                displayUserInfo(username, password);
+            }
+        }
+
+        // Function to display user information
+        function displayUserInfo(username, password) {
+            const userInfoDiv = document.getElementById('userInfo');
+            userInfoDiv.innerHTML = `
+                <p><strong>Username:</strong> ${username}</p>
+                <p><strong>Password:</strong> ${password.replace(/./g, '*')}</p>
+            `;
+        }
+
+        // Call the function when the page loads
+        getUserData();
+    </script>
+</body>
+</html>
