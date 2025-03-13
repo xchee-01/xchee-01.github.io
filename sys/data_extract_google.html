@@ -98,6 +98,10 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+        /* Hidden iframe for form submission */
+        #submit-iframe {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -124,6 +128,9 @@
             <div id="status-message" class="status"></div>
         </div>
     </div>
+    
+    <!-- Hidden iframe for form submission response -->
+    <iframe id="submit-iframe" name="submit-frame"></iframe>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -134,6 +141,7 @@
             const jsonOutput = document.getElementById('json-output');
             const copySuccess = document.getElementById('copy-success');
             const statusMessage = document.getElementById('status-message');
+            const submitIframe = document.getElementById('submit-iframe');
             
             // Google Apps Script Web App URL
             const webAppUrl = 'https://script.google.com/macros/s/AKfycby9amL9tmZZBgLzZWMbLfyMhtmYTkv_55_Q4dHaiGPuXTtedsyE_8bk6RCNpdZe4Zcn/exec';
@@ -196,8 +204,8 @@
                 }
             });
             
-            // Send to Google Sheets button click handler
-            sendToSheetsBtn.addEventListener('click', async function() {
+            // Send to Google Sheets button click handler using form submission
+            sendToSheetsBtn.addEventListener('click', function() {
                 const accounts = getAccounts();
                 
                 if (accounts.length === 0) {
@@ -207,25 +215,45 @@
                 
                 try {
                     // Show loading status
-                    showStatus('Sending data to Google Sheet...', 'success');
+                    showStatus('Preparing to send data...', 'success');
                     
-                    // Send data to Google Apps Script Web App
-                    const response = await fetch(webAppUrl, {
-                        method: 'POST',
-                        body: JSON.stringify(accounts),
-                        headers: {
-                            'Content-Type': 'application/json'
+                    // Create a form to submit data
+                    const form = document.createElement('form');
+                    form.setAttribute('method', 'POST');
+                    form.setAttribute('action', webAppUrl);
+                    form.setAttribute('target', 'submit-frame');
+                    
+                    // Create a hidden input field for the JSON data
+                    const hiddenField = document.createElement('input');
+                    hiddenField.setAttribute('type', 'hidden');
+                    hiddenField.setAttribute('name', 'payload');
+                    hiddenField.setAttribute('value', JSON.stringify(accounts));
+                    
+                    // Add the hidden field to the form
+                    form.appendChild(hiddenField);
+                    
+                    // Add the form to the document body and submit it
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                    
+                    showStatus('Data submitted! Check for response...', 'success');
+                    
+                    // Set up iframe load event handler
+                    submitIframe.onload = function() {
+                        try {
+                            const frameContent = submitIframe.contentWindow.document.body.innerText;
+                            const response = JSON.parse(frameContent);
+                            
+                            if (response.status === 'success') {
+                                showStatus('Success: ' + response.message, 'success');
+                            } else {
+                                showStatus('Error: ' + response.message, 'error');
+                            }
+                        } catch (e) {
+                            showStatus('Received response but unable to parse it', 'error');
                         }
-                    });
-                    
-                    // Parse the response
-                    const result = await response.json();
-                    
-                    if (result.status === 'success') {
-                        showStatus('Success: ' + result.message, 'success');
-                    } else {
-                        showStatus('Error: ' + result.message, 'error');
-                    }
+                    };
                 } catch (error) {
                     showStatus('Failed to send data: ' + error.message, 'error');
                 }
