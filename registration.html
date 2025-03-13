@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Registration</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sheetjs/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h2>User Registration</h2>
+    <form id="registrationForm">
+        <label for="username">Username:</label>
+        <input type="text" id="username" required><br><br>
+        
+        <label for="password">Password:</label>
+        <input type="password" id="password" required><br><br>
+        
+        <label for="email">Email:</label>
+        <input type="email" id="email" required><br><br>
+        
+        <button type="submit">Register</button>
+    </form>
+
+    <script>
+        document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Get form values
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+
+            // Prepare data for Google Sheets
+            const data = [username, password, email];
+
+            try {
+                // Fetch the Google Sheet
+                const response = await fetch('https://opensheet.vercel.app/1ks1d7AF-nSezGvl2ZuoxjMkAQteDmpjzNPN14WNum6k/Username', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    // Store in localStorage
+                    localStorage.setItem('username', username);
+                    localStorage.setItem('password', password);
+                    localStorage.setItem('email', email);
+
+                    // Store in sessionStorage as backup
+                    sessionStorage.setItem('username', username);
+                    sessionStorage.setItem('password', password);
+                    sessionStorage.setItem('email', email);
+
+                    // Optional: Store in IndexedDB for more persistent storage
+                    const dbName = 'UserDatabase';
+                    const request = indexedDB.open(dbName, 1);
+                    
+                    request.onupgradeneeded = function(event) {
+                        const db = event.target.result;
+                        db.createObjectStore('users', { keyPath: 'username' });
+                    };
+
+                    request.onsuccess = function(event) {
+                        const db = event.target.result;
+                        const transaction = db.transaction(['users'], 'readwrite');
+                        const store = transaction.objectStore('users');
+                        
+                        store.put({
+                            username: username,
+                            password: password,
+                            email: email
+                        });
+                    };
+
+                    alert('Registration Successful!');
+                    // Optional: Redirect to login page
+                    window.location.href = 'login.html';
+                } else {
+                    alert('Registration Failed');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Registration Failed');
+            }
+        });
+    </script>
+</body>
+</html>
