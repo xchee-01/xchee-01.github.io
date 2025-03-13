@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Storage Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .storage-item {
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .key {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .value {
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .json {
+            color: #16a085;
+        }
+        .refresh-btn {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .refresh-btn:hover {
+            background-color: #2980b9;
+        }
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <h1>Local Storage Viewer</h1>
+    
+    <div class="container">
+        <div id="storage-data"></div>
+        <button class="refresh-btn" onclick="displayLocalStorage()">Refresh Data</button>
+    </div>
+
+    <script>
+        // Function to display all localStorage data
+        function displayLocalStorage() {
+            const storageData = document.getElementById('storage-data');
+            storageData.innerHTML = '';
+            
+            if (localStorage.length === 0) {
+                storageData.innerHTML = '<div class="no-data">No data found in local storage</div>';
+                return;
+            }
+            
+            // Iterate through all localStorage items
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                let value = localStorage.getItem(key);
+                let displayValue = value;
+                let isJson = false;
+                
+                // Try to parse and format JSON data
+                try {
+                    const parsedValue = JSON.parse(value);
+                    if (typeof parsedValue === 'object' && parsedValue !== null) {
+                        displayValue = JSON.stringify(parsedValue, null, 2);
+                        isJson = true;
+                    }
+                } catch (e) {
+                    // Not valid JSON, use the raw value
+                }
+                
+                // Create HTML for each storage item
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'storage-item';
+                
+                const keyDiv = document.createElement('div');
+                keyDiv.className = 'key';
+                keyDiv.textContent = `Key: ${key}`;
+                
+                const valueDiv = document.createElement('div');
+                valueDiv.className = `value ${isJson ? 'json' : ''}`;
+                valueDiv.textContent = displayValue;
+                
+                itemDiv.appendChild(keyDiv);
+                itemDiv.appendChild(valueDiv);
+                storageData.appendChild(itemDiv);
+            }
+        }
+        
+        // Initial display when page loads
+        document.addEventListener('DOMContentLoaded', displayLocalStorage);
+    </script>
+</body>
+</html>
