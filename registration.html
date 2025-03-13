@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>User Registration</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sheetjs/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
 </head>
 <body>
     <h2>User Registration</h2>
@@ -13,9 +13,6 @@
         
         <label for="password">Password:</label>
         <input type="password" id="password" required><br><br>
-        
-        <label for="email">Email:</label>
-        <input type="email" id="email" required><br><br>
         
         <button type="submit">Register</button>
     </form>
@@ -27,10 +24,6 @@
             // Get form values
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const email = document.getElementById('email').value;
-
-            // Prepare data for Google Sheets
-            const data = [username, password, email];
 
             try {
                 // Fetch the Google Sheet
@@ -39,21 +32,19 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify([username, password])
                 });
 
                 if (response.ok) {
                     // Store in localStorage
                     localStorage.setItem('username', username);
                     localStorage.setItem('password', password);
-                    localStorage.setItem('email', email);
 
-                    // Store in sessionStorage as backup
+                    // Store in sessionStorage
                     sessionStorage.setItem('username', username);
                     sessionStorage.setItem('password', password);
-                    sessionStorage.setItem('email', email);
 
-                    // Optional: Store in IndexedDB for more persistent storage
+                    // Store in IndexedDB
                     const dbName = 'UserDatabase';
                     const request = indexedDB.open(dbName, 1);
                     
@@ -69,13 +60,12 @@
                         
                         store.put({
                             username: username,
-                            password: password,
-                            email: email
+                            password: password
                         });
                     };
 
                     alert('Registration Successful!');
-                    // Optional: Redirect to login page
+                    // Redirect to login page
                     window.location.href = 'login.html';
                 } else {
                     alert('Registration Failed');
