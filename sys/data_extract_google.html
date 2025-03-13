@@ -1,125 +1,253 @@
-/**
- * Google Apps Script to import account data from JSON to Google Sheets
- * Spreadsheet ID: 1ks1d7AF-nSezGvl2ZuoxjMkAQteDmpjzNPN14WNum6k
- * Sheet Name: Username
- */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Storage Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 800px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .account-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        .no-data {
+            text-align: center;
+            color: #777;
+            font-style: italic;
+            padding: 20px;
+        }
+        .account-info {
+            display: flex;
+            justify-content: space-between;
+        }
+        .export-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        button {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #3367D6;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        .copy-button {
+            background-color: #444;
+            margin-left: 10px;
+        }
+        .success-message {
+            color: #4CAF50;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        }
+        .success-status {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error-status {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Local Storage Viewer</h1>
+        
+        <div id="accounts-container">
+            <h2>Registered Accounts</h2>
+            <div id="account-list">
+                <!-- Account data will be displayed here -->
+            </div>
+        </div>
+        
+        <div class="export-section">
+            <h2>Export Data</h2>
+            <p>Use the buttons below to export or send your account data:</p>
+            <div class="buttons-container">
+                <button id="export-btn">Export JSON</button>
+                <button id="copy-btn" class="copy-button">Copy to Clipboard</button>
+                <button id="send-to-sheets-btn" style="background-color: #0F9D58;">Send to Google Sheet</button>
+            </div>
+            <pre id="json-output"></pre>
+            <div id="copy-success" class="success-message">Copied to clipboard!</div>
+            <div id="status-message" class="status"></div>
+        </div>
+    </div>
 
-// This handles GET requests - returns the HTML interface
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('Local Storage Data Importer')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-}
-
-// This handles POST requests - processes the data from the HTML page
-function doPost(e) {
-  // Set CORS headers for the preflight request
-  if (e && e.postData) {
-    // Process the actual data import
-    try {
-      // Parse the JSON data from the POST request
-      const jsonData = JSON.parse(e.postData.contents);
-      
-      // Access the spreadsheet
-      const spreadsheetId = '1ks1d7AF-nSezGvl2ZuoxjMkAQteDmpjzNPN14WNum6k';
-      const sheetName = 'Username';
-      const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
-      let sheet = spreadsheet.getSheetByName(sheetName);
-      
-      // Create the sheet if it doesn't exist
-      if (!sheet) {
-        sheet = spreadsheet.insertSheet(sheetName);
-        sheet.appendRow(['Username', 'Password', 'Import Date']);
-      }
-      
-      // Prepare data for import with current timestamp
-      const now = new Date().toISOString();
-      const dataToImport = jsonData.map(account => [
-        account.username,
-        account.password,
-        now
-      ]);
-      
-      // Get the next empty row
-      const lastRow = Math.max(sheet.getLastRow(), 1);
-      const startRow = lastRow + 1;
-      
-      // Write the data
-      sheet.getRange(startRow, 1, dataToImport.length, 3).setValues(dataToImport);
-      
-      // Return success response
-      return ContentService.createTextOutput(
-        JSON.stringify({ 
-          status: 'success', 
-          message: `Imported ${dataToImport.length} account(s).`
-        })
-      ).setMimeType(ContentService.MimeType.JSON);
-      
-    } catch (error) {
-      // Return error response
-      return ContentService.createTextOutput(
-        JSON.stringify({ 
-          status: 'error', 
-          message: error.message 
-        })
-      ).setMimeType(ContentService.MimeType.JSON);
-    }
-  } else {
-    // Handle case where no data was received
-    return ContentService.createTextOutput(
-      JSON.stringify({ 
-        status: 'error', 
-        message: 'No data received' 
-      })
-    ).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-// Manual import function that can be run directly from the Script Editor
-function importAccountData() {
-  // PASTE YOUR JSON DATA HERE
-  const jsonData = [];
-  
-  // Define the spreadsheet and sheet
-  const spreadsheetId = '1ks1d7AF-nSezGvl2ZuoxjMkAQteDmpjzNPN14WNum6k';
-  const sheetName = 'Username';
-  
-  try {
-    // Access the specified spreadsheet and sheet
-    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
-    let sheet = spreadsheet.getSheetByName(sheetName);
-    
-    // Create the sheet if it doesn't exist
-    if (!sheet) {
-      sheet = spreadsheet.insertSheet(sheetName);
-      // Add headers
-      sheet.appendRow(['Username', 'Password', 'Import Date']);
-    }
-    
-    // Check if we have any data to import
-    if (jsonData.length === 0) {
-      Logger.log('No data to import.');
-      return;
-    }
-    
-    // Prepare data for import with current timestamp
-    const now = new Date().toISOString();
-    const dataToImport = jsonData.map(account => [
-      account.username,
-      account.password,
-      now
-    ]);
-    
-    // Get the next empty row
-    const lastRow = Math.max(sheet.getLastRow(), 1);
-    const startRow = lastRow + 1;
-    
-    // Write the data
-    sheet.getRange(startRow, 1, dataToImport.length, 3).setValues(dataToImport);
-    
-    Logger.log(`Successfully imported ${dataToImport.length} account(s).`);
-    
-  } catch (error) {
-    Logger.log(`Error importing data: ${error.message}`);
-  }
-}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const accountList = document.getElementById('account-list');
+            const exportBtn = document.getElementById('export-btn');
+            const copyBtn = document.getElementById('copy-btn');
+            const sendToSheetsBtn = document.getElementById('send-to-sheets-btn');
+            const jsonOutput = document.getElementById('json-output');
+            const copySuccess = document.getElementById('copy-success');
+            const statusMessage = document.getElementById('status-message');
+            
+            // Google Apps Script Web App URL
+            const webAppUrl = 'https://script.google.com/macros/s/AKfycby9amL9tmZZBgLzZWMbLfyMhtmYTkv_55_Q4dHaiGPuXTtedsyE_8bk6RCNpdZe4Zcn/exec';
+            
+            // Display accounts from localStorage
+            function displayAccounts() {
+                const accounts = getAccounts();
+                accountList.innerHTML = '';
+                
+                if (accounts.length === 0) {
+                    accountList.innerHTML = '<div class="no-data">No accounts found in local storage.</div>';
+                    return;
+                }
+                
+                accounts.forEach((account, index) => {
+                    const accountItem = document.createElement('div');
+                    accountItem.className = 'account-item';
+                    
+                    const accountInfo = document.createElement('div');
+                    accountInfo.className = 'account-info';
+                    
+                    const userInfo = document.createElement('div');
+                    userInfo.innerHTML = `
+                        <strong>Username:</strong> ${account.username}<br>
+                        <strong>Password:</strong> ${'•'.repeat(account.password.length)}
+                    `;
+                    
+                    const indexInfo = document.createElement('div');
+                    indexInfo.innerHTML = `<strong>Index:</strong> ${index}`;
+                    
+                    accountInfo.appendChild(userInfo);
+                    accountInfo.appendChild(indexInfo);
+                    accountItem.appendChild(accountInfo);
+                    accountList.appendChild(accountItem);
+                });
+            }
+            
+            // Get accounts from localStorage
+            function getAccounts() {
+                const accounts = localStorage.getItem('accounts');
+                return accounts ? JSON.parse(accounts) : [];
+            }
+            
+            // Export JSON button click handler
+            exportBtn.addEventListener('click', function() {
+                const accounts = getAccounts();
+                jsonOutput.textContent = JSON.stringify(accounts, null, 2);
+            });
+            
+            // Copy to clipboard button click handler
+            copyBtn.addEventListener('click', function() {
+                const text = jsonOutput.textContent;
+                if (text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        copySuccess.style.display = 'block';
+                        setTimeout(() => {
+                            copySuccess.style.display = 'none';
+                        }, 3000);
+                    });
+                }
+            });
+            
+            // Send to Google Sheets button click handler
+            sendToSheetsBtn.addEventListener('click', async function() {
+                const accounts = getAccounts();
+                
+                if (accounts.length === 0) {
+                    showStatus('No accounts to export', 'error');
+                    return;
+                }
+                
+                try {
+                    // Show loading status
+                    showStatus('Sending data to Google Sheet...', 'success');
+                    
+                    // Send data to Google Apps Script Web App
+                    const response = await fetch(webAppUrl, {
+                        method: 'POST',
+                        body: JSON.stringify(accounts),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    // Parse the response
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        showStatus('Success: ' + result.message, 'success');
+                    } else {
+                        showStatus('Error: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    showStatus('Failed to send data: ' + error.message, 'error');
+                }
+            });
+            
+            // Display status message
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = type === 'success' ? 'status success-status' : 'status error-status';
+                statusMessage.style.display = 'block';
+                
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        statusMessage.style.display = 'none';
+                    }, 5000);
+                }
+            }
+            
+            // Initialize
+            displayAccounts();
+        });
+    </script>
+</body>
+</html>
