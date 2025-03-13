@@ -1,0 +1,125 @@
+/**
+ * Google Apps Script to import account data from JSON to Google Sheets
+ * Spreadsheet ID: 1ks1d7AF-nSezGvl2ZuoxjMkAQteDmpjzNPN14WNum6k
+ * Sheet Name: Username
+ */
+
+// This handles GET requests - returns the HTML interface
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Local Storage Data Importer')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// This handles POST requests - processes the data from the HTML page
+function doPost(e) {
+  // Set CORS headers for the preflight request
+  if (e && e.postData) {
+    // Process the actual data import
+    try {
+      // Parse the JSON data from the POST request
+      const jsonData = JSON.parse(e.postData.contents);
+      
+      // Access the spreadsheet
+      const spreadsheetId = '1ks1d7AF-nSezGvl2ZuoxjMkAQteDmpjzNPN14WNum6k';
+      const sheetName = 'Username';
+      const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+      let sheet = spreadsheet.getSheetByName(sheetName);
+      
+      // Create the sheet if it doesn't exist
+      if (!sheet) {
+        sheet = spreadsheet.insertSheet(sheetName);
+        sheet.appendRow(['Username', 'Password', 'Import Date']);
+      }
+      
+      // Prepare data for import with current timestamp
+      const now = new Date().toISOString();
+      const dataToImport = jsonData.map(account => [
+        account.username,
+        account.password,
+        now
+      ]);
+      
+      // Get the next empty row
+      const lastRow = Math.max(sheet.getLastRow(), 1);
+      const startRow = lastRow + 1;
+      
+      // Write the data
+      sheet.getRange(startRow, 1, dataToImport.length, 3).setValues(dataToImport);
+      
+      // Return success response
+      return ContentService.createTextOutput(
+        JSON.stringify({ 
+          status: 'success', 
+          message: `Imported ${dataToImport.length} account(s).`
+        })
+      ).setMimeType(ContentService.MimeType.JSON);
+      
+    } catch (error) {
+      // Return error response
+      return ContentService.createTextOutput(
+        JSON.stringify({ 
+          status: 'error', 
+          message: error.message 
+        })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+  } else {
+    // Handle case where no data was received
+    return ContentService.createTextOutput(
+      JSON.stringify({ 
+        status: 'error', 
+        message: 'No data received' 
+      })
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// Manual import function that can be run directly from the Script Editor
+function importAccountData() {
+  // PASTE YOUR JSON DATA HERE
+  const jsonData = [];
+  
+  // Define the spreadsheet and sheet
+  const spreadsheetId = '1ks1d7AF-nSezGvl2ZuoxjMkAQteDmpjzNPN14WNum6k';
+  const sheetName = 'Username';
+  
+  try {
+    // Access the specified spreadsheet and sheet
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    let sheet = spreadsheet.getSheetByName(sheetName);
+    
+    // Create the sheet if it doesn't exist
+    if (!sheet) {
+      sheet = spreadsheet.insertSheet(sheetName);
+      // Add headers
+      sheet.appendRow(['Username', 'Password', 'Import Date']);
+    }
+    
+    // Check if we have any data to import
+    if (jsonData.length === 0) {
+      Logger.log('No data to import.');
+      return;
+    }
+    
+    // Prepare data for import with current timestamp
+    const now = new Date().toISOString();
+    const dataToImport = jsonData.map(account => [
+      account.username,
+      account.password,
+      now
+    ]);
+    
+    // Get the next empty row
+    const lastRow = Math.max(sheet.getLastRow(), 1);
+    const startRow = lastRow + 1;
+    
+    // Write the data
+    sheet.getRange(startRow, 1, dataToImport.length, 3).setValues(dataToImport);
+    
+    Logger.log(`Successfully imported ${dataToImport.length} account(s).`);
+    
+  } catch (error) {
+    Logger.log(`Error importing data: ${error.message}`);
+  }
+}
