@@ -45,50 +45,69 @@
         <p>Choose a topic to learn more about these fundamental molecules of life!</p>
         
         <div class="nav-buttons">
-            <a href="https://xchee-01.github.io/DNA.html" class="btn" onclick="trackPageVisit('DNA')">Learn about DNA</a>
-            <a href="https://xchee-01.github.io/RNA.html" class="btn" onclick="trackPageVisit('RNA')">Learn about RNA</a>
+            <a href="https://xchee-01.github.io/DNA.html" class="btn" id="dna-link">Learn about DNA</a>
+            <a href="https://xchee-01.github.io/RNA.html" class="btn" id="rna-link">Learn about RNA</a>
         </div>
     </div>
 
     <script>
+        // Capture start time when page loads
+        const pageLoadTime = new Date().toISOString();
+
+        // Function to track page visit
         function trackPageVisit(page) {
-            // Record the start time when the link is clicked
-            localStorage.setItem('pageStartTime', new Date().toISOString());
-            localStorage.setItem('currentPage', page);
+            // Store page and start time in session storage
+            sessionStorage.setItem('visitedPage', page);
+            sessionStorage.setItem('pageStartTime', pageLoadTime);
         }
 
-        // Function to log page time when leaving the page
-        function logPageTime() {
-            const startTime = localStorage.getItem('pageStartTime');
-            const currentPage = localStorage.getItem('currentPage');
-            
-            if (startTime && currentPage) {
+        // Function to log page time
+        function logPageTime(page) {
+            const startTime = sessionStorage.getItem('pageStartTime');
+            const visitedPage = sessionStorage.getItem('visitedPage');
+
+            if (startTime && visitedPage) {
                 const endTime = new Date().toISOString();
                 const duration = (new Date(endTime) - new Date(startTime)) / 1000; // duration in seconds
 
                 // Send data to Google Apps Script
-                fetch('https://script.google.com/macros/s/AKfycbxorOaBfQfxNehTcrHfcwCyvG0VFijji4kKUob371-sJSU-jX3TYD380azEcWB3AXl0/exec', {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        page: currentPage,
-                        startTime: startTime,
-                        endTime: endTime,
-                        duration: duration
-                    })
-                });
+                try {
+                    fetch('https://script.google.com/macros/s/YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL/exec', {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            page: visitedPage,
+                            startTime: startTime,
+                            endTime: endTime,
+                            duration: duration
+                        })
+                    });
+                } catch (error) {
+                    console.error('Tracking failed:', error);
+                }
 
-                // Clear local storage
-                localStorage.removeItem('pageStartTime');
-                localStorage.removeItem('currentPage');
+                // Clear session storage
+                sessionStorage.removeItem('visitedPage');
+                sessionStorage.removeItem('pageStartTime');
             }
         }
 
-        // Add event listeners for tracking
-        window.addEventListener('beforeunload', logPageTime);
+        // Add event listeners to links
+        document.getElementById('dna-link').addEventListener('click', function() {
+            trackPageVisit('DNA');
+        });
+
+        document.getElementById('rna-link').addEventListener('click', function() {
+            trackPageVisit('RNA');
+        });
+
+        // Track time spent on homepage
+        window.addEventListener('beforeunload', function() {
+            logPageTime('Homepage');
+        });
     </script>
 </body>
 </html>
