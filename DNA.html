@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA Learning Platform</title>
+    <style>
+        :root {
+            --primary: #3a86ff;
+            --secondary: #8338ec;
+            --accent: #ff006e;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        main {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            width: 250px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-right: 20px;
+        }
+        
+        .content {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+        }
+        
+        .module {
+            margin-bottom: 30px;
+        }
+        
+        .module h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 10px;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        .section:hover {
+            background-color: var(--light);
+        }
+        
+        .nav-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background-color: var(--light);
+            color: var(--primary);
+        }
+        
+        .nav-item.active {
+            font-weight: bold;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--light);
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        .quiz-container {
+            background-color: var(--light);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .question {
+            margin-bottom: 15px;
+        }
+        
+        .options label {
+            display: block;
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .options label:hover {
+            background-color: #e9ecef;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2a75e6;
+        }
+        
+        .dna-model {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px auto;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted var(--primary);
+            cursor: pointer;
+            color: var(--primary);
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark);
+            color: white;
+            text-align: center;
+            border-radius: 5px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .notes-container {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .notes-area {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            resize: vertical;
+        }
+        
+        .session-timer {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+        
+        .interactive-element {
+            background-color: #f1f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #dna-builder {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f1f8ff;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .nucleotide-pair {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 5px;
+        }
+        
+        .nucleotide {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .A { background-color: #ff7f7f; color: white; }
+        .T { background-color: #7fbfff; color: white; }
+        .G { background-color: #7fff7f; color: black; }
+        .C { background-color: #ff7fff; color: white; }
+        
+        .connector {
+            height: 20px;
+            width: 2px;
+            background-color: #212529;
+        }
+        
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .feedback.correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .feedback.incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 28px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>DNA Explorer: Interactive Learning Platform</h1>
+        <div class="user-info">
+            <span id="session-time">Session: 00:00</span>
+            <div class="avatar">S</div>
+            <span id="student-name">Student</span>
+        </div>
+    </nav>
+    
+    <main>
+        <div class="sidebar">
+            <div class="nav-item active" data-section="introduction">Introduction to DNA</div>
+            <div class="nav-item" data-section="structure">DNA Structure</div>
+            <div class="nav-item" data-section="replication">DNA Replication</div>
+            <div class="nav-item" data-section="transcription">Transcription</div>
+            <div class="nav-item" data-section="translation">Translation</div>
+            <div class="nav-item" data-section="quiz">Knowledge Check</div>
+            
+            <div class="progress-container">
+                <h3>Your Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress" id="progress-indicator" style="width: 10%;"></div>
+                </div>
+                <p id="progress-text">10% Complete</p>
+                
+                <div class="session-timer">
+                    <p>Time on page: <span id="page-time">00:00</span></p>
+                </div>
+                
+                <button id="toggle-notes">Take Notes</button>
+                <div class="notes-container" id="notes-area">
+                    <textarea class="notes-area" placeholder="Take your notes here..."></textarea>
+                    <button id="save-notes">Save Notes</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- Introduction Section -->
+            <div class="module" id="introduction">
+                <h2>Introduction to DNA</h2>
+                <div class="section">
+                    <h3>What is DNA?</h3>
+                    <p>DNA (deoxyribonucleic acid) is a molecule composed of two chains that coil around each other to form a double helix carrying genetic instructions for the development, functioning, growth and reproduction of all known organisms and many viruses.</p>
+                    <p>DNA is often called the <span class="tooltip">blueprint of life<span class="tooltiptext">DNA contains the instructions needed for an organism to develop, survive and reproduce.</span></span> because it contains the instructions needed for an organism to develop, survive and reproduce.</p>
+                    
+                    <div class="interactive-element">
+                        <h4>Key Facts About DNA</h4>
+                        <ul>
+                            <li>DNA was first identified and isolated by Friedrich Miescher in 1869</li>
+                            <li>The double helix structure was discovered by Watson and Crick in 1953</li>
+                            <li>DNA is made of four types of nucleotides: Adenine (A), Thymine (T), Guanine (G), and Cytosine (C)</li>
+                            <li>The human genome contains approximately 3 billion base pairs</li>
+                        </ul>
+                        <button class="check-understanding" data-question="dna-basics">Check Understanding</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Structure Section -->
+            <div class="module hidden" id="structure">
+                <h2>DNA Structure</h2>
+                <div class="section">
+                    <h3>The Double Helix</h3>
+                    <p>DNA's structure is described as a double-stranded helix, with the two strands connected by hydrogen bonds. Each strand has a backbone made of alternating sugar (deoxyribose) and phosphate groups.</p>
+                    
+                    <img src="/api/placeholder/500/300" alt="DNA double helix structure" class="dna-model">
+                    
+                    <h3>Nucleotide Pairing</h3>
+                    <p>DNA follows strict base-pairing rules: Adenine (A) pairs with Thymine (T), and Guanine (G) pairs with Cytosine (C). This complementary base pairing is crucial for DNA replication and protein synthesis.</p>
+                    
+                    <div id="dna-builder">
+                        <h4>Interactive DNA Builder</h4>
+                        <p>Build a DNA strand by selecting the correct complementary nucleotides:</p>
+                        
+                        <div class="nucleotide-pairs">
+                            <!-- First pair -->
+                            <div class="nucleotide-pair">
+                                <div class="nucleotide A">A</div>
+                                <div class="connector"></div>
+                                <select class="nucleotide-select" data-correct="T">
+                                    <option value="">Select</option>
+                                    <option value="A">A</option>
+                                    <option value="T">T</option>
+                                    <option value="G">G</option>
+                                    <option value="C">C</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Second pair -->
+                            <div class="nucleotide-pair">
+                                <div class="nucleotide G">G</div>
+                                <div class="connector"></div>
+                                <select class="nucleotide-select" data-correct="C">
+                                    <option value="">Select</option>
+                                    <option value="A">A</option>
+                                    <option value="T">T</option>
+                                    <option value="G">G</option>
+                                    <option value="C">C</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Third pair -->
+                            <div class="nucleotide-pair">
+                                <div class="nucleotide C">C</div>
+                                <div class="connector"></div>
+                                <select class="nucleotide-select" data-correct="G">
+                                    <option value="">Select</option>
+                                    <option value="A">A</option>
+                                    <option value="T">T</option>
+                                    <option value="G">G</option>
+                                    <option value="C">C</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Fourth pair -->
+                            <div class="nucleotide-pair">
+                                <div class="nucleotide T">T</div>
+                                <div class="connector"></div>
+                                <select class="nucleotide-select" data-correct="A">
+                                    <option value="">Select</option>
+                                    <option value="A">A</option>
+                                    <option value="T">T</option>
+                                    <option value="G">G</option>
+                                    <option value="C">C</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button id="check-dna-builder" class="check-understanding">Check Answers</button>
+                        <div class="feedback" id="dna-feedback"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Other sections would be implemented similarly -->
+            <div class="module hidden" id="replication">
+                <h2>DNA Replication</h2>
+                <p>Content for DNA replication will be displayed here...</p>
+            </div>
+            
+            <div class="module hidden" id="transcription">
+                <h2>Transcription</h2>
+                <p>Content for transcription will be displayed here...</p>
+            </div>
+            
+            <div class="module hidden" id="translation">
+                <h2>Translation</h2>
+                <p>Content for translation will be displayed here...</p>
+            </div>
+            
+            <!-- Quiz Section -->
+            <div class="module hidden" id="quiz">
+                <h2>Knowledge Check</h2>
+                <div class="quiz-container">
+                    <div class="question">
+                        <h3>Question 1:</h3>
+                        <p>Which of the following correctly describes the structure of DNA?</p>
+                        <div class="options">
+                            <label>
+                                <input type="radio" name="q1" value="a">
+                                A single helix made of amino acids
+                            </label>
+                            <label>
+                                <input type="radio" name="q1" value="b">
+                                A double helix with nucleotide base pairs
+                            </label>
+                            <label>
+                                <input type="radio" name="q1" value="c">
+                                A triple helix structure with RNA strands
+                            </label>
+                            <label>
+                                <input type="radio" name="q1" value="d">
+                                A planar structure composed of proteins
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <h3>Question 2:</h3>
+                        <p>In DNA, what nucleotide pairs with Guanine (G)?</p>
+                        <div class="options">
+                            <label>
+                                <input type="radio" name="q2" value="a">
+                                Adenine (A)
+                            </label>
+                            <label>
+                                <input type="radio" name="q2" value="b">
+                                Thymine (T)
+                            </label>
+                            <label>
+                                <input type="radio" name="q2" value="c">
+                                Cytosine (C)
+                            </label>
+                            <label>
+                                <input type="radio" name="q2" value="d">
+                                Uracil (U)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button id="submit-quiz">Submit Answers</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modal for questions -->
+    <div id="question-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3>Quick Check</h3>
+            <div id="modal-question"></div>
+            <div id="modal-options"></div>
+            <button id="submit-modal-answer">Submit</button>
+            <div id="modal-feedback"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Student information (would normally come from a login system)
+        const studentId = 'S12345';
+        const studentName = 'Jane Smith';
+        document.getElementById('student-name').textContent = studentName;
+        
+        // Initialize tracking variables
+        let sessionStartTime = Date.now();
+        let pageStartTime = sessionStartTime;
+        let currentModule = 'introduction';
+        let lastActivity = sessionStartTime;
+        let totalTimeSpent = 0;
+        let moduleTimeSpent = {};
+        let interactionsCount = 0;
+        let quizAttempts = 0;
+        let correctAnswers = 0;
+        let notesTaken = false;
+        
+        // Activity tracking for idle detection
+        document.addEventListener('click', updateActivity);
+        document.addEventListener('keypress', updateActivity);
+        document.addEventListener('scroll', updateActivity);
+        
+        function updateActivity() {
+            lastActivity = Date.now();
+            interactionsCount++;
+        }
+        
+        // Timer updates
+        setInterval(updateTimers, 1000);
+        
+        function updateTimers() {
+            const sessionTime = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const pageTime = Math.floor((Date.now() - pageStartTime) / 1000);
+            
+            document.getElementById('session-time').textContent = `Session: ${formatTime(sessionTime)}`;
+            document.getElementById('page-time').textContent = formatTime(pageTime);
+            
+            // Update module time spent
+            if (!moduleTimeSpent[currentModule]) {
+                moduleTimeSpent[currentModule] = 0;
+            }
+            
+            // Only count time if user is active (not idle for more than 2 minutes)
+            if (Date.now() - lastActivity < 120000) {
+                moduleTimeSpent[currentModule]++;
+                totalTimeSpent++;
+            }
+        }
+        
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+        
+        // Navigation
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const targetSection = this.getAttribute('data-section');
+                
+                // Record time spent on current section before switching
+                if (moduleTimeSpent[currentModule]) {
+                    sendTrackingData({
+                        event: 'section_exit',
+                        section: currentModule,
+                        timeSpent: moduleTimeSpent[currentModule]
+                    });
+                }
+                
+                // Update UI
+                navItems.forEach(navItem => navItem.classList.remove('active'));
+                this.classList.add('active');
+                
+                document.querySelectorAll('.module').forEach(module => {
+                    module.classList.add('hidden');
+                });
+                document.getElementById(targetSection).classList.remove('hidden');
+                
+                // Update current module and track navigation
+                currentModule = targetSection;
+                sendTrackingData({
+                    event: 'navigation',
+                    from: currentModule,
+                    to: targetSection,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Update progress based on visited sections
+                updateProgress();
+            });
+        });
+        
+        // Update progress indicator
+        function updateProgress() {
+            const totalSections = navItems.length;
+            let visitedSections = 0;
+            
+            for (const module in moduleTimeSpent) {
+                if (moduleTimeSpent[module] > 10) { // Consider a section visited if spent at least 10 seconds
+                    visitedSections++;
+                }
+            }
+            
+            const progressPercentage = Math.floor((visitedSections / totalSections) * 100);
+            document.getElementById('progress-indicator').style.width = `${progressPercentage}%`;
+            document.getElementById('progress-text').textContent = `${progressPercentage}% Complete`;
+            
+            sendTrackingData({
+                event: 'progress_update',
+                progress: progressPercentage,
+                visitedSections: visitedSections,
+                totalSections: totalSections
+            });
+        }
+        
+        // Notes functionality
+        const toggleNotesBtn = document.getElementById('toggle-notes');
+        const notesArea = document.getElementById('notes-area');
+        const saveNotesBtn = document.getElementById('save-notes');
+        
+        toggleNotesBtn.addEventListener('click', function() {
+            if (notesArea.style.display === 'block') {
+                notesArea.style.display = 'none';
+                toggleNotesBtn.textContent = 'Take Notes';
+            } else {
+                notesArea.style.display = 'block';
+                toggleNotesBtn.textContent = 'Hide Notes';
+                
+                sendTrackingData({
+                    event: 'notes_opened',
+                    section: currentModule,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
+        
+        saveNotesBtn.addEventListener('click', function() {
+            const notes = document.querySelector('.notes-area').value;
+            
+            if (notes.trim().length > 0) {
+                notesTaken = true;
+                
+                sendTrackingData({
+                    event: 'notes_saved',
+                    section: currentModule,
+                    noteLength: notes.length,
+                    timestamp: new Date().toISOString()
+                });
+                
+                alert('Notes saved successfully!');
+            }
+        });
+        
+        // Interactive DNA Builder
+        const checkDnaBtn = document.getElementById('check-dna-builder');
+        if (checkDnaBtn) {
+            checkDnaBtn.addEventListener('click', function() {
+                let allCorrect = true;
+                const selections = document.querySelectorAll('.nucleotide-select');
+                
+                selections.forEach(select => {
+                    if (select.value !== select.getAttribute('data-correct')) {
+                        allCorrect = false;
+                    }
+                });
+                
+                const feedback = document.getElementById('dna-feedback');
+                if (allCorrect) {
+                    feedback.textContent = 'Excellent! All nucleotide pairs are correct.';
+                    feedback.className = 'feedback correct';
+                    correctAnswers++;
+                } else {
+                    feedback.textContent = 'Some pairs are incorrect. Remember: A pairs with T, and G pairs with C.';
+                    feedback.className = 'feedback incorrect';
+                }
+                
+                sendTrackingData({
+                    event: 'interactive_check',
+                    activity: 'dna_builder',
+                    result: allCorrect ? 'correct' : 'incorrect',
+                    section: currentModule
+                });
+            });
+        }
+        
+        // Quiz submission
+        const submitQuizBtn = document.getElementById('submit-quiz');
+        if (submitQuizBtn) {
+            submitQuizBtn.addEventListener('click', function() {
+                quizAttempts++;
+                let score = 0;
+                
+                // Check answers (hardcoded for this example)
+                if (document.querySelector('input[name="q1"]:checked')?.value === 'b') {
+                    score++;
+                }
+                
+                if (document.querySelector('input[name="q2"]:checked')?.value === 'c') {
+                    score++;
+                }
+                
+                const percentage = Math.round((score / 2) * 100);
+                alert(`Quiz Score: ${percentage}% (${score}/2 correct)`);
+                
+                sendTrackingData({
+                    event: 'quiz_submitted',
+                    attemptNumber: quizAttempts,
+                    score: score,
+                    totalQuestions: 2,
+                    percentage: percentage
+                });
+                
+                if (percentage === 100) {
+                    correctAnswers += 2;
+                } else {
+                    correctAnswers += score;
+                }
+            });
+        }
+        
+        // Understanding check modal functionality
+        const modal = document.getElementById('question-modal');
+        const closeModal = document.querySelector('.close-modal');
+        const understandingChecks = document.querySelectorAll('.check-understanding');
+        
+        understandingChecks.forEach(check => {
+            check.addEventListener('click', function() {
+                const questionType = this.getAttribute('data-question');
+                openCheckModal(questionType);
+                
+                sendTrackingData({
+                    event: 'understanding_check_opened',
+                    checkType: questionType,
+                    section: currentModule
+                });
+            });
+        });
+        
+        closeModal.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        function openCheckModal(questionType) {
+            const modalQuestion = document.getElementById('modal-question');
+            const modalOptions = document.getElementById('modal-options');
+            
+            // Set question based on type
+            if (questionType === 'dna-basics') {
+                modalQuestion.innerHTML = '<p>Which of the following statements about DNA is correct?</p>';
+                modalOptions.innerHTML = `
+                    <label>
+                        <input type="radio" name="modal-q" value="a">
+                        DNA is primarily found in the cell membrane
+                    </label>
+                    <label>
+                        <input type="radio" name="modal-q" value="b">
+                        DNA stands for Diatomic Nucleic Arrangement
+                    </label>
+                    <label>
+                        <input type="radio" name="modal-q" value="c">
+                        DNA contains the genetic instructions for development and functioning of organisms
+                    </label>
+                    <label>
+                        <input type="radio" name="modal-q" value="d">
+                        DNA was discovered in the 21st century
+                    </label>
+                `;
+            }
+            
+            document.getElementById('modal-feedback').innerHTML = '';
+            document.getElementById('submit-modal-answer').onclick = function() {
+                checkModalAnswer(questionType);
+            };
+            
+            modal.style.display = 'block';
+        }
+        
+        function checkModalAnswer(questionType) {
+            const selectedAnswer = document.querySelector('input[name="modal-q"]:checked')?.value;
+            const feedback = document.getElementById('modal-feedback');
+            
+            if (!selectedAnswer) {
+                feedback.innerHTML = '<p style="color: #721c24;">Please select an answer.</p>';
+                return;
+            }
+            
+            let isCorrect = false;
+            
+            if (questionType === 'dna-basics' && selectedAnswer === 'c') {
+                feedback.innerHTML = '<p style="color: #155724;">Correct! DNA contains the genetic instructions needed for an organism to develop, survive and reproduce.</p>';
+                isCorrect = true;
+                correctAnswers++;
+            } else {
+                feedback.innerHTML = '<p style="color: #721c24;">Incorrect. Please review the material and try again.</p>';
+            }
+            
+            sendTrackingData({
+                event: 'check_answer',
+                checkType: questionType,
+                answer: selectedAnswer,
+                isCorrect: isCorrect,
+                section: currentModule
+            });
+        }
+        
+        // Tracking data collection and submission to Google Sheets
+        function sendTrackingData(data) {
+            // Add standard data to every tracking event
+            const trackingData = {
+                ...data,
+                studentId: studentId,
+                studentName: studentName,
+                timestamp: new Date().
