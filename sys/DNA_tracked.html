@@ -84,7 +84,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const loadingDiv = document.getElementById('loading');
             
-            // Google Apps Script Web App URL - use the one from the provided code
+            // Google Apps Script Web App URL - updated to use the correct URL
             const webAppUrl = 'https://script.google.com/macros/s/AKfycbzW2chCAtsQGtJ47yOGJGsZTivLL2SxIQ331JdOAKiiJutKZCT7D_VBXR3WxhD4EQqp/exec';
             
             // Function to get username from localStorage
@@ -92,9 +92,13 @@
                 // Try to get username from accounts in localStorage
                 const accounts = localStorage.getItem('accounts');
                 if (accounts) {
-                    const parsedAccounts = JSON.parse(accounts);
-                    if (parsedAccounts.length > 0) {
-                        return parsedAccounts[0].username; // Return the first account's username
+                    try {
+                        const parsedAccounts = JSON.parse(accounts);
+                        if (parsedAccounts.length > 0 && parsedAccounts[0].username) {
+                            return parsedAccounts[0].username; // Return the first account's username
+                        }
+                    } catch (e) {
+                        console.error('Error parsing accounts:', e);
                     }
                 }
                 
@@ -108,11 +112,23 @@
                 return 'anonymous';
             }
             
+            // Function to get page name from URL instead of hardcoding
+            function getPageName() {
+                // Get the full path from the URL
+                const path = window.location.pathname;
+                
+                // Extract just the filename from the path
+                const filename = path.substring(path.lastIndexOf('/') + 1);
+                
+                // Return the filename, or a default if it's empty
+                return filename || 'index.html';
+            }
+            
             // Function to log page visit
             function logPageVisit() {
                 const username = getUsername();
                 const currentDateTime = new Date().toISOString();
-                const pageName = 'DNA.html';
+                const pageName = getPageName(); // Use the function to get page name from URL
                 
                 // Create data object - simplified for page tracking only
                 const visitData = [{
