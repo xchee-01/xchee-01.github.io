@@ -89,13 +89,39 @@
             
             // Function to get username from localStorage
             function getUsername() {
-                // Try to get username from accounts in localStorage
+                // First check for accounts format as seen in the screenshot
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    
+                    try {
+                        // Look for any JSON that might contain username
+                        const parsed = JSON.parse(value);
+                        
+                        // Check different possible formats
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            // Format: [{"username": "xavierchee", "password": "abc"}]
+                            if (parsed[0] && parsed[0].username) {
+                                console.log('Found username in array:', parsed[0].username);
+                                return parsed[0].username;
+                            }
+                        } else if (parsed && parsed.username) {
+                            // Format: {"username": "xavierchee", "password": "abc"}
+                            console.log('Found username in object:', parsed.username);
+                            return parsed.username;
+                        }
+                    } catch (e) {
+                        // Not JSON, continue checking other items
+                    }
+                }
+                
+                // Try to get username from traditional location
                 const accounts = localStorage.getItem('accounts');
                 if (accounts) {
                     try {
                         const parsedAccounts = JSON.parse(accounts);
                         if (parsedAccounts.length > 0 && parsedAccounts[0].username) {
-                            return parsedAccounts[0].username; // Return the first account's username
+                            return parsedAccounts[0].username;
                         }
                     } catch (e) {
                         console.error('Error parsing accounts:', e);
@@ -112,16 +138,10 @@
                 return 'anonymous';
             }
             
-            // Function to get page name from URL instead of hardcoding
+            // Function to get the full URL instead of just the page name
             function getPageName() {
-                // Get the full path from the URL
-                const path = window.location.pathname;
-                
-                // Extract just the filename from the path
-                const filename = path.substring(path.lastIndexOf('/') + 1);
-                
-                // Return the filename, or a default if it's empty
-                return filename || 'index.html';
+                // Return the full URL of the current page
+                return window.location.href;
             }
             
             // Function to log page visit
