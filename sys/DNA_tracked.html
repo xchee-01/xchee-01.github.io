@@ -79,65 +79,17 @@
     <!-- Hidden notification that will briefly appear -->
     <div id="tracking-notification" class="tracking-notification">Page visit recorded</div>
 
+    <!-- Hidden iframe for tracking -->
+    <!-- This iframe method bypasses CORS restrictions -->
+    <iframe id="tracking-frame" src="https://script.google.com/macros/s/AKfycbyays5TOCwZUe6QvkIdlZNweGSxEagtUuUhiADmNDdoY9TLcyVFK1ku-PK1pMRILlU_/exec" style="display:none;"></iframe>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Google Apps Script Web App URL
-            const webAppUrl = 'https://script.google.com/macros/s/AKfycbyays5TOCwZUe6QvkIdlZNweGSxEagtUuUhiADmNDdoY9TLcyVFK1ku-PK1pMRILlU_/exec';
-            
             // Get notification element
             const notification = document.getElementById('tracking-notification');
+            const trackingFrame = document.getElementById('tracking-frame');
             
-            // Function to get username from localStorage
-            function getUsername() {
-                try {
-                    // Try to get username from accounts in localStorage
-                    const accounts = localStorage.getItem('accounts');
-                    if (accounts) {
-                        const parsedAccounts = JSON.parse(accounts);
-                        if (parsedAccounts && parsedAccounts.length > 0) {
-                            return parsedAccounts[0].username; // Return the first account's username
-                        }
-                    }
-                    
-                    // If no accounts found, check if there's a direct username entry
-                    const username = localStorage.getItem('username');
-                    if (username) {
-                        return username;
-                    }
-                } catch (e) {
-                    console.log("Error retrieving username:", e);
-                }
-                
-                // Default if no username found
-                return 'anonymous';
-            }
-            
-            // Function to create image element to trigger the tracking
-            function createTrackingImage() {
-                // Create a hidden image element
-                const img = document.createElement('img');
-                img.style.display = 'none';
-                
-                // Set the src to the web app URL (this will send a GET request)
-                img.src = webAppUrl;
-                
-                // Add error handling
-                img.onerror = function() {
-                    // Even if the image fails to load, the request was sent
-                    console.log('Tracking request sent');
-                    showNotification();
-                };
-                
-                img.onload = function() {
-                    console.log('Tracking request completed');
-                    showNotification();
-                };
-                
-                // Add to the page
-                document.body.appendChild(img);
-            }
-            
-            // Show notification
+            // Function to show notification
             function showNotification() {
                 notification.style.opacity = 1;
                 setTimeout(() => {
@@ -145,24 +97,14 @@
                 }, 3000);
             }
             
-            // Log the visit when page loads - using both methods for redundancy
-            // Method 1: Using fetch
-            fetch(webAppUrl, {
-                method: 'GET',
-                mode: 'no-cors'
-            })
-            .then(() => {
-                console.log('Page visit recorded via fetch');
+            // Track when iframe loads
+            trackingFrame.onload = function() {
+                console.log('Tracking iframe loaded');
                 showNotification();
-            })
-            .catch(error => {
-                console.log('Fetch failed, trying image method', error);
-                createTrackingImage();
-            });
+            };
             
-            // Method 2: Using image (more reliable for cross-domain)
-            // Using setTimeout to slightly delay this as a backup method
-            setTimeout(createTrackingImage, 1000);
+            // Show notification after a timeout even if iframe doesn't report back
+            setTimeout(showNotification, 2000);
         });
     </script>
 </body>
