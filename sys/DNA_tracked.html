@@ -99,53 +99,27 @@
             <span class="user-info-label">Current URL:</span>
             <span id="current-url">Loading...</span>
         </div>
-        <div class="user-info-item">
-            <span class="user-info-label">LocalStorage Data:</span>
-            <span id="localStorage-summary">None</span>
-        </div>
         <div id="status-message"></div>
     </div>
 
     <script>
         // Replace with your deployed Google Apps Script Web App URL
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh99ycPO8R0GZYlFaznQqsF2bilaKkjuQvh1OuKa7owmc7TODLwEQAstoNADw5x4eL/exec';
         
-        // Function to get a username from localStorage
+        // Function to get username from localStorage, or set a default if not found
         function getUsername() {
-            // Try to find user information in localStorage
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                
-                // Try to parse JSON values
-                try {
-                    const parsedValue = JSON.parse(value);
-                    
-                    // Look for common user identification fields in the parsed JSON
-                    if (typeof parsedValue === 'object' && parsedValue !== null) {
-                        // Check for various possible username properties
-                        if (parsedValue.username) return parsedValue.username;
-                        if (parsedValue.userName) return parsedValue.userName;
-                        if (parsedValue.user && parsedValue.user.name) return parsedValue.user.name;
-                        if (parsedValue.user && parsedValue.user.username) return parsedValue.user.username;
-                        if (parsedValue.name) return parsedValue.name;
-                        if (parsedValue.email) return parsedValue.email;
-                        if (parsedValue.user) return parsedValue.user;
-                        if (parsedValue.userId) return parsedValue.userId;
-                        if (parsedValue.id) return parsedValue.id;
-                    }
-                } catch (e) {
-                    // Not valid JSON, check if key itself indicates user data
-                    if (key.toLowerCase().includes('user') || 
-                        key.toLowerCase().includes('login') || 
-                        key.toLowerCase().includes('auth')) {
-                        return value; // Use raw value if key suggests user data
-                    }
-                }
-            }
+            // Try to get username from localStorage
+            const storedUsername = localStorage.getItem('username');
             
-            // Fallback if no username found in localStorage
-            return 'Visitor_' + Math.floor(Math.random() * 10000);
+            if (storedUsername) {
+                return storedUsername;
+            } else {
+                // If no username is in localStorage, create a default one
+                const defaultUsername = 'Visitor_' + Math.floor(Math.random() * 10000);
+                // Store it for future visits
+                localStorage.setItem('username', defaultUsername);
+                return defaultUsername;
+            }
         }
         
         // Display session information
@@ -159,14 +133,6 @@
         document.getElementById('username').textContent = username;
         document.getElementById('access-time').textContent = accessTime;
         document.getElementById('current-url').textContent = currentUrl;
-        
-        // Add localStorage summary
-        const localStorageSummary = document.getElementById('localStorage-summary');
-        if (localStorage.length === 0) {
-            localStorageSummary.textContent = "No data in localStorage";
-        } else {
-            localStorageSummary.textContent = `${localStorage.length} item(s) found`;
-        }
         
         // Function to show status message
         function showStatus(isSuccess, message) {
