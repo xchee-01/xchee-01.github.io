@@ -49,6 +49,20 @@
             font-weight: bold;
             color: #2980b9;
         }
+        #status-message {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -70,7 +84,7 @@
     
     <p>Every cell in your body contains DNA, which acts like a unique genetic fingerprint. It determines everything from your eye color to your potential health risks, passing down traits from parents to children.</p>
     
-    <!-- New User Information Box -->
+    <!-- User Information Box -->
     <div class="user-info-box">
         <h3>Session Information</h3>
         <div class="user-info-item">
@@ -85,18 +99,75 @@
             <span class="user-info-label">Current URL:</span>
             <span id="current-url">Loading...</span>
         </div>
+        <div id="status-message"></div>
     </div>
 
     <script>
-        // Display username (placeholder - in a real application, you would get this from your authentication system)
-        document.getElementById('username').textContent = 'Guest User';
+        // Replace with your deployed Google Apps Script Web App URL
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec';
         
-        // Display current time
+        // Function to get a username (in a real application, this would come from authentication)
+        function getUsername() {
+            // For demo purposes: generate a random visitor ID
+            // In a real app, you'd get this from authentication
+            return 'Visitor_' + Math.floor(Math.random() * 10000);
+        }
+        
+        // Display session information
+        const username = getUsername();
         const now = new Date();
-        document.getElementById('access-time').textContent = now.toLocaleString();
+        const accessTime = now.toLocaleString();
+        const currentUrl = window.location.href;
+        const userAgent = navigator.userAgent;
         
-        // Display current URL
-        document.getElementById('current-url').textContent = window.location.href;
+        // Update the display
+        document.getElementById('username').textContent = username;
+        document.getElementById('access-time').textContent = accessTime;
+        document.getElementById('current-url').textContent = currentUrl;
+        
+        // Function to show status message
+        function showStatus(isSuccess, message) {
+            const statusMsg = document.getElementById('status-message');
+            statusMsg.className = isSuccess ? 'success' : 'error';
+            statusMsg.textContent = message;
+            statusMsg.style.display = 'block';
+            
+            // Hide the message after 5 seconds
+            setTimeout(function() {
+                statusMsg.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Log the visit to spreadsheet using fetch API
+        window.onload = function() {
+            // Prepare data to send
+            const data = {
+                username: username,
+                accessTime: accessTime,
+                url: currentUrl,
+                userAgent: userAgent
+            };
+            
+            // Send data to Google Apps Script
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                mode: 'no-cors' // Important for cross-origin requests to Google Apps Script
+            })
+            .then(response => {
+                // Due to 'no-cors' mode, we won't be able to read the response
+                // So we just show a success message
+                showStatus(true, 'Visit logged successfully!');
+            })
+            .catch(error => {
+                // Show error message
+                showStatus(false, 'Error logging visit: ' + error.message);
+                console.error('Error:', error);
+            });
+        };
     </script>
 </body>
 </html>
