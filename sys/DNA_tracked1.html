@@ -79,15 +79,46 @@
     <!-- Hidden notification that will briefly appear -->
     <div id="tracking-notification" class="tracking-notification">Page visit recorded</div>
 
-    <!-- Hidden iframe for tracking -->
-    <!-- This iframe method bypasses CORS restrictions -->
-    <iframe id="tracking-frame" src="https://script.google.com/macros/s/AKfycbzW2chCAtsQGtJ47yOGJGsZTivLL2SxIQ331JdOAKiiJutKZCT7D_VBXR3WxhD4EQqp/exec" style="display:none;"></iframe>
-
+    <!-- Create and then modify the iframe URL with query parameters -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Get notification element
             const notification = document.getElementById('tracking-notification');
-            const trackingFrame = document.getElementById('tracking-frame');
+            
+            // Function to get username from localStorage
+            function getUsername() {
+                try {
+                    // Try to get username from accounts in localStorage
+                    const accounts = localStorage.getItem('accounts');
+                    if (accounts) {
+                        const parsedAccounts = JSON.parse(accounts);
+                        if (parsedAccounts && parsedAccounts.length > 0) {
+                            console.log("Found username in accounts:", parsedAccounts[0].username);
+                            return parsedAccounts[0].username; // Return the first account's username
+                        }
+                    }
+                    
+                    // If no accounts found, check if there's a direct username entry
+                    const username = localStorage.getItem('username');
+                    if (username) {
+                        console.log("Found direct username:", username);
+                        return username;
+                    }
+                } catch (e) {
+                    console.log("Error retrieving username:", e);
+                }
+                
+                // Default if no username found
+                console.log("No username found, using anonymous");
+                return 'anonymous';
+            }
+            
+            // Get the actual page filename from the URL path
+            function getPageName() {
+                const path = window.location.pathname;
+                const filename = path.substring(path.lastIndexOf('/') + 1);
+                return filename || 'unknown.html';
+            }
             
             // Function to show notification
             function showNotification() {
@@ -97,8 +128,22 @@
                 }, 3000);
             }
             
+            // Get values for tracking
+            const username = encodeURIComponent(getUsername());
+            const pageName = encodeURIComponent(getPageName());
+            
+            console.log("Tracking values - Username:", username, "Page:", pageName);
+            
+            // Create iframe with proper query parameters
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = `https://script.google.com/macros/s/AKfycbzW2chCAtsQGtJ47yOGJGsZTivLL2SxIQ331JdOAKiiJutKZCT7D_VBXR3WxhD4EQqp/exec?username=${username}&page=${pageName}`;
+            
+            // Add iframe to page
+            document.body.appendChild(iframe);
+            
             // Track when iframe loads
-            trackingFrame.onload = function() {
+            iframe.onload = function() {
                 console.log('Tracking iframe loaded');
                 showNotification();
             };
