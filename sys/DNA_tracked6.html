@@ -58,7 +58,7 @@
 <body>
     <h1>What is DNA?</h1>
     
-    <img src="/api/placeholder/400/250" alt="DNA Double Helix" class="dna-image">
+    <img src="https://via.placeholder.com/400x250" alt="DNA Double Helix" class="dna-image">
     
     <p>DNA, or Deoxyribonucleic Acid, is the fundamental blueprint of life. It's a complex molecule that carries the genetic instructions used in the growth, development, functioning, and reproduction of all known living organisms.</p>
     
@@ -80,29 +80,25 @@
         <span>Syncing visit data...</span>
     </div>
 
+    <iframe id="tracking-frame" style="display:none;"></iframe>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const loadingDiv = document.getElementById('loading');
+            const trackingFrame = document.getElementById('tracking-frame');
             
-            // Google Apps Script Web App URL - updated to use the correct URL
+            // Google Apps Script Web App URL
             const webAppUrl = 'https://script.google.com/macros/s/AKfycbzW2chCAtsQGtJ47yOGJGsZTivLL2SxIQ331JdOAKiiJutKZCT7D_VBXR3WxhD4EQqp/exec';
             
-            // Function to get username from localStorage - focused specifically on the 'accounts' structure
+            // Function to get username from localStorage
             function getUsername() {
-                // Debug localStorage
-                console.log("localStorage keys:", Object.keys(localStorage));
-                
-                // First check the 'accounts' array that we know exists based on the provided code
+                // Check the 'accounts' array
                 const accounts = localStorage.getItem('accounts');
                 if (accounts) {
                     try {
-                        console.log("Found accounts data:", accounts);
                         const parsedAccounts = JSON.parse(accounts);
-                        console.log("Parsed accounts:", parsedAccounts);
-                        
                         if (Array.isArray(parsedAccounts) && parsedAccounts.length > 0) {
                             if (parsedAccounts[0] && parsedAccounts[0].username) {
-                                console.log("Using username from accounts:", parsedAccounts[0].username);
                                 return parsedAccounts[0].username;
                             }
                         }
@@ -111,58 +107,33 @@
                     }
                 }
                 
-                // If no username found, return default
-                console.log("No username found, using default");
                 return 'anonymous';
             }
             
-            // Function to get the full URL of the current page
-            function getPageName() {
-                return window.location.href;
-            }
-            
-            // Function to log page visit
+            // Function to log page visit using a direct URL approach
             function logPageVisit() {
                 const username = getUsername();
                 const currentDateTime = new Date().toISOString();
-                const pageUrl = getPageName();
+                const pageUrl = window.location.href;
                 
                 console.log("Logging visit with username:", username);
                 console.log("Page URL:", pageUrl);
                 
-                // Create data object for page tracking
-                const visitData = [{
-                    username: username,
-                    timestamp: currentDateTime,
-                    page: pageUrl
-                }];
-                
                 // Show loading indicator
                 loadingDiv.style.display = 'flex';
                 
-                // Create JSON string
-                const jsonData = JSON.stringify(visitData);
-                console.log("Sending data:", jsonData);
+                // Create direct URL with parameters
+                // Using direct URL parameters instead of JSON encoding
+                const trackingUrl = `${webAppUrl}?username=${encodeURIComponent(username)}&timestamp=${encodeURIComponent(currentDateTime)}&page=${encodeURIComponent(pageUrl)}`;
                 
-                // Open the web app with the data as a query parameter
-                const encodedData = encodeURIComponent(jsonData);
-                const url = `${webAppUrl}?data=${encodedData}`;
+                // Use iframe to load the URL without redirecting
+                trackingFrame.src = trackingUrl;
                 
-                // Use fetch API to send data without opening a new tab
-                fetch(url, {
-                    method: 'GET',
-                    mode: 'no-cors' // This is necessary for cross-origin requests to Google Apps Script
-                })
-                .then(() => {
-                    console.log('Visit logged successfully');
-                    setTimeout(() => {
-                        loadingDiv.style.display = 'none';
-                    }, 1500);
-                })
-                .catch(error => {
-                    console.error('Error logging visit:', error);
+                // Hide loading indicator after a short delay
+                setTimeout(() => {
                     loadingDiv.style.display = 'none';
-                });
+                    console.log('Visit logged successfully');
+                }, 1500);
             }
             
             // Log the visit when page loads
