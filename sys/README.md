@@ -1,1 +1,6 @@
-
+1. [Local storage cleaner](https://xchee-01.github.io/sys/localstorage_cleaner.html)
+2. [Registration](https://xchee-01.github.io/sys/registration.html)
+3. [Check local storage (not connected to google sheet)](https://xchee-01.github.io/sys/data_extract.html)
+4. [Check local storage and export to google sheet](https://xchee-01.github.io/sys/data_extract_google.html)
+5. [Sample: Tracked DNA page](https://xchee-01.github.io/sys/DNA_tracked_v2.html)
+6. 
