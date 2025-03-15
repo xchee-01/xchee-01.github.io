@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Page with Auto Export</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: #f9f9f9;
+            display: none;
+        }
+        .account-item {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create an Account</h1>
+        <div id="status-message" class="message info">
+            Initializing registration system...
+        </div>
+        <div id="registration-form" style="display: none;">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm-password">Confirm Password</label>
+                <input type="password" id="confirm-password" required>
+            </div>
+            <button id="register-btn">Register</button>
+        </div>
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Processing your registration...</p>
+        </div>
+        
+        <div id="accounts-display" style="display: none;">
+            <h3>Current Account</h3>
+            <div id="account-list"></div>
+            <button id="export-btn" style="margin-top: 15px;">Send to Google Sheet</button>
+        </div>
+        
+        <div id="debug-info"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const statusMessage = document.getElementById('status-message');
+            const registerForm = document.getElementById('registration-form');
+            const registerBtn = document.getElementById('register-btn');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm-password');
+            const loadingDiv = document.getElementById('loading');
+            const accountsDisplay = document.getElementById('accounts-display');
+            const accountList = document.getElementById('account-list');
+            const exportBtn = document.getElementById('export-btn');
+            const debugInfo = document.getElementById('debug-info');
+            
+            // Google Apps Script Web App URL
+            const webAppUrl = 'https://script.google.com/macros/s/AKfycbz08ltIsyANBgZKCJLcrvz2bXU68tidJ1agsFMPYNL1OND1rJc3SYJUqYh4eQpuIW-o/exec';
+            
+            // Debug function (for development purposes)
+            function debug(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugInfo.innerHTML += `<div>${timestamp}: ${message}</div>`;
+                //debugInfo.style.display = 'block';
+                console.log(`${timestamp}: ${message}`);
+            }
+            
+            // Step 1: Clear localStorage on page load
+            function initializeApp() {
+                debug("Initializing app...");
+                // Clear localStorage
+                localStorage.clear();
+                debug("Local storage cleared");
+                
+                // Show registration form
+                statusMessage.textContent = "Local storage cleared. Please register a new account.";
+                statusMessage.className = "message info";
+                registerForm.style.display = "block";
+            }
+            
+            // Initialize the app
+            initializeApp();
+            
+            // Step 2: Registration process
+            registerBtn.addEventListener('click', function() {
+                debug("Register button clicked");
+                
+                // Validate form
+                if (!usernameInput.value || !passwordInput.value || !confirmPasswordInput.value) {
+                    updateStatus('Please fill in all fields', 'error');
+                    return;
+                }
+                
+                if (passwordInput.value !== confirmPasswordInput.value) {
+                    updateStatus('Passwords do not match', 'error');
+                    return;
+                }
+                
+                // Show loading spinner
+                registerForm.style.display = "none";
+                loadingDiv.style.display = "block";
+                statusMessage.style.display = "none";
+                
+                // Create account object
+                const account = {
+                    username: usernameInput.value,
+                    password: passwordInput.value
+                };
+                
+                // Save to localStorage
+                const accounts = [account];
+                try {
+                    localStorage.setItem('accounts', JSON.stringify(accounts));
+                    debug("Account saved to localStorage: " + JSON.stringify(accounts));
+                    
+                    // Verify data was saved
+                    const savedData = localStorage.getItem('accounts');
+                    debug("Verification - Data in localStorage: " + savedData);
+                    
+                    // Display the saved account
+                    displayAccounts();
+                    
+                    // Auto-export data
+                    sendDataToGoogle(accounts);
+                } catch (e) {
+                    debug("Error saving to localStorage: " + e.message);
+                    updateStatus('Error saving account: ' + e.message, 'error');
+                    registerForm.style.display = "block";
+                    loadingDiv.style.display = "none";
+                }
+            });
+            
+            // Display saved accounts
+            function displayAccounts() {
+                debug("Displaying accounts");
+                try {
+                    const accountsData = localStorage.getItem('accounts');
+                    debug("Retrieved accounts: " + accountsData);
+                    
+                    if (!accountsData) {
+                        accountList.innerHTML = '<div>No accounts found in localStorage.</div>';
+                        return;
+                    }
+                    
+                    const accounts = JSON.parse(accountsData);
+                    accountList.innerHTML = '';
+                    
+                    accounts.forEach(account => {
+                        const accountItem = document.createElement('div');
+                        accountItem.className = 'account-item';
+                        accountItem.innerHTML = `
+                            <strong>Username:</strong> ${account.username}<br>
+                            <strong>Password:</strong> ${'•'.repeat(account.password.length)}
+                        `;
+                        accountList.appendChild(accountItem);
+                    });
+                    
+                    // Show accounts display
+                    accountsDisplay.style.display = "block";
+                } catch (e) {
+                    debug("Error displaying accounts: " + e.message);
+                }
+            }
+            
+            // Step 4: Send data to Google Sheet
+            function sendDataToGoogle(accounts) {
+                debug("Preparing to send data to Google Sheet");
+                
+                // Encode the data for URL
+                const jsonData = JSON.stringify(accounts);
+                const encodedData = encodeURIComponent(jsonData);
+                
+                // Create a form and submit it
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = webAppUrl;
+                form.target = '_blank'; // This opens in a new tab
+                
+                // Add the data as a hidden input
+                const hiddenField = document.createElement('input');
+                hiddenField.type = 'hidden';
+                hiddenField.name = 'data';
+                hiddenField.value = jsonData;
+                form.appendChild(hiddenField);
+                
+                // Add form to document and submit it
+                document.body.appendChild(form);
+                debug("Form created, submitting...");
+                
+                // After a delay, show success and remove form
+                setTimeout(() => {
+                    updateStatus('Registration successful! Account created.', 'success');
+                    loadingDiv.style.display = "none";
+                    document.body.removeChild(form);
+                }, 1000);
+            }
+            
+            // Export button click handler
+            exportBtn.addEventListener('click', function() {
+                debug("Export button clicked");
+                const accountsData = localStorage.getItem('accounts');
+                
+                if (!accountsData) {
+                    updateStatus('No accounts to export', 'error');
+                    return;
+                }
+                
+                // Show loading
+                loadingDiv.style.display = "block";
+                accountsDisplay.style.display = "none";
+                statusMessage.style.display = "none";
+                
+                // Call export function with parsed data
+                sendDataToGoogle(JSON.parse(accountsData));
+            });
+            
+            // Update status message
+            function updateStatus(message, type) {
+                debug("Status update: " + message + " (" + type + ")");
+                statusMessage.textContent = message;
+                statusMessage.className = `message ${type}`;
+                statusMessage.style.display = "block";
+            }
+        });
+    </script>
+</body>
+</html>
