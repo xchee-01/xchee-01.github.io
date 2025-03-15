@@ -88,6 +88,20 @@
             font-size: 1.2em;
             color: #0077BE;
         }
+        .timer {
+            text-align: right;
+            font-size: 1em;
+            color: #0077BE;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .time-summary {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #F0F7FA;
+            border-radius: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -95,6 +109,7 @@
         <h1>DNA Quiz</h1>
         <div id="quiz-content">
             <div class="question active" id="q1">
+                <div class="timer" id="timer-q1">Time: 0s</div>
                 <p>1. What does DNA stand for?</p>
                 <div class="options">
                     <div class="option" data-correct="false" data-feedback="Digital Nucleic Acid is not the correct term. DNA is actually an abbreviation for Deoxyribonucleic Acid, which describes the chemical composition of the molecule.">a) Digital Nucleic Acid</div>
@@ -103,9 +118,11 @@
                     <div class="option" data-correct="false" data-feedback="Developmental Nucleic Algorithm is not a scientific term. DNA actually stands for Deoxyribonucleic Acid, which describes its chemical structure.">d) Developmental Nucleic Algorithm</div>
                 </div>
                 <div class="feedback" id="q1-feedback"></div>
+                <div class="time-summary" id="time-summary-q1"></div>
             </div>
 
             <div class="question" id="q2">
+                <div class="timer" id="timer-q2">Time: 0s</div>
                 <p>2. Who discovered the double helix structure of DNA?</p>
                 <div class="options">
                     <div class="option" data-correct="false" data-feedback="Albert Einstein was a physicist, not a biologist. The double helix structure of DNA was actually discovered by Watson and Crick in 1953.">a) Albert Einstein</div>
@@ -114,9 +131,11 @@
                     <div class="option" data-correct="false" data-feedback="While Rosalind Franklin's X-ray crystallography was crucial to understanding DNA's structure, she did not discover the double helix. Watson and Crick are credited with proposing the double helix model.">d) Rosalind Franklin</div>
                 </div>
                 <div class="feedback" id="q2-feedback"></div>
+                <div class="time-summary" id="time-summary-q2"></div>
             </div>
 
             <div class="question" id="q3">
+                <div class="timer" id="timer-q3">Time: 0s</div>
                 <p>3. What are the four base pairs in DNA?</p>
                 <div class="options">
                     <div class="option" data-correct="true" data-feedback="Correct! Adenine (A), Thymine (T), Guanine (G), and Cytosine (C) are the four nucleotide bases that pair up in DNA. Adenine always pairs with Thymine, and Guanine always pairs with Cytosine.">a) Adenine, Thymine, Guanine, Cytosine</div>
@@ -125,9 +144,11 @@
                     <div class="option" data-correct="false" data-feedback="These are not the DNA base pairs. While some of these are biological terms, they do not represent the four bases found in DNA. The correct bases are Adenine, Thymine, Guanine, and Cytosine.">d) Asparagine, Tryptophan, Glutamine, Cytokine</div>
                 </div>
                 <div class="feedback" id="q3-feedback"></div>
+                <div class="time-summary" id="time-summary-q3"></div>
             </div>
 
             <div class="question" id="q4">
+                <div class="timer" id="timer-q4">Time: 0s</div>
                 <p>4. Where is DNA primarily located in a cell?</p>
                 <div class="options">
                     <div class="option" data-correct="false" data-feedback="Mitochondria contain their own small amount of DNA, but the majority of a cell's DNA is located in the nucleus.">a) Mitochondria</div>
@@ -136,9 +157,11 @@
                     <div class="option" data-correct="false" data-feedback="The Golgi Apparatus is involved in processing and packaging proteins, not storing DNA. The nucleus is the primary location of DNA in the cell.">d) Golgi Apparatus</div>
                 </div>
                 <div class="feedback" id="q4-feedback"></div>
+                <div class="time-summary" id="time-summary-q4"></div>
             </div>
 
             <div class="question" id="q5">
+                <div class="timer" id="timer-q5">Time: 0s</div>
                 <p>5. What shape does DNA form?</p>
                 <div class="options">
                     <div class="option" data-correct="true" data-feedback="Correct! DNA forms a double helix structure, which looks like a twisted ladder. This structure was first proposed by Watson and Crick in 1953.">a) Double Helix</div>
@@ -147,9 +170,11 @@
                     <div class="option" data-correct="false" data-feedback="DNA does not form a triangular structure. Its characteristic shape is a double helix, resembling a twisted ladder.">d) Triangular Structure</div>
                 </div>
                 <div class="feedback" id="q5-feedback"></div>
+                <div class="time-summary" id="time-summary-q5"></div>
             </div>
 
             <div class="question" id="q6">
+                <div class="timer" id="timer-q6">Time: 0s</div>
                 <p>6. What process involves copying DNA?</p>
                 <div class="options">
                     <div class="option" data-correct="false" data-feedback="Photosynthesis is a process used by plants to convert light energy into chemical energy. DNA replication is the process of copying DNA.">a) Photosynthesis</div>
@@ -158,6 +183,7 @@
                     <div class="option" data-correct="false" data-feedback="Transpiration is the process of water movement through a plant. DNA replication is the process of copying DNA during cell division.">d) Transpiration</div>
                 </div>
                 <div class="feedback" id="q6-feedback"></div>
+                <div class="time-summary" id="time-summary-q6"></div>
             </div>
         </div>
 
@@ -171,6 +197,45 @@
         const questions = document.querySelectorAll('.question');
         const nextBtn = document.getElementById('next-btn');
         const finalResultDiv = document.getElementById('final-result');
+        
+        // Timer variables
+        let startTime;
+        let timerInterval;
+        let questionTimes = [];
+        
+        // Start timer for first question
+        startTimer();
+        
+        // Function to start the timer
+        function startTimer() {
+            startTime = new Date();
+            const currentTimerElement = document.getElementById(`timer-q${currentQuestionIndex + 1}`);
+            
+            // Clear any existing interval
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Update timer every second
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((new Date() - startTime) / 1000);
+                currentTimerElement.textContent = `Time: ${elapsedTime}s`;
+            }, 1000);
+        }
+        
+        // Function to stop the timer and record time
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const timeElapsed = Math.floor((new Date() - startTime) / 1000);
+            questionTimes[currentQuestionIndex] = timeElapsed;
+            
+            // Display the time taken for this question
+            const timeSummaryElement = document.getElementById(`time-summary-q${currentQuestionIndex + 1}`);
+            timeSummaryElement.innerHTML = `Time spent: ${timeElapsed} seconds`;
+            timeSummaryElement.style.display = 'block';
+            
+            return timeElapsed;
+        }
 
         // Add click event listeners to all options
         questions.forEach(question => {
@@ -181,6 +246,9 @@
                 option.addEventListener('click', function() {
                     // Prevent multiple selections
                     if (question.classList.contains('answered')) return;
+
+                    // Stop the timer when an answer is selected
+                    stopTimer();
 
                     // Remove previous selections
                     options.forEach(opt => {
@@ -227,15 +295,28 @@
                 // Hide next button
                 nextBtn.style.display = 'none';
                 
-                // Show final result
+                // Show final result with time summary
+                let timeHTML = '<div style="margin-top: 15px; padding: 10px; background-color: #F0F7FA; border-radius: 5px;">';
+                timeHTML += '<h3>Time Summary:</h3>';
+                timeHTML += '<ul>';
+                
+                let totalTime = 0;
+                for (let i = 0; i < questionTimes.length; i++) {
+                    totalTime += questionTimes[i];
+                    timeHTML += `<li>Question ${i + 1}: ${questionTimes[i]} seconds</li>`;
+                }
+                
+                timeHTML += `<li><strong>Total time: ${totalTime} seconds</strong></li>`;
+                timeHTML += '</ul></div>';
+                
                 if (score === 6) {
-                    finalResultDiv.innerHTML = `🏆 Congratulations! You scored ${score}/6! You're a DNA Expert! Perfect score! 🧬`;
+                    finalResultDiv.innerHTML = `🏆 Congratulations! You scored ${score}/6! You're a DNA Expert! Perfect score! 🧬` + timeHTML;
                 } else if (score >= 4) {
-                    finalResultDiv.innerHTML = `👍 Great job! You scored ${score}/6. You have a solid understanding of DNA!`;
+                    finalResultDiv.innerHTML = `👍 Great job! You scored ${score}/6. You have a solid understanding of DNA!` + timeHTML;
                 } else if (score >= 2) {
-                    finalResultDiv.innerHTML = `📚 You scored ${score}/6. Not bad, but you can improve. Keep learning about DNA!`;
+                    finalResultDiv.innerHTML = `📚 You scored ${score}/6. Not bad, but you can improve. Keep learning about DNA!` + timeHTML;
                 } else {
-                    finalResultDiv.innerHTML = `🤔 You scored ${score}/6. You might want to review some basic DNA concepts!`;
+                    finalResultDiv.innerHTML = `🤔 You scored ${score}/6. You might want to review some basic DNA concepts!` + timeHTML;
                 }
                 return;
             }
@@ -250,6 +331,9 @@
             const previousFeedback = questions[currentQuestionIndex - 1].querySelector('.feedback');
             previousFeedback.style.display = 'none';
             previousFeedback.innerHTML = '';
+            
+            // Start timer for new question
+            startTimer();
         });
     </script>
 </body>
