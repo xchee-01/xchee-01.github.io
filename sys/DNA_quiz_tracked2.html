@@ -229,7 +229,7 @@
     </div>
 
     <script>
-        // API endpoint for the Google Apps Script web app
+        // API endpoint for the Google Apps Script web app - Update this URL with your deployed Google Apps Script Web App URL
         const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxK3AiaFXTatIXxvUFvetrXBMib_Pt0NtalMNPCSlllEjut4zS4GC_14PqWoYbBtRgX/exec';
         
         // Track quiz start time
@@ -238,13 +238,15 @@
         
         // Quiz tracking data
         let quizData = {
+            timestamp: new Date().toISOString(),
             username: '',
             accessTime: '',
             url: window.location.href,
             userAgent: navigator.userAgent,
             questionData: [],
             totalScore: 0,
-            totalTime: 0
+            totalTime: 0,
+            sheetName: 'quiz' // Specifying the sheet name to write to
         };
         
         let currentQuestionIndex = 0;
@@ -288,18 +290,25 @@
         
         // Function to log page visit to Google Sheets
         function logPageVisit() {
+            const pageVisitData = {
+                action: 'pageVisit',
+                sheetName: 'quiz',
+                data: {
+                    timestamp: new Date().toISOString(),
+                    username: quizData.username,
+                    accessTime: quizData.accessTime,
+                    url: quizData.url,
+                    userAgent: quizData.userAgent
+                }
+            };
+            
             fetch(API_ENDPOINT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                mode: 'no-cors', // Add no-cors to avoid CORS issues
-                body: JSON.stringify({
-                    username: quizData.username,
-                    accessTime: quizData.accessTime,
-                    url: quizData.url,
-                    userAgent: quizData.userAgent
-                }),
+                mode: 'no-cors', // Use no-cors to avoid CORS issues
+                body: JSON.stringify(pageVisitData),
             })
             .then(() => {
                 console.log('Access logging request sent');
@@ -311,13 +320,28 @@
         
         // Function to log quiz results to Google Sheets
         function logQuizResults() {
+            const finalData = {
+                action: 'quizComplete',
+                sheetName: 'quiz',
+                data: {
+                    timestamp: new Date().toISOString(),
+                    username: quizData.username,
+                    accessTime: quizData.accessTime,
+                    url: quizData.url,
+                    userAgent: quizData.userAgent,
+                    totalScore: quizData.totalScore,
+                    totalTime: quizData.totalTime,
+                    questionDetails: JSON.stringify(quizData.questionData)
+                }
+            };
+            
             fetch(API_ENDPOINT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                mode: 'no-cors', // Add no-cors to avoid CORS issues
-                body: JSON.stringify(quizData),
+                mode: 'no-cors', // Use no-cors to avoid CORS issues
+                body: JSON.stringify(finalData),
             })
             .then(() => {
                 console.log('Quiz results logging request sent');
@@ -377,6 +401,7 @@
                     
                     // Get the option letter and question text
                     const optionLetter = option.getAttribute('data-option');
+                    const optionText = option.textContent;
                     const questionText = question.querySelector('p').textContent;
                     const isCorrect = option.getAttribute('data-correct') === 'true';
                     
@@ -385,7 +410,8 @@
                         questionNumber: questionIndex + 1,
                         questionText: questionText,
                         selectedOption: optionLetter,
-                        isCorrect: isCorrect,
+                        selectedText: optionText,
+                        isCorrect: isCorrect ? "Yes" : "No",
                         timeSpent: timeSpent
                     });
 
