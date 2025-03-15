@@ -182,8 +182,8 @@
                 localStorage.clear();
                 debug("Local storage cleared");
                 
-                // Show registration form
-                statusMessage.textContent = "Local storage cleared. Please register a new account.";
+                // Show registration form immediately without mentioning storage clearing
+                statusMessage.textContent = "Please enter your registration information.";
                 statusMessage.className = "message info";
                 registerForm.style.display = "block";
             }
@@ -276,33 +276,28 @@
             function sendDataToGoogle(accounts) {
                 debug("Preparing to send data to Google Sheet");
                 
-                // Encode the data for URL
+                // Using direct window.open with URL parameters which matches the original implementation
                 const jsonData = JSON.stringify(accounts);
                 const encodedData = encodeURIComponent(jsonData);
+                const url = `${webAppUrl}?data=${encodedData}`;
                 
-                // Create a form and submit it
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = webAppUrl;
-                form.target = '_blank'; // This opens in a new tab
+                // Open in new tab (this is how the original script worked)
+                debug("Opening Google Sheet export URL");
+                const newWindow = window.open(url, '_blank');
                 
-                // Add the data as a hidden input
-                const hiddenField = document.createElement('input');
-                hiddenField.type = 'hidden';
-                hiddenField.name = 'data';
-                hiddenField.value = jsonData;
-                form.appendChild(hiddenField);
-                
-                // Add form to document and submit it
-                document.body.appendChild(form);
-                debug("Form created, submitting...");
-                
-                // After a delay, show success and remove form
-                setTimeout(() => {
-                    updateStatus('Registration successful! Account created.', 'success');
+                // If popup was blocked, show a message
+                if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                    debug("Popup may have been blocked, showing alternative message");
+                    updateStatus('Please allow popups to export data to Google Sheets', 'error');
                     loadingDiv.style.display = "none";
-                    document.body.removeChild(form);
-                }, 1000);
+                    accountsDisplay.style.display = "block";
+                } else {
+                    // After a short delay, show success
+                    setTimeout(() => {
+                        updateStatus('Registration successful! Data sent to spreadsheet.', 'success');
+                        loadingDiv.style.display = "none";
+                    }, 1000);
+                }
             }
             
             // Export button click handler
