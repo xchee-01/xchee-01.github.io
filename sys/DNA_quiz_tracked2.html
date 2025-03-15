@@ -1,3 +1,6 @@
+Here's the complete HTML code for the DNA Quiz with URL tracking and debugging features:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -132,6 +135,15 @@
             margin: 10px 0;
             display: none;
         }
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -226,11 +238,12 @@
 
         <button id="next-btn">Next Question</button>
         <div id="final-result"></div>
+        <div id="debug-info"></div>
     </div>
 
     <script>
         // API endpoint for the Google Apps Script web app - Update this URL with your deployed Google Apps Script Web App URL
-        const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxK3AiaFXTatIXxvUFvetrXBMib_Pt0NtalMNPCSlllEjut4zS4GC_14PqWoYbBtRgX/exec';
+        const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzr-KFisJk2kcQTfh8wbAI-sImJ2uu1N8kPt1wXtx9p1aXdouFQJylATOhkByW9ObK6/exec';
         
         // Track quiz start time
         let quizStartTime;
@@ -239,6 +252,7 @@
         // Quiz tracking data
         let quizData = {
             username: '',
+            url: window.location.href, // Added URL tracking
             questionData: []
         };
         
@@ -251,11 +265,24 @@
         const usernameInput = document.getElementById('username');
         const quizContent = document.getElementById('quiz-content');
         const notification = document.getElementById('data-notification');
+        const debugInfo = document.getElementById('debug-info');
         
         // Timer variables
         let startTime;
         let timerInterval;
         let questionTimes = [];
+        
+        // Enable debugging
+        const enableDebug = true;
+        
+        function debug(message, data) {
+            if (enableDebug) {
+                console.log(message, data);
+                const text = document.createTextNode(`${message}: ${JSON.stringify(data)}\n`);
+                debugInfo.appendChild(text);
+                debugInfo.style.display = 'block';
+            }
+        }
         
         // Start quiz button event
         startQuizBtn.addEventListener('click', function() {
@@ -267,6 +294,8 @@
             
             // Set quiz data
             quizData.username = username;
+            debug('Quiz started with username', username);
+            debug('Current URL', quizData.url);
             
             // Show quiz content
             document.querySelector('.username-container').style.display = 'none';
@@ -279,6 +308,8 @@
         
         // Function to log quiz results to Google Sheets
         function logQuizResults() {
+            debug('Sending quiz data to server', quizData);
+            
             fetch(API_ENDPOINT, {
                 method: 'POST',
                 headers: {
@@ -289,11 +320,15 @@
             })
             .then(() => {
                 console.log('Quiz results logging request sent');
+                debug('Data sent successfully', new Date().toISOString());
+                alert('Data sent! Check spreadsheet.'); // Add confirmation alert
                 notification.textContent = 'Your quiz results have been submitted!';
                 notification.style.display = 'block';
             })
             .catch(error => {
                 console.error('Error logging quiz results:', error);
+                debug('Error sending data', error.toString());
+                alert('Error: ' + error); // Show error in alert
                 notification.textContent = 'There was an error submitting your results. Please try again.';
                 notification.style.display = 'block';
             });
@@ -349,12 +384,15 @@
                     const isCorrect = option.getAttribute('data-correct') === 'true';
                     
                     // Store the question data
-                    quizData.questionData.push({
+                    const questionData = {
                         questionNumber: questionIndex + 1,
                         selectedText: optionText,
                         timeSpent: timeSpent,
                         isCorrect: isCorrect ? "Yes" : "No"
-                    });
+                    };
+                    
+                    quizData.questionData.push(questionData);
+                    debug('Answer selected for question', questionData);
 
                     // Remove previous selections
                     options.forEach(opt => {
@@ -403,6 +441,8 @@
                 
                 // Calculate total time spent on quiz
                 const totalTime = questionTimes.reduce((a, b) => a + b, 0);
+                debug('Quiz completed with score', score);
+                debug('Total time spent', totalTime);
                 
                 // Log quiz results to Google Sheets
                 logQuizResults();
@@ -448,3 +488,6 @@
     </script>
 </body>
 </html>
+```
+
+Make sure to replace the `API_ENDPOINT` value with your actual deployed Google Apps Script web app URL.
