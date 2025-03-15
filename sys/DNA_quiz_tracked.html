@@ -238,15 +238,8 @@
         
         // Quiz tracking data
         let quizData = {
-            timestamp: new Date().toISOString(),
             username: '',
-            accessTime: '',
-            url: window.location.href,
-            userAgent: navigator.userAgent,
-            questionData: [],
-            totalScore: 0,
-            totalTime: 0,
-            sheetName: 'quiz' // Specifying the sheet name to write to
+            questionData: []
         };
         
         let currentQuestionIndex = 0;
@@ -274,10 +267,6 @@
             
             // Set quiz data
             quizData.username = username;
-            quizData.accessTime = new Date().toString();
-            
-            // Log page visit
-            logPageVisit();
             
             // Show quiz content
             document.querySelector('.username-container').style.display = 'none';
@@ -288,60 +277,15 @@
             startTimer();
         });
         
-        // Function to log page visit to Google Sheets
-        function logPageVisit() {
-            const pageVisitData = {
-                action: 'pageVisit',
-                sheetName: 'quiz',
-                data: {
-                    timestamp: new Date().toISOString(),
-                    username: quizData.username,
-                    accessTime: quizData.accessTime,
-                    url: quizData.url,
-                    userAgent: quizData.userAgent
-                }
-            };
-            
-            fetch(API_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                mode: 'no-cors', // Use no-cors to avoid CORS issues
-                body: JSON.stringify(pageVisitData),
-            })
-            .then(() => {
-                console.log('Access logging request sent');
-            })
-            .catch(error => {
-                console.error('Error logging access:', error);
-            });
-        }
-        
         // Function to log quiz results to Google Sheets
         function logQuizResults() {
-            const finalData = {
-                action: 'quizComplete',
-                sheetName: 'quiz',
-                data: {
-                    timestamp: new Date().toISOString(),
-                    username: quizData.username,
-                    accessTime: quizData.accessTime,
-                    url: quizData.url,
-                    userAgent: quizData.userAgent,
-                    totalScore: quizData.totalScore,
-                    totalTime: quizData.totalTime,
-                    questionDetails: JSON.stringify(quizData.questionData)
-                }
-            };
-            
             fetch(API_ENDPOINT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 mode: 'no-cors', // Use no-cors to avoid CORS issues
-                body: JSON.stringify(finalData),
+                body: JSON.stringify(quizData),
             })
             .then(() => {
                 console.log('Quiz results logging request sent');
@@ -402,17 +346,14 @@
                     // Get the option letter and question text
                     const optionLetter = option.getAttribute('data-option');
                     const optionText = option.textContent;
-                    const questionText = question.querySelector('p').textContent;
                     const isCorrect = option.getAttribute('data-correct') === 'true';
                     
                     // Store the question data
                     quizData.questionData.push({
                         questionNumber: questionIndex + 1,
-                        questionText: questionText,
-                        selectedOption: optionLetter,
                         selectedText: optionText,
-                        isCorrect: isCorrect ? "Yes" : "No",
-                        timeSpent: timeSpent
+                        timeSpent: timeSpent,
+                        isCorrect: isCorrect ? "Yes" : "No"
                     });
 
                     // Remove previous selections
@@ -462,10 +403,6 @@
                 
                 // Calculate total time spent on quiz
                 const totalTime = questionTimes.reduce((a, b) => a + b, 0);
-                
-                // Update quiz data
-                quizData.totalScore = score;
-                quizData.totalTime = totalTime;
                 
                 // Log quiz results to Google Sheets
                 logQuizResults();
