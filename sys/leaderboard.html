@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Student Leaderboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        color: #4285f4;
+      }
+      .leaderboard {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      }
+      .leaderboard th {
+        background-color: #4285f4;
+        color: white;
+        text-align: left;
+        padding: 12px 15px;
+      }
+      .leaderboard td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #ddd;
+      }
+      .leaderboard tr:hover {
+        background-color: #f1f1f1;
+      }
+      .rank {
+        font-weight: bold;
+        text-align: center;
+        width: 60px;
+      }
+      .top-3 {
+        font-weight: bold;
+      }
+      .rank-1 {
+        background-color: gold;
+        color: black;
+      }
+      .rank-2 {
+        background-color: silver;
+        color: black;
+      }
+      .rank-3 {
+        background-color: #cd7f32; /* bronze */
+        color: black;
+      }
+      .score {
+        font-weight: bold;
+        text-align: right;
+      }
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 2s linear infinite;
+        margin: 20px auto;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .loading {
+        text-align: center;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Student Leaderboard</h1>
+    
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Loading leaderboard data...</p>
+    </div>
+    
+    <table id="leaderboard" class="leaderboard" style="display: none;">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboardBody">
+        <!-- Data will be inserted here -->
+      </tbody>
+    </table>
+    
+    <script>
+      // Configuration - Update this with your actual deployed web app URL
+      const API_URL = 'https://script.google.com/macros/s/AKfycbzEMNlA7CThJanbY_aafAOuDQwp81uSjj8ap-nS9nGYqVPN8r4iOy51itfJr9YKF6uf/exec';
+      
+      // Load the leaderboard data when the page loads
+      document.addEventListener('DOMContentLoaded', loadLeaderboard);
+      
+      function loadLeaderboard() {
+        // Use JSONP to fetch the data (no CORS needed)
+        const script = document.createElement('script');
+        script.src = `${API_URL}?callback=displayLeaderboard`;
+        document.body.appendChild(script);
+        
+        // Set a timeout in case the request fails
+        setTimeout(function() {
+          if (document.getElementById('leaderboard').style.display === 'none') {
+            showError('Request timed out. Please check your connection and try again.');
+          }
+        }, 10000);
+      }
+      
+      function displayLeaderboard(data) {
+        const tableBody = document.getElementById('leaderboardBody');
+        tableBody.innerHTML = ''; // Clear existing content
+        
+        // Add each student to the table
+        data.forEach((student, index) => {
+          const row = document.createElement('tr');
+          const rank = index + 1;
+          
+          // Add rank cell
+          const rankCell = document.createElement('td');
+          rankCell.textContent = rank;
+          rankCell.className = 'rank';
+          
+          // Add special styling for top 3
+          if (rank <= 3) {
+            rankCell.classList.add(`rank-${rank}`);
+            row.classList.add('top-3');
+          }
+          
+          // Add name cell
+          const nameCell = document.createElement('td');
+          nameCell.textContent = student.name;
+          
+          // Add score cell
+          const scoreCell = document.createElement('td');
+          scoreCell.textContent = student.score;
+          scoreCell.className = 'score';
+          
+          // Add cells to row
+          row.appendChild(rankCell);
+          row.appendChild(nameCell);
+          row.appendChild(scoreCell);
+          
+          // Add row to table
+          tableBody.appendChild(row);
+        });
+        
+        // Hide loading indicator and show table
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('leaderboard').style.display = 'table';
+      }
+      
+      function showError(error) {
+        document.getElementById('loading').innerHTML = 
+          `<p style="color: red;">Error loading leaderboard: ${error}</p>`;
+      }
+    </script>
+  </body>
+</html>
