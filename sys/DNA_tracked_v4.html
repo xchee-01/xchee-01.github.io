@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding DNA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .dna-image {
+            display: block;
+            max-width: 400px;
+            margin: 20px auto;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .logout-btn {
+            display: block;
+            width: 100px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #e74c3c;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">Loading...</div>
+
+    <div id="content" style="display: none;">
+        <h1>What is DNA?</h1>
+        
+        <img src="/api/placeholder/400/250" alt="DNA Double Helix" class="dna-image">
+        
+        <p>DNA, or Deoxyribonucleic Acid, is the fundamental blueprint of life. It's a complex molecule that carries the genetic instructions used in the growth, development, functioning, and reproduction of all known living organisms.</p>
+        
+        <h2>Key Features of DNA</h2>
+        
+        <p>DNA is often described as a double helix, resembling a twisted ladder. It consists of:</p>
+        
+        <ul>
+            <li><strong>Nucleotides:</strong> The basic building blocks of DNA, composed of a sugar, a phosphate group, and a nitrogen-containing base.</li>
+            <li><strong>Base Pairs:</strong> The rungs of the DNA ladder, where specific bases always pair together: Adenine (A) with Thymine (T), and Cytosine (C) with Guanine (G).</li>
+            <li><strong>Genetic Code:</strong> The specific sequence of these bases determines the genetic instructions for an organism.</li>
+        </ul>
+        
+        <p>Every cell in your body contains DNA, which acts like a unique genetic fingerprint. It determines everything from your eye color to your potential health risks, passing down traits from parents to children.</p>
+
+        <a href="#" id="logout-link" class="logout-btn">Logout</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const contentDiv = document.getElementById('content');
+
+            // Robust Authentication Check Function
+            function checkAuthentication() {
+                try {
+                    // Retrieve accounts from localStorage
+                    const accountsData = localStorage.getItem('accounts');
+                    
+                    if (accountsData) {
+                        // Parse the JSON array of accounts
+                        const accounts = JSON.parse(accountsData);
+                        
+                        // Check if there's a valid account with username and password
+                        if (accounts && accounts.length > 0 && 
+                            accounts[0].username && 
+                            accounts[0].password) {
+                            // User is authenticated
+                            return accounts[0].username;
+                        }
+                    }
+                    
+                    // No valid authentication found
+                    return false;
+                } catch (error) {
+                    console.error('Authentication check error:', error);
+                    return false;
+                }
+            }
+
+            // Redirect to sign-in function with prevention of infinite redirect
+            function redirectToSignIn() {
+                // Check if we're already on the sign-in page to prevent redirect loop
+                if (!window.location.href.includes('signin_v1.html')) {
+                    // Store the current page URL to return after sign-in
+                    localStorage.setItem('returnUrl', window.location.href);
+                    
+                    // Redirect to sign-in page
+                    window.location.href = 'https://xchee-01.github.io/signin_v1.html';
+                }
+            }
+
+            // Main authentication and page load handling
+            function initPage() {
+                // Check authentication
+                const username = checkAuthentication();
+                
+                if (!username) {
+                    // Not authenticated, hide content and redirect
+                    contentDiv.style.display = 'none';
+                    loadingOverlay.textContent = 'Redirecting to Sign In...';
+                    redirectToSignIn();
+                    return;
+                }
+
+                // Authenticated, show content
+                loadingOverlay.style.display = 'none';
+                contentDiv.style.display = 'block';
+
+                // Logout functionality
+                const logoutLink = document.getElementById('logout-link');
+                logoutLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    
+                    // Remove accounts from localStorage
+                    localStorage.removeItem('accounts');
+                    
+                    // Redirect to sign-in page
+                    window.location.href = 'https://xchee-01.github.io/signin_v1.html';
+                });
+            }
+
+            // Prevent multiple authentication checks
+            let isProcessing = false;
+            function safeInitPage() {
+                if (!isProcessing) {
+                    isProcessing = true;
+                    try {
+                        initPage();
+                    } catch (error) {
+                        console.error('Error during page initialization:', error);
+                    } finally {
+                        isProcessing = false;
+                    }
+                }
+            }
+
+            // Run authentication check
+            safeInitPage();
+        });
+    </script>
+</body>
+</html>
