@@ -28,29 +28,6 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .logout-btn {
-            display: block;
-            width: 100px;
-            margin: 20px auto;
-            padding: 10px;
-            background-color: #e74c3c;
-            color: white;
-            text-align: center;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
     </style>
 </head>
 <body>
@@ -74,8 +51,6 @@
         </ul>
         
         <p>Every cell in your body contains DNA, which acts like a unique genetic fingerprint. It determines everything from your eye color to your potential health risks, passing down traits from parents to children.</p>
-
-        <a href="#" id="logout-link" class="logout-btn">Logout</a>
     </div>
 
     <script>
@@ -98,7 +73,7 @@
                             accounts[0].username && 
                             accounts[0].password) {
                             // User is authenticated
-                            return accounts[0].username;
+                            return true;
                         }
                     }
                     
@@ -118,16 +93,16 @@
                     localStorage.setItem('returnUrl', window.location.href);
                     
                     // Redirect to sign-in page
-                    window.location.href = 'https://xchee-01.github.io/sys/signin_v1.html';
+                    window.location.href = 'signin_v1.html';
                 }
             }
 
             // Main authentication and page load handling
             function initPage() {
                 // Check authentication
-                const username = checkAuthentication();
+                const isAuthenticated = checkAuthentication();
                 
-                if (!username) {
+                if (!isAuthenticated) {
                     // Not authenticated, hide content and redirect
                     contentDiv.style.display = 'none';
                     loadingOverlay.textContent = 'Redirecting to Sign In...';
@@ -138,37 +113,15 @@
                 // Authenticated, show content
                 loadingOverlay.style.display = 'none';
                 contentDiv.style.display = 'block';
-
-                // Logout functionality
-                const logoutLink = document.getElementById('logout-link');
-                logoutLink.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    
-                    // Remove accounts from localStorage
-                    localStorage.removeItem('accounts');
-                    
-                    // Redirect to sign-in page
-                    window.location.href = 'https://xchee-01.github.io/sys/signin_v1.html';
-                });
             }
 
-            // Prevent multiple authentication checks
-            let isProcessing = false;
-            function safeInitPage() {
-                if (!isProcessing) {
-                    isProcessing = true;
-                    try {
-                        initPage();
-                    } catch (error) {
-                        console.error('Error during page initialization:', error);
-                    } finally {
-                        isProcessing = false;
-                    }
-                }
+            // Run authentication check with error handling
+            try {
+                initPage();
+            } catch (error) {
+                console.error('Page initialization error:', error);
+                redirectToSignIn();
             }
-
-            // Run authentication check
-            safeInitPage();
         });
     </script>
 </body>
