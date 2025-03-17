@@ -1,0 +1,247 @@
+<!-- This has a sign in function. If user details not found, redirect to sign in page -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding DNA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .dna-image {
+            display: block;
+            max-width: 400px;
+            margin: 20px auto;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        /* Hidden session info box */
+        .user-info-box {
+            display: none; /* Hide the session info box */
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f4fc;
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .user-info-box h3 {
+            color: #2c3e50;
+            margin-top: 0;
+            border-bottom: 1px solid #3498db;
+            padding-bottom: 5px;
+        }
+        .user-info-item {
+            margin: 8px 0;
+        }
+        .user-info-label {
+            font-weight: bold;
+            color: #2980b9;
+        }
+        #status-message {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            display: none; /* Always hide status messages */
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>What is DNA?</h1>
+    
+    <img src="/api/placeholder/400/250" alt="DNA Double Helix" class="dna-image">
+    
+    <p>DNA, or Deoxyribonucleic Acid, is the fundamental blueprint of life. It's a complex molecule that carries the genetic instructions used in the growth, development, functioning, and reproduction of all known living organisms.</p>
+    
+    <h2>Key Features of DNA</h2>
+    
+    <p>DNA is often described as a double helix, resembling a twisted ladder. It consists of:</p>
+    
+    <ul>
+        <li><strong>Nucleotides:</strong> The basic building blocks of DNA, composed of a sugar, a phosphate group, and a nitrogen-containing base.</li>
+        <li><strong>Base Pairs:</strong> The rungs of the DNA ladder, where specific bases always pair together: Adenine (A) with Thymine (T), and Cytosine (C) with Guanine (G).</li>
+        <li><strong>Genetic Code:</strong> The specific sequence of these bases determines the genetic instructions for an organism.</li>
+    </ul>
+    
+    <p>Every cell in your body contains DNA, which acts like a unique genetic fingerprint. It determines everything from your eye color to your potential health risks, passing down traits from parents to children.</p>
+    
+    <!-- Hidden User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+
+    <script>
+        // Replace with your deployed Google Apps Script Web App URL
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh99ycPO8R0GZYlFaznQqsF2bilaKkjuQvh1OuKa7owmc7TODLwEQAstoNADw5x4eL/exec';
+        
+        // Authentication and session management script
+        (function() {
+            // Function to check if user is authenticated
+            function checkAuthentication() {
+                try {
+                    // Retrieve accounts from localStorage
+                    const accountsData = localStorage.getItem('accounts');
+                    
+                    if (accountsData) {
+                        // Parse the JSON array of accounts
+                        const accounts = JSON.parse(accountsData);
+                        
+                        // Check if there's a valid account with username and password
+                        if (accounts && accounts.length > 0 && 
+                            accounts[0].username && 
+                            accounts[0].password) {
+                            // User is authenticated, proceed normally
+                            return true;
+                        }
+                    }
+                    
+                    // No valid authentication found
+                    return false;
+                } catch (error) {
+                    console.error('Authentication check error:', error);
+                    return false;
+                }
+            }
+
+            // Function to redirect to sign-in page
+            function redirectToSignIn() {
+                // Store the current page URL to return after sign-in
+                const currentUrl = window.location.href;
+                localStorage.setItem('returnUrl', currentUrl);
+                
+                // Redirect to sign-in page
+                window.location.href = 'https://xchee-01.github.io/signin_v1.html';
+            }
+
+            // Function to check and handle authentication on page load
+            function handleAuthentication() {
+                // Check if user is authenticated
+                if (!checkAuthentication()) {
+                    // Not authenticated, redirect to sign-in
+                    redirectToSignIn();
+                }
+            }
+
+            // Function to get username from the accounts array in localStorage
+            function getUsername() {
+                try {
+                    // Try to get the accounts data from localStorage
+                    const accountsData = localStorage.getItem('accounts');
+                    
+                    if (accountsData) {
+                        // Parse the JSON array of accounts
+                        const accounts = JSON.parse(accountsData);
+                        
+                        // If accounts exist and there's at least one account with a username
+                        if (accounts && accounts.length > 0 && accounts[0].username) {
+                            return accounts[0].username; // Return the first account's username
+                        }
+                    }
+                    
+                    // If we couldn't find a username or there was an error, return a default
+                    return 'Guest_' + Math.floor(Math.random() * 10000);
+                } catch (error) {
+                    console.error('Error getting username from accounts:', error);
+                    return 'Guest_' + Math.floor(Math.random() * 10000);
+                }
+            }
+            
+            // Collect session information but don't display it
+            const username = getUsername();
+            const now = new Date();
+            const accessTime = now.toLocaleString();
+            const currentUrl = window.location.href;
+            const userAgent = navigator.userAgent;
+            
+            // Update the hidden display elements
+            document.getElementById('username').textContent = username;
+            document.getElementById('access-time').textContent = accessTime;
+            document.getElementById('current-url').textContent = currentUrl;
+            
+            // Function to record status without showing it to users
+            function logStatus(isSuccess, message) {
+                // Just log to console instead of showing to user
+                if (isSuccess) {
+                    console.log('Success:', message);
+                } else {
+                    console.error('Error:', message);
+                }
+            }
+            
+            // Log the visit to spreadsheet using fetch API
+            function logVisit() {
+                // Prepare data to send
+                const data = {
+                    username: username,
+                    accessTime: accessTime,
+                    url: currentUrl,
+                    userAgent: userAgent
+                };
+                
+                // Send data to Google Apps Script
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors' // Important for cross-origin requests to Google Apps Script
+                })
+                .then(response => {
+                    // Due to 'no-cors' mode, we won't be able to read the response
+                    logStatus(true, 'Visit logged successfully!');
+                })
+                .catch(error => {
+                    // Log error but don't show to user
+                    logStatus(false, 'Error logging visit: ' + error.message);
+                });
+            }
+            
+            // Run authentication and log visit when the page loads
+            window.addEventListener('load', function() {
+                // First handle authentication
+                handleAuthentication();
+                
+                // Then log the visit
+                logVisit();
+            });
+        })();
+    </script>
+</body>
+</html>
