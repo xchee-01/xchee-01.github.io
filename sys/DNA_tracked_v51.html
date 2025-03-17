@@ -68,43 +68,6 @@
     </style>
 </head>
 <body>
-    <!-- Authentication check script - runs immediately -->
-    <script>
-        // Check if username exists in localStorage
-        function checkAuthentication() {
-            try {
-                const accountsData = localStorage.getItem('accounts');
-                
-                if (!accountsData) {
-                    // No accounts data found, redirect to signin
-                    window.location.href = 'https://xchee-01.github.io/sys/signin_v2.html';
-                    return false;
-                }
-                
-                // Parse the JSON array of accounts
-                const accounts = JSON.parse(accountsData);
-                
-                // Check if accounts exist and there's at least one account with a username
-                if (!accounts || accounts.length === 0 || !accounts[0].username) {
-                    // No valid username found, redirect to signin
-                    window.location.href = 'https://xchee-01.github.io/sys/signin_v2.html';
-                    return false;
-                }
-                
-                // Authentication passed
-                return true;
-            } catch (error) {
-                console.error('Error checking authentication:', error);
-                // On error, redirect to signin to be safe
-                window.location.href = 'https://xchee-01.github.io/sys/signin_v2.html';
-                return false;
-            }
-        }
-        
-        // Run the authentication check immediately
-        checkAuthentication();
-    </script>
-
     <h1>What is DNA?</h1>
     
     <img src="/api/placeholder/400/250" alt="DNA Double Helix" class="dna-image">
@@ -180,6 +143,37 @@
             }
         }
         
+        // Function to check authentication and redirect if needed
+        function checkAuthentication() {
+            try {
+                const accountsData = localStorage.getItem('accounts');
+                
+                if (!accountsData) {
+                    // No accounts data found, redirect to signin
+                    window.location.href = 'https://xchee-01.github.io/sys/signin_v2.html';
+                    return false;
+                }
+                
+                // Parse the JSON array of accounts
+                const accounts = JSON.parse(accountsData);
+                
+                // Check if accounts exist and there's at least one account with a username
+                if (!accounts || accounts.length === 0 || !accounts[0].username) {
+                    // No valid username found, redirect to signin
+                    window.location.href = 'https://xchee-01.github.io/sys/signin_v2.html';
+                    return false;
+                }
+                
+                // Authentication passed
+                return true;
+            } catch (error) {
+                console.error('Error checking authentication:', error);
+                // On error, redirect to signin to be safe
+                window.location.href = 'https://xchee-01.github.io/sys/signin_v2.html';
+                return false;
+            }
+        }
+        
         // Collect session information but don't display it
         const username = getUsername();
         const now = new Date();
@@ -202,8 +196,11 @@
             }
         }
         
-        // Log the visit to spreadsheet using fetch API
+        // Log the visit to spreadsheet using fetch API and then check authentication
         window.onload = function() {
+            // First, store the current URL in localStorage
+            storeCurrentUrl();
+            
             // Prepare data to send
             const data = {
                 username: username,
@@ -224,14 +221,21 @@
             .then(response => {
                 // Due to 'no-cors' mode, we won't be able to read the response
                 logStatus(true, 'Visit logged successfully!');
+                
+                // After logging the visit, check authentication
+                setTimeout(function() {
+                    checkAuthentication();
+                }, 500); // Small delay to ensure the fetch request completes
             })
             .catch(error => {
                 // Log error but don't show to user
                 logStatus(false, 'Error logging visit: ' + error.message);
+                
+                // Still check authentication even if logging fails
+                setTimeout(function() {
+                    checkAuthentication();
+                }, 500);
             });
-
-            // Store the current URL in localStorage
-            storeCurrentUrl();
         };
     </script>
 </body>
