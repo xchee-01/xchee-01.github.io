@@ -15,6 +15,6 @@
 
 **CANVAS Test_v3**
 1. [Registration: registration_v4.html](https://xchee-01.github.io/sys/registration_v4.html)
-2. [Sample: Tracked DNA page_v3: DNA_tracked_v3.html](https://xchee-01.github.io/sys/DNA_tracked_v5.html)
-3. [Sample: Tracked RNA page_v2: RNA_tracked_v2.html](https://xchee-01.github.io/sys/RNA_tracked_v5.html)
+2. [Sample: Tracked DNA page_v3: DNA_tracked_v5.html](https://xchee-01.github.io/sys/DNA_tracked_v5.html)
+3. [Sample: Tracked RNA page_v2: RNA_tracked_v5.html](https://xchee-01.github.io/sys/RNA_tracked_v5.html)
 4. [Sample: Track_quiz_page_v2: DNA_quiz_tracked_v2.html](https://github.com/xchee-01/xchee-01.github.io/blob/main/sys/DNA_quiz_tracked_v2.html)
