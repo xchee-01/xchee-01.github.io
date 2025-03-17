@@ -28,6 +28,18 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -58,70 +70,30 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             const contentDiv = document.getElementById('content');
 
-            // Robust Authentication Check Function
-            function checkAuthentication() {
-                try {
-                    // Retrieve accounts from localStorage
-                    const accountsData = localStorage.getItem('accounts');
-                    
-                    if (accountsData) {
-                        // Parse the JSON array of accounts
-                        const accounts = JSON.parse(accountsData);
-                        
-                        // Check if there's a valid account with username and password
-                        if (accounts && accounts.length > 0 && 
-                            accounts[0].username && 
-                            accounts[0].password) {
-                            // User is authenticated
-                            return true;
-                        }
-                    }
-                    
-                    // No valid authentication found
-                    return false;
-                } catch (error) {
-                    console.error('Authentication check error:', error);
-                    return false;
-                }
+            // Check if user is authenticated
+            function isAuthenticated() {
+                return localStorage.getItem('isLoggedIn') === 'true';
             }
 
-            // Redirect to sign-in function with prevention of infinite redirect
+            // Redirect to sign-in page
             function redirectToSignIn() {
-                // Check if we're already on the sign-in page to prevent redirect loop
-                if (!window.location.href.includes('signin_v1.html')) {
-                    // Store the current page URL to return after sign-in
-                    localStorage.setItem('returnUrl', window.location.href);
-                    
-                    // Redirect to sign-in page
-                    window.location.href = 'signin_v1.html';
-                }
+                window.location.href = 'signin_v1.html';
             }
 
-            // Main authentication and page load handling
+            // Initialize page based on authentication status
             function initPage() {
-                // Check authentication
-                const isAuthenticated = checkAuthentication();
-                
-                if (!isAuthenticated) {
-                    // Not authenticated, hide content and redirect
-                    contentDiv.style.display = 'none';
-                    loadingOverlay.textContent = 'Redirecting to Sign In...';
+                if (!isAuthenticated()) {
                     redirectToSignIn();
                     return;
                 }
 
-                // Authenticated, show content
+                // User is authenticated
                 loadingOverlay.style.display = 'none';
                 contentDiv.style.display = 'block';
             }
 
-            // Run authentication check with error handling
-            try {
-                initPage();
-            } catch (error) {
-                console.error('Page initialization error:', error);
-                redirectToSignIn();
-            }
+            // Run initialization immediately
+            initPage();
         });
     </script>
 </body>
