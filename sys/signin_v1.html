@@ -66,151 +66,64 @@
     </div>
 
     <script>
-        // Dynamic Redirect Authentication Script
-        (function() {
-            // Function to get the referring or last visited page
-            function getOriginalPageUrl() {
-                // Try multiple methods to get the original page URL
-                let originalUrl = 
-                    // First, try document.referrer
-                    document.referrer ||
-                    // Then, try the last visited page from browser history
-                    (window.history.length > 1 ? window.history.state?.previousUrl : null) ||
-                    // Fallback to current origin (home page)
-                    window.location.origin;
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('auth-form');
+            const errorMessage = document.getElementById('error-message');
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
                 
-                // Validate the URL
-                try {
-                    // Ensure it's a valid URL and from the same origin
-                    const url = new URL(originalUrl);
-                    
-                    // Optional: Add additional domain validation if needed
-                    // For example, only allow URLs from your domain
-                    // if (url.hostname === 'yourdomain.com') {
-                        return originalUrl;
-                    // }
-                } catch (error) {
-                    // If URL is invalid, return origin
-                    console.warn('Invalid original URL, falling back to origin:', error);
-                    return window.location.origin;
+                // Get input values
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                // Basic validation
+                if (!username || !password) {
+                    errorMessage.textContent = 'Please enter both username and password';
+                    return;
                 }
-            }
 
-            // Function to store the original page URL
-            function storeOriginalPageUrl() {
-                const originalUrl = getOriginalPageUrl();
-                
-                // Store the URL in localStorage
-                try {
-                    localStorage.setItem('returnUrl', originalUrl);
-                } catch (error) {
-                    console.error('Error storing return URL:', error);
-                }
-            }
-
-            // Function to handle post-registration/login redirect
-            function handlePostRegistrationRedirect() {
-                const returnUrl = localStorage.getItem('returnUrl');
-                
-                if (returnUrl) {
-                    try {
-                        // Validate URL
-                        const parsedUrl = new URL(returnUrl);
-                        
-                        // Optional: Add domain validation
-                        // if (parsedUrl.hostname === 'yourdomain.com') {
-                            // Remove the stored URL to prevent reuse
-                            localStorage.removeItem('returnUrl');
-                            
-                            // Redirect to the original page
-                            window.location.href = returnUrl;
-                            return true;
-                        // }
-                    } catch (error) {
-                        console.error('Invalid return URL:', error);
-                    }
-                }
-                
-                return false;
-            }
-
-            document.addEventListener('DOMContentLoaded', function() {
-                const form = document.getElementById('auth-form');
-                const errorMessage = document.getElementById('error-message');
-
-                // Store original page URL before anything else
-                storeOriginalPageUrl();
-
-                form.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    
-                    // Get input values
-                    const username = document.getElementById('username').value;
-                    const password = document.getElementById('password').value;
-
-                    // Basic validation
-                    if (!username || !password) {
-                        errorMessage.textContent = 'Please enter both username and password';
-                        return;
-                    }
-
-                    // Create account object
-                    const account = {
-                        username: username,
-                        password: password
-                    };
-
-                    // Store account in localStorage
-                    try {
-                        // Create or update accounts array
-                        let accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
-                        
-                        // Check if username already exists
-                        const existingUserIndex = accounts.findIndex(acc => acc.username === username);
-                        
-                        if (existingUserIndex !== -1) {
-                            // Update existing account
-                            accounts[existingUserIndex] = account;
-                        } else {
-                            // Add new account
-                            accounts.push(account);
-                        }
-
-                        // Save updated accounts
-                        localStorage.setItem('accounts', JSON.stringify(accounts));
-
-                        // Retrieve the return URL
-                        const returnUrl = localStorage.getItem('returnUrl') || window.location.origin;
-
-                        // Clear any previous error messages
-                        errorMessage.textContent = '';
-
-                        // Redirect to the original page or default page
-                        window.location.href = returnUrl;
-                    } catch (error) {
-                        errorMessage.textContent = 'Registration failed. Please try again.';
-                        console.error('Registration error:', error);
-                    }
-                });
-
-                // Check for return URL on page load
-                handlePostRegistrationRedirect();
-            });
-
-            // Capture navigation events to track previous page
-            if (window.history.pushState) {
-                const originalPushState = window.history.pushState;
-                window.history.pushState = function(state, title, url) {
-                    // If state doesn't exist, create it
-                    state = state || {};
-                    // Store the previous URL
-                    state.previousUrl = window.location.href;
-                    
-                    // Call the original pushState method
-                    return originalPushState.apply(window.history, arguments);
+                // Create account object
+                const account = {
+                    username: username,
+                    password: password
                 };
-            }
-        })();
+
+                try {
+                    // Create or update accounts array
+                    let accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+                    
+                    // Check if username already exists
+                    const existingUserIndex = accounts.findIndex(acc => acc.username === username);
+                    
+                    if (existingUserIndex !== -1) {
+                        // Update existing account
+                        accounts[existingUserIndex] = account;
+                    } else {
+                        // Add new account
+                        accounts.push(account);
+                    }
+
+                    // Save updated accounts
+                    localStorage.setItem('accounts', JSON.stringify(accounts));
+
+                    // Clear any previous error messages
+                    errorMessage.textContent = '';
+
+                    // Retrieve the return URL, defaulting to current origin if not set
+                    const returnUrl = localStorage.getItem('returnUrl') || window.location.origin;
+                    
+                    // Remove the stored return URL
+                    localStorage.removeItem('returnUrl');
+
+                    // Redirect to the original page or a default page
+                    window.location.href = returnUrl;
+                } catch (error) {
+                    errorMessage.textContent = 'Registration failed. Please try again.';
+                    console.error('Registration error:', error);
+                }
+            });
+        });
     </script>
 </body>
 </html>
