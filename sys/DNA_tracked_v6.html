@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding DNA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .dna-image {
+            display: block;
+            max-width: 400px;
+            margin: 20px auto;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>What is DNA?</h1>
+    
+    <img src="/api/placeholder/400/250" alt="DNA Double Helix" class="dna-image">
+    
+    <p>DNA, or Deoxyribonucleic Acid, is the fundamental blueprint of life. It's a complex molecule that carries the genetic instructions used in the growth, development, functioning, and reproduction of all known living organisms.</p>
+    
+    <h2>Key Features of DNA</h2>
+    
+    <p>DNA is often described as a double helix, resembling a twisted ladder. It consists of:</p>
+    
+    <ul>
+        <li><strong>Nucleotides:</strong> The basic building blocks of DNA, composed of a sugar, a phosphate group, and a nitrogen-containing base.</li>
+        <li><strong>Base Pairs:</strong> The rungs of the DNA ladder, where specific bases always pair together: Adenine (A) with Thymine (T), and Cytosine (C) with Guanine (G).</li>
+        <li><strong>Genetic Code:</strong> The specific sequence of these bases determines the genetic instructions for an organism.</li>
+    </ul>
+    
+    <p>Every cell in your body contains DNA, which acts like a unique genetic fingerprint. It determines everything from your eye color to your potential health risks, passing down traits from parents to children.</p>
+
+    <script>
+        // Replace with your deployed Google Apps Script Web App URL
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh99ycPO8R0GZYlFaznQqsF2bilaKkjuQvh1OuKa7owmc7TODLwEQAstoNADw5x4eL/exec';
+        const SIGN_IN_URL = 'https://xchee-01.github.io/sys/signin_v2.html';
+        
+        // Optimized function to get username
+        function getUsername() {
+            try {
+                const accountsData = localStorage.getItem('accounts');
+                if (accountsData) {
+                    const accounts = JSON.parse(accountsData);
+                    return (accounts && accounts.length > 0 && accounts[0].username) 
+                        ? accounts[0].username 
+                        : 'Guest_' + Math.floor(Math.random() * 10000);
+                }
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Username retrieval error:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Streamlined URL storage
+        function storeCurrentUrl() {
+            try {
+                localStorage.setItem('lastVisitedUrl', window.location.href);
+            } catch (error) {
+                console.error('URL storage error:', error);
+            }
+        }
+        
+        // Simplified authentication check
+        function checkAuthentication() {
+            const accountsData = localStorage.getItem('accounts');
+            if (!accountsData) {
+                redirectToSignIn();
+                return false;
+            }
+            
+            try {
+                const accounts = JSON.parse(accountsData);
+                if (!accounts || accounts.length === 0 || !accounts[0].username) {
+                    redirectToSignIn();
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Authentication check error:', error);
+                redirectToSignIn();
+                return false;
+            }
+        }
+        
+        // Centralized redirect function
+        function redirectToSignIn() {
+            storeCurrentUrl();
+            window.location.href = SIGN_IN_URL;
+        }
+        
+        // Async logging function
+        async function logVisit() {
+            const username = getUsername();
+            const now = new Date();
+            const data = {
+                username: username,
+                accessTime: now.toLocaleString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            };
+            
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+                console.log('Visit logged successfully');
+            } catch (error) {
+                console.error('Visit logging error:', error);
+            }
+        }
+        
+        // Optimized initialization
+        function init() {
+            // Store URL immediately
+            storeCurrentUrl();
+            
+            // Async logging
+            logVisit();
+            
+            // Check authentication
+            if (!checkAuthentication()) {
+                return; // Stop further execution if redirecting
+            }
+        }
+        
+        // Run initialization as soon as possible
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
