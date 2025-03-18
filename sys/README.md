@@ -20,11 +20,11 @@
 4. [Sample: Track_quiz_page_v2: DNA_quiz_tracked_v2.html](https://github.com/xchee-01/xchee-01.github.io/sys/DNA_quiz_tracked_v2.html)
 
 **Work in progress**
-1. [DNA_tracked_v6](https://github.com/xchee-01/sys/DNA_tracked_v6.html)
+1. [DNA_tracked_v6](https://xchee-01.github.io/sys/DNA_tracked_v6.html)
 
 This allows for the page to be tracked. If students are not logged in, they will be directed to log in to the page. 
 
-2. [youtube_qna_v6](https://github.com/xchee-01/sys/youtube_qna_v6.html)
+2. [youtube_qna_v6](https://xchee-01.github.io/sys/youtube_qna_v6.html)
 
 Allows to track student page visit and also their behaviour on interacting with you tube. 
 OUTSTANDING: What happens if students watch the video half way? How would the data be collected?
