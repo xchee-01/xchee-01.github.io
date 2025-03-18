@@ -428,4 +428,182 @@
             </div>
             <div class="user-info-item">
                 <span class="user-info-label">Access Time:</span>
-                <span id="
+                <span id="access-time">Loading...</span>
+            </div>
+            <div class="user-info-item">
+                <span class="user-info-label">Current URL:</span>
+                <span id="current-url">Loading...</span>
+            </div>
+            <div id="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Replace with your deployed Google Apps Script Web App URL
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh99ycPO8R0GZYlFaznQqsF2bilaKkjuQvh1OuKa7owmc7TODLwEQAstoNADw5x4eL/exec';
+        const SIGN_IN_URL = 'https://xchee-01.github.io/EBPHM/1_signin.html';
+        
+        // Sidebar navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            // Add smooth scrolling to nav links
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Get the target section
+                    const targetId = this.getAttribute('href');
+                    const targetSection = document.querySelector(targetId);
+                    
+                    // Scroll to the target section
+                    targetSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                });
+            });
+            
+            // Set active nav item based on scroll position
+            window.addEventListener('scroll', function() {
+                const scrollPosition = window.scrollY;
+                
+                // Get all sections
+                const sections = document.querySelectorAll('section');
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - 100;
+                    const sectionHeight = section.offsetHeight;
+                    const sectionId = section.getAttribute('id');
+                    
+                    if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+                        document.querySelectorAll('.nav-link').forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === '#' + sectionId) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+        
+        // Optimized function to get username
+        function getUsername() {
+            try {
+                const accountsData = localStorage.getItem('accounts');
+                if (accountsData) {
+                    const accounts = JSON.parse(accountsData);
+                    return (accounts && accounts.length > 0 && accounts[0].username) 
+                        ? accounts[0].username 
+                        : 'Guest_' + Math.floor(Math.random() * 10000);
+                }
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Username retrieval error:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Streamlined URL storage
+        function storeCurrentUrl() {
+            try {
+                localStorage.setItem('lastVisitedUrl', window.location.href);
+            } catch (error) {
+                console.error('URL storage error:', error);
+            }
+        }
+        
+        // Simplified authentication check
+        function checkAuthentication() {
+            const accountsData = localStorage.getItem('accounts');
+            if (!accountsData) {
+                redirectToSignIn();
+                return false;
+            }
+            
+            try {
+                const accounts = JSON.parse(accountsData);
+                if (!accounts || accounts.length === 0 || !accounts[0].username) {
+                    redirectToSignIn();
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Authentication check error:', error);
+                redirectToSignIn();
+                return false;
+            }
+        }
+        
+        // Centralized redirect function
+        function redirectToSignIn() {
+            storeCurrentUrl();
+            window.location.href = SIGN_IN_URL;
+        }
+        
+        // Async logging function
+        async function logVisit() {
+            const username = getUsername();
+            const now = new Date();
+            const data = {
+                username: username,
+                accessTime: now.toLocaleString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            };
+            
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+                console.log('Visit logged successfully');
+            } catch (error) {
+                console.error('Visit logging error:', error);
+            }
+        }
+        
+        // For displaying in hidden user info box
+        function updateUserInfoDisplay() {
+            const username = getUsername();
+            const now = new Date();
+            document.getElementById('username').textContent = username;
+            document.getElementById('access-time').textContent = now.toLocaleString();
+            document.getElementById('current-url').textContent = window.location.href;
+        }
+        
+        // Optimized initialization
+        function init() {
+            // Store URL immediately
+            storeCurrentUrl();
+            
+            // Update user info display
+            updateUserInfoDisplay();
+            
+            // Check authentication
+            if (!checkAuthentication()) {
+                return; // Stop further execution if redirecting
+            }
+            
+            // Async logging
+            logVisit();
+        }
+        
+        // Run initialization as soon as possible
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
