@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive YouTube Video with Questions</title>
+    <style>
+        :root {
+            /* NUS Color Palette */
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #7BAFD4;
+            --nus-light-orange: #F5A623;
+            --nus-grey: #4A4A4A;
+            --nus-light-grey: #F2F2F2;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 25px;
+            background-color: #FAFAFA;
+            color: var(--nus-grey);
+            line-height: 1.6;
+        }
+        
+        h1 {
+            color: var(--nus-blue);
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 3px solid var(--nus-orange);
+            padding-bottom: 15px;
+        }
+        
+        #videoContainer {
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        #player {
+            width: 100%;
+        }
+        
+        #questionContainer {
+            display: none;
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-orange);
+            transition: all 0.3s ease;
+        }
+        
+        #questionText {
+            color: var(--nus-blue);
+            margin-top: 0;
+            font-size: 1.4rem;
+        }
+        
+        .option {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: var(--nus-light-grey);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 4px solid var(--nus-light-blue);
+        }
+        
+        .option:hover {
+            background-color: #E8E8E8;
+            transform: translateX(5px);
+        }
+        
+        #feedback {
+            margin-top: 20px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        #continueButton {
+            display: none;
+            margin: 20px auto 0;
+            padding: 12px 30px;
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        #continueButton:hover {
+            background-color: #00326A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: var(--nus-light-grey);
+            height: 8px;
+            border-radius: 4px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: var(--nus-orange);
+            transition: width 0.3s ease;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Learning Experience</h1>
+    
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    
+    <div id="videoContainer">
+        <!-- YouTube video will be embedded here -->
+        <div id="player"></div>
+    </div>
+    
+    <div id="questionContainer">
+        <h2 id="questionText">Question goes here</h2>
+        <div id="options"></div>
+        <div id="feedback"></div>
+        <button id="continueButton">Continue Video</button>
+    </div>
+    
+    <footer>
+        <p>Interactive learning module | Powered by YouTube API</p>
+    </footer>
+    
+    <script>
+        // Initialize variables
+        let player;
+        let currentQuestion = 0;
+        let totalQuestions = 3;
+        
+        // Define the questions to ask at specific timestamps (in seconds)
+        const questions = [
+            {
+                time: 20, // Pause at 20 seconds
+                question: "What are we observing in this timelapse sequence?",
+                options: [
+                    { text: "Growth of plants over time", correct: true },
+                    { text: "Movement of clouds in the sky", correct: false },
+                    { text: "Erosion of rock formations", correct: false }
+                ]
+            },
+            {
+                time: 40, // Pause at 40 seconds
+                question: "What natural phenomenon is highlighted in this segment?",
+                options: [
+                    { text: "Seasonal color changes", correct: false },
+                    { text: "Weather patterns affecting landscapes", correct: true },
+                    { text: "Animal migration patterns", correct: false }
+                ]
+            },
+            {
+                time: 60, // Pause at 60 seconds
+                question: "What is a key message conveyed by this timelapse video?",
+                options: [
+                    { text: "The rapid pace of urban development", correct: false },
+                    { text: "The beauty of astronomical events", correct: false },
+                    { text: "The dynamic nature of Earth's ecosystems", correct: true }
+                ]
+            }
+        ];
+        
+        // Load YouTube API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        
+        // Create YouTube player when API is ready
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '480',
+                width: '100%',
+                videoId: 'RGPLisd74Ds', // BBC Earth Timelapse video
+                playerVars: {
+                    'playsinline': 1,
+                    'modestbranding': 1,
+                    'rel': 0,
+                    'controls': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+        
+        // When player is ready
+        function onPlayerReady(event) {
+            console.log("Player is ready");
+            updateProgressBar(0);
+            // You can auto-play if desired
+            // event.target.playVideo();
+        }
+        
+        // Check for timestamps to show questions
+        function onPlayerStateChange(event) {
+            // Check current time every second while the video is playing
+            if (event.data == YT.PlayerState.PLAYING) {
+                checkTime();
+            }
+        }
+        
+        // Track which questions have been asked
+        let askedQuestions = [];
+        
+        // Check if we need to pause for a question
+        function checkTime() {
+            const currentTime = Math.floor(player.getCurrentTime());
+            
+            // Update progress bar based on which questions have been answered
+            updateProgressBar(askedQuestions.length / totalQuestions * 100);
+            
+            // Check if we should show a question
+            for (let i = 0; i < questions.length; i++) {
+                // Only show questions that haven't been asked yet
+                if (questions[i].time === currentTime && !askedQuestions.includes(i)) {
+                    player.pauseVideo();
+                    askedQuestions.push(i); // Mark this question as asked
+                    showQuestion(i);
+                    return;
+                }
+            }
+            
+            // Continue checking time if no question is shown
+            setTimeout(checkTime, 1000);
+        }
+        
+        // Display a question
+        function showQuestion(index) {
+            currentQuestion = index;
+            const questionData = questions[index];
+            
+            // Set question text
+            document.getElementById("questionText").textContent = questionData.question;
+            
+            // Clear previous options
+            const optionsContainer = document.getElementById("options");
+            optionsContainer.innerHTML = "";
+            
+            // Add options
+            questionData.options.forEach((option, i) => {
+                const optionElement = document.createElement("div");
+                optionElement.className = "option";
+                optionElement.textContent = option.text;
+                optionElement.onclick = function() { checkAnswer(i); };
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // Reset feedback and continue button
+            document.getElementById("feedback").textContent = "";
+            document.getElementById("feedback").style.backgroundColor = "transparent";
+            document.getElementById("continueButton").style.display = "none";
+            
+            // Show question container with animation
+            const questionContainer = document.getElementById("questionContainer");
+            questionContainer.style.display = "block";
+            setTimeout(() => {
+                questionContainer.style.opacity = "1";
+                questionContainer.style.transform = "translateY(0)";
+            }, 10);
+        }
+        
+        // Check the selected answer
+        function checkAnswer(selectedIndex) {
+            const questionData = questions[currentQuestion];
+            const isCorrect = questionData.options[selectedIndex].correct;
+            
+            // Disable all option clicks after answer is selected
+            const optionElements = document.querySelectorAll('.option');
+            optionElements.forEach(element => {
+                element.style.pointerEvents = 'none';
+                element.style.opacity = '0.7';
+            });
+            
+            // Show feedback
+            const feedbackElement = document.getElementById("feedback");
+            if (isCorrect) {
+                feedbackElement.textContent = "Correct! Well done!";
+                feedbackElement.style.color = "white";
+                feedbackElement.style.backgroundColor = "#4CAF50";
+                
+                // Highlight correct answer
+                optionElements[selectedIndex].style.backgroundColor = "#DFF2BF";
+                optionElements[selectedIndex].style.borderLeft = "4px solid #4CAF50";
+                optionElements[selectedIndex].style.opacity = "1";
+                
+                // Show continue button immediately
+                document.getElementById("continueButton").style.display = "block";
+                
+                // Update progress
+                updateProgressBar(askedQuestions.length / totalQuestions * 100);
+            } else {
+                feedbackElement.textContent = "Incorrect. Try again.";
+                feedbackElement.style.color = "white";
+                feedbackElement.style.backgroundColor = "#F44336";
+                
+                // Highlight incorrect answer in red
+                optionElements[selectedIndex].style.backgroundColor = "#FFBABA";
+                optionElements[selectedIndex].style.borderLeft = "4px solid #F44336";
+                
+                // Re-enable options for another try
+                setTimeout(() => {
+                    optionElements.forEach(element => {
+                        element.style.pointerEvents = 'auto';
+                        element.style.opacity = '1';
+                    });
+                    optionElements[selectedIndex].style.opacity = '0.7'; // Keep the wrong answer faded
+                }, 800);
+                
+                return; // Don't show continue button if answer is wrong
+            }
+        }
+        
+        // Set up event listener for the continue button
+        document.getElementById("continueButton").addEventListener("click", function() {
+            // Hide question container
+            const questionContainer = document.getElementById("questionContainer");
+            questionContainer.style.opacity = "0";
+            questionContainer.style.transform = "translateY(10px)";
+            
+            setTimeout(() => {
+                questionContainer.style.display = "none";
+                
+                // Reset the options for next time
+                const optionElements = document.querySelectorAll('.option');
+                optionElements.forEach(element => {
+                    element.style.pointerEvents = 'auto';
+                    element.style.opacity = '1';
+                    element.style.backgroundColor = 'var(--nus-light-grey)';
+                    element.style.borderLeft = '4px solid var(--nus-light-blue)';
+                });
+                
+                // Reset feedback
+                document.getElementById("feedback").style.backgroundColor = "transparent";
+                
+                // Resume video
+                player.playVideo();
+                
+                // Start checking time again
+                setTimeout(checkTime, 1000);
+            }, 300);
+        });
+        
+        // Update progress bar
+        function updateProgressBar(percentage) {
+            document.getElementById("progressBar").style.width = percentage + "%";
+        }
+    </script>
+</body>
+</html>
