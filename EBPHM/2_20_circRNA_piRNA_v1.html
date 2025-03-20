@@ -1,1 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Coding RNAs: circRNAs and piRNAs</title>
+    <style>
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --light-blue: #e8f4fc;
+            --dark-text: #333;
+            --light-gray: #f5f5f5;
+            --sidebar-width: 280px;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--dark-text);
+            background-color: #ffffff;
+            padding-bottom: 50px;
+        }
+        
+        header {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: var(--box-shadow);
+            position: relative;
+            z-index: 10;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 2.2rem;
+        }
+        
+        .wrapper {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 20px 0;
+            z-index: 90;
+            border-right: 1px solid #eee;
+        }
+        
+        .sidebar-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--nus-blue);
+            padding: 15px 20px;
+            border-bottom: 2px solid var(--nus-orange);
+            margin-bottom: 15px;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+        
+        .sidebar-heading {
+            font-weight: bold;
+            color: var(--nus-blue);
+            padding: 10px 20px;
+            font-size: 1.1rem;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .sidebar a {
+            display: block;
+            padding: 8px 20px 8px 30px;
+            color: var(--dark-text);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar a:hover, .sidebar a.active {
+            background-color: var(--light-blue);
+            color: var(--nus-blue);
+            border-left: 3px solid var(--nus-orange);
+        }
+        
+        main {
+            flex: 1;
+            padding: 30px;
+            background-color: white;
+        }
+        
+        section {
+            scroll-margin-top: 20px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        h2 {
+            color: var(--nus-blue);
+            border-bottom: 2px solid var(--nus-orange);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        h3 {
+            color: var(--nus-blue);
+            margin: 25px 0 15px;
+            font-size: 1.4rem;
+        }
+        
+        h4 {
+            color: var(--nus-blue);
+            margin: 20px 0 10px;
+            font-size: 1.2rem;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        ul, ol {
+            padding-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+        
+        .nested-list {
+            margin-top: 10px;
+        }
+        
+        .nested-list li {
+            margin-bottom: 5px;
+        }
+        
+        .formula {
+            font-family: monospace;
+            background-color: var(--light-gray);
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow-x: auto;
+            display: block;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.1);
+        }
+        
+        .note {
+            background-color: var(--light-blue);
+            border-left: 4px solid var(--nus-blue);
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+        }
+        
+        .highlight {
+            color: var(--nus-orange);
+            font-weight: bold;
+        }
+        
+        .sub {
+            vertical-align: sub;
+            font-size: smaller;
+        }
+        
+        .molecule-image {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: 20px auto;
+            background-color: white;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        .image-caption {
+            text-align: center;
+            font-style: italic;
+            margin-top: 5px;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        .user-info-box {
+            display: none;
+            margin-top: 30px;
+            padding: 15px;
+            background-color: var(--light-blue);
+            border: 1px solid var(--nus-blue);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .user-info-box h3 {
+            color: var(--nus-blue);
+            margin-top: 0;
+            border-bottom: 1px solid var(--nus-blue);
+            padding-bottom: 5px;
+        }
+        
+        .user-info-item {
+            margin: 8px 0;
+        }
+        
+        .user-info-label {
+            font-weight: bold;
+            color: var(--nus-blue);
+        }
+        
+        #status-message {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Responsive Styles */
+        @media screen and (max-width: 992px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .wrapper {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid #eee;
+                padding-bottom: 0;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            }
+            
+            .sidebar-section {
+                margin-bottom: 10px;
+            }
+            
+            .sidebar ul {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            
+            .sidebar li {
+                margin: 0;
+            }
+            
+            .sidebar a {
+                padding: 8px 15px;
+                margin: 2px;
+                border-left: none;
+                border-radius: var(--border-radius);
+            }
+            
+            .sidebar a:hover, .sidebar a.active {
+                border-left: none;
+                background-color: var(--light-blue);
+            }
+            
+            main {
+                padding: 20px 15px;
+            }
+            
+            section {
+                padding: 15px;
+            }
+        }
+        
+        @media screen and (max-width: 576px) {
+            .sidebar ul {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Circular RNAs (circRNAs) and PIWI-Interacting RNAs (piRNAs)</h1>
+    </header>
+    
+    <div class="wrapper">
+        <aside class="sidebar">
+            <nav>
+                <div class="sidebar-title">Contents</div>
+                <div class="sidebar-section">
+                    <div class="sidebar-heading">Non-Coding RNAs</div>
+                    <ul>
+                        <li><a href="#introduction" class="nav-link">1. Introduction</a></li>
+                        <li><a href="#circular-rnas" class="nav-link">2. Circular RNAs</a></li>
+                        <li><a href="#piwi-rnas" class="nav-link">3. PIWI-Interacting RNAs</a></li>
+                        <li><a href="#conclusion" class="nav-link">4. Conclusion</a></li>
+                        <li><a href="#key-concepts" class="nav-link">5. Key Concepts</a></li>
+                    </ul>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-heading">Circular RNAs</div>
+                    <ul>
+                        <li><a href="#discovery" class="nav-link">2.1. Discovery</a></li>
+                        <li><a href="#biogenesis" class="nav-link">2.2. Biogenesis</a></li>
+                        <li><a href="#structure" class="nav-link">2.3. Structure</a></li>
+                        <li><a href="#functions" class="nav-link">2.4. Functions</a></li>
+                        <li><a href="#biological-roles" class="nav-link">2.5. Biological Roles</a></li>
+                    </ul>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-heading">PIWI-Interacting RNAs</div>
+                    <ul>
+                        <li><a href="#piwi-discovery" class="nav-link">3.1. Discovery</a></li>
+                        <li><a href="#characteristics" class="nav-link">3.2. Characteristics</a></li>
+                        <li><a href="#piwi-biogenesis" class="nav-link">3.3. Biogenesis</a></li>
+                        <li><a href="#piwi-functions" class="nav-link">3.4. Functions</a></li>
+                        <li><a href="#piwi-roles" class="nav-link">3.5. Biological Roles</a></li>
+                        <li><a href="#piwi-disease" class="nav-link">3.6. Disease Associations</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+        
+        <main>
+            <section id="introduction">
+                <h2>1. Introduction to Non-Coding RNAs</h2>
+                
+                <p>The central dogma of molecular biology traditionally described a linear flow of genetic information from DNA to RNA to protein. However, we now know that a significant portion of the genome is transcribed into RNAs that do not encode proteins. These non-coding RNAs (ncRNAs) perform diverse regulatory and structural functions within the cell. Among these ncRNAs, circRNAs and piRNAs represent two fascinating categories with unique properties and biological roles.</p>
+            </section>
+            
+            <section id="circular-rnas">
+                <h2>2. Circular RNAs (circRNAs)</h2>
+                
+                <section id="discovery">
+                    <h3>2.1. Discovery and Historical Context</h3>
+                    
+                    <p>Circular RNAs were first discovered in the 1970s in plant viroids and later in mammalian cells, but were initially dismissed as splicing errors or artifacts. It wasn't until high-throughput RNA sequencing technologies emerged in the 2010s that researchers realized circRNAs are abundant, evolutionarily conserved, and likely functional molecules.</p>
+                </section>
+                
+                <section id="biogenesis">
+                    <h3>2.2. Biogenesis of circRNAs</h3>
+                    
+                    <p>CircRNAs are formed through a process called back-splicing, which differs from canonical linear splicing:</p>
+                    
+                    <ul>
+                        <li><strong>Back-splicing</strong>: Unlike conventional splicing where an upstream 5' splice site joins to a downstream 3' splice site, back-splicing occurs when a downstream 5' splice site joins to an upstream 3' splice site, creating a circular molecule.</li>
+                        
+                        <li><strong>Facilitating factors</strong>:
+                            <ul class="nested-list">
+                                <li>Complementary sequences (like Alu repeats) in flanking introns favor circRNA formation by bringing splice sites into proximity</li>
+                                <li>RNA-binding proteins (RBPs) like Quaking (QKI) and Muscleblind (MBL/MBNL1) can promote circularization</li>
+                                <li>The spliceosome machinery itself performs the back-splicing reaction</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Regulation</strong>: CircRNA biogenesis can compete with linear splicing, creating a balance between linear and circular transcript production from the same gene.</li>
+                    </ul>
+                </section>
+                
+                <section id="structure">
+                    <h3>2.3. Structure and Properties of circRNAs</h3>
+                    
+                    <ul>
+                        <li><strong>Covalently closed loop structure</strong>: No 5' cap or 3' poly(A) tail</li>
+                        
+                        <li><strong>Stability</strong>: Highly resistant to exonuclease degradation due to the lack of free ends, resulting in longer half-lives compared to linear RNAs (often >48 hours vs. 10 hours for mRNAs)</li>
+                        
+                        <li><strong>Tissue-specific expression</strong>: Many circRNAs show tissue-specific or developmental stage-specific expression patterns</li>
+                        
+                        <li><strong>Conservation</strong>: Many circRNAs are conserved across species, suggesting functional importance</li>
+                        
+                        <li><strong>Types of circRNAs</strong>:
+                            <ul class="nested-list">
+                                <li>Exonic circRNAs (ecircRNAs): composed only of exons</li>
+                                <li>Intronic circRNAs (ciRNAs): composed of introns</li>
+                                <li>Exon-intron circRNAs (EIciRNAs): containing both exons and introns</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </section>
+                
+                <section id="functions">
+                    <h3>2.4. Molecular Functions of circRNAs</h3>
+                    
+                    <ul>
+                        <li><strong>microRNA (miRNA) sponges</strong>: Some circRNAs contain multiple binding sites for specific miRNAs, sequestering them and preventing their interaction with target mRNAs
+                            <ul class="nested-list">
+                                <li>Example: circRNA CDR1as/ciRS-7 contains >70 binding sites for miR-7 and functions as a miRNA sponge</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Protein scaffolds</strong>: CircRNAs can bind multiple proteins, facilitating their interaction or sequestration</li>
+                        
+                        <li><strong>Transcriptional regulation</strong>: Some circRNAs, particularly EIciRNAs and ciRNAs, can interact with the transcription machinery to regulate gene expression</li>
+                        
+                        <li><strong>Translation</strong>: Though most circRNAs are non-coding, some contain internal ribosome entry sites (IRES) and can be translated into proteins, especially under stress conditions</li>
+                        
+                        <li><strong>Binding to RBPs</strong>: CircRNAs can sequester RNA-binding proteins, modulating their availability for other functions</li>
+                    </ul>
+                </section>
+                
+                <section id="biological-roles">
+                    <h3>2.5. Biological Roles and Disease Associations</h3>
+                    
+                    <ul>
+                        <li><strong>Nervous system</strong>: CircRNAs are highly abundant in the brain and are involved in neuronal development, synaptic function, and plasticity</li>
+                        
+                        <li><strong>Cancer</strong>: Dysregulation of circRNAs has been linked to various cancers, where they can act as oncogenes or tumor suppressors by regulating critical signaling pathways</li>
+                        
+                        <li><strong>Cardiovascular diseases</strong>: Several circRNAs are implicated in heart development and pathological conditions like cardiac hypertrophy and heart failure</li>
+                        
+                        <li><strong>Immune response</strong>: CircRNAs can modulate innate immunity; some can activate pattern recognition receptors like RIG-I</li>
+                        
+                        <li><strong>Aging</strong>: CircRNA levels tend to increase with age in many organisms, possibly contributing to age-related dysfunction</li>
+                    </ul>
+                </section>
+            </section>
+            
+            <section id="piwi-rnas">
+                <h2>3. PIWI-Interacting RNAs (piRNAs)</h2>
+                
+                <section id="piwi-discovery">
+                    <h3>3.1. Discovery and Evolution</h3>
+                    
+                    <p>PIWI-interacting RNAs were discovered in 2006 as small RNAs that interact with PIWI proteins, a subfamily of Argonaute proteins. They were initially identified in the germline of Drosophila and subsequently found in many animal species. The piRNA pathway is ancient and appears to have evolved primarily to protect genome integrity from transposable elements.</p>
+                </section>
+                
+                <section id="characteristics">
+                    <h3>3.2. Characteristics of piRNAs</h3>
+                    
+                    <ul>
+                        <li><strong>Size</strong>: Typically 24-31 nucleotides in length, longer than miRNAs (21-23 nt)</li>
+                        
+                        <li><strong>Structure</strong>:
+                            <ul class="nested-list">
+                                <li>Single-stranded RNA molecules</li>
+                                <li>2'-O-methyl modification at the 3' terminal nucleotide</li>
+                                <li>Strong bias for uracil (U) at the 5' position (1U bias)</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Genomic organization</strong>: Derived from specific genomic loci called piRNA clusters, which are often located in heterochromatic regions and contain fragments of transposable elements</li>
+                        
+                        <li><strong>Expression</strong>: Initially thought to be germline-specific, but now known to be expressed in some somatic tissues, particularly in the nervous system</li>
+                        
+                        <li><strong>Diversity</strong>: Hundreds of thousands of unique piRNA sequences exist, far exceeding the diversity of miRNAs</li>
+                    </ul>
+                </section>
+                
+                <section id="piwi-biogenesis">
+                    <h3>3.3. Biogenesis of piRNAs</h3>
+                    
+                    <p>Two main pathways generate piRNAs:</p>
+                    
+                    <ul>
+                        <li><strong>Primary biogenesis pathway</strong>:
+                            <ul class="nested-list">
+                                <li>Transcription of piRNA clusters generates long, single-stranded precursor RNAs</li>
+                                <li>These precursors are processed by endonucleases (like Zucchini in Drosophila)</li>
+                                <li>Resulting fragments are loaded onto PIWI proteins</li>
+                                <li>3' ends are trimmed by exonucleases and then 2'-O-methylated by Hen1</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Secondary biogenesis (ping-pong) pathway</strong>:
+                            <ul class="nested-list">
+                                <li>Amplification mechanism that requires existing piRNAs</li>
+                                <li>PIWI protein-piRNA complexes recognize and cleave complementary target RNAs</li>
+                                <li>Cleavage products become new piRNAs that associate with other PIWI proteins</li>
+                                <li>These new piRNAs can target additional complementary RNAs, creating a feed-forward amplification loop</li>
+                                <li>Characterized by a 10-nucleotide overlap between sense and antisense piRNAs</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </section>
+                
+                <section id="piwi-functions">
+                    <h3>3.4. Molecular Functions of the piRNA Pathway</h3>
+                    
+                    <ul>
+                        <li><strong>Post-transcriptional silencing</strong>:
+                            <ul class="nested-list">
+                                <li>piRNA-PIWI complexes recognize complementary RNA targets</li>
+                                <li>Target cleavage by the slicer activity of PIWI proteins</li>
+                                <li>Particularly effective against transposon mRNAs</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Transcriptional silencing</strong>:
+                            <ul class="nested-list">
+                                <li>Nuclear PIWI proteins direct heterochromatin formation at target loci</li>
+                                <li>Recruitment of chromatin-modifying complexes like histone methyltransferases</li>
+                                <li>Establishment of repressive histone marks (H3K9me3)</li>
+                                <li>DNA methylation (in mammals)</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>mRNA regulation</strong>:
+                            <ul class="nested-list">
+                                <li>Degradation or translational repression of selected germline mRNAs</li>
+                                <li>Facilitation of maternal mRNA decay during maternal-to-zygotic transition</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </section>
+                
+                <section id="piwi-roles">
+                    <h3>3.5. Biological Roles of piRNAs</h3>
+                    
+                    <ul>
+                        <li><strong>Transposon silencing</strong>: The primary and evolutionarily conserved function of piRNAs is to protect genome integrity by silencing transposable elements, preventing their mobilization and insertional mutagenesis</li>
+                        
+                        <li><strong>Gametogenesis</strong>:
+                            <ul class="nested-list">
+                                <li>Essential for proper spermatogenesis in males</li>
+                                <li>Mutations in piRNA pathway components cause sterility</li>
+                                <li>Regulation of key genes involved in gamete formation</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Embryonic development</strong>:
+                            <ul class="nested-list">
+                                <li>Maternal piRNAs protect early embryos from transposon activity</li>
+                                <li>Involved in maternal mRNA turnover during embryonic genome activation</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Epigenetic regulation</strong>:
+                            <ul class="nested-list">
+                                <li>Establishment of epigenetic marks that can be inherited</li>
+                                <li>Potential mediators of transgenerational epigenetic inheritance</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Somatic functions</strong>:
+                            <ul class="nested-list">
+                                <li>Memory formation in neurons</li>
+                                <li>Synaptic plasticity</li>
+                                <li>Regeneration in some organisms</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </section>
+                
+                <section id="piwi-disease">
+                    <h3>3.6. piRNAs in Disease</h3>
+                    
+                    <ul>
+                        <li><strong>Male infertility</strong>: Dysregulation of the piRNA pathway is associated with human male infertility</li>
+                        
+                        <li><strong>Cancer</strong>:
+                            <ul class="nested-list">
+                                <li>Aberrant expression of PIWI proteins and piRNAs in various cancers</li>
+                                <li>Can act as oncogenes or tumor suppressors</li>
+                                <li>Potential involvement in cancer stem cell maintenance</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Neurodegenerative disorders</strong>: Emerging evidence suggests roles in neuronal health and neurodegenerative diseases</li>
+                        
+                        <li><strong>Viral defense</strong>: Some piRNAs may participate in antiviral immunity</li>
+                    </ul>
+                </section>
+            </section>
+            
+            <section id="conclusion">
+                <h2>4. Conclusion</h2>
+                
+                <p>CircRNAs and piRNAs represent two distinct classes of non-coding RNAs with unique properties and functions. CircRNAs, with their closed-loop structure and high stability, primarily function as molecular sponges and scaffolds in post-transcriptional regulation. PiRNAs, in contrast, partner with PIWI proteins to form effector complexes that silence transposable elements and regulate gene expression at both transcriptional and post-transcriptional levels.</p>
+                
+                <p>While initially discovered in specific contexts (piRNAs in germline, many circRNAs in neural tissues), both RNA types are now recognized to have broader expression patterns and more diverse functions than originally thought. Their dysregulation is increasingly linked to various diseases, from cancer to neurological disorders, highlighting their biological significance.</p>
+                
+                <p>As research tools continue to advance, our understanding of these fascinating RNA species will deepen, potentially leading to new diagnostic approaches and therapeutic strategies based on modulating their activities.</p>
+            </section>
+            
+            <section id="key-concepts">
+                <h2>5. Key Concepts to Remember</h2>
+                
+                <ul>
+                    <li><strong class="highlight">CircRNAs</strong> are covalently closed RNA loops formed by back-splicing that resist exonuclease degradation, making them highly stable.</li>
+                    
+                    <li><strong class="highlight">CircRNA functions</strong> include miRNA sponging, protein scaffolding, and in some cases, encoding peptides through cap-independent translation.</li>
+                    
+                    <li><strong class="highlight">PiRNAs</strong> are small (24-31 nt) RNAs that associate with PIWI proteins and typically feature a 5' uracil and 3' 2'-O-methyl modification.</li>
+                    
+                    <li>The <strong class="highlight">primary function of piRNAs</strong> is genome defense through silencing of transposable elements, both transcriptionally (through chromatin modification) and post-transcriptionally (through target cleavage).</li>
+                </ul>
+                
+                <div class="note">
+                    <p><strong>Note:</strong> Understanding these non-coding RNAs is crucial for comprehending gene regulation beyond the traditional central dogma of molecular biology. Their roles in development, disease, and cellular homeostasis represent exciting frontiers in molecular biology research.</p>
+                </div>
+            </section>
+        
+            <!-- Hidden User Information Box -->
+            <div class="user-info-box">
+                <h3>Session Information</h3>
+                <div class="user-info-item">
+                    <span class="user-info-label">Username:</span>
+                    <span id="username">Loading...</span>
+                </div>
+                <div class="user-info-item">
+                    <span class="user-info-label">Access Time:</span>
+                    <span id="access-time">Loading...</span>
+                </div>
+                <div class="user-info-item">
+                    <span class="user-info-label">Current URL:</span>
+                    <span id="current-url">Loading...</span>
+                </div>
+                <div id="status-message"></div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Sidebar navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            // Add smooth scrolling to nav links
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Get the target section
+                    const targetId = this.getAttribute('href');
+                    const targetSection = document.querySelector(targetId);
+                    
+                    // Scroll to the target section
+                    targetSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                });
+            });
+            
+            // Set active nav item based on scroll position
+            window.addEventListener('scroll', function() {
+                const scrollPosition = window.scrollY;
+                
+                // Get all sections
+                const sections = document.querySelectorAll('section');
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - 100;
+                    const sectionHeight = section.offsetHeight;
+                    const sectionId = section.getAttribute('id');
+                    
+                    if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+                        document.querySelectorAll('.nav-link').forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === '#' + sectionId) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            });
+        });
 
+        // Replace with your deployed Google Apps Script Web App URL
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh99ycPO8R0GZYlFaznQqsF2bilaKkjuQvh1OuKa7owmc7TODLwEQAstoNADw5x4eL/exec';
+        const SIGN_IN_URL = 'https://xchee-01.github.io/EBPHM/1_signin.html';
+        
+        // Optimized function to get username
+        function getUsername() {
+            try {
+                const accountsData = localStorage.getItem('accounts');
+                if (accountsData) {
+                    const accounts = JSON.parse(accountsData);
+                    return (accounts && accounts.length > 0 && accounts[0].username) 
+                        ? accounts[0].username 
+                        : 'Guest_' + Math.floor(Math.random() * 10000);
+                }
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Username retrieval error:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Streamlined URL storage
+        function storeCurrentUrl() {
+            try {
+                localStorage.setItem('lastVisitedUrl', window.location.href);
+            } catch (error) {
+                console.error('URL storage error:', error);
+            }
+        }
+        
+        // Simplified authentication check
+        function checkAuthentication() {
+            const accountsData = localStorage.getItem('accounts');
+            if (!accountsData) {
+                redirectToSignIn();
+                return false;
+            }
+            
+            try {
+                const accounts = JSON.parse(accountsData);
+                if (!accounts || accounts.length === 0 || !accounts[0].username) {
+                    redirectToSignIn();
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Authentication check error:', error);
+                redirectToSignIn();
+                return false;
+            }
+        }
+        
+        // Centralized redirect function
+        function redirectToSignIn() {
+            storeCurrentUrl();
+            window.location.href = SIGN_IN_URL;
+        }
+        
+        // Async logging function
+        async function logVisit() {
+            const username = getUsername();
+            const now = new Date();
+            const data = {
+                username: username,
+                accessTime: now.toLocaleString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            };
+            
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+                console.log('Visit logged successfully');
+            } catch (error) {
+                console.error('Visit logging error:', error);
+            }
+        }
+        
+        // For displaying in hidden user info box
+        function updateUserInfoDisplay() {
+            const username = getUsername();
+            const now = new Date();
+            document.getElementById('username').textContent = username;
+            document.getElementById('access-time').textContent = now.toLocaleString();
+            document.getElementById('current-url').textContent = window.location.href;
+        }
+        
+        // Optimized initialization
+        function init() {
+            // Store URL immediately
+            storeCurrentUrl();
+            
+            // Update user info display
+            updateUserInfoDisplay();
+            
+            // Check authentication
+            if (!checkAuthentication()) {
+                return; // Stop further execution if redirecting
+            }
+            
+            // Async logging
+            logVisit();
+        }
+        
+        // Run initialization as soon as possible
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
