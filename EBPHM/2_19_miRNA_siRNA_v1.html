@@ -748,4 +748,87 @@
         // Simplified authentication check
         function checkAuthentication() {
             const accountsData = localStorage.getItem('accounts');
-            if (!accountsData
+            if (!accountsData) {
+                redirectToSignIn();
+                return false;
+            }
+            
+            try {
+                const accounts = JSON.parse(accountsData);
+                if (!accounts || accounts.length === 0 || !accounts[0].username) {
+                    redirectToSignIn();
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Authentication check error:', error);
+                redirectToSignIn();
+                return false;
+            }
+        }
+        
+        // Centralized redirect function
+        function redirectToSignIn() {
+            storeCurrentUrl();
+            window.location.href = SIGN_IN_URL;
+        }
+        
+        // Async logging function
+        async function logVisit() {
+            const username = getUsername();
+            const now = new Date();
+            const data = {
+                username: username,
+                accessTime: now.toLocaleString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            };
+            
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+                console.log('Visit logged successfully');
+            } catch (error) {
+                console.error('Visit logging error:', error);
+            }
+        }
+        
+        // For displaying in hidden user info box
+        function updateUserInfoDisplay() {
+            const username = getUsername();
+            const now = new Date();
+            document.getElementById('username').textContent = username;
+            document.getElementById('access-time').textContent = now.toLocaleString();
+            document.getElementById('current-url').textContent = window.location.href;
+        }
+        
+        // Optimized initialization
+        function init() {
+            // Store URL immediately
+            storeCurrentUrl();
+            
+            // Update user info display
+            updateUserInfoDisplay();
+            
+            // Check authentication
+            if (!checkAuthentication()) {
+                return; // Stop further execution if redirecting
+            }
+            
+            // Async logging
+            logVisit();
+        }
+        
+        // Run initialization as soon as possible
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
