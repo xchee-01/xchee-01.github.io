@@ -758,119 +758,158 @@
         });
 
         // Replace with your deployed Google Apps Script Web App URL
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh99ycPO8R0GZYlFaznQqsF2bilaKkjuQvh1OuKa7owmc7TODLwEQAstoNADw5x4eL/exec';
-        const SIGN_IN_URL = 'https://xchee-01.github.io/EBPHM/1_signin.html';
-        
-        // Optimized function to get username
-        function getUsername() {
-            try {
-                const accountsData = localStorage.getItem('accounts');
-                if (accountsData) {
-                    const accounts = JSON.parse(accountsData);
-                    return (accounts && accounts.length > 0 && accounts[0].username) 
-                        ? accounts[0].username 
-                        : 'Guest_' + Math.floor(Math.random() * 10000);
-                }
-                return 'Guest_' + Math.floor(Math.random() * 10000);
-            } catch (error) {
-                console.error('Username retrieval error:', error);
-                return 'Guest_' + Math.floor(Math.random() * 10000);
-            }
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh99ycPO8R0GZYlFaznQqsF2bilaKkjuQvh1OuKa7owmc7TODLwEQAstoNADw5x4eL/exec';
+const SIGN_IN_URL = 'https://xchee-01.github.io/EBPHM/1_signin.html';
+
+// Get username from localStorage
+function getUsername() {
+    try {
+        const accountsData = localStorage.getItem('accounts');
+        if (accountsData) {
+            const accounts = JSON.parse(accountsData);
+            return (accounts && accounts.length > 0 && accounts[0].username) 
+                ? accounts[0].username 
+                : 'Guest_' + Math.floor(Math.random() * 10000);
         }
+        return 'Guest_' + Math.floor(Math.random() * 10000);
+    } catch (error) {
+        console.error('Username retrieval error:', error);
+        return 'Guest_' + Math.floor(Math.random() * 10000);
+    }
+}
+
+// Store current URL in localStorage
+function storeCurrentUrl() {
+    try {
+        localStorage.setItem('lastVisitedUrl', window.location.href);
+        console.log('URL stored: ' + window.location.href);
+    } catch (error) {
+        console.error('URL storage error:', error);
+    }
+}
+
+// Check if user is authenticated
+function checkAuthentication() {
+    const accountsData = localStorage.getItem('accounts');
+    console.log('Authentication check - accounts data exists:', !!accountsData);
+    
+    if (!accountsData) {
+        console.log('No accounts data found, redirecting to sign in');
+        redirectToSignIn();
+        return false;
+    }
+    
+    try {
+        const accounts = JSON.parse(accountsData);
+        const isAuthenticated = accounts && accounts.length > 0 && accounts[0].username;
+        console.log('User authenticated:', isAuthenticated);
         
-        // Streamlined URL storage
-        function storeCurrentUrl() {
-            try {
-                localStorage.setItem('lastVisitedUrl', window.location.href);
-            } catch (error) {
-                console.error('URL storage error:', error);
-            }
+        if (!isAuthenticated) {
+            console.log('Not authenticated, redirecting to sign in');
+            redirectToSignIn();
+            return false;
         }
-        
-        // Simplified authentication check
-        function checkAuthentication() {
-            const accountsData = localStorage.getItem('accounts');
-            if (!accountsData) {
-                redirectToSignIn();
-                return false;
-            }
-            
-            try {
-                const accounts = JSON.parse(accountsData);
-                if (!accounts || accounts.length === 0 || !accounts[0].username) {
-                    redirectToSignIn();
-                    return false;
-                }
-                return true;
-            } catch (error) {
-                console.error('Authentication check error:', error);
-                redirectToSignIn();
-                return false;
-            }
+        return true;
+    } catch (error) {
+        console.error('Authentication check error:', error);
+        redirectToSignIn();
+        return false;
+    }
+}
+
+// Redirect to sign in page
+function redirectToSignIn() {
+    console.log('Redirecting to sign in page');
+    storeCurrentUrl();
+    // Use setTimeout to ensure log messages are processed and tracking request is sent
+    setTimeout(() => {
+        window.location.href = SIGN_IN_URL;
+    }, 500);
+}
+
+// Log visit to Google Apps Script
+function logVisit() {
+    const username = getUsername();
+    const now = new Date();
+    const data = {
+        username: username,
+        accessTime: now.toLocaleString(),
+        url: window.location.href,
+        userAgent: navigator.userAgent
+    };
+    
+    console.log('Attempting to log visit for:', username);
+    
+    // Primary method using fetch
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        mode: 'no-cors'
+    })
+    .then(() => {
+        console.log('Visit logged successfully via fetch');
+    })
+    .catch(error => {
+        console.error('Visit logging error with fetch:', error);
+        // Fallback method using image request (more reliable in some cases)
+        try {
+            console.log('Attempting fallback logging method');
+            const img = new Image();
+            const params = new URLSearchParams();
+            params.append('data', JSON.stringify(data));
+            img.src = APPS_SCRIPT_URL + '?' + params.toString();
+            img.onload = () => console.log('Fallback logging succeeded');
+            img.onerror = () => console.error('Fallback logging failed');
+        } catch (fallbackError) {
+            console.error('Fallback logging error:', fallbackError);
         }
-        
-        // Centralized redirect function
-        function redirectToSignIn() {
-            storeCurrentUrl();
-            window.location.href = SIGN_IN_URL;
-        }
-        
-        // Async logging function
-        async function logVisit() {
-            const username = getUsername();
-            const now = new Date();
-            const data = {
-                username: username,
-                accessTime: now.toLocaleString(),
-                url: window.location.href,
-                userAgent: navigator.userAgent
-            };
-            
-            try {
-                await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                    mode: 'no-cors'
-                });
-                console.log('Visit logged successfully');
-            } catch (error) {
-                console.error('Visit logging error:', error);
-            }
-        }
-        
-        // For displaying in hidden user info box
-        function updateUserInfoDisplay() {
-            const username = getUsername();
-            const now = new Date();
+    });
+}
+
+// Update user info display
+function updateUserInfoDisplay() {
+    try {
+        const username = getUsername();
+        const now = new Date();
+        if (document.getElementById('username')) {
             document.getElementById('username').textContent = username;
+        }
+        if (document.getElementById('access-time')) {
             document.getElementById('access-time').textContent = now.toLocaleString();
+        }
+        if (document.getElementById('current-url')) {
             document.getElementById('current-url').textContent = window.location.href;
         }
-        
-        // Optimized initialization
-        function init() {
-            // Store URL immediately
-            storeCurrentUrl();
-            
-            // Update user info display
-            updateUserInfoDisplay();
-            
-            // Check authentication
-            if (!checkAuthentication()) {
-                return; // Stop further execution if redirecting
-            }
-            
-            // Async logging
-            logVisit();
-        }
-        
-        // Run initialization as soon as possible
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            init();
-        }
+    } catch (error) {
+        console.error('Error updating user info display:', error);
+    }
+}
+
+// Initialize tracking
+function initTracking() {
+    console.log('Initializing tracking');
+    
+    // Always store URL and log visit, regardless of authentication
+    storeCurrentUrl();
+    
+    // Log the visit before checking authentication
+    logVisit();
+    
+    // Update display if elements exist
+    updateUserInfoDisplay();
+    
+    // Check authentication last
+    // This won't prevent the logging above
+    checkAuthentication();
+}
+
+// Start tracking as soon as possible
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTracking);
+} else {
+    initTracking();
+}
     </script>
 </body>
 </html>
