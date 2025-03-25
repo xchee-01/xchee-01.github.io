@@ -404,46 +404,190 @@
         
         // =========== TRACKING FUNCTIONS ===========
         
-        // Function to submit data to Google Sheets
-        function submitVideoTrackData() {
-            const username = getUsername();
-            
-            // Prepare data for submission
-            const data = {
-                username: username,
-                url: window.location.href, // Ensure page URL is captured
-                timestamp: new Date().toISOString(),
-                totalQuestions: totalQuestions,
-                correctAnswers: studentData.correctAnswers,
-                totalAttempts: studentData.totalAttempts,
-                accuracy: Math.round((studentData.correctAnswers / studentData.totalAttempts) * 100),
-                videoProgress: studentData.videoWatchedPercentage,
-                totalTimeSpent: studentData.totalTimeSpent,
-                questionData: studentData.questionAttempts,
-                id: studentData.id,
-                pageUrl: window.location.href // Add explicit pageUrl field for tracking
-            };
-            
-            // Updated URL for the Google Apps Script that will write to the specified spreadsheet
-            // You'll need to create a new Google Apps Script that's connected to your spreadsheet
-            const scriptUrl = 'https://script.google.com/macros/s/AKfycbw26ahkpl-X7Ee32wEByz5s9yN4t9JM04PvQiULKmuPBKymDrklP7pP8BXJsv3oHhag/exec';
-            
-            // Send data to Google Apps Script silently
-            fetch(scriptUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-                mode: 'no-cors' // Important for Google Apps Script
-            })
-            .then(() => {
-                console.log('Video tracking data submitted successfully');
-            })
-            .catch(error => {
-                console.error('Error submitting video tracking data:', error);
-            });
+function prepareEnhancedTrackingData() {
+    // Finalize the metrics first
+    const metrics = finalizeMetrics();
+    
+    // Create flattened metrics that will work with spreadsheet columns
+    const flattenedData = {
+        // Original metrics (keep these)
+        username: studentData.name,
+        url: window.location.href,
+        timestamp: formatSingaporeTime(getSingaporeTime()),
+        totalQuestions: totalQuestions,
+        correctAnswers: studentData.correctAnswers,
+        totalAttempts: studentData.totalAttempts,
+        accuracy: Math.round((studentData.correctAnswers / studentData.totalAttempts) * 100),
+        videoProgress: metrics.actualWatchPercentage,
+        totalTimeSpent: studentData.totalTimeSpent,
+        id: studentData.id,
+        
+        // New flattened metrics for easy spreadsheet columns
+        // Rewatch patterns
+        totalRewatchCount: metrics.rewatchCount || 0,
+        rewatchSegments: JSON.stringify(metrics.highInterestSegments || []),
+        mostRewatchedSegment: metrics.highInterestSegments && metrics.highInterestSegments.length > 0 ? 
+            `${formatTime(metrics.highInterestSegments[0].startTime)}-${formatTime(metrics.highInterestSegments[0].endTime)}` : "None",
+        mostRewatchedCount: metrics.highInterestSegments && metrics.highInterestSegments.length > 0 ? 
+            metrics.highInterestSegments[0].rewatchCount : 0,
+        
+        // Playback speed
+        playbackSpeedChanges: metrics.playbackSpeedChanges || 0,
+        averagePlaybackSpeed: calculateAveragePlaybackSpeed(metrics.playbackSpeedData || []),
+        maxPlaybackSpeed: findMaxPlaybackSpeed(metrics.playbackSpeedData || []),
+        timeSpentAt2xOrHigher: calculateTimeAtHighSpeed(metrics.playbackSpeedData || []),
+        
+        // Pause frequency
+        totalPauseCount: metrics.pauseCount || 0,
+        averagePauseDuration: calculateAveragePauseDuration(metrics.pauseData || []),
+        longestPauseDuration: findLongestPause(metrics.pauseData || []),
+        pausePositions: generatePausePositionsSummary(metrics.pauseData || []),
+        
+        // Additional useful metrics
+        seekCount: metrics.seekCount || 0,
+        totalActualWatchTime: metrics.totalActualWatchTime || 0,
+        timeSpentOnQuestions: metrics.timeSpentOnQuestions || 0,
+        averageResponseTime: metrics.averageResponseTime || 0,
+        
+        // Include question data and all enhanced metrics as JSON
+        // (not all spreadsheets will use this, but we include it for completeness)
+        questionData: JSON.stringify(studentData.questionAttempts || []),
+        enhancedMetricsJSON: JSON.stringify(metrics)
+    };
+    
+    return flattenedData;
+}
+
+// Calculate average playback speed weighted by duration
+function calculateAveragePlaybackSpeed(speedData) {
+    if (!speedData || speedData.length === 0) return 1;
+    
+    let totalDuration = 0;
+    let speedTimeProduct = 0;
+    
+    speedData.forEach(entry => {
+        if (entry.duration) {
+            totalDuration += entry.duration;
+            speedTimeProduct += (entry.speed * entry.duration);
         }
+    });
+    
+    return totalDuration > 0 ? 
+        parseFloat((speedTimeProduct / totalDuration).toFixed(2)) : 1;
+}
+
+// Find the maximum playback speed used
+function findMaxPlaybackSpeed(speedData) {
+    if (!speedData || speedData.length === 0) return 1;
+    
+    let maxSpeed = 0;
+    speedData.forEach(entry => {
+        if (entry.speed > maxSpeed && entry.duration > 1) { // Only count if used for more than 1 second
+            maxSpeed = entry.speed;
+        }
+    });
+    
+    return maxSpeed;
+}
+
+// Calculate time spent at 2x or higher speed
+function calculateTimeAtHighSpeed(speedData) {
+    if (!speedData || speedData.length === 0) return 0;
+    
+    let timeAtHighSpeed = 0;
+    
+    speedData.forEach(entry => {
+        if (entry.speed >= 2 && entry.duration) {
+            timeAtHighSpeed += entry.duration;
+        }
+    });
+    
+    return Math.round(timeAtHighSpeed);
+}
+
+// Calculate average pause duration
+function calculateAveragePauseDuration(pauseData) {
+    if (!pauseData || pauseData.length === 0) return 0;
+    
+    let totalDuration = 0;
+    let validPauses = 0;
+    
+    pauseData.forEach(pause => {
+        if (pause.duration) {
+            totalDuration += pause.duration;
+            validPauses++;
+        }
+    });
+    
+    return validPauses > 0 ? 
+        parseFloat((totalDuration / validPauses).toFixed(2)) : 0;
+}
+
+// Find the longest pause duration
+function findLongestPause(pauseData) {
+    if (!pauseData || pauseData.length === 0) return 0;
+    
+    let longestDuration = 0;
+    
+    pauseData.forEach(pause => {
+        if (pause.duration && pause.duration > longestDuration) {
+            longestDuration = pause.duration;
+        }
+    });
+    
+    return Math.round(longestDuration);
+}
+
+// Generate a summary of pause positions for the spreadsheet
+function generatePausePositionsSummary(pauseData) {
+    if (!pauseData || pauseData.length === 0) return "None";
+    
+    // Group pauses into 30-second intervals
+    const intervalSize = 30;
+    const pausesByInterval = {};
+    
+    pauseData.forEach(pause => {
+        if (typeof pause.videoPosition === 'number') {
+            const interval = Math.floor(pause.videoPosition / intervalSize) * intervalSize;
+            pausesByInterval[interval] = (pausesByInterval[interval] || 0) + 1;
+        }
+    });
+    
+    // Get the top 3 intervals with most pauses
+    const sortedIntervals = Object.keys(pausesByInterval)
+        .sort((a, b) => pausesByInterval[b] - pausesByInterval[a])
+        .slice(0, 3);
+    
+    // Format as a string
+    return sortedIntervals.map(interval => 
+        `${formatTime(interval)}-${formatTime(parseInt(interval) + intervalSize)}: ${pausesByInterval[interval]}`
+    ).join("; ");
+}
+
+// Replace your existing submitVideoTrackData function with this one
+function submitVideoTrackData() {
+    // Use the new function to prepare data
+    const data = prepareEnhancedTrackingData();
+    
+    // Google Apps Script URL for video tracking data (your existing URL)
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbw26ahkpl-X7Ee32wEByz5s9yN4t9JM04PvQiULKmuPBKymDrklP7pP8BXJsv3oHhag/exec';
+    
+    // Send data to Google Apps Script
+    fetch(scriptUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        mode: 'no-cors'
+    })
+    .then(() => {
+        console.log('Enhanced video tracking data submitted successfully');
+    })
+    .catch(error => {
+        console.error('Error submitting video tracking data:', error);
+    });
+}
         
         // Log page visit separately 
         function logPageVisit() {
