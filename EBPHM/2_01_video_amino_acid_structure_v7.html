@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Learning Experience</title>
+    <style>
+        :root {
+            /* NUS Color Palette */
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #7BAFD4;
+            --nus-light-orange: #F5A623;
+            --nus-grey: #4A4A4A;
+            --nus-light-grey: #F2F2F2;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 25px;
+            background-color: #FAFAFA;
+            color: var(--nus-grey);
+            line-height: 1.6;
+        }
+        
+        h1 {
+            color: var(--nus-blue);
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 3px solid var(--nus-orange);
+            padding-bottom: 15px;
+        }
+        
+        #videoContainer {
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        #player {
+            width: 100%;
+        }
+        
+        #questionContainer {
+            display: none;
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-orange);
+            transition: all 0.3s ease;
+        }
+        
+        #questionText {
+            color: var(--nus-blue);
+            margin-top: 0;
+            font-size: 1.4rem;
+        }
+        
+        .option {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: var(--nus-light-grey);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 4px solid var(--nus-light-blue);
+        }
+        
+        .option:hover {
+            background-color: #E8E8E8;
+            transform: translateX(5px);
+        }
+        
+        #feedback {
+            margin-top: 20px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        #continueButton {
+            display: none;
+            margin: 20px auto 0;
+            padding: 12px 30px;
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        #continueButton:hover {
+            background-color: #00326A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Added proper styling for the restart button */
+        #restartVideoButton {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 30px;
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        #restartVideoButton:hover {
+            background-color: #00326A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: var(--nus-light-grey);
+            height: 8px;
+            border-radius: 4px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: var(--nus-orange);
+            transition: width 0.3s ease;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        #mainContent {
+            display: block;
+        }
+        
+        #statsPanel {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-light-blue);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background-color: var(--nus-light-grey);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--nus-blue);
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--nus-grey);
+        }
+        
+        #summaryPanel {
+            display: none;
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-orange);
+        }
+        
+        .question-summary {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .question-summary h3 {
+            color: var(--nus-blue);
+            margin-bottom: 10px;
+        }
+        
+        .summary-correct {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .summary-incorrect {
+            color: #F44336;
+            font-weight: bold;
+        }
+        
+        /* Advanced Analytics Styles */
+        .analytics-section {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        
+        .analytics-heading {
+            color: var(--nus-blue);
+            margin-bottom: 15px;
+        }
+        
+        .heatmap-container {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .heatmap-segment {
+            height: 25px;
+            display: flex;
+            margin-bottom: 5px;
+        }
+        
+        .heatmap-label {
+            width: 100px;
+            font-size: 0.8rem;
+            padding: 3px;
+        }
+        
+        .heatmap-bar {
+            flex-grow: 1;
+            display: flex;
+        }
+        
+        .heatmap-chunk {
+            height: 100%;
+            flex-grow: 1;
+            margin: 0 1px;
+            background-color: #eee;
+        }
+        
+        .analytics-chart {
+            width: 100%;
+            height: 200px;
+            background: #f9f9f9;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .metric-card {
+            background-color: var(--nus-light-grey);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .metric-title {
+            font-weight: bold;
+            color: var(--nus-blue);
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 1.4rem;
+            color: var(--nus-grey);
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Learning Experience</h1>
+    
+    <!-- Main Content -->
+    <div id="mainContent">
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div id="videoContainer">
+            <!-- YouTube video will be embedded here -->
+            <div id="player"></div>
+        </div>
+        
+        <div id="questionContainer">
+            <h2 id="questionText">Question goes here</h2>
+            <div id="options"></div>
+            <div id="feedback"></div>
+            <button id="continueButton">Continue Video</button>
+        </div>
+        
+        <!-- Stats Panel -->
+        <div id="statsPanel">
+            <h2>Your Progress</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="correctAnswers">0</div>
+                    <div class="stat-label">Correct Answers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalAttempts">0</div>
+                    <div class="stat-label">Total Attempts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="accuracy">0%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="videoProgress">0%</div>
+                    <div class="stat-label">Video Progress</div>
+                </div>
+            </div>
+            
+            <!-- New Video Interaction Stats -->
+            <div class="stats-grid" style="margin-top: 15px;">
+                <div class="stat-card">
+                    <div class="stat-value" id="pauseCount">0</div>
+                    <div class="stat-label">Pauses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="rewindCount">0</div>
+                    <div class="stat-label">Rewinds</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="speedChanges">0</div>
+                    <div class="stat-label">Speed Changes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="currentSpeed">1x</div>
+                    <div class="stat-label">Current Speed</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Summary Panel (shown at the end) -->
+        <div id="summaryPanel">
+            <h2>Learning Module Summary</h2>
+            <div id="questionsSummary"></div>
+            <div id="overallScore"></div>
+            
+            <!-- New Analytics Sections -->
+            <div class="analytics-section">
+                <h3 class="analytics-heading">Video Interaction Analysis</h3>
+                
+                <!-- Pause Analysis -->
+                <div class="metric-card">
+                    <div class="metric-title">Total Manual Pauses</div>
+                    <div class="metric-value" id="totalPauses">0</div>
+                </div>
+                
+                <!-- Rewatch Analysis -->
+                <div class="heatmap-container">
+                    <h4>Rewatch Heatmap</h4>
+                    <p>Segments most frequently rewatched (darker = more rewatches)</p>
+                    <div id="rewatchHeatmap"></div>
+                </div>
+                
+                <!-- Playback Speed Analysis -->
+                <div class="metric-card">
+                    <div class="metric-title">Playback Speed Preferences</div>
+                    <div id="speedMetrics"></div>
+                </div>
+                
+                <!-- Pause Pattern Analysis -->
+                <div class="metric-card">
+                    <div class="metric-title">Pause Patterns</div>
+                    <div id="pauseMetrics"></div>
+                </div>
+            </div>
+            
+            <button id="restartVideoButton">Restart Learning Video</button>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Interactive learning module | Powered by YouTube API | Advanced Analytics Enabled</p>
+    </footer>
+    
+    <script>
+        // Authentication Constants
+        const SIGN_IN_URL = 'https://xchee-01.github.io/sys/signin_v2.html';
+        
+        // Initialize variables
+        let player;
+        let currentQuestion = 0;
+        let totalQuestions = 3;
+        let programmaticPause = false; // Flag to distinguish manual vs. programmatic pauses
+        let lastPlayerState = null;
+        let lastTimeUpdate = 0;
+        let checkTimeInterval = null;
+        let lastPlaybackRate = 1;
+        
+        // Enhanced student data model to include new metrics
+        let studentData = {
+            name: "",
+            id: "",
+            startTime: null,
+            endTime: null,
+            totalTimeSpent: 0,
+            videoWatchedPercentage: 0,
+            questionAttempts: [],
+            correctAnswers: 0,
+            totalAttempts: 0,
+            pageUrl: window.location.href,
+            
+            // New tracking metrics
+            pauseData: {
+                count: 0,
+                timestamps: [], // When pauses occurred
+                durations: [],  // How long each pause lasted
+                segments: {}    // Pause frequency by video segment (10-second chunks)
+            },
+            rewatchData: {
+                count: 0,
+                segments: {},  // Which segments were rewatched and how many times
+                patterns: []   // Sequential rewatch events with timestamps
+            },
+            speedData: {
+                changes: 0,
+                history: [],   // Array of {timestamp, newSpeed, segment} 
+                timeAtSpeed: {}  // Time spent at each speed
+            },
+            viewedSegments: {} // Track which seconds have been viewed (for rewatch detection)
+        };
+
+        // Define the questions to ask at specific timestamps (in seconds)
+        const questions = [
+            {
+                time: 20, // Pause at 20 seconds
+                question: "What are we observing in this timelapse sequence?",
+                options: [
+                    { text: "Growth of plants over time", correct: true },
+                    { text: "Movement of clouds in the sky", correct: false },
+                    { text: "Erosion of rock formations", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0
+            },
+            {
+                time: 40, // Pause at 40 seconds
+                question: "What natural phenomenon is highlighted in this segment?",
+                options: [
+                    { text: "Seasonal color changes", correct: false },
+                    { text: "Weather patterns affecting landscapes", correct: true },
+                    { text: "Animal migration patterns", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0
+            },
+            {
+                time: 60, // Pause at 60 seconds
+                question: "What is a key message conveyed by this timelapse video?",
+                options: [
+                    { text: "The rapid pace of urban development", correct: false },
+                    { text: "The beauty of astronomical events", correct: false },
+                    { text: "The dynamic nature of Earth's ecosystems", correct: true }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0
+            }
+        ];
+        
+        // New helpers for video segment tracking
+        const SEGMENT_SIZE = 10; // Group data in 10-second segments
+        
+        // Helper to get current segment based on time
+        function getSegmentForTime(timeInSeconds) {
+            return Math.floor(timeInSeconds / SEGMENT_SIZE);
+        }
+        
+        // Helper to format segment for display
+        function formatSegment(segmentId) {
+            const startTime = segmentId * SEGMENT_SIZE;
+            const endTime = startTime + SEGMENT_SIZE;
+            return `${formatTime(startTime)}-${formatTime(endTime)}`;
+        }
+        
+        // =========== AUTHENTICATION FUNCTIONS ===========
+        
+        // Streamlined URL storage
+        function storeCurrentUrl() {
+            try {
+                localStorage.setItem('lastVisitedUrl', window.location.href);
+            } catch (error) {
+                console.error('URL storage error:', error);
+            }
+        }
+        
+        // Simplified authentication check
+        function checkAuthentication() {
+            const accountsData = localStorage.getItem('accounts');
+            if (!accountsData) {
+                redirectToSignIn();
+                return false;
+            }
+            
+            try {
+                const accounts = JSON.parse(accountsData);
+                if (!accounts || accounts.length === 0 || !accounts[0].username) {
+                    redirectToSignIn();
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Authentication check error:', error);
+                redirectToSignIn();
+                return false;
+            }
+        }
+        
+        // Centralized redirect function
+        function redirectToSignIn() {
+            storeCurrentUrl();
+            window.location.href = SIGN_IN_URL;
+        }
+        
+        // Function to get username (similar to DNA quiz implementation)
+        function getUsername() {
+            try {
+                const accountsData = localStorage.getItem('accounts');
+                
+                if (accountsData) {
+                    const accounts = JSON.parse(accountsData);
+                    
+                    if (accounts && accounts.length > 0 && accounts[0].username) {
+                        return accounts[0].username;
+                    }
+                }
+                
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Error getting username from accounts:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // =========== TRACKING FUNCTIONS ===========
+        
+        // Function to submit data to Google Sheets
+        function submitVideoTrackData() {
+            const username = getUsername();
+            
+            // Prepare data for submission
+            const data = {
+                username: username,
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                totalQuestions: totalQuestions,
+                correctAnswers: studentData.correctAnswers,
+                totalAttempts: studentData.totalAttempts,
+                accuracy: Math.round((studentData.correctAnswers / studentData.totalAttempts) * 100),
+                videoProgress: studentData.videoWatchedPercentage,
+                totalTimeSpent: studentData.totalTimeSpent,
+                questionData: studentData.questionAttempts,
+                id: studentData.id,
+                pageUrl: window.location.href,
+                
+                // New analytics fields
+                pauseCount: studentData.pauseData.count,
+                pauseSegments: JSON.stringify(studentData.pauseData.segments),
+                rewindCount: studentData.rewatchData.count,
+                rewindSegments: JSON.stringify(studentData.rewatchData.segments),
+                speedChanges: studentData.speedData.changes,
+                speedHistory: JSON.stringify(studentData.speedData.history),
+                timeAtSpeed: JSON.stringify(studentData.speedData.timeAtSpeed)
+            };
+            
+            // Updated URL for the Google Apps Script that will write to the specified spreadsheet
+            // You'll need to create a new Google Apps Script that's connected to your spreadsheet
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbw26ahkpl-X7Ee32wEByz5s9yN4t9JM04PvQiULKmuPBKymDrklP7pP8BXJsv3oHhag/exec';
+            
+            // Send data to Google Apps Script silently
+            fetch(scriptUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                mode: 'no-cors' // Important for Google Apps Script
+            })
+            .then(() => {
+                console.log('Video tracking data submitted successfully');
+            })
+            .catch(error => {
+                console.error('Error submitting video tracking data:', error);
+            });
+        }
+        
+        // Log page visit separately 
+        function logPageVisit() {
+            const username = getUsername();
+            
+            // Prepare visit tracking data
+            const visitData = {
+                username: username,
+                accessTime: new Date().toLocaleString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            };
+            
+            // Page tracking script URL - use the one from DNA page
+            const pageTrackUrl = 'https://script.google.com/macros/s/AKfycbxh99ycPO8R0GZYlFaznQqsF2bilaKkjuQvh1OuKa7owmc7TODLwEQAstoNADw5x4eL/exec';
+            
+            // Send page tracking data
+            fetch(pageTrackUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(visitData),
+                mode: 'no-cors'
+            })
+            .then(() => {
+                console.log('Page visit logged successfully');
+            })
+            .catch(error => {
+                console.error('Error logging page visit:', error);
+            });
+        }
+        
+        // Initialize student data with session ID
+        function initializeStudentData() {
+            // Generate a random session ID for tracking
+            const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+            
+            studentData.id = sessionId;
+            studentData.name = getUsername();
+            studentData.startTime = new Date();
+            studentData.pageUrl = window.location.href;
+            
+            console.log("Session started with ID:", sessionId);
+        }
+        
+        // =========== INITIALIZATION FUNCTION ===========
+        
+        // Main initialization function
+        function init() {
+            // Store current URL for potential redirect back
+            storeCurrentUrl();
+            
+            // Log this page visit
+            logPageVisit();
+            
+            // Check if user is authenticated
+            if (!checkAuthentication()) {
+                return; // Stop further execution if redirecting
+            }
+            
+            // If authenticated, initialize session data
+            initializeStudentData();
+            
+            // Load YouTube API
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+        
+        // Initialize on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        
+        // =========== YOUTUBE PLAYER FUNCTIONS ===========
+        
+        // Create YouTube player
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '480',
+                width: '100%',
+                videoId: 'RGPLisd74Ds', // BBC Earth Timelapse video
+                playerVars: {
+                    'playsinline': 1,
+                    'modestbranding': 1,
+                    'rel': 0,
+                    'controls': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange,
+                    'onPlaybackRateChange': onPlaybackRateChange // Add playback rate change event
+                }
+            });
+        }
+        
+        // When player is ready
+        function onPlayerReady(event) {
+            console.log("Player is ready");
+            updateProgressBar(0);
+            lastPlaybackRate = player.getPlaybackRate();
+            document.getElementById("currentSpeed").textContent = lastPlaybackRate + "x";
+            
+            // Start detailed tracking 
+            startAdvancedTracking();
+        }
+        
+        // Track video progress percentage and detailed segment data
+        function updateVideoProgress() {
+            if (player && player.getDuration) {
+                const currentTime = player.getCurrentTime();
+                const duration = player.getDuration();
+                const percentage = Math.floor((currentTime / duration) * 100);
+                studentData.videoWatchedPercentage = percentage;
+                document.getElementById("videoProgress").textContent = percentage + "%";
+                
+                // Track viewed segments for rewatch detection
+                trackCurrentSegment(currentTime);
+            }
+        }
+        
+        // Start more detailed tracking
+        function startAdvancedTracking() {
+            // Update progress at 1-second intervals
+            setInterval(updateVideoProgress, 1000);
+            
+            // Set up rewatch detection
+            setInterval(detectRewatches, 300);
+        }
+        
+        // Track current video segment and detect rewatches
+        let lastTimePos = 0;
+        function detectRewatches() {
+            if (!player || player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                return;
+            }
+            
+            const currentTime = player.getCurrentTime();
+            
+            // Detect rewind/seeking back
+            if (currentTime < lastTimePos - 3) {  // Threshold of 3 seconds to detect intentional rewinding
+                recordRewind(currentTime, lastTimePos);
+            }
+            
+            lastTimePos = currentTime;
+        }
+        
+        // Mark the segment as viewed
+        function trackCurrentSegment(currentTime) {
+            const currentSecond = Math.floor(currentTime);
+            if (!studentData.viewedSegments[currentSecond]) {
+                studentData.viewedSegments[currentSecond] = 1;
+            } else {
+                studentData.viewedSegments[currentSecond]++;
+            }
+        }
+        
+        // Record a rewind event
+        function recordRewind(currentTime, previousTime) {
+            // Increment rewind counter
+            studentData.rewatchData.count++;
+            document.getElementById("rewindCount").textContent = studentData.rewatchData.count;
+            
+            // Track the segment being rewatched
+            const segment = getSegmentForTime(currentTime);
+            if (!studentData.rewatchData.segments[segment]) {
+                studentData.rewatchData.segments[segment] = 1;
+            } else {
+                studentData.rewatchData.segments[segment]++;
+            }
+            
+            // Track the rewatch pattern details
+            studentData.rewatchData.patterns.push({
+                from: previousTime,
+                to: currentTime,
+                timestamp: new Date().toISOString()
+            });
+            
+            console.log(`Rewind detected: ${formatTime(previousTime)} → ${formatTime(currentTime)}`);
+        }
+        
+        // Handle playback rate change
+        function onPlaybackRateChange(event) {
+            const newRate = player.getPlaybackRate();
+            const currentTime = player.getCurrentTime();
+            const segment = getSegmentForTime(currentTime);
+            
+            // Update display
+            document.getElementById("currentSpeed").textContent = newRate + "x";
+            document.getElementById("speedChanges").textContent = ++studentData.speedData.changes;
+            
+            // Record speed change history
+            studentData.speedData.history.push({
+                previousRate: lastPlaybackRate,
+                newRate: newRate,
+                time: currentTime,
+                segment: segment,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Initialize or increment speed distribution tracking
+            if (!studentData.speedData.timeAtSpeed[newRate]) {
+                studentData.speedData.timeAtSpeed[newRate] = 0;
+            }
+            
+            // Update last speed
+            lastPlaybackRate = newRate;
+            
+            console.log(`Playback speed changed to ${newRate}x at ${formatTime(currentTime)}`);
+        }
+        
+        // Pause variables
+        let pauseStartTime = null;
+        let isProgrammaticPause = false;
+        
+        // Check for timestamps to show questions and track state changes
+        function onPlayerStateChange(event) {
+            // Get the current state and time
+            const currentState = event.data;
+            const currentTime = player.getCurrentTime();
+            
+            // Handle pauses - distinguish between programmatic and manual pauses
+            if (currentState === YT.PlayerState.PAUSED && !isProgrammaticPause) {
+                // This is a manual pause
+                handleManualPause(currentTime);
+            } else if (currentState === YT.PlayerState.PLAYING && pauseStartTime !== null) {
+                // Resume from pause - record duration
+                const pauseDuration = (new Date() - pauseStartTime) / 1000;
+                pauseStartTime = null;
+                
+                // Record the pause duration if it was a manual pause
+                if (!isProgrammaticPause) {
+                    studentData.pauseData.durations.push(pauseDuration);
+                    console.log(`Pause ended after ${pauseDuration.toFixed(1)} seconds`);
+                }
+                
+                // Reset the programmatic pause flag 
+                isProgrammaticPause = false;
+            }
+            
+            // Video specific logic
+            if (currentState === YT.PlayerState.PLAYING) {
+                // Start checking for question timestamps
+                checkTime();
+            } else if (currentState === YT.PlayerState.ENDED) {
+                // Video ended, show summary
+                showSummary();
+            }
+            
+            // Update last state
+            lastPlayerState = currentState;
+        }
+        
+        // Handle manual pause events
+        function handleManualPause(currentTime) {
+            pauseStartTime = new Date();
+            
+            // Only count it as a manual pause if not programmatic
+            if (!isProgrammaticPause) {
+                // Increment pause counter
+                studentData.pauseData.count++;
+                document.getElementById("pauseCount").textContent = studentData.pauseData.count;
+                
+                // Track pause timestamp
+                studentData.pauseData.timestamps.push({
+                    time: currentTime,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Track segment for heatmap
+                const segment = getSegmentForTime(currentTime);
+                if (!studentData.pauseData.segments[segment]) {
+                    studentData.pauseData.segments[segment] = 1;
+                } else {
+                    studentData.pauseData.segments[segment]++;
+                }
+                
+                console.log(`Manual pause at ${formatTime(currentTime)}`);
+            }
+        }
+        
+        // Track which questions have been asked
+        let askedQuestions = [];
+        
+        // Check if we need to pause for a question
+        function checkTime() {
+            const currentTime = Math.floor(player.getCurrentTime());
+            
+            // Update progress bar based on which questions have been answered
+            updateProgressBar(askedQuestions.length / totalQuestions * 100);
+            
+            // Check if we should show a question
+            for (let i = 0; i < questions.length; i++) {
+                // Only show questions that haven't been asked yet
+                if (questions[i].time === currentTime && !askedQuestions.includes(i)) {
+                    // Set programmatic pause flag before pausing
+                    isProgrammaticPause = true;
+                    player.pauseVideo();
+                    askedQuestions.push(i); // Mark this question as asked
+                    showQuestion(i);
+                    
+                    // Start timing for this question
+                    questions[i].startTime = new Date();
+                    return;
+                }
+            }
+            
+            // Continue checking time if no question is shown
+            setTimeout(checkTime, 1000);
+        }
+        
+        // =========== QUESTION HANDLING FUNCTIONS ===========
+        
+        // Display a question
+        function showQuestion(index) {
+            currentQuestion = index;
+            const questionData = questions[index];
+            
+            // Set question text
+            document.getElementById("questionText").textContent = questionData.question;
+            
+            // Clear previous options
+            const optionsContainer = document.getElementById("options");
+            optionsContainer.innerHTML = "";
+            
+            // Add options
+            questionData.options.forEach((option, i) => {
+                const optionElement = document.createElement("div");
+                optionElement.className = "option";
+                optionElement.textContent = option.text;
+                optionElement.onclick = function() { checkAnswer(i); };
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // Reset feedback and continue button
+            document.getElementById("feedback").textContent = "";
+            document.getElementById("feedback").style.backgroundColor = "transparent";
+            document.getElementById("continueButton").style.display = "none";
+            
+            // Show question container with animation
+            const questionContainer = document.getElementById("questionContainer");
+            questionContainer.style.display = "block";
+            setTimeout(() => {
+                questionContainer.style.opacity = "1";
+                questionContainer.style.transform = "translateY(0)";
+            }, 10);
+        }
+        
+        // Check the selected answer
+        function checkAnswer(selectedIndex) {
+            const questionData = questions[currentQuestion];
+            const isCorrect = questionData.options[selectedIndex].correct;
+            
+            // Increment attempts and track answer
+            questionData.attempts++;
+            studentData.totalAttempts++;
+            document.getElementById("totalAttempts").textContent = studentData.totalAttempts;
+            
+            // Calculate and store time to answer
+            if (!questionData.timeToAnswer) {
+                const now = new Date();
+                questionData.timeToAnswer = (now - questionData.startTime) / 1000; // in seconds
+            }
+            
+            // Store selected option
+            questionData.selectedOption = selectedIndex;
+            
+            // Disable all option clicks after answer is selected
+            const optionElements = document.querySelectorAll('.option');
+            optionElements.forEach(element => {
+                element.style.pointerEvents = 'none';
+                element.style.opacity = '0.7';
+            });
+            
+            // Show feedback
+            const feedbackElement = document.getElementById("feedback");
+            if (isCorrect) {
+                feedbackElement.textContent = "Correct! Well done!";
+                feedbackElement.style.color = "white";
+                feedbackElement.style.backgroundColor = "#4CAF50";
+                
+                // Highlight correct answer
+                optionElements[selectedIndex].style.backgroundColor = "#DFF2BF";
+                optionElements[selectedIndex].style.borderLeft = "4px solid #4CAF50";
+                optionElements[selectedIndex].style.opacity = "1";
+                
+                // Show continue button immediately
+                document.getElementById("continueButton").style.display = "block";
+                
+                // Update progress and tracking
+                updateProgressBar(askedQuestions.length / totalQuestions * 100);
+                questionData.answeredCorrectly = true;
+                
+                // Update student stats
+                studentData.correctAnswers++;
+                document.getElementById("correctAnswers").textContent = studentData.correctAnswers;
+                
+                // Track student data
+                studentData.questionAttempts.push({
+                    questionIndex: currentQuestion,
+                    question: questionData.question,
+                    attemptsNeeded: questionData.attempts,
+                    answeredCorrectly: true,
+                    selectedAnswer: questionData.options[selectedIndex].text,
+                    correctAnswer: getCorrectAnswer(questionData),
+                    timeToAnswer: questionData.timeToAnswer
+                });
+                
+                // Update accuracy
+                updateAccuracy();
+            } else {
+                feedbackElement.textContent = "Incorrect. Try again.";
+                feedbackElement.style.color = "white";
+                feedbackElement.style.backgroundColor = "#F44336";
+                
+                // Highlight incorrect answer in red
+                optionElements[selectedIndex].style.backgroundColor = "#FFBABA";
+                optionElements[selectedIndex].style.borderLeft = "4px solid #F44336";
+                
+                // Track incorrect answer in student data
+                if (questionData.attempts >= 2) {
+                    // After second wrong attempt, show correct answer and continue
+                    feedbackElement.textContent = "The correct answer is: " + getCorrectAnswer(questionData);
+                    
+                    // Track student data for incorrect final answer
+                    studentData.questionAttempts.push({
+                        questionIndex: currentQuestion,
+                        question: questionData.question,
+                        attemptsNeeded: questionData.attempts,
+                        answeredCorrectly: false,
+                        selectedAnswer: questionData.options[selectedIndex].text,
+                        correctAnswer: getCorrectAnswer(questionData),
+                        timeToAnswer: questionData.timeToAnswer
+                    });
+                    
+                    // Update accuracy
+                    updateAccuracy();
+                    
+                    // Show continue button after 2 seconds
+                    setTimeout(() => {
+                        document.getElementById("continueButton").style.display = "block";
+                    }, 2000);
+                } else {
+                    // Re-enable options for another try
+                    setTimeout(() => {
+                        optionElements.forEach(element => {
+                            element.style.pointerEvents = 'auto';
+                            element.style.opacity = '1';
+                        });
+                        optionElements[selectedIndex].style.opacity = '0.7'; // Keep the wrong answer faded
+                    }, 800);
+                }
+            }
+        }
+        
+        // Get the correct answer text for a question
+        function getCorrectAnswer(questionData) {
+            for (let i = 0; i < questionData.options.length; i++) {
+                if (questionData.options[i].correct) {
+                    return questionData.options[i].text;
+                }
+            }
+            return "";
+        }
+        
+        // Update accuracy statistic
+        function updateAccuracy() {
+            const accuracy = Math.round((studentData.correctAnswers / studentData.totalAttempts) * 100);
+            document.getElementById("accuracy").textContent = accuracy + "%";
+        }
+        
+        // =========== BUTTON HANDLERS ===========
+        
+        // Set up event listener for the continue button
+        document.getElementById("continueButton").addEventListener("click", function() {
+            // Hide question container
+            const questionContainer = document.getElementById("questionContainer");
+            questionContainer.style.opacity = "0";
+            questionContainer.style.transform = "translateY(10px)";
+            
+            setTimeout(() => {
+                questionContainer.style.display = "none";
+                
+                // Reset the options for next time
+                const optionElements = document.querySelectorAll('.option');
+                optionElements.forEach(element => {
+                    element.style.pointerEvents = 'auto';
+                    element.style.opacity = '1';
+                    element.style.backgroundColor = 'var(--nus-light-grey)';
+                    element.style.borderLeft = '4px solid var(--nus-light-blue)';
+                });
+                
+                // Reset feedback
+                document.getElementById("feedback").style.backgroundColor = "transparent";
+                
+                // Check if this was the last question
+                if (askedQuestions.length === totalQuestions) {
+                    // All questions answered, show summary
+                    showSummary();
+                } else {
+                    // Resume video - reset programmatic pause flag
+                    isProgrammaticPause = false;
+                    player.playVideo();
+                    
+                    // Start checking time again
+                    setTimeout(checkTime, 1000);
+                }
+            }, 300);
+        });
+        
+        // Restart Video button event listener
+        document.getElementById("restartVideoButton").addEventListener("click", function() {
+            // Reset student data for a new session
+            const oldId = studentData.id;
+            
+            // Save old analytics data for comparison
+            const oldAnalytics = {
+                pauseData: JSON.parse(JSON.stringify(studentData.pauseData)),
+                rewatchData: JSON.parse(JSON.stringify(studentData.rewatchData)),
+                speedData: JSON.parse(JSON.stringify(studentData.speedData))
+            };
+            
+            // Reset analytics data
+            studentData = {
+                name: getUsername(),
+                id: oldId + "_retry",      // Add retry suffix to session ID
+                startTime: new Date(),
+                endTime: null,
+                totalTimeSpent: 0,
+                videoWatchedPercentage: 0,
+                questionAttempts: [],
+                correctAnswers: 0,
+                totalAttempts: 0,
+                pageUrl: window.location.href,
+                
+                // Reset tracking metrics
+                pauseData: {
+                    count: 0,
+                    timestamps: [],
+                    durations: [],
+                    segments: {}
+                },
+                rewatchData: {
+                    count: 0,
+                    segments: {},
+                    patterns: []
+                },
+                speedData: {
+                    changes: 0,
+                    history: [],
+                    timeAtSpeed: {}
+                },
+                viewedSegments: {},
+                previousSession: oldAnalytics // Store previous session data for comparison
+            };
+            
+            // Reset questions data
+            questions.forEach(q => {
+                q.attempts = 0;
+                q.answeredCorrectly = false;
+                q.selectedOption = null;
+                q.timeToAnswer = 0;
+            });
+            
+            // Reset UI elements
+            document.getElementById("correctAnswers").textContent = "0";
+            document.getElementById("totalAttempts").textContent = "0";
+            document.getElementById("accuracy").textContent = "0%";
+            document.getElementById("videoProgress").textContent = "0%";
+            document.getElementById("pauseCount").textContent = "0";
+            document.getElementById("rewindCount").textContent = "0";
+            document.getElementById("speedChanges").textContent = "0";
+            document.getElementById("currentSpeed").textContent = "1x";
+            
+            // Reset askedQuestions array
+            askedQuestions = [];
+            
+            // Hide summary panel and show video container
+            document.getElementById("summaryPanel").style.display = "none";
+            document.getElementById("videoContainer").style.display = "block";
+            
+            // Reset progress bar
+            updateProgressBar(0);
+            
+            // Reset playback rate
+            player.setPlaybackRate(1);
+            lastPlaybackRate = 1;
+            
+            // Restart video from beginning
+            player.seekTo(0);
+            player.playVideo();
+            
+            // Reset tracking variables
+            pauseStartTime = null;
+            isProgrammaticPause = false;
+            lastTimePos = 0;
+            
+            // Start checking time again
+            setTimeout(checkTime, 1000);
+        });
+        
+        // =========== UTILITY FUNCTIONS ===========
+        
+        // Generate heatmap visualization for rewatch data
+        function generateRewatchHeatmap() {
+            const heatmapContainer = document.getElementById("rewatchHeatmap");
+            heatmapContainer.innerHTML = "";
+            
+            // Get video duration
+            const duration = player.getDuration();
+            const totalSegments = Math.ceil(duration / SEGMENT_SIZE);
+            
+            // Find max rewatch count for normalization
+            let maxRewatches = 0;
+            for (const segment in studentData.rewatchData.segments) {
+                if (studentData.rewatchData.segments[segment] > maxRewatches) {
+                    maxRewatches = studentData.rewatchData.segments[segment];
+                }
+            }
+            
+            // Create heatmap rows for each segment group (divide video into 5 segments for display)
+            const displayGroups = 5;
+            const segmentsPerGroup = Math.ceil(totalSegments / displayGroups);
+            
+            for (let group = 0; group < displayGroups; group++) {
+                const startSegment = group * segmentsPerGroup;
+                const endSegment = Math.min(startSegment + segmentsPerGroup, totalSegments);
+                
+                // Create row
+                const row = document.createElement("div");
+                row.className = "heatmap-segment";
+                
+                // Add label
+                const label = document.createElement("div");
+                label.className = "heatmap-label";
+                label.textContent = `${formatTime(startSegment * SEGMENT_SIZE)}-${formatTime(endSegment * SEGMENT_SIZE)}`;
+                row.appendChild(label);
+                
+                // Add bar container
+                const barContainer = document.createElement("div");
+                barContainer.className = "heatmap-bar";
+                
+                // Fill with segment chunks
+                for (let i = startSegment; i < endSegment; i++) {
+                    const chunk = document.createElement("div");
+                    chunk.className = "heatmap-chunk";
+                    
+                    // Set intensity based on rewatch count
+                    if (studentData.rewatchData.segments[i]) {
+                        const intensity = studentData.rewatchData.segments[i] / maxRewatches;
+                        const blue = Math.floor(255 * (1 - intensity));
+                        chunk.style.backgroundColor = `rgb(0, ${blue}, 255)`;
+                        
+                        // Add tooltip with exact count
+                        chunk.title = `${formatSegment(i)}: Rewatched ${studentData.rewatchData.segments[i]} times`;
+                    }
+                    
+                    barContainer.appendChild(chunk);
+                }
+                
+                row.appendChild(barContainer);
+                heatmapContainer.appendChild(row);
+            }
+        }
+        
+        // Generate playback speed statistics
+        function generateSpeedMetrics() {
+            const speedMetricsContainer = document.getElementById("speedMetrics");
+            
+            // No speed changes
+            if (studentData.speedData.changes === 0) {
+                speedMetricsContainer.textContent = "No playback speed changes detected.";
+                return;
+            }
+            
+            // Create speed distribution 
+            const speedTable = document.createElement("table");
+            speedTable.style.width = "100%";
+            speedTable.style.marginTop = "10px";
+            
+            // Create header
+            const header = document.createElement("tr");
+            header.innerHTML = "<th>Speed</th><th>Count</th><th>Popular Segments</th>";
+            speedTable.appendChild(header);
+            
+            // Collect speed data
+            const speedDistribution = {};
+            const speedSegments = {};
+            
+            // Process history
+            studentData.speedData.history.forEach(change => {
+                if (!speedDistribution[change.newRate]) {
+                    speedDistribution[change.newRate] = 0;
+                    speedSegments[change.newRate] = {};
+                }
+                
+                speedDistribution[change.newRate]++;
+                
+                // Track segments where this speed was used
+                if (!speedSegments[change.newRate][change.segment]) {
+                    speedSegments[change.newRate][change.segment] = 0;
+                }
+                speedSegments[change.newRate][change.segment]++;
+            });
+            
+            // Add rows for each speed
+            for (const speed in speedDistribution) {
+                const row = document.createElement("tr");
+                
+                // Speed value 
+                const speedCell = document.createElement("td");
+                speedCell.textContent = `${speed}x`;
+                row.appendChild(speedCell);
+                
+                // Count
+                const countCell = document.createElement("td");
+                countCell.textContent = speedDistribution[speed];
+                row.appendChild(countCell);
+                
+                // Most common segments
+                const segmentsCell = document.createElement("td");
+                
+                // Get top segments for this speed
+                const segments = Object.keys(speedSegments[speed])
+                    .sort((a, b) => speedSegments[speed][b] - speedSegments[speed][a])
+                    .slice(0, 2)
+                    .map(segment => formatSegment(segment))
+                    .join(", ");
+                
+                segmentsCell.textContent = segments || "N/A";
+                row.appendChild(segmentsCell);
+                
+                speedTable.appendChild(row);
+            }
+            
+            speedMetricsContainer.appendChild(speedTable);
+        }
+        
+        // Generate pause pattern metrics
+        function generatePauseMetrics() {
+            const pauseMetricsContainer = document.getElementById("pauseMetrics");
+            
+            // No pauses
+            if (studentData.pauseData.count === 0) {
+                pauseMetricsContainer.textContent = "No manual pauses detected.";
+                return;
+            }
+            
+            // Calculate average pause duration
+            let totalDuration = 0;
+            studentData.pauseData.durations.forEach(duration => {
+                totalDuration += duration;
+            });
+            const avgDuration = totalDuration / studentData.pauseData.durations.length;
+            
+            // Find most common pause segments
+            const sortedSegments = Object.keys(studentData.pauseData.segments)
+                .sort((a, b) => studentData.pauseData.segments[b] - studentData.pauseData.segments[a]);
+            
+            const topSegments = sortedSegments.slice(0, 3).map(segment => {
+                return `${formatSegment(segment)} (${studentData.pauseData.segments[segment]} times)`;
+            }).join(", ");
+            
+            // Create metrics display
+            pauseMetricsContainer.innerHTML = `
+                <div style="margin-bottom: 10px">
+                    <strong>Total Pauses:</strong> ${studentData.pauseData.count}
+                </div>
+                <div style="margin-bottom: 10px">
+                    <strong>Average Pause Duration:</strong> ${avgDuration.toFixed(1)} seconds
+                </div>
+                <div>
+                    <strong>Most Common Pause Points:</strong> ${topSegments || "N/A"}
+                </div>
+            `;
+        }
+        
+        // Show summary at the end
+        function showSummary() {
+            // Calculate end time and total time spent
+            studentData.endTime = new Date();
+            studentData.totalTimeSpent = Math.floor((studentData.endTime - studentData.startTime) / 1000); // in seconds
+            
+            // Hide video container
+            document.getElementById("videoContainer").style.display = "none";
+            
+            // Generate summary content
+            const summaryContainer = document.getElementById("questionsSummary");
+            summaryContainer.innerHTML = "";
+            
+            // Add each question to the summary
+            questions.forEach((q, index) => {
+                const questionDiv = document.createElement("div");
+                questionDiv.className = "question-summary";
+                
+                const questionTitle = document.createElement("h3");
+                questionTitle.textContent = `Question ${index + 1}: ${q.question}`;
+                questionDiv.appendChild(questionTitle);
+                
+                const attemptsInfo = document.createElement("p");
+                attemptsInfo.textContent = `Attempts: ${q.attempts}`;
+                questionDiv.appendChild(attemptsInfo);
+                
+                const answerInfo = document.createElement("p");
+                const studentAttempt = studentData.questionAttempts.find(a => a.questionIndex === index);
+                
+                if (studentAttempt && studentAttempt.answeredCorrectly) {
+                    answerInfo.innerHTML = `Your answer: <span class="summary-correct">${studentAttempt.selectedAnswer}</span>`;
+                } else if (studentAttempt) {
+                    answerInfo.innerHTML = `Your answer: <span class="summary-incorrect">${studentAttempt.selectedAnswer}</span>`;
+                    const correctAnswer = document.createElement("p");
+                    correctAnswer.innerHTML = `Correct answer: <span class="summary-correct">${getCorrectAnswer(q)}</span>`;
+                    questionDiv.appendChild(correctAnswer);
+                } else {
+                    answerInfo.textContent = "Question not attempted";
+                }
+                
+                questionDiv.appendChild(answerInfo);
+                summaryContainer.appendChild(questionDiv);
+            });
+            
+            // Calculate overall score
+            const overallScoreDiv = document.getElementById("overallScore");
+            const scorePercentage = Math.round((studentData.correctAnswers / totalQuestions) * 100);
+            overallScoreDiv.innerHTML = `
+                <h3>Overall Performance</h3>
+                <p>Score: ${studentData.correctAnswers} out of ${totalQuestions} (${scorePercentage}%)</p>
+                <p>Total Time Spent: ${formatTime(studentData.totalTimeSpent)}</p>
+                <p>Video Watched: ${studentData.videoWatchedPercentage}%</p>
+            `;
+            
+            // Update the total pause count in the summary
+            document.getElementById("totalPauses").textContent = studentData.pauseData.count;
+            
+            // Generate the rewatch heatmap
+            generateRewatchHeatmap();
+            
+            // Generate playback speed metrics
+            generateSpeedMetrics();
+            
+            // Generate pause pattern metrics
+            generatePauseMetrics();
+            
+            // Log student data and submit to tracking
+            console.log("Student Data for Tracking:", studentData);
+            submitVideoTrackData();
+            
+            // Show the summary panel
+            document.getElementById("summaryPanel").style.display = "block";
+        }
+        
+        // Format time in seconds to MM:SS format
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+        
+        // Update progress bar
+        function updateProgressBar(percentage) {
+            document.getElementById("progressBar").style.width = percentage + "%";
+        }
+    </script>
+</body>
+</html>
