@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plotting Sine Waves in Python - NUS Tutorial</title>
+    <style>
+        /* NUS Colors */
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #0083B6;
+            --nus-light-gray: #F5F5F5;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: var(--nus-light-gray);
+            overflow-x: hidden;
+        }
+        
+        .page-container {
+            display: flex;
+            flex-direction: row;
+            max-width: 100%;
+        }
+        
+        .content-container {
+            flex: 1;
+            max-width: 65%;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .trinket-container {
+            width: 35%;
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            border-left: 2px solid var(--nus-orange);
+            background-color: white;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .trinket-header {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .trinket-embed {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .trinket-embed iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        header {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.2em;
+        }
+        
+        h2 {
+            color: var(--nus-blue);
+            border-bottom: 2px solid var(--nus-orange);
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        
+        .tagline {
+            font-style: italic;
+            color: #f0f0f0;
+        }
+        
+        .content-section {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .code-block {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--nus-orange);
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        
+        .note {
+            background-color: #e6f7ff;
+            border-left: 4px solid var(--nus-light-blue);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .step {
+            margin-bottom: 25px;
+        }
+        
+        .step-number {
+            background-color: var(--nus-orange);
+            color: white;
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .step-title {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: var(--nus-blue);
+        }
+        
+        .challenge {
+            background-color: #fff8e6;
+            border-left: 4px solid var(--nus-orange);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 1024px) {
+            .page-container {
+                flex-direction: column;
+            }
+            
+            .content-container {
+                max-width: 100%;
+                padding: 15px;
+            }
+            
+            .trinket-container {
+                position: static;
+                width: 100%;
+                height: 600px;
+                margin-top: 20px;
+                border-left: none;
+                border-top: 2px solid var(--nus-orange);
+            }
+        }
+        
+        /* Copy to Trinket button */
+        .copy-btn {
+            background-color: var(--nus-orange);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            float: right;
+            margin-top: -5px;
+        }
+        
+        .copy-btn:hover {
+            background-color: #d06800;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="content-container">
+            <header>
+                <h1>Plotting Sine Waves in Python</h1>
+                <p class="tagline">A beginner's guide to scientific plotting with matplotlib</p>
+            </header>
+            
+            <div class="content-section">
+                <h2>Introduction</h2>
+                <p>The sine function is one of the most fundamental functions in mathematics, physics, and engineering. It's used to model periodic phenomena such as sound waves, light waves, and alternating current.</p>
+                
+                <p>In this tutorial, you'll learn how to plot a sine wave using Python's <code>matplotlib</code> library, one of the most popular data visualization tools in the Python ecosystem.</p>
+            </div>
+            
+            <div class="content-section">
+                <h2>What You'll Learn</h2>
+                <ul>
+                    <li>How to import necessary libraries</li>
+                    <li>How to generate data points for a sine wave</li>
+                    <li>How to create a basic plot</li>
+                    <li>How to customize your plot with labels, titles, and styling</li>
+                    <li>How to modify parameters to change the appearance of your sine wave</li>
+                </ul>
+            </div>
+            
+            <div class="content-section">
+                <h2>Step-by-Step Guide</h2>
+                
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <span class="step-title">Import necessary libraries</span>
+                    <p>We'll need two main libraries: <code>numpy</code> for numerical calculations and <code>matplotlib</code> for plotting.</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyToTrinket('import numpy as np\nimport matplotlib.pyplot as plt')">Copy to Trinket</button>
+                        <pre>import numpy as np
+import matplotlib.pyplot as plt</pre>
+                    </div>
+                    <p><code>numpy</code> provides functions for working with arrays and mathematical operations, while <code>matplotlib.pyplot</code> gives us plotting capabilities.</p>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <span class="step-title">Generate x-values (domain)</span>
+                    <p>We need to create an array of x-values that will represent the domain of our sine function. We'll use <code>np.linspace()</code> to create evenly spaced values.</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyToTrinket('x = np.linspace(0, 2 * np.pi, 100)')">Copy to Trinket</button>
+                        <pre>x = np.linspace(0, 2 * np.pi, 100)</pre>
+                    </div>
+                    <p>This creates 100 evenly spaced points from 0 to 2π (one complete cycle of a sine wave).</p>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <span class="step-title">Calculate y-values (sine function)</span>
+                    <p>Now we'll calculate the sine value for each x-value in our array.</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyToTrinket('y = np.sin(x)')">Copy to Trinket</button>
+                        <pre>y = np.sin(x)</pre>
+                    </div>
+                    <p><code>np.sin()</code> applies the sine function to each value in the array, giving us our y-values.</p>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <span class="step-title">Create a basic plot</span>
+                    <p>Let's create a simple plot with our x and y values.</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyToTrinket('plt.figure(figsize=(10, 6))\nplt.plot(x, y)\nplt.show()')">Copy to Trinket</button>
+                        <pre>plt.figure(figsize=(10, 6))
+plt.plot(x, y)
+plt.show()</pre>
+                    </div>
+                    <p>This creates a figure with specified dimensions, plots our data, and displays the result.</p>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">5</span>
+                    <span class="step-title">Add labels and title</span>
+                    <p>Let's make our plot more informative by adding proper labels and a title.</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyToTrinket('plt.figure(figsize=(10, 6))\nplt.plot(x, y)\nplt.title(\'Sine Wave\')\nplt.xlabel(\'x (radians)\')\nplt.ylabel(\'sin(x)\')\nplt.grid(True)\nplt.show()')">Copy to Trinket</button>
+                        <pre>plt.figure(figsize=(10, 6))
+plt.plot(x, y)
+plt.title('Sine Wave')
+plt.xlabel('x (radians)')
+plt.ylabel('sin(x)')
+plt.grid(True)
+plt.show()</pre>
+                    </div>
+                    <p>This adds a title, x and y axis labels, and a grid to make the plot easier to read.</p>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">6</span>
+                    <span class="step-title">Customize your plot</span>
+                    <p>Let's add some customization to make our plot more visually appealing.</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyToTrinket('plt.figure(figsize=(10, 6))\nplt.plot(x, y, color=\'#003D7C\', linewidth=2, linestyle=\'-\', marker=\'\', label=\'sin(x)\')\n\n# Add a horizontal line at y=0\nplt.axhline(y=0, color=\'#EF7C00\', linestyle=\'--\', alpha=0.7)\n\nplt.title(\'Sine Wave\', fontsize=16)\nplt.xlabel(\'x (radians)\', fontsize=12)\nplt.ylabel(\'sin(x)\', fontsize=12)\n\n# Add specific ticks at multiples of π/2\nplt.xticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi],\n           [\'0\', \'π/2\', \'π\', \'3π/2\', \'2π\'])\n\nplt.grid(True, alpha=0.3)\nplt.legend()\nplt.show()')">Copy to Trinket</button>
+                        <pre>plt.figure(figsize=(10, 6))
+plt.plot(x, y, color='#003D7C', linewidth=2, linestyle='-', marker='', label='sin(x)')
+
+# Add a horizontal line at y=0
+plt.axhline(y=0, color='#EF7C00', linestyle='--', alpha=0.7)
+
+plt.title('Sine Wave', fontsize=16)
+plt.xlabel('x (radians)', fontsize=12)
+plt.ylabel('sin(x)', fontsize=12)
+
+# Add specific ticks at multiples of π/2
+plt.xticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi],
+           ['0', 'π/2', 'π', '3π/2', '2π'])
+
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.show()</pre>
+                    </div>
+                    <p>Here we've customized the line color, added a horizontal line at y=0, adjusted font sizes, and created custom x-axis tick labels using multiples of π.</p>
+                </div>
+            </div>
+            
+            <div class="content-section">
+                <h2>Understanding Sine Wave Parameters</h2>
+                
+                <p>A general sine function can be written as: <strong>y = A * sin(B * x + C) + D</strong> where:</p>
+                <ul>
+                    <li><strong>A</strong> controls the amplitude (height of the wave)</li>
+                    <li><strong>B</strong> controls the period (length of one complete cycle)</li>
+                    <li><strong>C</strong> controls the phase shift (horizontal shift)</li>
+                    <li><strong>D</strong> controls the vertical shift</li>
+                </ul>
+                
+                <div class="note">
+                    <p><strong>Note:</strong> The period of the sine wave is given by 2π/B. For example, if B=2, the period is π.</p>
+                </div>
+                
+                <p>Let's modify our code to see how changing these parameters affects our sine wave:</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToTrinket('plt.figure(figsize=(10, 6))\n\n# Original sine wave\ny1 = np.sin(x)\nplt.plot(x, y1, label=\'sin(x)\', color=\'#003D7C\')\n\n# Modified amplitude (A=0.5)\ny2 = 0.5 * np.sin(x)\nplt.plot(x, y2, label=\'0.5*sin(x)\', color=\'#EF7C00\')\n\n# Modified period (B=2)\ny3 = np.sin(2 * x)\nplt.plot(x, y3, label=\'sin(2x)\', color=\'#0083B6\')\n\nplt.title(\'Effect of Parameters on Sine Waves\')\nplt.xlabel(\'x (radians)\')\nplt.ylabel(\'y\')\nplt.grid(True, alpha=0.3)\nplt.legend()\nplt.show()')">Copy to Trinket</button>
+                    <pre>plt.figure(figsize=(10, 6))
+
+# Original sine wave
+y1 = np.sin(x)
+plt.plot(x, y1, label='sin(x)', color='#003D7C')
+
+# Modified amplitude (A=0.5)
+y2 = 0.5 * np.sin(x)
+plt.plot(x, y2, label='0.5*sin(x)', color='#EF7C00')
+
+# Modified period (B=2)
+y3 = np.sin(2 * x)
+plt.plot(x, y3, label='sin(2x)', color='#0083B6')
+
+plt.title('Effect of Parameters on Sine Waves')
+plt.xlabel('x (radians)')
+plt.ylabel('y')
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.show()</pre>
+                </div>
+            </div>
+            
+            <div class="content-section">
+                <h2>Complete Example</h2>
+                <p>Here's a complete example that puts everything together:</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToTrinket('import numpy as np\nimport matplotlib.pyplot as plt\n\n# Generate x values from 0 to 4π\nx = np.linspace(0, 4 * np.pi, 1000)\n\n# Create multiple sine waves with different parameters\ny1 = np.sin(x)                # Standard sine wave\ny2 = 2 * np.sin(x)            # Amplitude = 2\ny3 = np.sin(2 * x)            # Period = π\ny4 = np.sin(x + np.pi/2)      # Phase shift = π/2\ny5 = np.sin(x) + 1.5          # Vertical shift = 1.5\n\n# Create a figure with subplots\nplt.figure(figsize=(15, 10))\n\n# Plot 1: Standard sine wave\nplt.subplot(3, 2, 1)\nplt.plot(x, y1, color=\'#003D7C\')\nplt.title(\'Standard: sin(x)\')\nplt.grid(True, alpha=0.3)\n\n# Plot 2: Amplitude change\nplt.subplot(3, 2, 2)\nplt.plot(x, y2, color=\'#EF7C00\')\nplt.title(\'Amplitude: 2*sin(x)\')\nplt.grid(True, alpha=0.3)\n\n# Plot 3: Period change\nplt.subplot(3, 2, 3)\nplt.plot(x, y3, color=\'#0083B6\')\nplt.title(\'Period: sin(2x)\')\nplt.grid(True, alpha=0.3)\n\n# Plot 4: Phase shift\nplt.subplot(3, 2, 4)\nplt.plot(x, y4, color=\'#8B008B\')\nplt.title(\'Phase Shift: sin(x + π/2)\')\nplt.grid(True, alpha=0.3)\n\n# Plot 5: Vertical shift\nplt.subplot(3, 2, 5)\nplt.plot(x, y5, color=\'#006400\')\nplt.title(\'Vertical Shift: sin(x) + 1.5\')\nplt.grid(True, alpha=0.3)\n\n# Plot 6: Combined parameters\nplt.subplot(3, 2, 6)\ncombined = 1.5 * np.sin(2 * x - np.pi/4) + 0.5\nplt.plot(x, combined, color=\'#A52A2A\')\nplt.title(\'Combined: 1.5*sin(2x - π/4) + 0.5\')\nplt.grid(True, alpha=0.3)\n\n# Adjust layout\nplt.tight_layout()\nplt.show()')">Copy to Trinket</button>
+                    <pre>import numpy as np
+import matplotlib.pyplot as plt
+
+# Generate x values from 0 to 4π
+x = np.linspace(0, 4 * np.pi, 1000)
+
+# Create multiple sine waves with different parameters
+y1 = np.sin(x)                # Standard sine wave
+y2 = 2 * np.sin(x)            # Amplitude = 2
+y3 = np.sin(2 * x)            # Period = π
+y4 = np.sin(x + np.pi/2)      # Phase shift = π/2
+y5 = np.sin(x) + 1.5          # Vertical shift = 1.5
+
+# Create a figure with subplots
+plt.figure(figsize=(15, 10))
+
+# Plot 1: Standard sine wave
+plt.subplot(3, 2, 1)
+plt.plot(x, y1, color='#003D7C')
+plt.title('Standard: sin(x)')
+plt.grid(True, alpha=0.3)
+
+# Plot 2: Amplitude change
+plt.subplot(3, 2, 2)
+plt.plot(x, y2, color='#EF7C00')
+plt.title('Amplitude: 2*sin(x)')
+plt.grid(True, alpha=0.3)
+
+# Plot 3: Period change
+plt.subplot(3, 2, 3)
+plt.plot(x, y3, color='#0083B6')
+plt.title('Period: sin(2x)')
+plt.grid(True, alpha=0.3)
+
+# Plot 4: Phase shift
+plt.subplot(3, 2, 4)
+plt.plot(x, y4, color='#8B008B')
+plt.title('Phase Shift: sin(x + π/2)')
+plt.grid(True, alpha=0.3)
+
+# Plot 5: Vertical shift
+plt.subplot(3, 2, 5)
+plt.plot(x, y5, color='#006400')
+plt.title('Vertical Shift: sin(x) + 1.5')
+plt.grid(True, alpha=0.3)
+
+# Plot 6: Combined parameters
+plt.subplot(3, 2, 6)
+combined = 1.5 * np.sin(2 * x - np.pi/4) + 0.5
+plt.plot(x, combined, color='#A52A2A')
+plt.title('Combined: 1.5*sin(2x - π/4) + 0.5')
+plt.grid(True, alpha=0.3)
+
+# Adjust layout
+plt.tight_layout()
+plt.show()</pre>
+                </div>
+            </div>
+            
+            <div class="content-section">
+                <h2>Practice Challenges</h2>
+                
+                <div class="challenge">
+                    <h3>Challenge 1: Create a Damped Sine Wave</h3>
+                    <p>A damped sine wave decreases in amplitude over time, and can be represented by the equation:</p>
+                    <p><strong>y = A * e<sup>(-Bt)</sup> * sin(ωt)</strong></p>
+                    <p>Try to plot this using what you've learned!</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyToTrinket('# Damped sine wave example\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# Generate x values\nx = np.linspace(0, 10, 1000)\n\n# Parameters\nA = 1.0      # Initial amplitude\nB = 0.2      # Damping coefficient\nomega = 2.0  # Angular frequency\n\n# Calculate the damped sine wave\ny = A * np.exp(-B * x) * np.sin(omega * x)\n\n# Plot\nplt.figure(figsize=(10, 6))\nplt.plot(x, y, color=\'#003D7C\')\nplt.title(\'Damped Sine Wave: A*e^(-Bt)*sin(ωt)\')\nplt.xlabel(\'t\')\nplt.ylabel(\'Amplitude\')\nplt.grid(True, alpha=0.3)\nplt.axhline(y=0, color=\'#EF7C00\', linestyle=\'--\', alpha=0.7)\nplt.show()')">Copy to Trinket</button>
+                        <pre># Damped sine wave example
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Generate x values
+x = np.linspace(0, 10, 1000)
+
+# Parameters
+A = 1.0      # Initial amplitude
+B = 0.2      # Damping coefficient
+omega = 2.0  # Angular frequency
+
+# Calculate the damped sine wave
+y = A * np.exp(-B * x) * np.sin(omega * x)
+
+# Plot
+plt.figure(figsize=(10, 6))
+plt.plot(x, y, color='#003D7C')
+plt.title('Damped Sine Wave: A*e^(-Bt)*sin(ωt)')
+plt.xlabel('t')
+plt.ylabel('Amplitude')
+plt.grid(True, alpha=0.3)
+plt.axhline(y=0, color='#EF7C00', linestyle='--', alpha=0.7)
+plt.show()</pre>
+                    </div>
+                </div>
+                
+                <div class="challenge">
+                    <h3>Challenge 2: Combine Multiple Sine Waves</h3>
+                    <p>Try adding two sine waves of different frequencies to create a more complex waveform:</p>
+                    <p><strong>y = sin(x) + 0.5 * sin(3x)</strong></p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyToTrinket('# Combined sine waves\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# Generate x values\nx = np.linspace(0, 2 * np.pi, 1000)\n\n# Calculate individual waves\ny1 = np.sin(x)\ny2 = 0.5 * np.sin(3 * x)\n\n# Combined wave\ny_combined = y1 + y2\n\n# Plot\nplt.figure(figsize=(10, 6))\nplt.plot(x, y1, \'--\', color=\'#0083B6\', alpha=0.7, label=\'sin(x)\')\nplt.plot(x, y2, \'--\', color=\'#EF7C00\', alpha=0.7, label=\'0.5*sin(3x)\')\nplt.plot(x, y_combined, color=\'#003D7C\', linewidth=2, label=\'Combined\')\n\nplt.title(\'Combined Sine Waves: sin(x) + 0.5*sin(3x)\')\nplt.xlabel(\'x\')\nplt.ylabel(\'Amplitude\')\nplt.grid(True, alpha=0.3)\nplt.legend()\nplt.axhline(y=0, color=\'gray\', linestyle=\'--\', alpha=0.5)\nplt.show()')">Copy to Trinket</button>
+                        <pre># Combined sine waves
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Generate x values
+x = np.linspace(0, 2 * np.pi, 1000)
+
+# Calculate individual waves
+y1 = np.sin(x)
+y2 = 0.5 * np.sin(3 * x)
+
+# Combined wave
+y_combined = y1 + y2
+
+# Plot
+plt.figure(figsize=(10, 6))
+plt.plot(x, y1, '--', color='#0083B6', alpha=0.7, label='sin(x)')
+plt.plot(x, y2, '--', color='#EF7C00', alpha=0.7, label='0.5*sin(3x)')
+plt.plot(x, y_combined, color='#003D7C', linewidth=2, label='Combined')
+
+plt.title('Combined Sine Waves: sin(x) + 0.5*sin(3x)')
+plt.xlabel('x')
+plt.ylabel('Amplitude')
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+plt.show()</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content-section">
+                <h2>Key Takeaways</h2>
+                <ul>
+                    <li>Sine waves are fundamental for modeling periodic phenomena</li>
+                    <li>Python's matplotlib and numpy libraries make it easy to plot mathematical functions</li>
+                    <li>You can customize sine waves by adjusting amplitude, period, phase shift, and vertical shift</li>
+                    <li>Proper labeling and styling make your plots more professional and easier to understand</li>
+                </ul>
+            </div>
+            
+            <footer>
+                <p>© 2025 NUS Computing - Python for Scientific Computing</p>
+            </footer>
+        </div>
+        
+        <div class="trinket-container">
+            <div class="trinket-header">Python Interpreter</div>
+            <div class="trinket-embed">
+                <iframe src="https://trinket.io/embed/python/423dbea011" frameborder="0" marginwidth="0" marginheight="0" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function copyToTrinket(code) {
+            // Since we can't directly write to the iframe, we'll copy to clipboard
+            navigator.clipboard.writeText(code).then(function() {
+                alert("Code copied to clipboard! Paste it into the Trinket console.");
+            }, function() {
+                alert("Failed to copy code. Please copy it manually.");
+            });
+        }
+    </script>
+</body>
+</html>
