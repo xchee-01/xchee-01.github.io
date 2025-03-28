@@ -191,12 +191,6 @@
             color: var(--nus-blue);
         }
 
-        .accuracy {
-            font-size: 0.8rem;
-            color: var(--nus-orange);
-            font-weight: 500;
-        }
-
         .progress-bar {
             height: 100%;
             background: linear-gradient(90deg, var(--nus-blue) 0%, var(--nus-orange) 100%);
@@ -327,6 +321,36 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+
+        /* New styles for student score bars */
+        .student-details {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .student-score-bar-container {
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+            margin-top: 3px;
+        }
+
+        .student-score-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--nus-blue) 0%, var(--nus-orange) 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .accuracy-value {
+            color: var(--nus-orange);
+            font-weight: 600;
+            font-size: 0.8rem;
+            margin-top: 2px;
         }
 
         /* Responsive adjustments */
@@ -518,11 +542,16 @@
                     // Skip rows without student names
                     if (!row[nameIndex]) continue;
                     
+                    // Parse accuracy as a numeric percentage value
+                    let accuracyText = row[accuracyIndex] || '0%';
+                    let accuracyValue = parseFloat(accuracyText.replace('%', '')) || 0;
+                    
                     // Create student object
                     students.push({
                         name: row[nameIndex],
                         score: parseInt(row[totalScoreIndex] || 0),
-                        accuracy: row[accuracyIndex] || '0%'
+                        accuracy: accuracyValue,
+                        accuracyText: accuracyValue.toFixed(0) + '%'
                     });
                 }
                 
@@ -547,13 +576,13 @@
                 totalQuestions: 5,
                 lastUpdated: new Date().toLocaleString() + ' (Demo Data)',
                 students: [
-                    { name: "f", score: 4, accuracy: "100%" },
-                    { name: "c", score: 3, accuracy: "100%" },
-                    { name: "e", score: 3, accuracy: "75%" },
-                    { name: "xavierchee", score: 3, accuracy: "75%" },
-                    { name: "d", score: 2, accuracy: "67%" },
-                    { name: "b", score: 2, accuracy: "50%" },
-                    { name: "a", score: 1, accuracy: "25%" }
+                    { name: "f", score: 4, accuracy: 100, accuracyText: "100%" },
+                    { name: "c", score: 3, accuracy: 100, accuracyText: "100%" },
+                    { name: "e", score: 3, accuracy: 75, accuracyText: "75%" },
+                    { name: "xavierchee", score: 3, accuracy: 75, accuracyText: "75%" },
+                    { name: "d", score: 2, accuracy: 67, accuracyText: "67%" },
+                    { name: "b", score: 2, accuracy: 50, accuracyText: "50%" },
+                    { name: "a", score: 1, accuracy: 25, accuracyText: "25%" }
                 ]
             };
         }
@@ -659,12 +688,38 @@
                 rankBadge.textContent = rank;
                 rankCell.appendChild(rankBadge);
                 
-                // Student name
-                const nameCell = document.createElement('div');
-                nameCell.className = 'student-name';
-                nameCell.textContent = student.name;
+                // Student details including name and accuracy bar
+                const detailsCell = document.createElement('div');
+                detailsCell.className = 'student-details';
                 
-                // Score and accuracy
+                // Student name
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'student-name';
+                nameDiv.textContent = student.name;
+                
+                // Score bar
+                const scoreBarContainer = document.createElement('div');
+                scoreBarContainer.className = 'student-score-bar-container';
+                
+                const scoreBar = document.createElement('div');
+                scoreBar.className = 'student-score-bar';
+                // Calculate width based on score relative to total questions
+                const scorePercentage = (student.score / data.totalQuestions) * 100;
+                scoreBar.style.width = `${scorePercentage}%`;
+                
+                scoreBarContainer.appendChild(scoreBar);
+                
+                // Accuracy display
+                const accuracyValueDiv = document.createElement('div');
+                accuracyValueDiv.className = 'accuracy-value';
+                accuracyValueDiv.textContent = `Accuracy: ${student.accuracyText}`;
+                
+                // Add elements to details cell
+                detailsCell.appendChild(nameDiv);
+                detailsCell.appendChild(scoreBarContainer);
+                detailsCell.appendChild(accuracyValueDiv);
+                
+                // Score cell
                 const scoreCell = document.createElement('div');
                 scoreCell.className = 'score-cell';
                 
@@ -672,16 +727,11 @@
                 scoreValue.className = 'score-value';
                 scoreValue.textContent = `${student.score}/${data.totalQuestions}`;
                 
-                const accuracy = document.createElement('div');
-                accuracy.className = 'accuracy';
-                accuracy.textContent = student.accuracy;
-                
                 scoreCell.appendChild(scoreValue);
-                scoreCell.appendChild(accuracy);
                 
                 // Add all cells to the row
                 row.appendChild(rankCell);
-                row.appendChild(nameCell);
+                row.appendChild(detailsCell);
                 row.appendChild(scoreCell);
                 
                 // Add row to the list
