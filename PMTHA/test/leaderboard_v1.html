@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUS Performance Leaderboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --background: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-primary: #2b2d42;
+            --text-secondary: #6c757d;
+            --light-blue: rgba(0, 61, 124, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: var(--background);
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #e4ecfb 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--nus-blue);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .leaderboard-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            padding-bottom: 10px;
+        }
+
+        .leaderboard-header {
+            background: var(--nus-blue);
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .leaderboard-header h2 {
+            font-weight: 600;
+            font-size: 1.4rem;
+            margin: 0;
+        }
+
+        .leaderboard-header .stats {
+            display: flex;
+            gap: 15px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        .progress-section {
+            padding: 20px;
+        }
+
+        .progress-bar-container {
+            height: 24px;
+            background-color: #e0e0e0;
+            border-radius: 12px;
+            margin: 10px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .student-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 100px;
+            align-items: center;
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+
+        .student-row:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-color: rgba(0, 61, 124, 0.2);
+        }
+
+        .student-row.top-1 {
+            background: linear-gradient(135deg, rgba(239, 124, 0, 0.1) 0%, rgba(255, 255, 255, 1) 100%);
+            border-left: 4px solid var(--nus-orange);
+        }
+
+        .student-row.top-2, .student-row.top-3 {
+            background: linear-gradient(135deg, rgba(0, 61, 124, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+            border-left: 4px solid var(--nus-blue);
+        }
+
+        .rank-cell {
+            text-align: center;
+        }
+
+        .rank-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .rank-badge.gold {
+            background: var(--nus-orange);
+            color: white;
+        }
+
+        .rank-badge.other {
+            background: var(--nus-blue);
+            color: white;
+        }
+
+        .rank-badge.regular {
+            background: #f8f9fa;
+            color: var(--text-primary);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .student-name {
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .score-cell {
+            text-align: right;
+        }
+
+        .score-value {
+            font-weight: 700;
+            color: var(--nus-blue);
+        }
+
+        .accuracy {
+            font-size: 0.8rem;
+            color: var(--nus-orange);
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--nus-blue) 0%, var(--nus-orange) 100%);
+            border-radius: 12px;
+            transition: width 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .progress-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            padding: 0 2px;
+        }
+
+        .progress-marker {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            position: relative;
+            text-align: center;
+            width: 20px;
+        }
+
+        .progress-marker::before {
+            content: '';
+            position: absolute;
+            height: 5px;
+            width: 1px;
+            background-color: #ccc;
+            top: -8px;
+            left: 50%;
+        }
+
+        .list-container {
+            padding: 0 20px 20px 20px;
+        }
+
+        .list-header {
+            display: grid;
+            grid-template-columns: 80px 1fr 100px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 10px 20px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 61, 124, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--nus-blue);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+
+        .loading p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+            background: rgba(220, 53, 69, 0.1);
+            border-radius: 8px;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .retry-button {
+            background: var(--nus-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+        
+        .retry-button:hover {
+            background: var(--nus-orange);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .last-updated {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 20px;
+        }
+
+        /* Animation */
+        .student-row {
+            animation: fadeIn 0.5s ease forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .leaderboard-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .student-row, .list-header {
+                grid-template-columns: 60px 1fr 80px;
+                padding: 12px 15px;
+            }
+            
+            .rank-badge {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-award"></i> NUS Performance Leaderboard</h1>
+            <p>Tracking student performance and achievement</p>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading performance data...</p>
+        </div>
+        
+        <div id="leaderboard" class="leaderboard-container" style="display: none;">
+            <div class="leaderboard-header">
+                <h2><i class="fas fa-trophy"></i> Student Performance</h2>
+                <div id="stats" class="stats">
+                    <!-- Will be filled by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="progress-section">
+                <h3>Class Average Performance</h3>
+                <div class="progress-bar-container">
+                    <div id="averageProgress" class="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <div id="progressMarkers" class="progress-markers">
+                    <!-- Will be filled by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="list-container">
+                <div class="list-header">
+                    <div style="text-align: center;">Rank</div>
+                    <div>Student</div>
+                    <div style="text-align: right;">Score</div>
+                </div>
+                <div id="studentList">
+                    <!-- Will be filled by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <div id="last-updated" class="last-updated">
+            <!-- Will be filled by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Replace with your actual deployed Google Apps Script web app URL
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzEMNlA7CThJanbY_aafAOuDQwp81uSjj8ap-nS9nGYqVPN8r4iOy51itfJr9YKF6uf/exec';
+        
+        // Google Spreadsheet ID and sheet name
+        const SPREADSHEET_ID = '19NXpyi3Rd-kkIOvUlZBhIcDkJ9Y4bhp16zYCqOiMF9c';
+        const SHEET_NAME = 'Performance Matrix';
+        
+        // Load the leaderboard data when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLeaderboard();
+        });
+        
+        function loadLeaderboard() {
+            // Show loading state
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('leaderboard').style.display = 'none';
+            
+            // Use JSONP to fetch the data from Google Apps Script
+            const script = document.createElement('script');
+            script.src = `${API_URL}?spreadsheetId=${SPREADSHEET_ID}&sheetName=${encodeURIComponent(SHEET_NAME)}&callback=handleLeaderboardData`;
+            script.onerror = function() {
+                showError('Failed to connect to the Google Sheet. Please check the URL and permissions.');
+            };
+            document.body.appendChild(script);
+            
+            // Set a timeout in case the request fails
+            setTimeout(function() {
+                if (document.getElementById('leaderboard').style.display === 'none') {
+                    showError('Request timed out. Please check your connection and try again.');
+                }
+            }, 8000);
+        }
+        
+        // Callback function that will be called by the JSONP response
+        function handleLeaderboardData(data) {
+            try {
+                // Process the Google Sheet data
+                const processedData = processSheetData(data);
+                
+                // Display the leaderboard
+                displayLeaderboard(processedData);
+            } catch (error) {
+                console.error('Error processing data:', error);
+                showError('Error processing the data: ' + error.message);
+            }
+        }
+        
+        function processSheetData(data) {
+            // If we're using mockup data for testing
+            if (!data || !data.values) {
+                // Sample data structure for testing
+                return {
+                    totalQuestions: 5,
+                    lastUpdated: new Date().toLocaleString(),
+                    students: [
+                        { name: "f", score: 4, accuracy: "100%" },
+                        { name: "c", score: 3, accuracy: "100%" },
+                        { name: "e", score: 3, accuracy: "75%" },
+                        { name: "xavierchee", score: 3, accuracy: "75%" },
+                        { name: "d", score: 2, accuracy: "67%" },
+                        { name: "b", score: 2, accuracy: "50%" },
+                        { name: "a", score: 1, accuracy: "25%" }
+                    ]
+                };
+            }
+            
+            // Process the actual data from Google Sheets
+            const headers = data.values[0];
+            const rows = data.values.slice(1);
+            
+            // Find the index of important columns
+            const nameIndex = headers.indexOf('Student');
+            const totalScoreIndex = headers.indexOf('Total Score');
+            const accuracyIndex = headers.indexOf('Accuracy');
+            
+            // Get total number of questions from the headers (Q1, Q2, Q3, etc.)
+            const questionColumns = headers.filter(h => h.startsWith('Q')).length;
+            
+            // Process student data
+            const students = rows.map(row => ({
+                name: row[nameIndex] || 'Unknown',
+                score: parseInt(row[totalScoreIndex] || 0),
+                accuracy: row[accuracyIndex] || '0%'
+            }));
+            
+            // Sort students by score (descending)
+            students.sort((a, b) => b.score - a.score);
+            
+            return {
+                totalQuestions: questionColumns,
+                lastUpdated: data.lastUpdated || new Date().toLocaleString(),
+                students: students
+            };
+        }
+        
+        function displayLeaderboard(data) {
+            // Update last updated time
+            document.getElementById('last-updated').textContent = `Last updated: ${data.lastUpdated}`;
+            
+            // Display stats
+            displayStats(data);
+            
+            // Display progress markers
+            displayProgressMarkers(data.totalQuestions);
+            
+            // Display average progress bar
+            displayAverageProgress(data);
+            
+            // Display student list
+            displayStudentList(data);
+            
+            // Hide loading indicator and show leaderboard
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('leaderboard').style.display = 'block';
+            
+            // Animate student rows one by one
+            const studentRows = document.querySelectorAll('.student-row');
+            studentRows.forEach((row, index) => {
+                row.style.animationDelay = `${index * 0.05}s`;
+            });
+        }
+        
+        function displayStats(data) {
+            const statsContainer = document.getElementById('stats');
+            statsContainer.innerHTML = '';
+            
+            // Calculate stats
+            const totalStudents = data.students.length;
+            const totalScore = data.students.reduce((sum, student) => sum + student.score, 0);
+            const averageScore = totalStudents > 0 ? Math.round((totalScore / totalStudents) * 10) / 10 : 0;
+            
+            // Create stat elements
+            const statsData = [
+                { value: totalStudents, label: 'Students' },
+                { value: data.totalQuestions, label: 'Questions' },
+                { value: averageScore, label: 'Avg Score' }
+            ];
+            
+            statsData.forEach(stat => {
+                const statDiv = document.createElement('div');
+                statDiv.className = 'stat';
+                
+                const valueDiv = document.createElement('div');
+                valueDiv.className = 'stat-value';
+                valueDiv.textContent = stat.value;
+                
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'stat-label';
+                labelDiv.textContent = stat.label;
+                
+                statDiv.appendChild(valueDiv);
+                statDiv.appendChild(labelDiv);
+                statsContainer.appendChild(statDiv);
+            });
+        }
+        
+        function displayProgressMarkers(totalQuestions) {
+            const markersContainer = document.getElementById('progressMarkers');
+            markersContainer.innerHTML = '';
+            
+            // Create markers for each question (0 to totalQuestions)
+            for (let i = 0; i <= totalQuestions; i++) {
+                const marker = document.createElement('div');
+                marker.className = 'progress-marker';
+                marker.textContent = i;
+                markersContainer.appendChild(marker);
+            }
+        }
+        
+        function displayAverageProgress(data) {
+            const progressBar = document.getElementById('averageProgress');
+            
+            // Calculate average percentage
+            const totalStudents = data.students.length;
+            if (totalStudents === 0) {
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                return;
+            }
+            
+            const totalScore = data.students.reduce((sum, student) => sum + student.score, 0);
+            const totalPossible = totalStudents * data.totalQuestions;
+            const averagePercentage = Math.round((totalScore / totalPossible) * 100);
+            
+            // Update progress bar
+            progressBar.style.width = `${averagePercentage}%`;
+            progressBar.textContent = `${averagePercentage}%`;
+        }
+        
+        function displayStudentList(data) {
+            const listContainer = document.getElementById('studentList');
+            listContainer.innerHTML = '';
+            
+            // Add each student to the list
+            data.students.forEach((student, index) => {
+                const rank = index + 1;
+                
+                // Create student row
+                const row = document.createElement('div');
+                row.className = 'student-row';
+                
+                // Add special class for top performers
+                if (rank === 1) {
+                    row.classList.add('top-1');
+                } else if (rank <= 3) {
+                    row.classList.add('top-3');
+                }
+                
+                // Rank badge
+                const rankCell = document.createElement('div');
+                rankCell.className = 'rank-cell';
+                
+                const rankBadge = document.createElement('div');
+                if (rank === 1) {
+                    rankBadge.className = 'rank-badge gold';
+                } else if (rank <= 3) {
+                    rankBadge.className = 'rank-badge other';
+                } else {
+                    rankBadge.className = 'rank-badge regular';
+                }
+                rankBadge.textContent = rank;
+                rankCell.appendChild(rankBadge);
+                
+                // Student name
+                const nameCell = document.createElement('div');
+                nameCell.className = 'student-name';
+                nameCell.textContent = student.name;
+                
+                // Score and accuracy
+                const scoreCell = document.createElement('div');
+                scoreCell.className = 'score-cell';
+                
+                const scoreValue = document.createElement('div');
+                scoreValue.className = 'score-value';
+                scoreValue.textContent = `${student.score}/${data.totalQuestions}`;
+                
+                const accuracy = document.createElement('div');
+                accuracy.className = 'accuracy';
+                accuracy.textContent = student.accuracy;
+                
+                scoreCell.appendChild(scoreValue);
+                scoreCell.appendChild(accuracy);
+                
+                // Add all cells to the row
+                row.appendChild(rankCell);
+                row.appendChild(nameCell);
+                row.appendChild(scoreCell);
+                
+                // Add row to the list
+                listContainer.appendChild(row);
+            });
+        }
+        
+        function showError(message) {
+            document.getElementById('loading').innerHTML = 
+                `<div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i> ${message}
+                    <button onclick="retryLoad()" class="retry-button">
+                        <i class="fas fa-sync-alt"></i> Retry
+                    </button>
+                </div>`;
+        }
+        
+        function retryLoad() {
+            // Reset loading state
+            document.getElementById('loading').innerHTML = `
+                <div class="spinner"></div>
+                <p>Attempting to reconnect...</p>
+            `;
+            
+            // Try loading again
+            loadLeaderboard();
+        }
+    </script>
+</body>
+</html>
