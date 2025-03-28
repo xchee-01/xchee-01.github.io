@@ -14,6 +14,7 @@
             --nus-dark-gray: #333333;
             --code-bg: #1E293B;
             --code-text: #E2E8F0;
+            --left-padding: 120px; /* Centralized left padding value */
         }
         
         body {
@@ -47,7 +48,19 @@
         .content-inner {
             max-width: 800px;
             margin: 0 auto;
-            padding: 0 40px 40px 5000px;
+            padding: 0 40px 40px var(--left-padding);
+        }
+        
+        /* Ensure all content has proper left padding */
+        .content-inner > * {
+            padding-left: 0;
+            margin-left: 0;
+        }
+        
+        /* Ensure headings have proper padding */
+        .content-inner h2 {
+            padding-left: 0;
+            margin-left: 0;
         }
         
         .trinket-container {
@@ -101,7 +114,7 @@
         header .header-content {
             max-width: 800px;
             margin: 0 auto;
-            padding: 0 40px 0 60px;
+            padding: 0 40px 0 var(--left-padding);
         }
         
         h1 {
@@ -593,19 +606,42 @@ plt.show()</pre>
     </div>
     
     <script>
-        function copyToTrinket(code) {
-            // Since we can't directly write to the iframe, we'll copy to clipboard
-            navigator.clipboard.writeText(code).then(function() {
-                const button = event.target;
-                const originalText = button.innerHTML;
-                button.innerHTML = "✅ Copied!";
-                setTimeout(() => {
-                    button.innerHTML = originalText;
-                }, 2000);
-            }, function() {
-                alert("Failed to copy code. Please copy it manually.");
-            });
-        }
+        // Add styles to ensure proper left padding
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force correct padding
+            const style = document.createElement('style');
+            style.textContent = `
+                /* Additional styles to force left padding */
+                .content-container .content-inner {
+                    padding-left: 120px !important;
+                }
+                
+                header .header-content {
+                    padding-left: 120px !important;
+                }
+                
+                /* Override any potential conflicting margins/paddings */
+                .content-inner > * {
+                    margin-left: 0 !important;
+                    padding-left: 0 !important;
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Copy to Trinket function
+            window.copyToTrinket = function(code) {
+                navigator.clipboard.writeText(code).then(function() {
+                    const button = event.target;
+                    const originalText = button.innerHTML;
+                    button.innerHTML = "✅ Copied!";
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                    }, 2000);
+                }, function() {
+                    alert("Failed to copy code. Please copy it manually.");
+                });
+            };
+        });
         
         // Add font imports
         document.head.insertAdjacentHTML('beforeend', 
@@ -613,25 +649,29 @@ plt.show()</pre>
         );
         
         // Make the width of the content container adjust when the trinket container is resized
-        const trinketContainer = document.querySelector('.trinket-container');
-        const contentContainer = document.querySelector('.content-container');
-        
-        // Create and add the resize handle
-        const resizeHandle = document.createElement('div');
-        resizeHandle.className = 'resize-handle';
-        trinketContainer.appendChild(resizeHandle);
-        
-        // Add a resize observer to adjust content width when trinket width changes
-        const resizeObserver = new ResizeObserver(entries => {
-            for (let entry of entries) {
-                if (entry.target === trinketContainer) {
-                    const trinketWidth = entry.target.offsetWidth;
-                    contentContainer.style.maxWidth = `calc(100% - ${trinketWidth}px)`;
-                }
+        document.addEventListener('DOMContentLoaded', function() {
+            const trinketContainer = document.querySelector('.trinket-container');
+            const contentContainer = document.querySelector('.content-container');
+            
+            // Create and add the resize handle
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'resize-handle';
+            trinketContainer.appendChild(resizeHandle);
+            
+            // Add a resize observer to adjust content width when trinket width changes
+            if (window.ResizeObserver) {
+                const resizeObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        if (entry.target === trinketContainer) {
+                            const trinketWidth = entry.target.offsetWidth;
+                            contentContainer.style.maxWidth = `calc(100% - ${trinketWidth}px)`;
+                        }
+                    }
+                });
+                
+                resizeObserver.observe(trinketContainer);
             }
         });
-        
-        resizeObserver.observe(trinketContainer);
     </script>
 </body>
 </html>
