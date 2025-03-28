@@ -24,6 +24,7 @@
             padding: 0;
             background-color: var(--nus-light-gray);
             overflow-x: hidden;
+            font-size: 18px;
         }
         
         .page-container {
@@ -35,7 +36,7 @@
         
         .content-container {
             flex: 1;
-            max-width: 50%;
+            max-width: 60%;
             padding: 0;
             overflow-y: auto;
             height: 100vh;
@@ -46,11 +47,11 @@
         .content-inner {
             max-width: 800px;
             margin: 0 auto;
-            padding: 0 40px 40px 60px;
+            padding: 0 40px 40px 80px;
         }
         
         .trinket-container {
-            width: 50%;
+            width: 40%;
             position: fixed;
             right: 0;
             top: 0;
@@ -61,6 +62,10 @@
             display: flex;
             flex-direction: column;
             border-left: 1px solid #ddd;
+            resize: horizontal;
+            overflow: auto;
+            min-width: 30%;
+            max-width: 70%;
         }
         
         .trinket-header {
@@ -101,7 +106,7 @@
         
         h1 {
             margin: 0;
-            font-size: 2.6em;
+            font-size: 2.8em;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
@@ -112,7 +117,7 @@
             padding-bottom: 10px;
             margin-top: 50px;
             margin-bottom: 25px;
-            font-size: 1.8em;
+            font-size: 2em;
             position: relative;
         }
         
@@ -130,20 +135,25 @@
             font-style: italic;
             color: rgba(255, 255, 255, 0.85);
             margin-top: 10px;
-            font-size: 1.2em;
+            font-size: 1.3em;
             letter-spacing: 0.3px;
         }
         
         .content-section {
-            margin-bottom: 50px;
+            margin-bottom: 60px;
+        }
+        
+        p {
+            margin-bottom: 1.2em;
         }
         
         .learning-list {
             padding-left: 25px;
+            font-size: 1.05em;
         }
         
         .learning-list li {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             position: relative;
         }
         
@@ -174,17 +184,18 @@
         .code-block pre {
             margin: 0;
             padding-top: 10px;
-            font-size: 0.95em;
+            font-size: 1em;
             line-height: 1.6;
         }
         
         .note {
             background-color: rgba(0, 131, 182, 0.08);
             border-radius: 8px;
-            padding: 20px 25px;
+            padding: 25px 30px;
             margin: 30px 0;
             border-left: 4px solid var(--nus-light-blue);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            font-size: 1.05em;
         }
         
         .note p {
@@ -214,7 +225,7 @@
         
         .step-title {
             font-weight: 600;
-            font-size: 1.3em;
+            font-size: 1.4em;
             color: var(--nus-blue);
             margin-bottom: 15px;
             display: block;
@@ -242,8 +253,29 @@
             border-top: 1px solid #eee;
         }
         
+        /* Resize handle */
+        .resize-handle {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            cursor: ew-resize;
+            background-color: transparent;
+            z-index: 200;
+        }
+        
+        .resize-handle:hover, 
+        .resize-handle:active {
+            background-color: rgba(239, 124, 0, 0.2);
+        }
+        
         /* Responsive design */
         @media (max-width: 1200px) {
+            body {
+                font-size: 16px;
+            }
+            
             .page-container {
                 flex-direction: column;
                 height: auto;
@@ -254,12 +286,23 @@
                 height: auto;
             }
             
+            .content-inner {
+                padding: 0 30px 40px 30px;
+            }
+            
             .trinket-container {
                 position: static;
                 width: 100%;
                 height: 600px;
                 border-left: none;
                 border-top: 1px solid #ddd;
+                resize: vertical;
+                min-height: 400px;
+                max-width: 100%;
+            }
+            
+            .resize-handle {
+                display: none;
             }
         }
         
@@ -274,7 +317,7 @@
             padding: 8px 14px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 0.85em;
+            font-size: 0.9em;
             font-weight: 500;
             transition: all 0.2s ease;
             display: flex;
@@ -568,6 +611,27 @@ plt.show()</pre>
         document.head.insertAdjacentHTML('beforeend', 
             '<link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
         );
+        
+        // Make the width of the content container adjust when the trinket container is resized
+        const trinketContainer = document.querySelector('.trinket-container');
+        const contentContainer = document.querySelector('.content-container');
+        
+        // Create and add the resize handle
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle';
+        trinketContainer.appendChild(resizeHandle);
+        
+        // Add a resize observer to adjust content width when trinket width changes
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                if (entry.target === trinketContainer) {
+                    const trinketWidth = entry.target.offsetWidth;
+                    contentContainer.style.maxWidth = `calc(100% - ${trinketWidth}px)`;
+                }
+            }
+        });
+        
+        resizeObserver.observe(trinketContainer);
     </script>
 </body>
 </html>
