@@ -437,92 +437,137 @@
             }, 20000);
         }
         
-        function processSheetData(data) {
-            // For debugging
-            console.log('Received data:', data);
-            
-            if (!data || !data.values || !Array.isArray(data.values)) {
-                console.error('Invalid data format received');
-                throw new Error('Invalid data format received from server');
-            }
-            
-            try {
-                // Find the total number of questions from cell A3
-                let totalQuestions = 8; // Default to 8 based on the screenshot
-                for (let i = 0; i < data.values.length; i++) {
-                    if (i === 2 && data.values[i][0]) { // A3 is index 2,0
-                        const possibleValue = parseInt(data.values[i][0]);
-                        if (!isNaN(possibleValue)) {
-                            totalQuestions = possibleValue;
-                            console.log("Found total questions:", totalQuestions);
-                            break;
-                        }
-                    }
+// Update the processSheetData function to correctly parse accuracy values
+function processSheetData(data) {
+    // For debugging
+    console.log('Received data:', data);
+    
+    if (!data || !data.values || !Array.isArray(data.values)) {
+        console.error('Invalid data format received');
+        throw new Error('Invalid data format received from server');
+    }
+    
+    try {
+        // Find the total number of questions from cell A3
+        let totalQuestions = 9; // Default to 9 based on the screenshot
+        for (let i = 0; i < data.values.length; i++) {
+            if (i === 2 && data.values[i][0]) { // A3 is index 2,0
+                const possibleValue = parseInt(data.values[i][0]);
+                if (!isNaN(possibleValue)) {
+                    totalQuestions = possibleValue;
+                    console.log("Found total questions:", totalQuestions);
+                    break;
                 }
-                
-                // Find the header row with "Student"
-                let headerRowIndex = -1;
-                for (let i = 0; i < data.values.length; i++) {
-                    if (data.values[i].indexOf("Student") >= 0) {
-                        headerRowIndex = i;
-                        break;
-                    }
-                }
-                
-                if (headerRowIndex === -1) {
-                    throw new Error("Could not find the Student header row");
-                }
-                
-                const headers = data.values[headerRowIndex];
-                
-                // Find the indices for important columns
-                const nameIndex = headers.indexOf('Student');
-                const totalScoreIndex = headers.indexOf('Total Score');
-                const accuracyIndex = headers.indexOf('Accuracy');
-                
-                if (nameIndex === -1 || totalScoreIndex === -1 || accuracyIndex === -1) {
-                    console.warn("Missing required columns:", {
-                        nameIndex,
-                        totalScoreIndex,
-                        accuracyIndex,
-                        headers
-                    });
-                }
-                
-                // Process each student row
-                const students = [];
-                for (let i = headerRowIndex + 1; i < data.values.length; i++) {
-                    const row = data.values[i];
-                    
-                    // Skip rows without student names
-                    if (!row[nameIndex]) continue;
-                    
-                    // Parse accuracy from column L (should be in accuracyIndex)
-                    let accuracyText = String(row[accuracyIndex] || '0%');
-                    let accuracyValue = parseFloat(accuracyText.replace('%', '')) || 0;
-                    
-                    students.push({
-                        name: row[nameIndex],
-                        score: parseInt(row[totalScoreIndex] || 0),
-                        accuracy: accuracyValue,
-                        accuracyText: accuracyValue.toFixed(0) + '%'
-                    });
-                }
-                
-                // Sort by score (descending)
-                students.sort((a, b) => b.score - a.score);
-                
-                // Return processed data
-                return {
-                    totalQuestions: totalQuestions,
-                    lastUpdated: data.lastUpdated || new Date().toLocaleString(),
-                    students: students
-                };
-            } catch (error) {
-                console.error('Error processing sheet data:', error);
-                throw error;
             }
         }
+        
+        // Find the header row with "Student"
+        let headerRowIndex = -1;
+        for (let i = 0; i < data.values.length; i++) {
+            if (data.values[i].indexOf("Student") >= 0) {
+                headerRowIndex = i;
+                break;
+            }
+        }
+        
+        if (headerRowIndex === -1) {
+            throw new Error("Could not find the Student header row");
+        }
+        
+        const headers = data.values[headerRowIndex];
+        
+        // Find the indices for important columns
+        const nameIndex = headers.indexOf('Student');
+        const totalScoreIndex = headers.indexOf('Total Score');
+        const accuracyIndex = headers.indexOf('Accuracy');
+        
+        console.log("Found header indices:", {
+            name: nameIndex,
+            totalScore: totalScoreIndex,
+            accuracy: accuracyIndex,
+            headers: headers
+        });
+        
+        if (nameIndex === -1 || totalScoreIndex === -1 || accuracyIndex === -1) {
+            console.warn("Missing required columns:", {
+                nameIndex,
+                totalScoreIndex,
+                accuracyIndex,
+                headers
+            });
+            
+            // If we couldn't find Accuracy by name, try alternative approaches
+            if (accuracyIndex === -1) {
+                // In our spreadsheet data, Accuracy is in column index 11 (which is column L in Excel/Sheets)
+                accuracyIndex = 11; 
+                console.log("Using column L (index 11) for accuracy since header wasn't found");
+            }
+        }
+        
+        // Process each student row
+        const students = [];
+        for (let i = headerRowIndex + 1; i < data.values.length; i++) {
+            const row = data.values[i];
+            
+            // Skip rows without student names
+            if (!row[nameIndex]) continue;
+            
+            // Parse accuracy value - handle multiple formats
+            let accuracyValue = 0;
+            if (row[accuracyIndex] !== undefined) {
+                const rawAccuracy = row[accuracyIndex];
+                console.log(`Raw accuracy for ${row[nameIndex]}: ${rawAccuracy}`);
+                
+                if (typeof rawAccuracy === 'string') {
+                    // If it's a string with percentage sign (e.g. "57%")
+                    accuracyValue = parseFloat(rawAccuracy.replace('%', '')) || 0;
+                } else if (typeof rawAccuracy === 'number') {
+                    // If it's already a number
+                    if (rawAccuracy <= 1) {
+                        // It's likely a decimal (e.g. 0.57) - convert to percentage
+                        accuracyValue = rawAccuracy * 100;
+                    } else {
+                        // It's already a percentage value (e.g. 57)
+                        accuracyValue = rawAccuracy;
+                    }
+                }
+            }
+            
+            // Failsafe: make sure accuracy isn't still 0% for valid scores
+            if (accuracyValue === 0 && parseInt(row[totalScoreIndex] || 0) > 0) {
+                // If we have a score but 0% accuracy, estimate it from the score
+                const score = parseInt(row[totalScoreIndex] || 0);
+                const questions = data.totalQuestions;
+                if (questions > 0) {
+                    accuracyValue = Math.round((score / questions) * 100);
+                    console.log(`Estimated accuracy for ${row[nameIndex]} from score: ${accuracyValue}%`);
+                }
+            }
+            
+            students.push({
+                name: row[nameIndex],
+                score: parseInt(row[totalScoreIndex] || 0),
+                accuracy: accuracyValue,
+                accuracyText: Math.round(accuracyValue) + '%'
+            });
+            
+            console.log(`Processed student: ${row[nameIndex]}, Accuracy: ${accuracyValue}%, Score: ${row[totalScoreIndex]}`);
+        }
+        
+        // Sort by score (descending)
+        students.sort((a, b) => b.score - a.score);
+        
+        // Return processed data
+        return {
+            totalQuestions: totalQuestions,
+            lastUpdated: data.lastUpdated || new Date().toLocaleString(),
+            students: students
+        };
+    } catch (error) {
+        console.error('Error processing sheet data:', error);
+        throw error;
+    }
+}
         
         function displayStats(data) {
             const statsContainer = document.getElementById('stats');
