@@ -500,131 +500,174 @@
             let isDragging = false;
             
             // -------------------------------------------------------------
-            // HTML5 Drag and Drop Implementation
+            // HTML5 Drag and Drop Implementation with fallback
             // -------------------------------------------------------------
             
-            // Track the currently dragged item
-            let currentDraggedItem = null;
+            // Create a global variable to track the drag item and its value across all events
+            let draggedItemInfo = {
+                element: null,
+                value: null
+            };
             
-            // Initialize draggable items
+            // Initialize draggable items with a more reliable approach
             dragItems.forEach(item => {
-                // Set up drag start event
                 item.addEventListener('dragstart', function(e) {
+                    // Don't allow dragging already placed items
                     if (this.classList.contains('placed')) {
-                        // Prevent dragging if already placed
                         e.preventDefault();
-                        return;
+                        return false;
                     }
                     
-                    isDragging = true;
-                    this.classList.add('dragging');
-                    currentDraggedItem = this;
+                    // Store both the element and its value
+                    draggedItemInfo.element = this;
+                    draggedItemInfo.value = this.getAttribute('data-value');
                     
-                    // Store the dragged item's value
-                    e.dataTransfer.setData('text/plain', this.getAttribute('data-value'));
+                    // Store data in multiple formats to ensure browser compatibility
+                    e.dataTransfer.setData('text/plain', draggedItemInfo.value);
+                    e.dataTransfer.setData('application/x-moz-node', draggedItemInfo.value); // Firefox support
                     
-                    // Set drag effect
+                    // For debugging - this helps us see what's being dragged
+                    console.log('Drag started:', draggedItemInfo.value);
+                    
+                    // Set the drag effect
                     e.dataTransfer.effectAllowed = 'move';
                     
-                    // Highlight valid drop targets
+                    // Add visual class to dragged element
+                    this.classList.add('dragging');
+                    
+                    // Highlight all empty drop targets
                     dropTargets.forEach(target => {
                         if (!target.querySelector('.drag-item')) {
                             target.classList.add('highlight');
                         }
                     });
+                    
+                    isDragging = true;
                 });
                 
-                // Drag end event
-                item.addEventListener('dragend', function() {
-                    isDragging = false;
+                // Add a drag end handler to clean up
+                item.addEventListener('dragend', function(e) {
                     this.classList.remove('dragging');
-                    currentDraggedItem = null;
+                    isDragging = false;
                     
-                    // Remove highlights from drop targets
+                    // Clean up all drop target highlights
                     dropTargets.forEach(target => {
                         target.classList.remove('highlight');
                         target.classList.remove('dragover');
                     });
+                    
+                    // For debugging
+                    console.log('Drag ended');
                 });
             });
             
-            // Set up drop targets
-            dropTargets.forEach(target => {
-                // Prevent default to allow drop
+            // Enhanced drop target handling
+            dropTargets.forEach((target, index) => {
+                // We need to prevent default on these events to allow dropping
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    target.addEventListener(eventName, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+                
+                // Visual feedback when dragging over a target
                 target.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-                    // Change cursor to show drop is allowed
-                    e.dataTransfer.dropEffect = 'move';
-                    
+                    // Only show drop visual if this target doesn't already have an item
                     if (!this.querySelector('.drag-item')) {
                         this.classList.add('dragover');
+                        e.dataTransfer.dropEffect = 'move';
+                    } else {
+                        e.dataTransfer.dropEffect = 'none';
                     }
                 });
                 
-                // Handle drag enter
                 target.addEventListener('dragenter', function(e) {
-                    e.preventDefault();
                     if (!this.querySelector('.drag-item')) {
                         this.classList.add('dragover');
                     }
                 });
                 
-                // Handle drag leave
-                target.addEventListener('dragleave', function() {
+                target.addEventListener('dragleave', function(e) {
                     this.classList.remove('dragover');
                 });
                 
-                // Handle drop
+                // Improved drop handler with better error handling and feedback
                 target.addEventListener('drop', function(e) {
-                    e.preventDefault();
+                    // Remove visual feedback
                     this.classList.remove('dragover');
                     this.classList.remove('highlight');
                     
-                    // Only allow drop if target is empty
+                    // Only process drops if the target is empty
                     if (this.querySelector('.drag-item')) {
+                        console.log('Drop target already has an item');
                         return;
                     }
                     
-                    // Make sure we have a dragged item
-                    if (!currentDraggedItem) {
-                        const dataValue = e.dataTransfer.getData('text/plain');
-                        
-                        // Try to find the dragged item
-                        currentDraggedItem = Array.from(dragItems).find(item => 
-                            item.getAttribute('data-value') === dataValue && 
-                            !item.classList.contains('placed')
-                        );
-                        
-                        if (!currentDraggedItem) {
-                            return; // No valid item found
+                    // For debugging
+                    console.log('Drop on target:', index, 'Accepts:', this.getAttribute('data-accepts'));
+                    
+                    let dragItemValue;
+                    let dragItem;
+                    
+                    // First try to get the dragged item from our global tracker
+                    if (draggedItemInfo.element && !draggedItemInfo.element.classList.contains('placed')) {
+                        dragItem = draggedItemInfo.element;
+                        dragItemValue = draggedItemInfo.value;
+                        console.log('Using tracked drag item:', dragItemValue);
+                    } 
+                    // Fallback to dataTransfer if global tracker failed
+                    else {
+                        try {
+                            dragItemValue = e.dataTransfer.getData('text/plain');
+                            console.log('Got value from dataTransfer:', dragItemValue);
+                            
+                            // Find the matching drag item that's not already placed
+                            dragItem = Array.from(dragItems).find(item => 
+                                item.getAttribute('data-value') === dragItemValue && 
+                                !item.classList.contains('placed')
+                            );
+                        } catch (err) {
+                            console.error('Error getting drag data:', err);
                         }
                     }
                     
-                    // Clone the dragged item
-                    const itemClone = currentDraggedItem.cloneNode(true);
+                    // If we couldn't identify a drag item, show an error and return
+                    if (!dragItem || !dragItemValue) {
+                        console.error('Could not identify dragged item');
+                        showCentralMessage("Drag Error", "There was a problem with the drag and drop. Please try again or use the click method.", "⚠️");
+                        return;
+                    }
+                    
+                    // Process the successful drop
+                    console.log('Processing drop with item:', dragItemValue);
+                    
+                    // Make a clone of the dragged item
+                    const itemClone = dragItem.cloneNode(true);
                     itemClone.classList.add('placed');
                     itemClone.classList.remove('dragging');
                     itemClone.setAttribute('draggable', 'false');
                     
-                    // Remove placeholder
+                    // Remove the placeholder
                     const placeholder = this.querySelector('.placeholder');
                     if (placeholder) {
                         placeholder.remove();
                     }
                     
-                    // Add to target
+                    // Add the clone to the drop target
                     this.appendChild(itemClone);
                     
-                    // Mark original as placed
-                    currentDraggedItem.classList.add('placed');
+                    // Mark the original item as placed
+                    dragItem.classList.add('placed');
                     
-                    // Check if correct and process
-                    processPlacement(currentDraggedItem, this);
+                    // Process the placement and check if correct
+                    processPlacement(dragItem, this);
                     
-                    // Reset current dragged item
-                    currentDraggedItem = null;
+                    // Clear the global tracker
+                    draggedItemInfo.element = null;
+                    draggedItemInfo.value = null;
                     
-                    // Remove highlights from all drop targets
+                    // Clean up all highlight classes
                     dropTargets.forEach(t => {
                         t.classList.remove('highlight');
                         t.classList.remove('dragover');
@@ -701,6 +744,11 @@
                 const acceptsValue = target.getAttribute('data-accepts');
                 const itemValue = item.getAttribute('data-value');
                 
+                console.log('Processing placement:', 
+                    'Target accepts:', acceptsValue, 
+                    'Item value:', itemValue, 
+                    'Match:', acceptsValue === itemValue);
+                
                 const placedItem = target.querySelector('.drag-item');
                 
                 if (acceptsValue === itemValue) {
@@ -747,6 +795,9 @@
                             celebrateCompletion();
                         }, 1000);
                     }
+                } else {
+                    // Incorrect answer - mark it visually
+                    placedItem.classList.add('incorrect');
                 }
             }
             
