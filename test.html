@@ -160,6 +160,78 @@
             pointer-events: none;
             z-index: 1000;
         }
+        
+        /* Feedback animations */
+        @keyframes correct-answer {
+            0% { transform: scale(1); box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
+            20% { transform: scale(1.1) translateY(-2px); box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4); }
+            40% { transform: scale(1.05) translateY(0); box-shadow: 0 5px 12px rgba(40, 167, 69, 0.3); }
+            60% { transform: scale(1.08) translateY(-1px); box-shadow: 0 5px 12px rgba(40, 167, 69, 0.3); }
+            100% { transform: scale(1); box-shadow: 0 3px 8px rgba(40, 167, 69, 0.2); }
+        }
+        
+        @keyframes wrong-answer {
+            0% { transform: scale(1); }
+            10% { transform: translateX(-4px); }
+            20% { transform: translateX(4px); }
+            30% { transform: translateX(-3px); }
+            40% { transform: translateX(3px); }
+            50% { transform: translateX(-2px); }
+            60% { transform: translateX(2px); }
+            70% { transform: translateX(-1px); }
+            80% { transform: translateX(1px); }
+            90% { transform: translateX(-1px); }
+            100% { transform: translateX(0); }
+        }
+        
+        .drag-item.correct {
+            background-color: #28a745;
+            animation: correct-answer 0.8s ease forwards;
+        }
+        
+        .drag-item.incorrect {
+            background-color: #dc3545;
+            animation: wrong-answer 0.6s ease forwards;
+        }
+        
+        /* Updated feedback notification */
+        .feedback-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+            z-index: 1000;
+        }
+        
+        .feedback-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .feedback-notification.correct {
+            border-left: 4px solid #28a745;
+            color: #28a745;
+        }
+        
+        .feedback-notification.incorrect {
+            border-left: 4px solid #dc3545;
+            color: #dc3545;
+        }
+        
+        .feedback-icon {
+            font-size: 24px;
+        }
+        
         .button-container {
             display: flex;
             justify-content: center;
@@ -205,27 +277,35 @@
                 opacity: 1;
                 filter: blur(0);
             }
-            20% {
-                transform: translate(calc(var(--end-x) * 0.2), calc(var(--end-y) * 0.2)) scale(1.8) rotate(15deg);
+            10% {
+                transform: translate(calc(var(--end-x) * 0.05), calc(var(--end-y) * 0.05)) scale(1.3) rotate(5deg);
                 opacity: 1;
                 filter: blur(0);
                 color: #EF7C00;
             }
-            40% {
-                transform: translate(calc(var(--end-x) * 0.4), calc(var(--end-y) * 0.4)) scale(1.4) rotate(30deg);
+            30% {
+                transform: translate(calc(var(--end-x) * 0.3), calc(var(--end-y) * 0.3)) scale(1.5) rotate(10deg);
+                opacity: 0.95;
+                filter: blur(0);
+                color: #EF7C00;
+                text-shadow: 0 0 15px rgba(239, 124, 0, 0.7), 0 0 30px rgba(239, 124, 0, 0.4);
+            }
+            60% {
+                transform: translate(calc(var(--end-x) * 0.6), calc(var(--end-y) * 0.6)) scale(1.2) rotate(20deg);
                 opacity: 0.9;
                 color: #EF7C00;
+                text-shadow: 0 0 10px rgba(239, 124, 0, 0.6);
             }
-            70% {
-                transform: translate(calc(var(--end-x) * 0.7), calc(var(--end-y) * 0.7)) scale(1.2) rotate(60deg);
-                opacity: 0.8;
+            80% {
+                transform: translate(calc(var(--end-x) * 0.8), calc(var(--end-y) * 0.8)) scale(0.9) rotate(30deg);
+                opacity: 0.7;
                 filter: blur(1px);
                 color: #EF7C00;
             }
             100% {
-                transform: translate(var(--end-x), var(--end-y)) scale(0.5) rotate(90deg);
+                transform: translate(var(--end-x), var(--end-y)) scale(0.6) rotate(45deg);
                 opacity: 0;
-                filter: blur(3px);
+                filter: blur(2px);
             }
         }
         .instructions {
@@ -419,169 +499,21 @@
             const checkButton = document.getElementById('check');
             const resetButton = document.getElementById('reset');
             
-            // Set up audio context and sounds
-            let audioContext;
-            let correctBuffer;
-            let finalBuffer;
-            
-            // Initialize audio - must be triggered by user interaction
-            function initAudio() {
-                if (audioContext) return Promise.resolve(); // Already initialized
-                
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Create success sound - a major chord with decay
-                function createSuccessSound() {
-                    return new Promise(resolve => {
-                        const duration = 1;
-                        const attack = 0.02;
-                        const decay = duration - attack;
-                        
-                        const buffer = audioContext.createBuffer(2, audioContext.sampleRate * duration, audioContext.sampleRate);
-                        
-                        // Create data for left and right channels
-                        for (let channel = 0; channel < 2; channel++) {
-                            const data = buffer.getChannelData(channel);
-                            
-                            // Generate a chord (C major)
-                            const frequencies = [261.63, 329.63, 392.00]; // C, E, G
-                            
-                            for (let i = 0; i < buffer.length; i++) {
-                                const t = i / audioContext.sampleRate;
-                                let amplitude = 0;
-                                
-                                // Attack-decay envelope
-                                let envelope;
-                                if (t < attack) {
-                                    envelope = t / attack; // Linear attack
-                                } else {
-                                    envelope = Math.pow(1 - ((t - attack) / decay), 2); // Quadratic decay
-                                }
-                                
-                                // Sum sine waves for each frequency
-                                for (const freq of frequencies) {
-                                    amplitude += Math.sin(freq * 2 * Math.PI * t) * envelope * 0.2;
-                                }
-                                
-                                data[i] = amplitude;
-                            }
-                        }
-                        
-                        resolve(buffer);
-                    });
-                }
-                
-                // Create completion sound - arpeggiated chord
-                function createFinalSound() {
-                    return new Promise(resolve => {
-                        const duration = 1.5;
-                        const arpeggioDuration = 0.15;
-                        
-                        const buffer = audioContext.createBuffer(2, audioContext.sampleRate * duration, audioContext.sampleRate);
-                        
-                        // Create data for left and right channels
-                        for (let channel = 0; channel < 2; channel++) {
-                            const data = buffer.getChannelData(channel);
-                            
-                            // C major scale notes
-                            const frequencies = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
-                            
-                            for (let i = 0; i < buffer.length; i++) {
-                                const t = i / audioContext.sampleRate;
-                                let amplitude = 0;
-                                
-                                // For each note in the arpeggio
-                                for (let n = 0; n < frequencies.length; n++) {
-                                    const noteStart = n * arpeggioDuration;
-                                    const noteEnd = noteStart + arpeggioDuration * 2;
-                                    
-                                    if (t >= noteStart && t <= noteEnd) {
-                                        // Note envelope
-                                        let envelope;
-                                        if (t - noteStart < 0.01) {
-                                            envelope = (t - noteStart) / 0.01; // Fast attack
-                                        } else {
-                                            envelope = Math.pow(1 - ((t - noteStart - 0.01) / (noteEnd - noteStart - 0.01)), 1.5);
-                                        }
-                                        
-                                        amplitude += Math.sin(frequencies[n] * 2 * Math.PI * t) * envelope * 0.2;
-                                    }
-                                }
-                                
-                                data[i] = amplitude;
-                            }
-                        }
-                        
-                        resolve(buffer);
-                    });
-                }
-                
-                // Create both sound buffers
-                return Promise.all([
-                    createSuccessSound(),
-                    createFinalSound()
-                ]).then(buffers => {
-                    correctBuffer = buffers[0];
-                    finalBuffer = buffers[1];
-                });
-            }
-            
-            // Play a specific sound buffer
-            function playSound(buffer) {
-                if (!audioContext) return;
-                
-                const source = audioContext.createBufferSource();
-                source.buffer = buffer;
-                
-                // Add a bit of reverb
-                const convolver = audioContext.createConvolver();
-                const reverbTime = 2;
-                const decay = 0.5;
-                
-                // Create impulse response for reverb
-                const rate = audioContext.sampleRate;
-                const length = rate * reverbTime;
-                const impulse = audioContext.createBuffer(2, length, rate);
-                
-                for (let channel = 0; channel < 2; channel++) {
-                    const impulseData = impulse.getChannelData(channel);
-                    for (let i = 0; i < length; i++) {
-                        impulseData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
-                    }
-                }
-                
-                convolver.buffer = impulse;
-                
-                // Create gain node for volume control
-                const gainNode = audioContext.createGain();
-                gainNode.gain.value = 0.4;
-                
-                // Connect nodes: source -> convolver -> gain -> destination
-                source.connect(convolver);
-                convolver.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                source.start();
-            }
+            // Set up audio elements
+            const correctSound = new Audio('https://xchee-01.github.io/answer_correct_sound.mp3');
+            const finalSound = new Audio('https://xchee-01.github.io/answer_correct_sound.mp3');
             
             // Function to play the correct answer sound
             function playCorrectSound() {
-                if (correctBuffer) {
-                    playSound(correctBuffer);
-                }
+                correctSound.currentTime = 0;
+                correctSound.play();
             }
             
             // Function to play the completion sound
             function playFinalSound() {
-                if (finalBuffer) {
-                    playSound(finalBuffer);
-                }
+                finalSound.currentTime = 0;
+                finalSound.play();
             }
-            
-            // Initialize audio on first user interaction
-            document.body.addEventListener('click', function() {
-                initAudio();
-            }, { once: true });
             
             let draggedItem = null;
             let score = 0;
@@ -654,9 +586,38 @@
                 }
             }
             
+            // Create feedback notification element
+            const feedbackNotification = document.createElement('div');
+            feedbackNotification.className = 'feedback-notification';
+            document.body.appendChild(feedbackNotification);
+            
+            // Function to show feedback
+            function showFeedback(isCorrect, message) {
+                // Clear any existing classes
+                feedbackNotification.className = 'feedback-notification';
+                
+                // Add appropriate classes and content
+                feedbackNotification.classList.add(isCorrect ? 'correct' : 'incorrect');
+                feedbackNotification.innerHTML = `
+                    <div class="feedback-icon">${isCorrect ? '✓' : '✗'}</div>
+                    <div>${message}</div>
+                `;
+                
+                // Show the notification
+                setTimeout(() => {
+                    feedbackNotification.classList.add('show');
+                    
+                    // Hide after 3 seconds
+                    setTimeout(() => {
+                        feedbackNotification.classList.remove('show');
+                    }, 3000);
+                }, 100);
+            }
+            
             // Check answers button
             checkButton.addEventListener('click', function() {
                 let newCorrectAnswers = 0;
+                let newWrongAnswers = 0;
                 let scoreUpdated = false;
                 
                 dropTargets.forEach(target => {
@@ -668,11 +629,16 @@
                         if (acceptsValue === itemValue && !item.classList.contains('counted')) {
                             // Add the 'counted' class to prevent double-counting
                             item.classList.add('counted');
+                            item.classList.add('correct');
                             newCorrectAnswers++;
                             
                             // Animate the point flying to the score
                             animatePointToScore(target);
                             scoreUpdated = true;
+                        } else if (acceptsValue !== itemValue && !item.classList.contains('incorrect')) {
+                            // Mark as incorrect
+                            item.classList.add('incorrect');
+                            newWrongAnswers++;
                         }
                     }
                 });
@@ -680,6 +646,11 @@
                 if (newCorrectAnswers > 0) {
                     // Play the correct answer sound
                     playCorrectSound();
+                    
+                    // Show feedback notification
+                    showFeedback(true, newCorrectAnswers === 1 ? 
+                                "Correct answer!" : 
+                                `${newCorrectAnswers} correct answers!`);
                     
                     // Update the score after a slight delay
                     setTimeout(() => {
@@ -694,6 +665,11 @@
                             }, 300);
                         }
                     }, 500);
+                } else if (newWrongAnswers > 0) {
+                    // Show feedback for wrong answers
+                    showFeedback(false, newWrongAnswers === 1 ? 
+                                "Incorrect answer. Try again!" : 
+                                "Incorrect answers. Try again!");
                 }
             });
             
@@ -782,23 +758,34 @@
             
             // Function to celebrate quiz completion
             function celebrateCompletion() {
-                // Create overlay
+                // Create overlay with a more professional animation
                 const overlay = document.createElement('div');
                 overlay.className = 'overlay';
+                overlay.style.transition = 'opacity 0.7s cubic-bezier(0.165, 0.84, 0.44, 1)';
                 document.body.appendChild(overlay);
                 
-                // Fade in overlay
+                // Fade in overlay with a slight delay for dramatic effect
                 setTimeout(() => {
                     overlay.style.opacity = '1';
-                }, 10);
+                }, 200);
                 
-                // Create celebration message
+                // Create particles for a more professional but still dramatic celebration
+                for (let i = 0; i < 40; i++) {
+                    createParticle();
+                }
+                
+                // Create celebration message with enhanced styling
                 const celebrationMsg = document.createElement('div');
                 celebrationMsg.className = 'celebration-message';
                 celebrationMsg.innerHTML = `
-                    <div class="celebration-icon">🎓</div>
+                    <div class="celebration-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#EF7C00" stroke-width="2"/>
+                            <path d="M8 12L11 15L16 9" stroke="#003D7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
                     <h3>Perfect Score!</h3>
-                    <p>Congratulations! You've mastered the DNA structure.</p>
+                    <p>Congratulations! You've successfully mastered the DNA structure components.</p>
                     <button id="continue-button">Continue</button>
                 `;
                 
@@ -806,14 +793,70 @@
                 
                 // Add event listener to continue button
                 document.getElementById('continue-button').addEventListener('click', function() {
-                    celebrationMsg.style.animation = 'celebrate 0.5s reverse forwards';
+                    celebrationMsg.style.animation = 'celebrate 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) reverse forwards';
                     overlay.style.opacity = '0';
                     
                     setTimeout(() => {
                         celebrationMsg.remove();
                         overlay.remove();
-                    }, 500);
+                    }, 600);
                 });
+            }
+            
+            // Function to create celebration particles
+            function createParticle() {
+                const particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.width = Math.random() * 10 + 5 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.borderRadius = '50%';
+                
+                // Use NUS colors for particles
+                const colors = ['#003D7C', '#EF7C00', '#4A90E2', '#FFB74D'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.backgroundColor = color;
+                particle.style.boxShadow = `0 0 10px ${color}`;
+                
+                // Position at bottom of viewport
+                particle.style.left = Math.random() * window.innerWidth + 'px';
+                particle.style.top = window.innerHeight + 'px';
+                
+                // Animation properties
+                const speed = Math.random() * 3 + 2;
+                const rotation = Math.random() * 360;
+                const angle = Math.random() * Math.PI * 2;
+                const size = Math.random() * 0.8 + 0.2;
+                
+                // Animation with CSS transitions
+                particle.style.zIndex = '1600';
+                particle.style.opacity = '0';
+                particle.style.transform = `translate(0, 0) rotate(0deg) scale(${size})`;
+                particle.style.transition = `
+                    transform ${speed}s cubic-bezier(0.23, 1, 0.32, 1),
+                    opacity ${speed}s cubic-bezier(0.175, 0.885, 0.32, 1.275)
+                `;
+                
+                document.body.appendChild(particle);
+                
+                // Trigger animation after a small delay
+                setTimeout(() => {
+                    const distance = Math.random() * 150 + 150;
+                    const destinationX = Math.cos(angle) * distance;
+                    const destinationY = -Math.sin(angle) * distance - 300; // Move upward
+                    
+                    particle.style.opacity = '0.8';
+                    particle.style.transform = `
+                        translate(${destinationX}px, ${destinationY}px)
+                        rotate(${rotation}deg)
+                        scale(${size})
+                    `;
+                    
+                    // Remove particle after animation completes
+                    setTimeout(() => {
+                        particle.style.opacity = '0';
+                        setTimeout(() => particle.remove(), 500);
+                    }, speed * 800);
+                }, 10);
             }
         });
     </script>
