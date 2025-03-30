@@ -101,6 +101,12 @@
             background-color: rgba(0, 61, 124, 0.05);
             box-shadow: inset 0 0 12px rgba(0, 61, 124, 0.1);
         }
+        .drop-target.dragover {
+            border-color: #EF7C00;
+            background-color: rgba(239, 124, 0, 0.1);
+            box-shadow: inset 0 0 12px rgba(239, 124, 0, 0.2);
+            transform: scale(1.05);
+        }
         .placeholder {
             font-size: 24px;
             color: #adb5bd;
@@ -150,6 +156,27 @@
             cursor: default;
             opacity: 0.9;
         }
+        .drag-item.selected {
+            background-color: #EF7C00;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(239, 124, 0, 0.3);
+            position: relative;
+        }
+        .drag-item.selected:after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: white;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' d='M0 0h24v24H0z'/%3E%3Cpath d='M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z' fill='%23EF7C00'/%3E%3C/svg%3E");
+            background-size: 12px 12px;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
         .point-animation {
             position: absolute;
             color: #EF7C00;
@@ -158,6 +185,15 @@
             text-shadow: 0 0 10px rgba(239, 124, 0, 0.6);
             animation: fly-to-score 1.5s forwards;
             pointer-events: none;
+            z-index: 1000;
+        }
+        
+        /* Dragging styles */
+        .drag-item.dragging {
+            opacity: 0.7;
+            cursor: grabbing;
+            transform: scale(1.1) rotate(2deg);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
             z-index: 1000;
         }
         
@@ -382,15 +418,6 @@
             75% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
-        
-        /* Manual click-to-drag approach */
-        .drag-item.dragging {
-            position: absolute;
-            opacity: 0.8;
-            z-index: 1000;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
@@ -402,7 +429,7 @@
     </div>
 
     <div class="instructions">
-        <p><strong>Instructions:</strong> Click on a component and then click on its correct location in the DNA structure. Each correct answer is worth 1 point.</p>
+        <p><strong>Instructions:</strong> Drag and drop the components to their correct locations in the DNA structure, or click on a component and then click on its target location. Each correct answer is worth 1 point.</p>
     </div>
 
     <div class="question-container">
@@ -439,14 +466,14 @@
         </div>
         
         <div class="draggable-items">
-            <div class="drag-item" data-value="adenine">Adenine</div>
-            <div class="drag-item" data-value="guanine">Guanine</div>
-            <div class="drag-item" data-value="cytosine">Cytosine</div>
-            <div class="drag-item" data-value="thymine">Thymine</div>
-            <div class="drag-item" data-value="phosphate">Phosphate Group</div>
-            <div class="drag-item" data-value="deoxyribose">Deoxyribose</div>
-            <div class="drag-item" data-value="uracil">Uracil</div>
-            <div class="drag-item" data-value="ribose">Ribose</div>
+            <div class="drag-item" data-value="adenine" draggable="true">Adenine</div>
+            <div class="drag-item" data-value="guanine" draggable="true">Guanine</div>
+            <div class="drag-item" data-value="cytosine" draggable="true">Cytosine</div>
+            <div class="drag-item" data-value="thymine" draggable="true">Thymine</div>
+            <div class="drag-item" data-value="phosphate" draggable="true">Phosphate Group</div>
+            <div class="drag-item" data-value="deoxyribose" draggable="true">Deoxyribose</div>
+            <div class="drag-item" data-value="uracil" draggable="true">Uracil</div>
+            <div class="drag-item" data-value="ribose" draggable="true">Ribose</div>
         </div>
         
         <div class="button-container">
@@ -470,16 +497,124 @@
             // Variable to store selected item
             let selectedItem = null;
             let score = 0;
+            let isDragging = false;
             
-            // --------------------------------------------------------------------
-            // Using a simpler click-based approach instead of drag and drop
-            // --------------------------------------------------------------------
+            // -------------------------------------------------------------
+            // HTML5 Drag and Drop Implementation
+            // -------------------------------------------------------------
+            
+            // Initialize draggable items
+            dragItems.forEach(item => {
+                // Set up drag start event
+                item.addEventListener('dragstart', function(e) {
+                    if (this.classList.contains('placed')) {
+                        // Prevent dragging if already placed
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    isDragging = true;
+                    this.classList.add('dragging');
+                    
+                    // Set the data being dragged
+                    e.dataTransfer.setData('text/plain', this.getAttribute('data-value'));
+                    
+                    // Set drag effect
+                    e.dataTransfer.effectAllowed = 'move';
+                    
+                    // Set a custom drag image (optional)
+                    // This helps with positioning the drag image
+                    const dragIcon = this.cloneNode(true);
+                    dragIcon.style.width = this.offsetWidth + 'px';
+                    dragIcon.style.height = this.offsetHeight + 'px';
+                    dragIcon.style.position = 'absolute';
+                    dragIcon.style.top = '-1000px';
+                    document.body.appendChild(dragIcon);
+                    e.dataTransfer.setDragImage(dragIcon, dragIcon.offsetWidth / 2, dragIcon.offsetHeight / 2);
+                    
+                    // Remove after a short delay
+                    setTimeout(() => document.body.removeChild(dragIcon), 0);
+                });
+                
+                // Drag end event
+                item.addEventListener('dragend', function() {
+                    isDragging = false;
+                    this.classList.remove('dragging');
+                });
+            });
+            
+            // Set up drop targets
+            dropTargets.forEach(target => {
+                // Prevent default to allow drop
+                target.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    if (!this.querySelector('.drag-item')) {
+                        this.classList.add('dragover');
+                    }
+                });
+                
+                // Handle drag enter
+                target.addEventListener('dragenter', function(e) {
+                    e.preventDefault();
+                    if (!this.querySelector('.drag-item')) {
+                        this.classList.add('dragover');
+                    }
+                });
+                
+                // Handle drag leave
+                target.addEventListener('dragleave', function() {
+                    this.classList.remove('dragover');
+                });
+                
+                // Handle drop
+                target.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                    
+                    // Only allow drop if target is empty
+                    if (this.querySelector('.drag-item')) {
+                        return;
+                    }
+                    
+                    const draggedItemValue = e.dataTransfer.getData('text/plain');
+                    const draggedItem = Array.from(dragItems).find(item => 
+                        item.getAttribute('data-value') === draggedItemValue && 
+                        !item.classList.contains('placed')
+                    );
+                    
+                    if (draggedItem) {
+                        // Clone the dragged item
+                        const itemClone = draggedItem.cloneNode(true);
+                        itemClone.classList.add('placed');
+                        itemClone.setAttribute('draggable', 'false');
+                        
+                        // Remove placeholder
+                        const placeholder = this.querySelector('.placeholder');
+                        if (placeholder) {
+                            placeholder.remove();
+                        }
+                        
+                        // Add to target
+                        this.appendChild(itemClone);
+                        
+                        // Mark original as placed
+                        draggedItem.classList.add('placed');
+                        
+                        // Check if correct and process
+                        processPlacement(draggedItem, this);
+                    }
+                });
+            });
+            
+            // -------------------------------------------------------------
+            // Click-based approach as an alternative
+            // -------------------------------------------------------------
             
             // Click on an item to select it
             dragItems.forEach(item => {
                 item.addEventListener('click', function() {
-                    // Only select if not already placed
-                    if (!this.classList.contains('placed')) {
+                    // Only select if not already placed and not during drag
+                    if (!this.classList.contains('placed') && !isDragging) {
                         // Deselect any previously selected item
                         if (selectedItem) {
                             selectedItem.classList.remove('selected');
@@ -503,11 +638,12 @@
             dropTargets.forEach(target => {
                 target.addEventListener('click', function() {
                     // Only drop if we have a selected item and this target is empty
-                    if (selectedItem && !this.querySelector('.drag-item')) {
+                    if (selectedItem && !isDragging && !this.querySelector('.drag-item')) {
                         // Clone the selected item
                         const itemClone = selectedItem.cloneNode(true);
                         itemClone.classList.add('placed');
                         itemClone.classList.remove('selected');
+                        itemClone.setAttribute('draggable', 'false');
                         
                         // Remove the placeholder
                         const placeholder = this.querySelector('.placeholder');
@@ -521,55 +657,8 @@
                         // Mark the original item as placed
                         selectedItem.classList.add('placed');
                         
-                        // Check if correct
-                        const acceptsValue = this.getAttribute('data-accepts');
-                        const itemValue = selectedItem.getAttribute('data-value');
-                        
-                        if (acceptsValue === itemValue) {
-                            // Correct answer!
-                            itemClone.classList.add('correct');
-                            itemClone.classList.add('counted');
-                            
-                            // Play sound
-                            playCorrectSound();
-                            
-                            // Increment score immediately
-                            score++;
-                            scoreElement.textContent = score;
-                            
-                            // Animate the point flying to the score
-                            animatePointToScore(this);
-                            
-                            // Show encouraging message
-                            if (score < 4) {
-                                // Show random encouragement for correct answer
-                                const msg = getRandomEncouragement();
-                                showCentralMessage(msg.title, msg.message, msg.emoji);
-                                
-                                // Progress messages
-                                if (score === 1) {
-                                    setTimeout(() => {
-                                        showCentralMessage(progressMessages[0].title, progressMessages[0].message, progressMessages[0].emoji);
-                                    }, 3500);
-                                } else if (score === 2) {
-                                    setTimeout(() => {
-                                        showCentralMessage(progressMessages[1].title, progressMessages[1].message, progressMessages[1].emoji);
-                                    }, 3500);
-                                } else if (score === 3) {
-                                    setTimeout(() => {
-                                        showCentralMessage(progressMessages[2].title, progressMessages[2].message, progressMessages[2].emoji);
-                                    }, 3500);
-                                }
-                            }
-                            
-                            // If all answers are correct, celebrate
-                            if (score === 4) {
-                                setTimeout(() => {
-                                    playCorrectSound();
-                                    celebrateCompletion();
-                                }, 1000);
-                            }
-                        }
+                        // Process the placement
+                        processPlacement(selectedItem, this);
                         
                         // Clear selection and remove highlights
                         selectedItem = null;
@@ -579,6 +668,61 @@
                     }
                 });
             });
+            
+            // Function to process an item placement
+            function processPlacement(item, target) {
+                // Check if correct
+                const acceptsValue = target.getAttribute('data-accepts');
+                const itemValue = item.getAttribute('data-value');
+                
+                const placedItem = target.querySelector('.drag-item');
+                
+                if (acceptsValue === itemValue) {
+                    // Correct answer!
+                    placedItem.classList.add('correct');
+                    placedItem.classList.add('counted');
+                    
+                    // Play sound
+                    playCorrectSound();
+                    
+                    // Increment score immediately
+                    score++;
+                    scoreElement.textContent = score;
+                    
+                    // Animate the point flying to the score
+                    animatePointToScore(target);
+                    
+                    // Show encouraging message
+                    if (score < 4) {
+                        // Show random encouragement for correct answer
+                        const msg = getRandomEncouragement();
+                        showCentralMessage(msg.title, msg.message, msg.emoji);
+                        
+                        // Progress messages
+                        if (score === 1) {
+                            setTimeout(() => {
+                                showCentralMessage(progressMessages[0].title, progressMessages[0].message, progressMessages[0].emoji);
+                            }, 3500);
+                        } else if (score === 2) {
+                            setTimeout(() => {
+                                showCentralMessage(progressMessages[1].title, progressMessages[1].message, progressMessages[1].emoji);
+                            }, 3500);
+                        } else if (score === 3) {
+                            setTimeout(() => {
+                                showCentralMessage(progressMessages[2].title, progressMessages[2].message, progressMessages[2].emoji);
+                            }, 3500);
+                        }
+                    }
+                    
+                    // If all answers are correct, celebrate
+                    if (score === 4) {
+                        setTimeout(() => {
+                            playCorrectSound();
+                            celebrateCompletion();
+                        }, 1000);
+                    }
+                }
+            }
             
             // Function to play the correct answer sound
             function playCorrectSound() {
@@ -655,7 +799,7 @@
                 });
                 
                 if (uncheckedTargets.length === 0) {
-                    showCentralMessage("No New Answers", "You haven't placed any new answers to check. Try clicking on a component and then click where it belongs.", "🔍");
+                    showCentralMessage("No New Answers", "You haven't placed any new answers to check. Try dragging a component to its correct location.", "🔍");
                     return;
                 }
                 
@@ -752,6 +896,10 @@
                         placeholder.textContent = '?';
                         target.appendChild(placeholder);
                     }
+                    
+                    // Remove highlight
+                    target.classList.remove('highlight');
+                    target.classList.remove('dragover');
                 });
                 
                 // Reset score
@@ -763,6 +911,9 @@
                     item.classList.remove('placed');
                     item.classList.remove('counted');
                     item.classList.remove('selected');
+                    item.classList.remove('correct');
+                    item.classList.remove('incorrect');
+                    item.setAttribute('draggable', 'true');
                 });
                 
                 // Clear selection
@@ -927,6 +1078,16 @@
                     }, speed * 800);
                 }, 10);
             }
+            
+            // Show an initial help message
+            setTimeout(() => {
+                showCentralMessage(
+                    "Welcome to the DNA Quiz!",
+                    "Drag the components to their correct positions or click to select and place them. Ready to test your knowledge?",
+                    "🧬",
+                    5000
+                );
+            }, 1000);
         });
     </script>
 </body>
