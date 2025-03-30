@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA Structure Drag and Drop Activity</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        .score-container {
+            background-color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            font-size: 24px;
+            font-weight: bold;
+            position: relative;
+        }
+        .score {
+            color: #27ae60;
+        }
+        .question-container {
+            background-color: #fff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 0;
+        }
+        .dna-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 40px 0;
+        }
+        .dna-part-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 150px;
+            margin-bottom: 20px;
+        }
+        .drop-target {
+            width: 140px;
+            height: 100px;
+            border: 3px dashed #7f8c8d;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            background-color: #ecf0f1;
+            transition: all 0.3s ease;
+        }
+        .drop-target.highlight {
+            border-color: #3498db;
+            background-color: #d6eaf8;
+        }
+        .label {
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .draggable-items {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 30px;
+            gap: 15px;
+        }
+        .drag-item {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .drag-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .drag-item.correct {
+            background-color: #27ae60;
+        }
+        .drag-item.placed {
+            cursor: default;
+            opacity: 0.8;
+        }
+        .point-animation {
+            position: absolute;
+            color: #27ae60;
+            font-weight: bold;
+            animation: fly-to-score 1s forwards;
+            pointer-events: none;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button#reset {
+            background-color: #e74c3c;
+        }
+        button#reset:hover {
+            background-color: #c0392b;
+        }
+        @keyframes fly-to-score {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--end-x), var(--end-y)) scale(0);
+                opacity: 0;
+            }
+        }
+        .instructions {
+            background-color: #eaf4fb;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #3498db;
+        }
+        .dna-image {
+            max-width: 100%;
+            height: auto;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DNA Structure Quiz</h1>
+        <div class="score-container">
+            Score: <span class="score">0</span>/4
+        </div>
+    </div>
+
+    <div class="instructions">
+        <p><strong>Instructions:</strong> Drag each component to its correct location in the DNA structure. Each correct answer is worth 1 point.</p>
+    </div>
+
+    <div class="question-container">
+        <h2>Match the DNA components to their correct positions:</h2>
+        
+        <img class="dna-image" src="/api/placeholder/600/300" alt="DNA Double Helix Diagram">
+        
+        <div class="dna-container">
+            <div class="dna-part-container">
+                <div class="drop-target" data-accepts="adenine">
+                    <span class="placeholder">?</span>
+                </div>
+                <div class="label">Base that pairs with Thymine</div>
+            </div>
+            
+            <div class="dna-part-container">
+                <div class="drop-target" data-accepts="guanine">
+                    <span class="placeholder">?</span>
+                </div>
+                <div class="label">Base that pairs with Cytosine</div>
+            </div>
+            
+            <div class="dna-part-container">
+                <div class="drop-target" data-accepts="phosphate">
+                    <span class="placeholder">?</span>
+                </div>
+                <div class="label">Forms the backbone with sugar</div>
+            </div>
+            
+            <div class="dna-part-container">
+                <div class="drop-target" data-accepts="deoxyribose">
+                    <span class="placeholder">?</span>
+                </div>
+                <div class="label">The sugar in DNA</div>
+            </div>
+        </div>
+        
+        <div class="draggable-items">
+            <div class="drag-item" draggable="true" data-value="adenine">Adenine</div>
+            <div class="drag-item" draggable="true" data-value="guanine">Guanine</div>
+            <div class="drag-item" draggable="true" data-value="cytosine">Cytosine</div>
+            <div class="drag-item" draggable="true" data-value="thymine">Thymine</div>
+            <div class="drag-item" draggable="true" data-value="phosphate">Phosphate Group</div>
+            <div class="drag-item" draggable="true" data-value="deoxyribose">Deoxyribose</div>
+            <div class="drag-item" draggable="true" data-value="uracil">Uracil</div>
+            <div class="drag-item" draggable="true" data-value="ribose">Ribose</div>
+        </div>
+        
+        <div class="button-container">
+            <button id="check">Check Answers</button>
+            <button id="reset">Reset Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dragItems = document.querySelectorAll('.drag-item');
+            const dropTargets = document.querySelectorAll('.drop-target');
+            const scoreElement = document.querySelector('.score');
+            const checkButton = document.getElementById('check');
+            const resetButton = document.getElementById('reset');
+            
+            // Create audio elements
+            const correctSound = new Audio();
+            correctSound.src = "data:audio/wav;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7xA4Tvh9Rz/y8QADBwMWgQAZG/ILNAARQ4GLTcDeIIIhxGOBAuD7hOfBB3/94gcJ3w+o5/5eIAIAAAVwWgQAVQ2ORaIQwEMAJiDg95G4nQL7mQVWI6GwRcfsZAcsKkJvxgxEjzFUgfHoSQ9Qq7KNwqHwuB13MA4a1q/DmBrHgPcmjiGoh//EwC5nGPEmS4RcfkVKOhJf+WOgoxJclFz3kgn//dBA+ya1GhurNn8zb//9NNutNuhz31f////9vt///z+IdAEAAAK4LQIAKobHItEIYCGAExBwe8jcToF9zIKrEdDYIuP2MgOWFSE34wYiR5iqQPj0JIeoVdlG4VD4XA67mAcNa1fhzA1jwHuTRxDUQ//iYBczjHiTJcIuPyKlHQkv/LHQUYkuSi57yQT//uggfZNajQ3Vm//jQeNYNWJAcXsPg3//yFo6QWXMedlQY//ocM//vH/Blp/8//+LwPwrQAAMw==";
+            
+            let draggedItem = null;
+            let score = 0;
+            
+            // Drag and drop event listeners
+            dragItems.forEach(item => {
+                item.addEventListener('dragstart', dragStart);
+                item.addEventListener('dragend', dragEnd);
+            });
+            
+            dropTargets.forEach(target => {
+                target.addEventListener('dragover', dragOver);
+                target.addEventListener('dragenter', dragEnter);
+                target.addEventListener('dragleave', dragLeave);
+                target.addEventListener('drop', drop);
+            });
+            
+            function dragStart() {
+                draggedItem = this;
+                setTimeout(() => this.style.opacity = '0.5', 0);
+            }
+            
+            function dragEnd() {
+                setTimeout(() => this.style.opacity = '1', 0);
+                draggedItem = null;
+            }
+            
+            function dragOver(e) {
+                e.preventDefault();
+            }
+            
+            function dragEnter(e) {
+                e.preventDefault();
+                this.classList.add('highlight');
+            }
+            
+            function dragLeave() {
+                this.classList.remove('highlight');
+            }
+            
+            function drop() {
+                this.classList.remove('highlight');
+                
+                // If target already has a dropped item, don't allow another
+                if (this.querySelector('.drag-item')) {
+                    return;
+                }
+                
+                // Clone the dragged item and append to the drop target
+                const itemClone = draggedItem.cloneNode(true);
+                itemClone.style.opacity = '1';
+                itemClone.style.cursor = 'default';
+                itemClone.classList.add('placed');
+                itemClone.setAttribute('draggable', 'false');
+                
+                // Remove the placeholder
+                const placeholder = this.querySelector('.placeholder');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+                
+                this.appendChild(itemClone);
+                
+                // Check if correct
+                const acceptsValue = this.getAttribute('data-accepts');
+                const itemValue = draggedItem.getAttribute('data-value');
+                
+                if (acceptsValue === itemValue) {
+                    itemClone.classList.add('correct');
+                }
+            }
+            
+            // Check answers button
+            checkButton.addEventListener('click', function() {
+                let newCorrectAnswers = 0;
+                let scoreUpdated = false;
+                
+                dropTargets.forEach(target => {
+                    const item = target.querySelector('.drag-item');
+                    if (item) {
+                        const acceptsValue = target.getAttribute('data-accepts');
+                        const itemValue = item.getAttribute('data-value');
+                        
+                        if (acceptsValue === itemValue && !item.classList.contains('counted')) {
+                            // Add the 'counted' class to prevent double-counting
+                            item.classList.add('counted');
+                            newCorrectAnswers++;
+                            
+                            // Animate the point flying to the score
+                            animatePointToScore(target);
+                            scoreUpdated = true;
+                        }
+                    }
+                });
+                
+                if (newCorrectAnswers > 0) {
+                    // Play the sound
+                    correctSound.play();
+                    
+                    // Update the score after a slight delay
+                    setTimeout(() => {
+                        score += newCorrectAnswers;
+                        scoreElement.textContent = score;
+                    }, 500);
+                }
+            });
+            
+            // Reset button
+            resetButton.addEventListener('click', function() {
+                dropTargets.forEach(target => {
+                    // Remove any placed items
+                    const placedItem = target.querySelector('.drag-item');
+                    if (placedItem) {
+                        placedItem.remove();
+                    }
+                    
+                    // Add placeholder back
+                    if (!target.querySelector('.placeholder')) {
+                        const placeholder = document.createElement('span');
+                        placeholder.className = 'placeholder';
+                        placeholder.textContent = '?';
+                        target.appendChild(placeholder);
+                    }
+                });
+                
+                // Reset score
+                score = 0;
+                scoreElement.textContent = '0';
+                
+                // Make all drag items draggable again
+                dragItems.forEach(item => {
+                    item.classList.remove('counted');
+                    item.style.opacity = '1';
+                    item.setAttribute('draggable', 'true');
+                });
+            });
+            
+            function animatePointToScore(target) {
+                // Create an element for the animation
+                const pointElement = document.createElement('div');
+                pointElement.className = 'point-animation';
+                pointElement.textContent = '+1';
+                pointElement.style.fontSize = '24px';
+                
+                // Position it at the target's location
+                const targetRect = target.getBoundingClientRect();
+                const scoreRect = document.querySelector('.score-container').getBoundingClientRect();
+                
+                pointElement.style.position = 'fixed';
+                pointElement.style.left = `${targetRect.left + targetRect.width / 2}px`;
+                pointElement.style.top = `${targetRect.top + targetRect.height / 2}px`;
+                
+                // Calculate end position (the score element)
+                const endX = scoreRect.left + scoreRect.width / 2 - targetRect.left - targetRect.width / 2;
+                const endY = scoreRect.top + scoreRect.height / 2 - targetRect.top - targetRect.height / 2;
+                
+                // Set the CSS variables for the animation
+                pointElement.style.setProperty('--end-x', `${endX}px`);
+                pointElement.style.setProperty('--end-y', `${endY}px`);
+                
+                // Add to document and remove after animation
+                document.body.appendChild(pointElement);
+                
+                setTimeout(() => {
+                    pointElement.remove();
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
