@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DNA Structure Drag and Drop Activity</title>
+    <title>DNA Structure Quiz</title>
     <style>
         /* NUS Colors - Blue #003D7C, Orange #EF7C00 */
         body {
@@ -45,11 +45,6 @@
         .score {
             color: #EF7C00;
             transition: all 0.3s ease;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            50% { transform: scale(1.05); box-shadow: 0 2px 15px rgba(239, 124, 0, 0.3); }
-            100% { transform: scale(1); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         }
         .question-container {
             background-color: white;
@@ -137,7 +132,6 @@
             transition: all 0.25s ease;
             font-weight: 500;
             font-size: 15px;
-            touch-action: none; /* Important for mobile */
         }
         .drag-item:hover {
             transform: translateY(-3px);
@@ -274,60 +268,6 @@
             border-left: 5px solid #003D7C;
             font-size: 15px;
         }
-        .dna-image {
-            max-width: 100%;
-            height: auto;
-            margin: 25px auto;
-            display: block;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        
-        /* NUS Brand Element */
-        .nus-brand {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            align-items: center;
-        }
-        .nus-logo {
-            width: 80px;
-            height: auto;
-            margin-right: 10px;
-        }
-        
-        /* DNA Model graphic */
-        .dna-model {
-            width: 100%;
-            height: 300px;
-            background: linear-gradient(to right, rgba(0, 61, 124, 0.05), rgba(239, 124, 0, 0.05));
-            position: relative;
-            overflow: hidden;
-            border-radius: 8px;
-            margin: 30px 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .dna-strand {
-            position: relative;
-            width: 200px;
-            height: 250px;
-        }
-        
-        .dna-label {
-            position: absolute;
-            background-color: rgba(255, 255, 255, 0.9);
-            color: #003D7C;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            pointer-events: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
         
         /* Central message popup */
         .central-message {
@@ -434,20 +374,22 @@
             transition: opacity 0.5s ease;
         }
         
-        /* Debug helper */
-        .debug-box {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            z-index: 9999;
-            max-width: 300px;
-            max-height: 150px;
-            overflow: auto;
+        /* Celebrate animation */
+        @keyframes celebrate {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            25% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+            75% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        /* Manual click-to-drag approach */
+        .drag-item.dragging {
+            position: absolute;
+            opacity: 0.8;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            pointer-events: none;
         }
     </style>
 </head>
@@ -460,15 +402,11 @@
     </div>
 
     <div class="instructions">
-        <p><strong>Instructions:</strong> Drag each component to its correct location in the DNA structure. Each correct answer is worth 1 point.</p>
+        <p><strong>Instructions:</strong> Click on a component and then click on its correct location in the DNA structure. Each correct answer is worth 1 point.</p>
     </div>
 
     <div class="question-container">
         <h2>Match the DNA components to their correct positions:</h2>
-        
-        <div class="dna-model">
-            <img class="dna-image" src="/api/placeholder/600/300" alt="DNA Double Helix Diagram">
-        </div>
         
         <div class="dna-container">
             <div class="dna-part-container">
@@ -501,14 +439,14 @@
         </div>
         
         <div class="draggable-items">
-            <div class="drag-item" draggable="true" data-value="adenine">Adenine</div>
-            <div class="drag-item" draggable="true" data-value="guanine">Guanine</div>
-            <div class="drag-item" draggable="true" data-value="cytosine">Cytosine</div>
-            <div class="drag-item" draggable="true" data-value="thymine">Thymine</div>
-            <div class="drag-item" draggable="true" data-value="phosphate">Phosphate Group</div>
-            <div class="drag-item" draggable="true" data-value="deoxyribose">Deoxyribose</div>
-            <div class="drag-item" draggable="true" data-value="uracil">Uracil</div>
-            <div class="drag-item" draggable="true" data-value="ribose">Ribose</div>
+            <div class="drag-item" data-value="adenine">Adenine</div>
+            <div class="drag-item" data-value="guanine">Guanine</div>
+            <div class="drag-item" data-value="cytosine">Cytosine</div>
+            <div class="drag-item" data-value="thymine">Thymine</div>
+            <div class="drag-item" data-value="phosphate">Phosphate Group</div>
+            <div class="drag-item" data-value="deoxyribose">Deoxyribose</div>
+            <div class="drag-item" data-value="uracil">Uracil</div>
+            <div class="drag-item" data-value="ribose">Ribose</div>
         </div>
         
         <div class="button-container">
@@ -519,307 +457,133 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // For debugging
-            const debug = false;
-            let debugElement = null;
-            
-            if (debug) {
-                debugElement = document.createElement('div');
-                debugElement.className = 'debug-box';
-                document.body.appendChild(debugElement);
-                
-                function log(msg) {
-                    if (debugElement) {
-                        debugElement.innerHTML += msg + '<br>';
-                        debugElement.scrollTop = debugElement.scrollHeight;
-                    }
-                    console.log(msg);
-                }
-            } else {
-                function log(msg) {
-                    console.log(msg);
-                }
-            }
-            
             const dragItems = document.querySelectorAll('.drag-item');
             const dropTargets = document.querySelectorAll('.drop-target');
             const scoreElement = document.querySelector('.score');
             const checkButton = document.getElementById('check');
             const resetButton = document.getElementById('reset');
             
-            // Pre-load audio files to ensure they're ready
+            // Pre-load audio
             const correctSound = new Audio('https://xchee-01.github.io/answer_correct_sound.mp3');
             correctSound.preload = 'auto';
             
-            const finalSound = correctSound; // Use the same sound for final celebration
+            // Variable to store selected item
+            let selectedItem = null;
+            let score = 0;
+            
+            // --------------------------------------------------------------------
+            // Using a simpler click-based approach instead of drag and drop
+            // --------------------------------------------------------------------
+            
+            // Click on an item to select it
+            dragItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // Only select if not already placed
+                    if (!this.classList.contains('placed')) {
+                        // Deselect any previously selected item
+                        if (selectedItem) {
+                            selectedItem.classList.remove('selected');
+                        }
+                        
+                        // Select this item
+                        selectedItem = this;
+                        this.classList.add('selected');
+                        
+                        // Highlight all drop targets
+                        dropTargets.forEach(target => {
+                            if (!target.querySelector('.drag-item')) {
+                                target.classList.add('highlight');
+                            }
+                        });
+                    }
+                });
+            });
+            
+            // Click on a drop target to place the selected item
+            dropTargets.forEach(target => {
+                target.addEventListener('click', function() {
+                    // Only drop if we have a selected item and this target is empty
+                    if (selectedItem && !this.querySelector('.drag-item')) {
+                        // Clone the selected item
+                        const itemClone = selectedItem.cloneNode(true);
+                        itemClone.classList.add('placed');
+                        itemClone.classList.remove('selected');
+                        
+                        // Remove the placeholder
+                        const placeholder = this.querySelector('.placeholder');
+                        if (placeholder) {
+                            placeholder.remove();
+                        }
+                        
+                        // Add the clone to the target
+                        this.appendChild(itemClone);
+                        
+                        // Mark the original item as placed
+                        selectedItem.classList.add('placed');
+                        
+                        // Check if correct
+                        const acceptsValue = this.getAttribute('data-accepts');
+                        const itemValue = selectedItem.getAttribute('data-value');
+                        
+                        if (acceptsValue === itemValue) {
+                            // Correct answer!
+                            itemClone.classList.add('correct');
+                            itemClone.classList.add('counted');
+                            
+                            // Play sound
+                            playCorrectSound();
+                            
+                            // Increment score immediately
+                            score++;
+                            scoreElement.textContent = score;
+                            
+                            // Animate the point flying to the score
+                            animatePointToScore(this);
+                            
+                            // Show encouraging message
+                            if (score < 4) {
+                                // Show random encouragement for correct answer
+                                const msg = getRandomEncouragement();
+                                showCentralMessage(msg.title, msg.message, msg.emoji);
+                                
+                                // Progress messages
+                                if (score === 1) {
+                                    setTimeout(() => {
+                                        showCentralMessage(progressMessages[0].title, progressMessages[0].message, progressMessages[0].emoji);
+                                    }, 3500);
+                                } else if (score === 2) {
+                                    setTimeout(() => {
+                                        showCentralMessage(progressMessages[1].title, progressMessages[1].message, progressMessages[1].emoji);
+                                    }, 3500);
+                                } else if (score === 3) {
+                                    setTimeout(() => {
+                                        showCentralMessage(progressMessages[2].title, progressMessages[2].message, progressMessages[2].emoji);
+                                    }, 3500);
+                                }
+                            }
+                            
+                            // If all answers are correct, celebrate
+                            if (score === 4) {
+                                setTimeout(() => {
+                                    playCorrectSound();
+                                    celebrateCompletion();
+                                }, 1000);
+                            }
+                        }
+                        
+                        // Clear selection and remove highlights
+                        selectedItem = null;
+                        dropTargets.forEach(t => {
+                            t.classList.remove('highlight');
+                        });
+                    }
+                });
+            });
             
             // Function to play the correct answer sound
             function playCorrectSound() {
-                // Clone the audio object for better playback control
-                const soundToPlay = correctSound.cloneNode();
-                soundToPlay.volume = 1.0;
-                
-                // Force play with user interaction
-                const playPromise = soundToPlay.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        log("Sound play error: " + error);
-                        // If auto play was prevented, we'll play on next user interaction
-                        document.body.addEventListener('click', function playOnce() {
-                            soundToPlay.play();
-                            document.body.removeEventListener('click', playOnce);
-                        }, { once: true });
-                    });
-                }
-            }
-            
-            // Function to play the completion sound
-            function playFinalSound() {
-                const soundToPlay = finalSound.cloneNode();
-                soundToPlay.volume = 1.0;
-                soundToPlay.play().catch(e => log("Final sound error: " + e));
-            }
-            
-            let draggedItem = null;
-            let score = 0;
-            let isDragging = false;
-            
-            // Ensure audio can play by preloading on first user interaction
-            document.body.addEventListener('click', function initAudio() {
-                correctSound.load();
-                document.body.removeEventListener('click', initAudio);
-            }, { once: true });
-            
-            // Track drag operation
-            document.addEventListener('dragend', function() {
-                log("Global dragend");
-                isDragging = false;
-            });
-            
-            // Drag and drop event listeners
-            dragItems.forEach(item => {
-                // Standard HTML5 drag and drop
-                item.addEventListener('dragstart', dragStart);
-                item.addEventListener('dragend', dragEnd);
-                
-                // Touch events for mobile support
-                item.addEventListener('touchstart', touchStart, {passive: false});
-                item.addEventListener('touchmove', touchMove, {passive: false});
-                item.addEventListener('touchend', touchEnd);
-            });
-            
-            dropTargets.forEach(target => {
-                target.addEventListener('dragover', dragOver);
-                target.addEventListener('dragenter', dragEnter);
-                target.addEventListener('dragleave', dragLeave);
-                target.addEventListener('drop', drop);
-                
-                // Touch events
-                target.addEventListener('touchenter', touchEnter);
-                target.addEventListener('touchleave', touchLeave);
-            });
-            
-            // HTML5 Drag and Drop functions
-            function dragStart(e) {
-                log("Drag start: " + this.textContent);
-                isDragging = true;
-                draggedItem = this;
-                e.dataTransfer.effectAllowed = "move";
-                
-                // Set data for Firefox
-                if (e.dataTransfer) {
-                    e.dataTransfer.setData('text/plain', '');
-                }
-                
-                setTimeout(() => {
-                    this.style.opacity = '0.5';
-                }, 0);
-            }
-            
-            function dragEnd(e) {
-                log("Drag end: " + (draggedItem ? draggedItem.textContent : 'null'));
-                this.style.opacity = '1';
-                
-                // Don't reset draggedItem too early
-                setTimeout(() => {
-                    if (!isDragging) {
-                        draggedItem = null;
-                    }
-                }, 100);
-            }
-            
-            function dragOver(e) {
-                e.preventDefault();
-                return false;
-            }
-            
-            function dragEnter(e) {
-                e.preventDefault();
-                this.classList.add('highlight');
-            }
-            
-            function dragLeave() {
-                this.classList.remove('highlight');
-            }
-            
-            function drop(e) {
-                log("Drop executed");
-                e.preventDefault();
-                e.stopPropagation();
-                this.classList.remove('highlight');
-                
-                // Make sure we have a dragged item
-                if (!draggedItem) {
-                    log("No dragged item found");
-                    return false;
-                }
-                
-                // If target already has a dropped item, don't allow another
-                if (this.querySelector('.drag-item')) {
-                    log("Target already has an item");
-                    return false;
-                }
-                
-                // Clone the dragged item and append to the drop target
-                const itemClone = draggedItem.cloneNode(true);
-                itemClone.style.opacity = '1';
-                itemClone.style.cursor = 'default';
-                itemClone.classList.add('placed');
-                itemClone.setAttribute('draggable', 'false');
-                
-                // Remove the placeholder
-                const placeholder = this.querySelector('.placeholder');
-                if (placeholder) {
-                    placeholder.remove();
-                }
-                
-                // Add the clone to the target
-                this.appendChild(itemClone);
-                
-                // Check if correct immediately
-                const acceptsValue = this.getAttribute('data-accepts');
-                const itemValue = draggedItem.getAttribute('data-value');
-                
-                log(`Checking answer: ${itemValue} in ${acceptsValue} target`);
-                
-                if (acceptsValue === itemValue) {
-                    // Correct answer!
-                    itemClone.classList.add('correct');
-                    itemClone.classList.add('counted');
-                    
-                    // Play sound
-                    playCorrectSound();
-                    
-                    // Increment score immediately
-                    score++;
-                    scoreElement.textContent = score;
-                    
-                    // Animate the point flying to the score
-                    animatePointToScore(this);
-                    
-                    // Show encouraging message based on progress
-                    if (score < 4) {
-                        // Show random encouragement for correct answer
-                        const msg = getRandomEncouragement();
-                        showCentralMessage(msg.title, msg.message, msg.emoji);
-                        
-                        // Show progress-based messages at specific points
-                        if (score === 1) {
-                            setTimeout(() => {
-                                showCentralMessage(progressMessages[0].title, progressMessages[0].message, progressMessages[0].emoji);
-                            }, 3500);
-                        } else if (score === 2) {
-                            setTimeout(() => {
-                                showCentralMessage(progressMessages[1].title, progressMessages[1].message, progressMessages[1].emoji);
-                            }, 3500);
-                        } else if (score === 3) {
-                            setTimeout(() => {
-                                showCentralMessage(progressMessages[2].title, progressMessages[2].message, progressMessages[2].emoji);
-                            }, 3500);
-                        }
-                    }
-                    
-                    // If all answers are correct, celebrate
-                    if (score === 4) {
-                        setTimeout(() => {
-                            playFinalSound();
-                            celebrateCompletion();
-                        }, 1000);
-                    }
-                }
-                
-                return false;
-            }
-            
-            // Touch support for mobile
-            function touchStart(e) {
-                log("Touch start");
-                e.preventDefault();
-                if (e.target.classList.contains('drag-item')) {
-                    isDragging = true;
-                    draggedItem = e.target;
-                    e.target.style.opacity = '0.5';
-                }
-            }
-            
-            function touchMove(e) {
-                e.preventDefault();
-                if (!isDragging || !draggedItem) return;
-                
-                const touch = e.touches[0];
-                
-                // Get the element at touch position
-                const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-                
-                // If touching a drop target, highlight it
-                if (elemBelow && elemBelow.classList.contains('drop-target')) {
-                    elemBelow.classList.add('highlight');
-                    
-                    // Remove highlight from other targets
-                    dropTargets.forEach(target => {
-                        if (target !== elemBelow) {
-                            target.classList.remove('highlight');
-                        }
-                    });
-                }
-            }
-            
-            function touchEnd(e) {
-                if (!isDragging || !draggedItem) return;
-                
-                const touch = e.changedTouches[0];
-                const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-                
-                // Reset opacity
-                draggedItem.style.opacity = '1';
-                
-                // If released over a drop target, handle the drop
-                if (elemBelow && elemBelow.classList.contains('drop-target')) {
-                    // Simulate drop
-                    const dropEvent = new Event('drop');
-                    elemBelow.dispatchEvent(dropEvent);
-                    
-                    // Remove highlights
-                    dropTargets.forEach(target => {
-                        target.classList.remove('highlight');
-                    });
-                }
-                
-                isDragging = false;
-                setTimeout(() => {
-                    draggedItem = null;
-                }, 100);
-            }
-            
-            function touchEnter(e) {
-                if (isDragging) {
-                    this.classList.add('highlight');
-                }
-            }
-            
-            function touchLeave() {
-                this.classList.remove('highlight');
+                correctSound.currentTime = 0;
+                correctSound.play().catch(e => console.log("Sound error:", e));
             }
             
             // Create central message element
@@ -882,7 +646,7 @@
                 return encouragementMessages[index];
             }
             
-            // Check answers button with improved sound handling
+            // Check answers button for answers that haven't been automatically checked
             checkButton.addEventListener('click', function() {
                 // Get all drop targets that have items but aren't counted yet
                 const uncheckedTargets = Array.from(dropTargets).filter(target => {
@@ -891,7 +655,7 @@
                 });
                 
                 if (uncheckedTargets.length === 0) {
-                    showCentralMessage("No New Answers", "You haven't placed any new answers to check. Try dragging the components to their correct locations.", "🔍");
+                    showCentralMessage("No New Answers", "You haven't placed any new answers to check. Try clicking on a component and then click where it belongs.", "🔍");
                     return;
                 }
                 
@@ -951,7 +715,7 @@
                     // Celebrate completion
                     if (score === 4) {
                         setTimeout(() => {
-                            playFinalSound();
+                            playCorrectSound();
                             celebrateCompletion();
                         }, 1000);
                     }
@@ -996,10 +760,13 @@
                 
                 // Make all drag items draggable again
                 dragItems.forEach(item => {
+                    item.classList.remove('placed');
                     item.classList.remove('counted');
-                    item.style.opacity = '1';
-                    item.setAttribute('draggable', 'true');
+                    item.classList.remove('selected');
                 });
+                
+                // Clear selection
+                selectedItem = null;
                 
                 // Show reset confirmation
                 showCentralMessage("Quiz Reset", "All answers have been cleared. Start fresh!", "🔄", 2000);
@@ -1079,7 +846,6 @@
                 // Create celebration message with enhanced styling
                 const celebrationMsg = document.createElement('div');
                 celebrationMsg.className = 'celebration-message';
-                celebrationMsg.style.animation = 'celebrate 0.7s forwards';
                 celebrationMsg.innerHTML = `
                     <div class="celebration-icon">
                         <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1104,15 +870,6 @@
                         overlay.remove();
                     }, 600);
                 });
-            }
-            
-            /* Ensure we have the celebrate animation */
-            @keyframes celebrate {
-                0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-                25% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-                50% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
-                75% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
-                100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             }
             
             // Function to create celebration particles
