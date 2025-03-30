@@ -614,11 +614,18 @@
                 }, 100);
             }
             
-            // Check answers button
+            // Check answers button with improved sound handling
             checkButton.addEventListener('click', function() {
                 let newCorrectAnswers = 0;
                 let newWrongAnswers = 0;
                 let scoreUpdated = false;
+                
+                // Ensure we have user interaction for audio
+                // Try to play a silent sound first to unlock audio
+                const unlockAudio = document.createElement('audio');
+                unlockAudio.src = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+                unlockAudio.volume = 0.1;
+                unlockAudio.play().catch(e => console.log("Audio unlock attempt:", e));
                 
                 dropTargets.forEach(target => {
                     const item = target.querySelector('.drag-item');
@@ -644,8 +651,10 @@
                 });
                 
                 if (newCorrectAnswers > 0) {
-                    // Play the correct answer sound
+                    // Play the correct answer sound - try immediately and with a delay as fallback
                     playCorrectSound();
+                    // Also try after a small delay as a fallback
+                    setTimeout(playCorrectSound, 50);
                     
                     // Show feedback notification
                     showFeedback(true, newCorrectAnswers === 1 ? 
@@ -661,6 +670,7 @@
                         if (score === 4) {
                             setTimeout(() => {
                                 playFinalSound();
+                                setTimeout(playFinalSound, 50); // Try again as fallback
                                 celebrateCompletion();
                             }, 300);
                         }
