@@ -691,28 +691,52 @@
             let draggedItem = null;
             let score = 0;
             
-            // Drag and drop event listeners
+            // Drag and drop event listeners - explicitly set for all elements
             dragItems.forEach(item => {
                 item.addEventListener('dragstart', dragStart);
                 item.addEventListener('dragend', dragEnd);
+                // Make sure draggable is set
+                item.setAttribute('draggable', 'true');
             });
             
+            // Ensure all drop targets have proper event listeners
             dropTargets.forEach(target => {
+                // Remove any existing listeners to avoid duplicates
+                target.removeEventListener('dragover', dragOver);
+                target.removeEventListener('dragenter', dragEnter);
+                target.removeEventListener('dragleave', dragLeave);
+                target.removeEventListener('drop', drop);
+                
+                // Add listeners fresh
                 target.addEventListener('dragover', dragOver);
                 target.addEventListener('dragenter', dragEnter);
                 target.addEventListener('dragleave', dragLeave);
                 target.addEventListener('drop', drop);
+                
+                // Make sure the target is clearly marked as a drop zone for debugging
+                target.dataset.dropzone = 'active';
             });
             
-            function dragStart() {
+            function dragStart(e) {
                 // Don't allow dragging if already placed
                 if (this.classList.contains('placed')) {
-                    event.preventDefault();
+                    e.preventDefault();
                     return;
                 }
                 
+                // Set dataTransfer data (required for Firefox)
+                e.dataTransfer.setData('text/plain', this.getAttribute('data-value'));
+                // Set effectAllowed
+                e.dataTransfer.effectAllowed = 'move';
+                
+                // Store reference to dragged item
                 draggedItem = this;
+                
+                // Visual feedback
                 setTimeout(() => this.style.opacity = '0.5', 0);
+                
+                // Log for debugging
+                console.log('Started dragging', this.getAttribute('data-value'));
             }
             
             function dragEnd() {
@@ -721,23 +745,51 @@
             }
             
             function dragOver(e) {
+                // This is critical - must call preventDefault to allow dropping
                 e.preventDefault();
+                // For troubleshooting, add a console log
+                // console.log('Dragging over', this.getAttribute('data-accepts'));
             }
             
             function dragEnter(e) {
                 e.preventDefault();
                 this.classList.add('highlight');
+                // Make the highlight more visible
+                this.style.borderColor = '#EF7C00';
+                this.style.borderWidth = '3px';
+                this.style.backgroundColor = 'rgba(239, 124, 0, 0.1)';
             }
             
             function dragLeave() {
                 this.classList.remove('highlight');
+                // Reset custom styles
+                this.style.borderColor = '';
+                this.style.borderWidth = '';
+                this.style.backgroundColor = '';
             }
             
-            function drop() {
+            function drop(e) {
+                // Prevent the default action
+                e.preventDefault();
+                
+                // Remove highlight styles
                 this.classList.remove('highlight');
+                this.style.borderColor = '';
+                this.style.borderWidth = '';
+                this.style.backgroundColor = '';
+                
+                // Debug information
+                console.log('Drop event on target accepting:', this.getAttribute('data-accepts'));
+                
+                // Safety check - make sure we have a dragged item
+                if (!draggedItem) {
+                    console.error('No dragged item found');
+                    return;
+                }
                 
                 // If target already has a dropped item, don't allow another
                 if (this.querySelector('.drag-item')) {
+                    console.log('This target already has an item');
                     return;
                 }
                 
@@ -753,6 +805,7 @@
                     placeholder.remove();
                 }
                 
+                // Add the item to the drop target
                 this.appendChild(itemClone);
                 
                 // Mark original as placed
