@@ -26,13 +26,20 @@
             background-color: #fff;
             padding: 10px 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1), 0 0 15px rgba(39, 174, 96, 0.2);
             font-size: 24px;
             font-weight: bold;
             position: relative;
+            transition: all 0.3s ease;
         }
         .score {
             color: #27ae60;
+            transition: all 0.3s ease;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.1), 0 0 15px rgba(39, 174, 96, 0.2); }
+            50% { transform: scale(1.1); box-shadow: 0 2px 5px rgba(0,0,0,0.1), 0 0 30px rgba(39, 174, 96, 0.5); }
+            100% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.1), 0 0 15px rgba(39, 174, 96, 0.2); }
         }
         .question-container {
             background-color: #fff;
@@ -111,8 +118,16 @@
             position: absolute;
             color: #27ae60;
             font-weight: bold;
-            animation: fly-to-score 1s forwards;
+            font-size: 32px;
+            text-shadow: 0 0 10px rgba(39, 174, 96, 0.7);
+            animation: fly-to-score 1.5s forwards;
             pointer-events: none;
+            z-index: 1000;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
         }
         .button-container {
             display: flex;
@@ -141,12 +156,31 @@
         }
         @keyframes fly-to-score {
             0% {
-                transform: translate(0, 0) scale(1);
+                transform: translate(0, 0) scale(1) rotate(0deg);
                 opacity: 1;
+                filter: blur(0);
+            }
+            20% {
+                transform: translate(calc(var(--end-x) * 0.2), calc(var(--end-y) * 0.2)) scale(2) rotate(45deg);
+                opacity: 1;
+                filter: blur(0);
+                color: #2ecc71;
+            }
+            40% {
+                transform: translate(calc(var(--end-x) * 0.4), calc(var(--end-y) * 0.4)) scale(1.5) rotate(90deg);
+                opacity: 0.9;
+                color: #27ae60;
+            }
+            70% {
+                transform: translate(calc(var(--end-x) * 0.7), calc(var(--end-y) * 0.7)) scale(1.2) rotate(180deg);
+                opacity: 0.8;
+                filter: blur(1px);
+                color: #16a085;
             }
             100% {
-                transform: translate(var(--end-x), var(--end-y)) scale(0);
+                transform: translate(var(--end-x), var(--end-y)) scale(0.5) rotate(360deg);
                 opacity: 0;
+                filter: blur(3px);
             }
         }
         .instructions {
@@ -235,9 +269,169 @@
             const checkButton = document.getElementById('check');
             const resetButton = document.getElementById('reset');
             
-            // Create audio elements
-            const correctSound = new Audio();
-            correctSound.src = "data:audio/wav;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7xA4Tvh9Rz/y8QADBwMWgQAZG/ILNAARQ4GLTcDeIIIhxGOBAuD7hOfBB3/94gcJ3w+o5/5eIAIAAAVwWgQAVQ2ORaIQwEMAJiDg95G4nQL7mQVWI6GwRcfsZAcsKkJvxgxEjzFUgfHoSQ9Qq7KNwqHwuB13MA4a1q/DmBrHgPcmjiGoh//EwC5nGPEmS4RcfkVKOhJf+WOgoxJclFz3kgn//dBA+ya1GhurNn8zb//9NNutNuhz31f////9vt///z+IdAEAAAK4LQIAKobHItEIYCGAExBwe8jcToF9zIKrEdDYIuP2MgOWFSE34wYiR5iqQPj0JIeoVdlG4VD4XA67mAcNa1fhzA1jwHuTRxDUQ//iYBczjHiTJcIuPyKlHQkv/LHQUYkuSi57yQT//uggfZNajQ3Vm//jQeNYNWJAcXsPg3//yFo6QWXMedlQY//ocM//vH/Blp/8//+LwPwrQAAMw==";
+            // Set up audio context and sounds
+            let audioContext;
+            let correctBuffer;
+            let finalBuffer;
+            
+            // Initialize audio - must be triggered by user interaction
+            function initAudio() {
+                if (audioContext) return Promise.resolve(); // Already initialized
+                
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create success sound - a major chord with decay
+                function createSuccessSound() {
+                    return new Promise(resolve => {
+                        const duration = 1;
+                        const attack = 0.02;
+                        const decay = duration - attack;
+                        
+                        const buffer = audioContext.createBuffer(2, audioContext.sampleRate * duration, audioContext.sampleRate);
+                        
+                        // Create data for left and right channels
+                        for (let channel = 0; channel < 2; channel++) {
+                            const data = buffer.getChannelData(channel);
+                            
+                            // Generate a chord (C major)
+                            const frequencies = [261.63, 329.63, 392.00]; // C, E, G
+                            
+                            for (let i = 0; i < buffer.length; i++) {
+                                const t = i / audioContext.sampleRate;
+                                let amplitude = 0;
+                                
+                                // Attack-decay envelope
+                                let envelope;
+                                if (t < attack) {
+                                    envelope = t / attack; // Linear attack
+                                } else {
+                                    envelope = Math.pow(1 - ((t - attack) / decay), 2); // Quadratic decay
+                                }
+                                
+                                // Sum sine waves for each frequency
+                                for (const freq of frequencies) {
+                                    amplitude += Math.sin(freq * 2 * Math.PI * t) * envelope * 0.2;
+                                }
+                                
+                                data[i] = amplitude;
+                            }
+                        }
+                        
+                        resolve(buffer);
+                    });
+                }
+                
+                // Create completion sound - arpeggiated chord
+                function createFinalSound() {
+                    return new Promise(resolve => {
+                        const duration = 1.5;
+                        const arpeggioDuration = 0.15;
+                        
+                        const buffer = audioContext.createBuffer(2, audioContext.sampleRate * duration, audioContext.sampleRate);
+                        
+                        // Create data for left and right channels
+                        for (let channel = 0; channel < 2; channel++) {
+                            const data = buffer.getChannelData(channel);
+                            
+                            // C major scale notes
+                            const frequencies = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                            
+                            for (let i = 0; i < buffer.length; i++) {
+                                const t = i / audioContext.sampleRate;
+                                let amplitude = 0;
+                                
+                                // For each note in the arpeggio
+                                for (let n = 0; n < frequencies.length; n++) {
+                                    const noteStart = n * arpeggioDuration;
+                                    const noteEnd = noteStart + arpeggioDuration * 2;
+                                    
+                                    if (t >= noteStart && t <= noteEnd) {
+                                        // Note envelope
+                                        let envelope;
+                                        if (t - noteStart < 0.01) {
+                                            envelope = (t - noteStart) / 0.01; // Fast attack
+                                        } else {
+                                            envelope = Math.pow(1 - ((t - noteStart - 0.01) / (noteEnd - noteStart - 0.01)), 1.5);
+                                        }
+                                        
+                                        amplitude += Math.sin(frequencies[n] * 2 * Math.PI * t) * envelope * 0.2;
+                                    }
+                                }
+                                
+                                data[i] = amplitude;
+                            }
+                        }
+                        
+                        resolve(buffer);
+                    });
+                }
+                
+                // Create both sound buffers
+                return Promise.all([
+                    createSuccessSound(),
+                    createFinalSound()
+                ]).then(buffers => {
+                    correctBuffer = buffers[0];
+                    finalBuffer = buffers[1];
+                });
+            }
+            
+            // Play a specific sound buffer
+            function playSound(buffer) {
+                if (!audioContext) return;
+                
+                const source = audioContext.createBufferSource();
+                source.buffer = buffer;
+                
+                // Add a bit of reverb
+                const convolver = audioContext.createConvolver();
+                const reverbTime = 2;
+                const decay = 0.5;
+                
+                // Create impulse response for reverb
+                const rate = audioContext.sampleRate;
+                const length = rate * reverbTime;
+                const impulse = audioContext.createBuffer(2, length, rate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const impulseData = impulse.getChannelData(channel);
+                    for (let i = 0; i < length; i++) {
+                        impulseData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+                    }
+                }
+                
+                convolver.buffer = impulse;
+                
+                // Create gain node for volume control
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.4;
+                
+                // Connect nodes: source -> convolver -> gain -> destination
+                source.connect(convolver);
+                convolver.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                source.start();
+            }
+            
+            // Function to play the correct answer sound
+            function playCorrectSound() {
+                if (correctBuffer) {
+                    playSound(correctBuffer);
+                }
+            }
+            
+            // Function to play the completion sound
+            function playFinalSound() {
+                if (finalBuffer) {
+                    playSound(finalBuffer);
+                }
+            }
+            
+            // Initialize audio on first user interaction
+            document.body.addEventListener('click', function() {
+                initAudio();
+            }, { once: true });
             
             let draggedItem = null;
             let score = 0;
@@ -334,13 +528,21 @@
                 });
                 
                 if (newCorrectAnswers > 0) {
-                    // Play the sound
-                    correctSound.play();
+                    // Play the correct answer sound
+                    playCorrectSound();
                     
                     // Update the score after a slight delay
                     setTimeout(() => {
                         score += newCorrectAnswers;
                         scoreElement.textContent = score;
+                        
+                        // Play completion sound if all answers are correct
+                        if (score === 4) {
+                            setTimeout(() => {
+                                playFinalSound();
+                                celebrateCompletion();
+                            }, 300);
+                        }
                     }, 500);
                 }
             });
@@ -380,7 +582,22 @@
                 const pointElement = document.createElement('div');
                 pointElement.className = 'point-animation';
                 pointElement.textContent = '+1';
-                pointElement.style.fontSize = '24px';
+                
+                // Add some trail elements for more dramatic effect
+                for (let i = 1; i <= 3; i++) {
+                    const trailElement = document.createElement('div');
+                    trailElement.textContent = '+1';
+                    trailElement.style.position = 'absolute';
+                    trailElement.style.left = '0';
+                    trailElement.style.top = '0';
+                    trailElement.style.opacity = `${0.3 - (i * 0.1)}`;
+                    trailElement.style.color = '#27ae60';
+                    trailElement.style.transform = 'scale(0.8)';
+                    trailElement.style.animation = `fly-to-score ${1.5 - (i * 0.1)}s ${i * 0.1}s forwards`;
+                    trailElement.style.setProperty('--end-x', 'var(--end-x)');
+                    trailElement.style.setProperty('--end-y', 'var(--end-y)');
+                    pointElement.appendChild(trailElement);
+                }
                 
                 // Position it at the target's location
                 const targetRect = target.getBoundingClientRect();
@@ -401,9 +618,103 @@
                 // Add to document and remove after animation
                 document.body.appendChild(pointElement);
                 
+                // Add a pulsing effect to the score
+                const scoreContainer = document.querySelector('.score-container');
+                scoreContainer.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => {
+                    scoreContainer.style.animation = '';
+                }, 500);
+                
                 setTimeout(() => {
                     pointElement.remove();
-                }, 1000);
+                }, 1500);
+            }
+            
+            // Function to celebrate quiz completion
+            function celebrateCompletion() {
+                // Create firework-like elements
+                for (let i = 0; i < 20; i++) {
+                    createFirework();
+                }
+                
+                // Add a celebration message
+                const message = document.createElement('div');
+                message.textContent = 'Perfect Score!';
+                message.style.position = 'fixed';
+                message.style.left = '50%';
+                message.style.top = '40%';
+                message.style.transform = 'translate(-50%, -50%)';
+                message.style.fontSize = '48px';
+                message.style.fontWeight = 'bold';
+                message.style.color = '#f39c12';
+                message.style.textShadow = '0 0 10px rgba(243, 156, 18, 0.7)';
+                message.style.zIndex = '2000';
+                message.style.opacity = '0';
+                message.style.transition = 'opacity 1s ease-in-out';
+                
+                document.body.appendChild(message);
+                
+                setTimeout(() => {
+                    message.style.opacity = '1';
+                }, 100);
+                
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    setTimeout(() => {
+                        message.remove();
+                    }, 1000);
+                }, 3000);
+            }
+            
+            // Create a single firework element
+            function createFirework() {
+                const firework = document.createElement('div');
+                firework.style.position = 'fixed';
+                firework.style.width = '10px';
+                firework.style.height = '10px';
+                firework.style.borderRadius = '50%';
+                
+                // Random position near the score
+                const scoreRect = document.querySelector('.score-container').getBoundingClientRect();
+                const centerX = scoreRect.left + scoreRect.width / 2;
+                const centerY = scoreRect.top + scoreRect.height / 2;
+                
+                // Random angle and distance
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 100 + Math.random() * 150;
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+                
+                firework.style.left = `${x}px`;
+                firework.style.top = `${y}px`;
+                
+                // Random color
+                const colors = ['#f39c12', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                firework.style.backgroundColor = color;
+                firework.style.boxShadow = `0 0 10px ${color}`;
+                
+                // Animation
+                firework.style.opacity = '0';
+                firework.style.transform = 'scale(0)';
+                firework.style.transition = 'all 0.5s ease-out';
+                
+                document.body.appendChild(firework);
+                
+                // Animate the firework
+                setTimeout(() => {
+                    firework.style.opacity = '1';
+                    firework.style.transform = 'scale(1)';
+                }, 10);
+                
+                setTimeout(() => {
+                    firework.style.opacity = '0';
+                    firework.style.transform = 'scale(2)';
+                }, 700);
+                
+                setTimeout(() => {
+                    firework.remove();
+                }, 1500);
             }
         });
     </script>
