@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA Structure Drag and Drop Activity</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        .score-container {
+            background-color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1), 0 0 15px rgba(39, 174, 96, 0.2);
+            font-size: 24px;
+            font-weight: bold;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .score {
+            color: #27ae60;
+            transition: all 0.3s ease;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.1), 0 0 15px rgba(39, 174, 96, 0.2); }
+            50% { transform: scale(1.1); box-shadow: 0 2px 5px rgba(0,0,0,0.1), 0 0 30px rgba(39, 174, 96, 0.5); }
+            100% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.1), 0 0 15px rgba(39, 174, 96, 0.2); }
+        }
+        .question-container {
+            background-color: #fff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 0;
+        }
+        .dna-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 40px 0;
+        }
+        .dna-part-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 150px;
+            margin-bottom: 20px;
+        }
+        .drop-target {
+            width: 140px;
+            height: 100px;
+            border: 3px dashed #7f8c8d;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            background-color: #ecf0f1;
+            transition: all 0.3s ease;
+        }
+        .drop-target.highlight {
+            border-color: #3498db;
+            background-color: #d6eaf8;
+        }
+        .label {
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .draggable-items {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 30px;
+            gap: 15px;
+        }
+        .drag-item {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .drag-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .drag-item.correct {
+            background-color: #27ae60;
+        }
+        .drag-item.placed {
+            cursor: default;
+            opacity: 0.8;
+        }
+        .point-animation {
+            position: absolute;
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 32px;
+            text-shadow: 0 0 10px rgba(39, 174, 96, 0.7);
+            animation: fly-to-score 1.5s forwards;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button#reset {
+            background-color: #e74c3c;
+        }
+        button#reset:hover {
+            background-color: #c0392b;
+        }
+        @keyframes fly-to-score {
+            0% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+                opacity: 1;
+                filter: blur(0);
+            }
+            20% {
+                transform: translate(calc(var(--end-x) * 0.2), calc(var(--end-y) * 0.2)) scale(2) rotate(45deg);
+                opacity: 1;
+                filter: blur(0);
+                color: #2ecc71;
+            }
+            40% {
+                transform: translate(calc(var(--end-x) * 0.4), calc(var(--end-y) * 0.4)) scale(1.5) rotate(90deg);
+                opacity: 0.9;
+                color: #27ae60;
+            }
+            70% {
+                transform: translate(calc(var(--end-x) * 0.7), calc(var(--end-y) * 0.7)) scale(1.2) rotate(180deg);
+                opacity: 0.8;
+                filter: blur(1px);
+                color: #16a085;
+            }
+            100% {
+                transform: translate(var(--end-x), var(--end-y)) scale(0.5) rotate(360deg);
+                opacity: 0;
+                filter: blur(3px);
+            }
+        }
+        .instructions {
+            background-color: #eaf4fb;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #3498db;
+        }
+        .dna-image {
+            max-width: 100%;
+            height: auto;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DNA Structure Quiz</h1>
+        <div class="score-container">
+            Score: <span class="score">0</span>/4
+        </div>
+    </div>
+
+    <div class="instructions">
+        <p><strong>Instructions:</strong> Drag each component to its correct location in the DNA structure. Each correct answer is worth 1 point.</p>
+    </div>
+
+    <div class="question-container">
+        <h2>Match the DNA components to their correct positions:</h2>
+        
+        <img class="dna-image" src="/api/placeholder/600/300" alt="DNA Double Helix Diagram">
+        
+        <div class="dna-container">
+            <div class="dna-part-container">
+                <div class="drop-target" data-accepts="adenine">
+                    <span class="placeholder">?</span>
+                </div>
+                <div class="label">Base that pairs with Thymine</div>
+            </div>
+            
+            <div class="dna-part-container">
+                <div class="drop-target" data-accepts="guanine">
+                    <span class="placeholder">?</span>
+                </div>
+                <div class="label">Base that pairs with Cytosine</div>
+            </div>
+            
+            <div class="dna-part-container">
+                <div class="drop-target" data-accepts="phosphate">
+                    <span class="placeholder">?</span>
+                </div>
+                <div class="label">Forms the backbone with sugar</div>
+            </div>
+            
+            <div class="dna-part-container">
+                <div class="drop-target" data-accepts="deoxyribose">
+                    <span class="placeholder">?</span>
+                </div>
+                <div class="label">The sugar in DNA</div>
+            </div>
+        </div>
+        
+        <div class="draggable-items">
+            <div class="drag-item" draggable="true" data-value="adenine">Adenine</div>
+            <div class="drag-item" draggable="true" data-value="guanine">Guanine</div>
+            <div class="drag-item" draggable="true" data-value="cytosine">Cytosine</div>
+            <div class="drag-item" draggable="true" data-value="thymine">Thymine</div>
+            <div class="drag-item" draggable="true" data-value="phosphate">Phosphate Group</div>
+            <div class="drag-item" draggable="true" data-value="deoxyribose">Deoxyribose</div>
+            <div class="drag-item" draggable="true" data-value="uracil">Uracil</div>
+            <div class="drag-item" draggable="true" data-value="ribose">Ribose</div>
+        </div>
+        
+        <div class="button-container">
+            <button id="check">Check Answers</button>
+            <button id="reset">Reset Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dragItems = document.querySelectorAll('.drag-item');
+            const dropTargets = document.querySelectorAll('.drop-target');
+            const scoreElement = document.querySelector('.score');
+            const checkButton = document.getElementById('check');
+            const resetButton = document.getElementById('reset');
+            
+            // Set up audio context and sounds
+            let audioContext;
+            let correctBuffer;
+            let finalBuffer;
+            
+            // Initialize audio - must be triggered by user interaction
+            function initAudio() {
+                if (audioContext) return Promise.resolve(); // Already initialized
+                
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create success sound - a major chord with decay
+                function createSuccessSound() {
+                    return new Promise(resolve => {
+                        const duration = 1;
+                        const attack = 0.02;
+                        const decay = duration - attack;
+                        
+                        const buffer = audioContext.createBuffer(2, audioContext.sampleRate * duration, audioContext.sampleRate);
+                        
+                        // Create data for left and right channels
+                        for (let channel = 0; channel < 2; channel++) {
+                            const data = buffer.getChannelData(channel);
+                            
+                            // Generate a chord (C major)
+                            const frequencies = [261.63, 329.63, 392.00]; // C, E, G
+                            
+                            for (let i = 0; i < buffer.length; i++) {
+                                const t = i / audioContext.sampleRate;
+                                let amplitude = 0;
+                                
+                                // Attack-decay envelope
+                                let envelope;
+                                if (t < attack) {
+                                    envelope = t / attack; // Linear attack
+                                } else {
+                                    envelope = Math.pow(1 - ((t - attack) / decay), 2); // Quadratic decay
+                                }
+                                
+                                // Sum sine waves for each frequency
+                                for (const freq of frequencies) {
+                                    amplitude += Math.sin(freq * 2 * Math.PI * t) * envelope * 0.2;
+                                }
+                                
+                                data[i] = amplitude;
+                            }
+                        }
+                        
+                        resolve(buffer);
+                    });
+                }
+                
+                // Create completion sound - arpeggiated chord
+                function createFinalSound() {
+                    return new Promise(resolve => {
+                        const duration = 1.5;
+                        const arpeggioDuration = 0.15;
+                        
+                        const buffer = audioContext.createBuffer(2, audioContext.sampleRate * duration, audioContext.sampleRate);
+                        
+                        // Create data for left and right channels
+                        for (let channel = 0; channel < 2; channel++) {
+                            const data = buffer.getChannelData(channel);
+                            
+                            // C major scale notes
+                            const frequencies = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                            
+                            for (let i = 0; i < buffer.length; i++) {
+                                const t = i / audioContext.sampleRate;
+                                let amplitude = 0;
+                                
+                                // For each note in the arpeggio
+                                for (let n = 0; n < frequencies.length; n++) {
+                                    const noteStart = n * arpeggioDuration;
+                                    const noteEnd = noteStart + arpeggioDuration * 2;
+                                    
+                                    if (t >= noteStart && t <= noteEnd) {
+                                        // Note envelope
+                                        let envelope;
+                                        if (t - noteStart < 0.01) {
+                                            envelope = (t - noteStart) / 0.01; // Fast attack
+                                        } else {
+                                            envelope = Math.pow(1 - ((t - noteStart - 0.01) / (noteEnd - noteStart - 0.01)), 1.5);
+                                        }
+                                        
+                                        amplitude += Math.sin(frequencies[n] * 2 * Math.PI * t) * envelope * 0.2;
+                                    }
+                                }
+                                
+                                data[i] = amplitude;
+                            }
+                        }
+                        
+                        resolve(buffer);
+                    });
+                }
+                
+                // Create both sound buffers
+                return Promise.all([
+                    createSuccessSound(),
+                    createFinalSound()
+                ]).then(buffers => {
+                    correctBuffer = buffers[0];
+                    finalBuffer = buffers[1];
+                });
+            }
+            
+            // Play a specific sound buffer
+            function playSound(buffer) {
+                if (!audioContext) return;
+                
+                const source = audioContext.createBufferSource();
+                source.buffer = buffer;
+                
+                // Add a bit of reverb
+                const convolver = audioContext.createConvolver();
+                const reverbTime = 2;
+                const decay = 0.5;
+                
+                // Create impulse response for reverb
+                const rate = audioContext.sampleRate;
+                const length = rate * reverbTime;
+                const impulse = audioContext.createBuffer(2, length, rate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const impulseData = impulse.getChannelData(channel);
+                    for (let i = 0; i < length; i++) {
+                        impulseData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+                    }
+                }
+                
+                convolver.buffer = impulse;
+                
+                // Create gain node for volume control
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.4;
+                
+                // Connect nodes: source -> convolver -> gain -> destination
+                source.connect(convolver);
+                convolver.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                source.start();
+            }
+            
+            // Function to play the correct answer sound
+            function playCorrectSound() {
+                if (correctBuffer) {
+                    playSound(correctBuffer);
+                }
+            }
+            
+            // Function to play the completion sound
+            function playFinalSound() {
+                if (finalBuffer) {
+                    playSound(finalBuffer);
+                }
+            }
+            
+            // Initialize audio on first user interaction
+            document.body.addEventListener('click', function() {
+                initAudio();
+            }, { once: true });
+            
+            let draggedItem = null;
+            let score = 0;
+            
+            // Drag and drop event listeners
+            dragItems.forEach(item => {
+                item.addEventListener('dragstart', dragStart);
+                item.addEventListener('dragend', dragEnd);
+            });
+            
+            dropTargets.forEach(target => {
+                target.addEventListener('dragover', dragOver);
+                target.addEventListener('dragenter', dragEnter);
+                target.addEventListener('dragleave', dragLeave);
+                target.addEventListener('drop', drop);
+            });
+            
+            function dragStart() {
+                draggedItem = this;
+                setTimeout(() => this.style.opacity = '0.5', 0);
+            }
+            
+            function dragEnd() {
+                setTimeout(() => this.style.opacity = '1', 0);
+                draggedItem = null;
+            }
+            
+            function dragOver(e) {
+                e.preventDefault();
+            }
+            
+            function dragEnter(e) {
+                e.preventDefault();
+                this.classList.add('highlight');
+            }
+            
+            function dragLeave() {
+                this.classList.remove('highlight');
+            }
+            
+            function drop() {
+                this.classList.remove('highlight');
+                
+                // If target already has a dropped item, don't allow another
+                if (this.querySelector('.drag-item')) {
+                    return;
+                }
+                
+                // Clone the dragged item and append to the drop target
+                const itemClone = draggedItem.cloneNode(true);
+                itemClone.style.opacity = '1';
+                itemClone.style.cursor = 'default';
+                itemClone.classList.add('placed');
+                itemClone.setAttribute('draggable', 'false');
+                
+                // Remove the placeholder
+                const placeholder = this.querySelector('.placeholder');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+                
+                this.appendChild(itemClone);
+                
+                // Check if correct
+                const acceptsValue = this.getAttribute('data-accepts');
+                const itemValue = draggedItem.getAttribute('data-value');
+                
+                if (acceptsValue === itemValue) {
+                    itemClone.classList.add('correct');
+                }
+            }
+            
+            // Check answers button
+            checkButton.addEventListener('click', function() {
+                let newCorrectAnswers = 0;
+                let scoreUpdated = false;
+                
+                dropTargets.forEach(target => {
+                    const item = target.querySelector('.drag-item');
+                    if (item) {
+                        const acceptsValue = target.getAttribute('data-accepts');
+                        const itemValue = item.getAttribute('data-value');
+                        
+                        if (acceptsValue === itemValue && !item.classList.contains('counted')) {
+                            // Add the 'counted' class to prevent double-counting
+                            item.classList.add('counted');
+                            newCorrectAnswers++;
+                            
+                            // Animate the point flying to the score
+                            animatePointToScore(target);
+                            scoreUpdated = true;
+                        }
+                    }
+                });
+                
+                if (newCorrectAnswers > 0) {
+                    // Play the correct answer sound
+                    playCorrectSound();
+                    
+                    // Update the score after a slight delay
+                    setTimeout(() => {
+                        score += newCorrectAnswers;
+                        scoreElement.textContent = score;
+                        
+                        // Play completion sound if all answers are correct
+                        if (score === 4) {
+                            setTimeout(() => {
+                                playFinalSound();
+                                celebrateCompletion();
+                            }, 300);
+                        }
+                    }, 500);
+                }
+            });
+            
+            // Reset button
+            resetButton.addEventListener('click', function() {
+                dropTargets.forEach(target => {
+                    // Remove any placed items
+                    const placedItem = target.querySelector('.drag-item');
+                    if (placedItem) {
+                        placedItem.remove();
+                    }
+                    
+                    // Add placeholder back
+                    if (!target.querySelector('.placeholder')) {
+                        const placeholder = document.createElement('span');
+                        placeholder.className = 'placeholder';
+                        placeholder.textContent = '?';
+                        target.appendChild(placeholder);
+                    }
+                });
+                
+                // Reset score
+                score = 0;
+                scoreElement.textContent = '0';
+                
+                // Make all drag items draggable again
+                dragItems.forEach(item => {
+                    item.classList.remove('counted');
+                    item.style.opacity = '1';
+                    item.setAttribute('draggable', 'true');
+                });
+            });
+            
+            function animatePointToScore(target) {
+                // Create an element for the animation
+                const pointElement = document.createElement('div');
+                pointElement.className = 'point-animation';
+                pointElement.textContent = '+1';
+                
+                // Add some trail elements for more dramatic effect
+                for (let i = 1; i <= 3; i++) {
+                    const trailElement = document.createElement('div');
+                    trailElement.textContent = '+1';
+                    trailElement.style.position = 'absolute';
+                    trailElement.style.left = '0';
+                    trailElement.style.top = '0';
+                    trailElement.style.opacity = `${0.3 - (i * 0.1)}`;
+                    trailElement.style.color = '#27ae60';
+                    trailElement.style.transform = 'scale(0.8)';
+                    trailElement.style.animation = `fly-to-score ${1.5 - (i * 0.1)}s ${i * 0.1}s forwards`;
+                    trailElement.style.setProperty('--end-x', 'var(--end-x)');
+                    trailElement.style.setProperty('--end-y', 'var(--end-y)');
+                    pointElement.appendChild(trailElement);
+                }
+                
+                // Position it at the target's location
+                const targetRect = target.getBoundingClientRect();
+                const scoreRect = document.querySelector('.score-container').getBoundingClientRect();
+                
+                pointElement.style.position = 'fixed';
+                pointElement.style.left = `${targetRect.left + targetRect.width / 2}px`;
+                pointElement.style.top = `${targetRect.top + targetRect.height / 2}px`;
+                
+                // Calculate end position (the score element)
+                const endX = scoreRect.left + scoreRect.width / 2 - targetRect.left - targetRect.width / 2;
+                const endY = scoreRect.top + scoreRect.height / 2 - targetRect.top - targetRect.height / 2;
+                
+                // Set the CSS variables for the animation
+                pointElement.style.setProperty('--end-x', `${endX}px`);
+                pointElement.style.setProperty('--end-y', `${endY}px`);
+                
+                // Add to document and remove after animation
+                document.body.appendChild(pointElement);
+                
+                // Add a pulsing effect to the score
+                const scoreContainer = document.querySelector('.score-container');
+                scoreContainer.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => {
+                    scoreContainer.style.animation = '';
+                }, 500);
+                
+                setTimeout(() => {
+                    pointElement.remove();
+                }, 1500);
+            }
+            
+            // Function to celebrate quiz completion
+            function celebrateCompletion() {
+                // Create firework-like elements
+                for (let i = 0; i < 20; i++) {
+                    createFirework();
+                }
+                
+                // Add a celebration message
+                const message = document.createElement('div');
+                message.textContent = 'Perfect Score!';
+                message.style.position = 'fixed';
+                message.style.left = '50%';
+                message.style.top = '40%';
+                message.style.transform = 'translate(-50%, -50%)';
+                message.style.fontSize = '48px';
+                message.style.fontWeight = 'bold';
+                message.style.color = '#f39c12';
+                message.style.textShadow = '0 0 10px rgba(243, 156, 18, 0.7)';
+                message.style.zIndex = '2000';
+                message.style.opacity = '0';
+                message.style.transition = 'opacity 1s ease-in-out';
+                
+                document.body.appendChild(message);
+                
+                setTimeout(() => {
+                    message.style.opacity = '1';
+                }, 100);
+                
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    setTimeout(() => {
+                        message.remove();
+                    }, 1000);
+                }, 3000);
+            }
+            
+            // Create a single firework element
+            function createFirework() {
+                const firework = document.createElement('div');
+                firework.style.position = 'fixed';
+                firework.style.width = '10px';
+                firework.style.height = '10px';
+                firework.style.borderRadius = '50%';
+                
+                // Random position near the score
+                const scoreRect = document.querySelector('.score-container').getBoundingClientRect();
+                const centerX = scoreRect.left + scoreRect.width / 2;
+                const centerY = scoreRect.top + scoreRect.height / 2;
+                
+                // Random angle and distance
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 100 + Math.random() * 150;
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+                
+                firework.style.left = `${x}px`;
+                firework.style.top = `${y}px`;
+                
+                // Random color
+                const colors = ['#f39c12', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                firework.style.backgroundColor = color;
+                firework.style.boxShadow = `0 0 10px ${color}`;
+                
+                // Animation
+                firework.style.opacity = '0';
+                firework.style.transform = 'scale(0)';
+                firework.style.transition = 'all 0.5s ease-out';
+                
+                document.body.appendChild(firework);
+                
+                // Animate the firework
+                setTimeout(() => {
+                    firework.style.opacity = '1';
+                    firework.style.transform = 'scale(1)';
+                }, 10);
+                
+                setTimeout(() => {
+                    firework.style.opacity = '0';
+                    firework.style.transform = 'scale(2)';
+                }, 700);
+                
+                setTimeout(() => {
+                    firework.remove();
+                }, 1500);
+            }
+        });
+    </script>
+</body>
+</html>
