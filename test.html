@@ -371,13 +371,65 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        /* Completion celebration */
-        @keyframes celebrate {
-            0% { transform: scale(0.5); opacity: 0; }
-            25% { transform: scale(1.2); opacity: 1; }
-            50% { transform: scale(0.9); opacity: 1; }
-            75% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
+        /* Central message popup */
+        .central-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background-color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.25);
+            z-index: 1500;
+            text-align: center;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+            width: 400px;
+            border-left: 5px solid #003D7C;
+        }
+        
+        .central-message.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        .central-message h3 {
+            color: #003D7C;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        .central-message p {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .central-message .message-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .message-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.3);
+            backdrop-filter: blur(2px);
+            z-index: 1400;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .message-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
         }
         
         .celebration-message {
@@ -439,10 +491,6 @@
 
     <div class="question-container">
         <h2>Match the DNA components to their correct positions:</h2>
-        
-        <div class="dna-model">
-            <img class="dna-image" src="/api/placeholder/600/300" alt="DNA Double Helix Diagram">
-        </div>
         
         <div class="dna-container">
             <div class="dna-part-container">
@@ -577,72 +625,155 @@
                 
                 this.appendChild(itemClone);
                 
-                // Check if correct
+                // Check if correct immediately
                 const acceptsValue = this.getAttribute('data-accepts');
                 const itemValue = draggedItem.getAttribute('data-value');
                 
                 if (acceptsValue === itemValue) {
+                    // Correct answer!
                     itemClone.classList.add('correct');
+                    itemClone.classList.add('counted');
+                    
+                    // Play sound
+                    playCorrectSound();
+                    
+                    // Increment score immediately
+                    score++;
+                    scoreElement.textContent = score;
+                    
+                    // Animate the point flying to the score
+                    animatePointToScore(this);
+                    
+                    // Show encouraging message based on progress
+                    if (score < 4) {
+                        // Show random encouragement for correct answer
+                        const msg = getRandomEncouragement();
+                        showCentralMessage(msg.title, msg.message, msg.emoji);
+                        
+                        // Show progress-based messages at specific points
+                        if (score === 1) {
+                            setTimeout(() => {
+                                showCentralMessage(progressMessages[0].title, progressMessages[0].message, progressMessages[0].emoji);
+                            }, 3500);
+                        } else if (score === 2) {
+                            setTimeout(() => {
+                                showCentralMessage(progressMessages[1].title, progressMessages[1].message, progressMessages[1].emoji);
+                            }, 3500);
+                        } else if (score === 3) {
+                            setTimeout(() => {
+                                showCentralMessage(progressMessages[2].title, progressMessages[2].message, progressMessages[2].emoji);
+                            }, 3500);
+                        }
+                    }
+                    
+                    // If all answers are correct, celebrate
+                    if (score === 4) {
+                        setTimeout(() => {
+                            playFinalSound();
+                            celebrateCompletion();
+                        }, 1000);
+                    }
                 }
             }
             
-            // Create feedback notification element
-            const feedbackNotification = document.createElement('div');
-            feedbackNotification.className = 'feedback-notification';
-            document.body.appendChild(feedbackNotification);
+            // Create central message element
+            const messageOverlay = document.createElement('div');
+            messageOverlay.className = 'message-overlay';
+            document.body.appendChild(messageOverlay);
             
-            // Function to show feedback
-            function showFeedback(isCorrect, message) {
-                // Clear any existing classes
-                feedbackNotification.className = 'feedback-notification';
-                
-                // Add appropriate classes and content
-                feedbackNotification.classList.add(isCorrect ? 'correct' : 'incorrect');
-                feedbackNotification.innerHTML = `
-                    <div class="feedback-icon">${isCorrect ? '✓' : '✗'}</div>
-                    <div>${message}</div>
+            const centralMessage = document.createElement('div');
+            centralMessage.className = 'central-message';
+            document.body.appendChild(centralMessage);
+            
+            // Function to show central message
+            function showCentralMessage(title, message, emoji = "🎉", duration = 3000) {
+                centralMessage.innerHTML = `
+                    <div class="message-icon">${emoji}</div>
+                    <h3>${title}</h3>
+                    <p>${message}</p>
+                    <button id="message-ok-button">OK</button>
                 `;
                 
-                // Show the notification
-                setTimeout(() => {
-                    feedbackNotification.classList.add('show');
-                    
-                    // Hide after 3 seconds
-                    setTimeout(() => {
-                        feedbackNotification.classList.remove('show');
-                    }, 3000);
-                }, 100);
+                // Show overlay and message
+                messageOverlay.classList.add('show');
+                centralMessage.classList.add('show');
+                
+                // Close on button click
+                const okButton = document.getElementById('message-ok-button');
+                if (okButton) {
+                    okButton.addEventListener('click', closeCentralMessage);
+                }
+                
+                // Auto close after duration if provided
+                if (duration) {
+                    setTimeout(closeCentralMessage, duration);
+                }
+            }
+            
+            // Function to close central message
+            function closeCentralMessage() {
+                centralMessage.classList.remove('show');
+                messageOverlay.classList.remove('show');
+            }
+            
+            // Messages based on progress
+            const encouragementMessages = [
+                { title: "Great job!", message: "That's correct! Keep going, you're doing well!", emoji: "👍" },
+                { title: "Excellent!", message: "Perfect match! You're getting the hang of it.", emoji: "🌟" },
+                { title: "You got it!", message: "That's right! You're understanding DNA structure well.", emoji: "🧬" },
+                { title: "Well done!", message: "Correct! You're showing great knowledge of biology.", emoji: "🔬" }
+            ];
+            
+            const progressMessages = [
+                { title: "Good start!", message: "You're on the right track. Keep matching the components!", emoji: "🚀" },
+                { title: "Halfway there!", message: "You've got half the answers correct. You're doing great!", emoji: "🏆" },
+                { title: "Almost there!", message: "Just one more to go! You're so close to mastery.", emoji: "⭐" }
+            ];
+            
+            // Generate random encouragement message
+            function getRandomEncouragement() {
+                const index = Math.floor(Math.random() * encouragementMessages.length);
+                return encouragementMessages[index];
             }
             
             // Check answers button with improved sound handling
             checkButton.addEventListener('click', function() {
+                // Get all drop targets that have items but aren't counted yet
+                const uncheckedTargets = Array.from(dropTargets).filter(target => {
+                    const item = target.querySelector('.drag-item');
+                    return item && !item.classList.contains('counted');
+                });
+                
+                if (uncheckedTargets.length === 0) {
+                    showCentralMessage("No New Answers", "You haven't placed any new answers to check. Try dragging the components to their correct locations.", "🔍");
+                    return;
+                }
+                
                 let newCorrectAnswers = 0;
                 let newWrongAnswers = 0;
-                let scoreUpdated = false;
                 
-                // Ensure we have user interaction for audio
-                // Try to play a silent sound first to unlock audio
-                const unlockAudio = document.createElement('audio');
-                unlockAudio.src = 'https://xchee-01.github.io/answer_correct_sound.mp3';
-                unlockAudio.volume = 0.1;
-                unlockAudio.play().catch(e => console.log("Audio unlock attempt:", e));
-                
-                dropTargets.forEach(target => {
+                uncheckedTargets.forEach(target => {
                     const item = target.querySelector('.drag-item');
                     if (item) {
                         const acceptsValue = target.getAttribute('data-accepts');
                         const itemValue = item.getAttribute('data-value');
                         
-                        if (acceptsValue === itemValue && !item.classList.contains('counted')) {
+                        if (acceptsValue === itemValue) {
                             // Add the 'counted' class to prevent double-counting
                             item.classList.add('counted');
                             item.classList.add('correct');
                             newCorrectAnswers++;
                             
+                            // Update score
+                            score++;
+                            scoreElement.textContent = score;
+                            
                             // Animate the point flying to the score
                             animatePointToScore(target);
-                            scoreUpdated = true;
-                        } else if (acceptsValue !== itemValue && !item.classList.contains('incorrect')) {
+                            
+                            // Play sound for each correct answer
+                            setTimeout(() => playCorrectSound(), newCorrectAnswers * 300);
+                        } else {
                             // Mark as incorrect
                             item.classList.add('incorrect');
                             newWrongAnswers++;
@@ -650,36 +781,48 @@
                     }
                 });
                 
-                if (newCorrectAnswers > 0) {
-                    // Play the correct answer sound - try immediately and with a delay as fallback
-                    playCorrectSound();
-                    // Also try after a small delay as a fallback
-                    setTimeout(playCorrectSound, 50);
+                // Show appropriate messages based on results
+                if (newCorrectAnswers > 0 && newWrongAnswers === 0) {
+                    // All correct
+                    if (newCorrectAnswers === 1) {
+                        const msg = getRandomEncouragement();
+                        showCentralMessage(msg.title, msg.message, msg.emoji);
+                    } else {
+                        showCentralMessage("Amazing!", `You got ${newCorrectAnswers} answers correct! Great understanding of DNA structure.`, "🎯");
+                    }
                     
-                    // Show feedback notification
-                    showFeedback(true, newCorrectAnswers === 1 ? 
-                                "Correct answer!" : 
-                                `${newCorrectAnswers} correct answers!`);
+                    // Show progress message
+                    if (score === 1 || score === 2 || score === 3) {
+                        setTimeout(() => {
+                            showCentralMessage(
+                                progressMessages[score-1].title, 
+                                progressMessages[score-1].message, 
+                                progressMessages[score-1].emoji
+                            );
+                        }, 3500);
+                    }
                     
-                    // Update the score after a slight delay
-                    setTimeout(() => {
-                        score += newCorrectAnswers;
-                        scoreElement.textContent = score;
-                        
-                        // Play completion sound if all answers are correct
-                        if (score === 4) {
-                            setTimeout(() => {
-                                playFinalSound();
-                                setTimeout(playFinalSound, 50); // Try again as fallback
-                                celebrateCompletion();
-                            }, 300);
-                        }
-                    }, 500);
+                    // Celebrate completion
+                    if (score === 4) {
+                        setTimeout(() => {
+                            playFinalSound();
+                            celebrateCompletion();
+                        }, 1000);
+                    }
+                } else if (newCorrectAnswers > 0 && newWrongAnswers > 0) {
+                    // Mixed results
+                    showCentralMessage(
+                        "Partially Correct",
+                        `You got ${newCorrectAnswers} correct and ${newWrongAnswers} incorrect. You're making progress!`,
+                        "🔍"
+                    );
                 } else if (newWrongAnswers > 0) {
-                    // Show feedback for wrong answers
-                    showFeedback(false, newWrongAnswers === 1 ? 
-                                "Incorrect answer. Try again!" : 
-                                "Incorrect answers. Try again!");
+                    // All wrong
+                    showCentralMessage(
+                        "Keep Trying",
+                        "These answers aren't quite right. Think about the DNA structure - you can do this!",
+                        "💪"
+                    );
                 }
             });
             
@@ -787,6 +930,7 @@
                 // Create celebration message with enhanced styling
                 const celebrationMsg = document.createElement('div');
                 celebrationMsg.className = 'celebration-message';
+                celebrationMsg.style.animation = 'celebrate 0.7s forwards';
                 celebrationMsg.innerHTML = `
                     <div class="celebration-icon">
                         <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -795,7 +939,7 @@
                         </svg>
                     </div>
                     <h3>Perfect Score!</h3>
-                    <p>Congratulations! You've successfully mastered the DNA structure components.</p>
+                    <p>Congratulations! You've successfully mastered all DNA structure components. Your understanding of DNA is excellent!</p>
                     <button id="continue-button">Continue</button>
                 `;
                 
@@ -811,6 +955,15 @@
                         overlay.remove();
                     }, 600);
                 });
+            }
+            
+            /* Ensure we have the celebrate animation */
+            @keyframes celebrate {
+                0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+                25% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+                50% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+                75% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+                100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             }
             
             // Function to create celebration particles
