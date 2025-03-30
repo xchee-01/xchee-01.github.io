@@ -196,40 +196,33 @@
             font-weight: bold;
             font-size: 32px;
             text-shadow: 0 0 10px rgba(239, 124, 0, 0.6);
-            animation: fly-to-score 1.5s forwards;
             pointer-events: none;
             z-index: 1000;
-            will-change: transform, opacity;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+            /* No animation here - using JS for better performance */
         }
         
-        /* Pulse animation for score */
+        /* Pulse animation for score - simplified */
         @keyframes pulse {
-            0% { transform: scale(1); }
+            0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
         }
         
-        /* Feedback animations */
+        /* Feedback animations - simplified for better performance */
         @keyframes correct-answer {
-            0% { transform: scale(1); box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
-            20% { transform: scale(1.1) translateY(-2px); box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4); }
-            40% { transform: scale(1.05) translateY(0); box-shadow: 0 5px 12px rgba(40, 167, 69, 0.3); }
-            60% { transform: scale(1.08) translateY(-1px); box-shadow: 0 5px 12px rgba(40, 167, 69, 0.3); }
-            100% { transform: scale(1); box-shadow: 0 3px 8px rgba(40, 167, 69, 0.2); }
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.1); }
+            50% { transform: scale(1.05); }
+            75% { transform: scale(1.08); }
         }
         
         @keyframes wrong-answer {
-            0% { transform: scale(1); }
-            10% { transform: translateX(-4px); }
-            20% { transform: translateX(4px); }
-            30% { transform: translateX(-3px); }
-            40% { transform: translateX(3px); }
-            50% { transform: translateX(-2px); }
-            60% { transform: translateX(2px); }
-            70% { transform: translateX(-1px); }
-            80% { transform: translateX(1px); }
-            90% { transform: translateX(-1px); }
-            100% { transform: translateX(0); }
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
         }
         
         .button-container {
@@ -246,7 +239,7 @@
             border-radius: 6px;
             font-size: 16px;
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
             font-weight: 500;
             box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         }
@@ -260,37 +253,6 @@
         button:active {
             transform: translateY(0);
             box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-        }
-        
-        @keyframes fly-to-score {
-            0% {
-                transform: translate(0, 0) scale(1) rotate(0deg);
-                opacity: 1;
-            }
-            10% {
-                transform: translate(calc(var(--end-x) * 0.05), calc(var(--end-y) * 0.05)) scale(1.3) rotate(5deg);
-                opacity: 1;
-            }
-            30% {
-                transform: translate(calc(var(--end-x) * 0.3), calc(var(--end-y) * 0.3)) scale(1.5) rotate(10deg);
-                opacity: 0.95;
-                color: var(--secondary);
-                text-shadow: 0 0 15px rgba(239, 124, 0, 0.7), 0 0 30px rgba(239, 124, 0, 0.4);
-            }
-            60% {
-                transform: translate(calc(var(--end-x) * 0.6), calc(var(--end-y) * 0.6)) scale(1.2) rotate(20deg);
-                opacity: 0.9;
-            }
-            80% {
-                transform: translate(calc(var(--end-x) * 0.8), calc(var(--end-y) * 0.8)) scale(0.9) rotate(30deg);
-                opacity: 0.7;
-                filter: blur(1px);
-            }
-            100% {
-                transform: translate(var(--end-x), var(--end-y)) scale(0.6) rotate(45deg);
-                opacity: 0;
-                filter: blur(2px);
-            }
         }
         
         .instructions {
@@ -357,9 +319,7 @@
         /* Celebrate animation */
         @keyframes celebrate {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            25% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-            50% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
-            75% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
         
@@ -393,16 +353,7 @@
             }
         }
         
-        /* Particle styles for celebration */
-        .particle {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 1600;
-            will-change: transform, opacity;
-        }
+        /* No longer needed - using canvas for particles */
     </style>
 </head>
 <body>
@@ -955,7 +906,7 @@
                     this.currentDropTarget = null;
                 },
                 
-                // Point animation using requestAnimationFrame
+                // Point animation using a more efficient approach
                 animatePointToScore(target) {
                     const pointElement = document.createElement('div');
                     pointElement.className = 'point-animation';
@@ -965,32 +916,68 @@
                     const targetRect = target.getBoundingClientRect();
                     const scoreRect = this.elements.scoreContainer.getBoundingClientRect();
                     
+                    // Starting position
+                    const startX = targetRect.left + targetRect.width / 2;
+                    const startY = targetRect.top + targetRect.height / 2;
+                    
+                    // Ending position
+                    const endX = scoreRect.left + scoreRect.width / 2;
+                    const endY = scoreRect.top + scoreRect.height / 2;
+                    
+                    // Apply direct transform instead of CSS variables
                     pointElement.style.position = 'fixed';
-                    pointElement.style.left = `${targetRect.left + targetRect.width / 2}px`;
-                    pointElement.style.top = `${targetRect.top + targetRect.height / 2}px`;
-                    
-                    // Calculate end position
-                    const endX = scoreRect.left + scoreRect.width / 2 - targetRect.left - targetRect.width / 2;
-                    const endY = scoreRect.top + scoreRect.height / 2 - targetRect.top - targetRect.height / 2;
-                    
-                    // Set CSS variables for animation
-                    pointElement.style.setProperty('--end-x', `${endX}px`);
-                    pointElement.style.setProperty('--end-y', `${endY}px`);
+                    pointElement.style.left = `${startX}px`;
+                    pointElement.style.top = `${startY}px`;
+                    pointElement.style.transform = 'translate(-50%, -50%)';
+                    pointElement.style.opacity = '1';
                     
                     document.body.appendChild(pointElement);
                     
-                    // Pulse effect on score using CSS animation
+                    // Use more direct animation with JS for better control
+                    let startTime = null;
+                    const duration = 1000; // milliseconds
+                    
+                    const animatePoint = (timestamp) => {
+                        if (!startTime) startTime = timestamp;
+                        const elapsed = timestamp - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        
+                        // Cubic bezier easing
+                        const easeOut = t => 1 - Math.pow(1 - t, 3);
+                        const easedProgress = easeOut(progress);
+                        
+                        // Calculate current position with easing
+                        const currentX = startX + (endX - startX) * easedProgress;
+                        const currentY = startY + (endY - startY) * easedProgress;
+                        
+                        // Apply transforms
+                        const scale = 1 - 0.4 * easedProgress;
+                        const rotation = 45 * easedProgress;
+                        const opacity = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
+                        
+                        pointElement.style.left = `${currentX}px`;
+                        pointElement.style.top = `${currentY}px`;
+                        pointElement.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`;
+                        pointElement.style.opacity = `${opacity}`;
+                        
+                        if (progress < 1) {
+                            requestAnimationFrame(animatePoint);
+                        } else {
+                            // Clean up when animation completes
+                            pointElement.remove();
+                        }
+                    };
+                    
+                    // Start animation in next frame
+                    requestAnimationFrame(animatePoint);
+                    
+                    // Pulse effect on score
                     this.elements.scoreContainer.style.animation = 'pulse 0.5s ease-in-out';
                     
-                    // Clean up animations
+                    // Clean up score animation
                     setTimeout(() => {
                         this.elements.scoreContainer.style.animation = '';
                     }, 500);
-                    
-                    // Clean up point element
-                    setTimeout(() => {
-                        pointElement.remove();
-                    }, 1500);
                 },
                 
                 // Show feedback based on score
@@ -1118,88 +1105,109 @@
                     });
                 },
                 
-                // Create celebration particles using a more efficient approach
+                // Create celebration particles using canvas for better performance
                 createParticles() {
-                    const fragment = document.createDocumentFragment();
-                    const particleCount = this.touchDevice ? 20 : 40;
+                    // Use canvas for particle animation instead of DOM elements
+                    const canvas = document.createElement('canvas');
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                    canvas.style.position = 'fixed';
+                    canvas.style.top = '0';
+                    canvas.style.left = '0';
+                    canvas.style.pointerEvents = 'none';
+                    canvas.style.zIndex = '1600';
+                    document.body.appendChild(canvas);
+                    
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Reduce particle count for better performance
+                    const particleCount = this.touchDevice ? 12 : 25;
                     
                     // NUS colors
                     const colors = ['#003D7C', '#EF7C00', '#4A90E2', '#FFB74D'];
                     
-                    // Create all particles in one go
+                    // Create particles array
+                    const particles = [];
+                    
                     for (let i = 0; i < particleCount; i++) {
-                        // Create particle with random properties
-                        const particle = document.createElement('div');
-                        particle.className = 'particle';
-                        
-                        const size = Math.random() * 10 + 5;
-                        particle.style.width = `${size}px`;
-                        particle.style.height = `${size}px`;
-                        
-                        // NUS colors
-                        const color = colors[Math.floor(Math.random() * colors.length)];
-                        particle.style.backgroundColor = color;
-                        particle.style.boxShadow = `0 0 10px ${color}`;
-                        
-                        // Position at bottom of viewport
-                        particle.style.left = `${Math.random() * window.innerWidth}px`;
-                        particle.style.top = `${window.innerHeight}px`;
-                        particle.style.opacity = '0';
-                        
-                        fragment.appendChild(particle);
-                        
-                        // Prepare animation properties for later application
-                        const speed = Math.random() * 3 + 2;
-                        const rotation = Math.random() * 360;
-                        const angle = Math.random() * Math.PI * 2;
-                        const scale = Math.random() * 0.8 + 0.2;
-                        const distance = Math.random() * 150 + 150;
-                        const destinationX = Math.cos(angle) * distance;
-                        const destinationY = -Math.sin(angle) * distance - 300;
-                        
-                        // Store these for use in animation
-                        particle.dataset.speed = speed;
-                        particle.dataset.destinationX = destinationX;
-                        particle.dataset.destinationY = destinationY;
-                        particle.dataset.rotation = rotation;
-                        particle.dataset.scale = scale;
+                        particles.push({
+                            x: Math.random() * canvas.width,
+                            y: canvas.height,
+                            radius: Math.random() * 6 + 4,
+                            color: colors[Math.floor(Math.random() * colors.length)],
+                            speed: Math.random() * 2 + 1,
+                            angle: Math.random() * Math.PI * 2,
+                            rotation: Math.random() * 360,
+                            rotationSpeed: Math.random() * 2 - 1,
+                            alpha: 0
+                        });
                     }
                     
-                    // Add all particles to the DOM at once
-                    document.body.appendChild(fragment);
+                    // Animation variables
+                    let animationStartTime = null;
+                    const animationDuration = 2500; // milliseconds
                     
-                    // Animate particles in the next frame
-                    requestAnimationFrame(() => {
-                        const particles = document.querySelectorAll('.particle');
+                    // Animation function
+                    function animate(timestamp) {
+                        if (!animationStartTime) animationStartTime = timestamp;
+                        const elapsed = timestamp - animationStartTime;
+                        const progress = Math.min(elapsed / animationDuration, 1);
                         
-                        particles.forEach(particle => {
-                            const speed = parseFloat(particle.dataset.speed);
-                            const destinationX = parseFloat(particle.dataset.destinationX);
-                            const destinationY = parseFloat(particle.dataset.destinationY);
-                            const rotation = parseFloat(particle.dataset.rotation);
-                            const scale = parseFloat(particle.dataset.scale);
+                        // Clear canvas
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        
+                        // Update and draw particles
+                        for (const p of particles) {
+                            // Calculate position based on time
+                            const distance = 150 + Math.random() * 150;
+                            const targetY = canvas.height - distance - 300 * progress;
                             
-                            // Apply transition
-                            particle.style.transition = `
-                                transform ${speed}s cubic-bezier(0.23, 1, 0.32, 1),
-                                opacity ${speed}s cubic-bezier(0.175, 0.885, 0.32, 1.275)
-                            `;
+                            // Ease-out function for smooth animation
+                            const easeOut = function(t) {
+                                return 1 - Math.pow(1 - t, 3);
+                            };
                             
-                            // Trigger animation
-                            particle.style.opacity = '0.8';
-                            particle.style.transform = `
-                                translate(${destinationX}px, ${destinationY}px)
-                                rotate(${rotation}deg)
-                                scale(${scale})
-                            `;
+                            // Apply easing
+                            const easedProgress = easeOut(progress);
                             
-                            // Clean up particles
+                            p.y = canvas.height - (canvas.height - targetY) * easedProgress;
+                            p.x += Math.cos(p.angle) * p.speed * 0.5;
+                            p.rotation += p.rotationSpeed;
+                            
+                            // Fade in then out
+                            if (progress < 0.3) {
+                                p.alpha = progress / 0.3; // Fade in
+                            } else if (progress > 0.7) {
+                                p.alpha = 1 - (progress - 0.7) / 0.3; // Fade out
+                            } else {
+                                p.alpha = 1;
+                            }
+                            
+                            // Draw particle
+                            ctx.save();
+                            ctx.globalAlpha = p.alpha;
+                            ctx.translate(p.x, p.y);
+                            ctx.rotate(p.rotation * Math.PI / 180);
+                            ctx.fillStyle = p.color;
+                            ctx.beginPath();
+                            ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.restore();
+                        }
+                        
+                        // Continue animation or clean up
+                        if (progress < 1) {
+                            requestAnimationFrame(animate);
+                        } else {
+                            // Clean up canvas when done
                             setTimeout(() => {
-                                particle.style.opacity = '0';
-                                setTimeout(() => particle.remove(), 500);
-                            }, speed * 800);
-                        });
-                    });
+                                canvas.remove();
+                            }, 100);
+                        }
+                    }
+                    
+                    // Start animation
+                    requestAnimationFrame(animate);
                 }
             };
             
