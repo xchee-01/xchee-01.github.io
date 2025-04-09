@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amino Acid Charge Quiz</title>
+    <style>
+        /* NUS Colors - Updated with drag & drop quiz colors */
+        :root {
+            --primary: #003D7C; /* NUS Blue */
+            --secondary: #EF7C00; /* NUS Orange */
+            --light-bg: #f8f9fa;
+            --text-dark: #333;
+            --text-medium: #495057;
+            --text-light: #6c757d;
+            --border-light: #dee2e6;
+            --correct: #28a745;
+            --incorrect: #dc3545;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-bg);
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background-color: var(--primary);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .score-container {
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 20px;
+            font-weight: 600;
+            position: relative;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--secondary);
+            will-change: transform;
+        }
+        
+        .score {
+            color: var(--secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .question {
+            display: none;
+            margin-bottom: 20px;
+            background-color: rgba(0, 61, 124, 0.06);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .question.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .timer {
+            text-align: right;
+            font-size: 1em;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        .timer svg {
+            margin-right: 5px;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .option {
+            padding: 15px;
+            background-color: var(--light-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .option:hover {
+            background-color: rgba(0, 61, 124, 0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .option.correct {
+            background-color: var(--correct);
+            color: white;
+            animation: correctAnswer 0.8s ease forwards;
+        }
+        
+        .option.incorrect {
+            background-color: var(--incorrect);
+            color: white;
+            animation: wrongAnswer 0.6s ease forwards;
+        }
+        
+        @keyframes correctAnswer {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
+            75% { transform: scale(1.04); }
+        }
+        
+        @keyframes wrongAnswer {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .option-prefix {
+            font-weight: 600;
+            margin-right: 12px;
+            min-width: 20px;
+            color: var(--primary);
+        }
+        
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .time-summary {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(0, 61, 124, 0.06);
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        #next-btn {
+            display: none;
+            padding: 14px 28px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 20px auto;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+        
+        #next-btn:hover {
+            background-color: #00285A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+        
+        #next-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        #final-result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: var(--primary);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .point-animation {
+            position: absolute;
+            color: var(--secondary);
+            font-weight: bold;
+            font-size: 32px;
+            text-shadow: 0 0 10px rgba(239, 124, 0, 0.6);
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+        }
+        
+        /* Overlay and message styles */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.4);
+            backdrop-filter: blur(3px);
+            z-index: 1500;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .celebration-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background-color: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            z-index: 2000;
+            animation: celebrate 0.7s forwards;
+            will-change: transform, opacity;
+        }
+        
+        .celebration-message h3 {
+            color: var(--primary);
+            font-size: 28px;
+            margin: 0 0 15px 0;
+        }
+        
+        .celebration-message p {
+            color: var(--text-medium);
+            margin-bottom: 20px;
+        }
+        
+        .celebration-icon {
+            font-size: 60px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+        
+        #continue-button {
+            padding: 14px 28px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 10px auto;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--secondary);
+        }
+        
+        #continue-button:hover {
+            background-color: #00285A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+        
+        #continue-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        /* Celebrate animation */
+        @keyframes celebrate {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        /* Hidden elements */
+        #username-container, #submit-container {
+            display: none;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .option {
+                padding: 12px;
+            }
+            
+            .quiz-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Amino Acid Charge: Mastery Quiz</h1>
+        <div class="score-container">
+            Score: <span class="score">0</span>/11
+        </div>
+    </div>
+    
+    <div class="quiz-container">
+        <!-- Hidden username container -->
+        <div id="username-container">
+            <input type="hidden" id="username">
+        </div>
+        
+        <div id="quiz-content">
+            <!-- Question 1 -->
+            <div class="question active" id="q1">
+                <div class="timer" id="timer-q1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>1. What two functional groups are present in all amino acids?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="All amino acids contain both an amino group (-NH2) and a carboxyl group (-COOH). These two functional groups are the defining characteristic of amino acids and are responsible for their acid-base properties.">
+                        <span class="option-prefix">a)</span> Hydroxyl group and carboxyl group
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="All amino acids contain both an amino group (-NH2) and a carboxyl group (-COOH). These two functional groups are the defining characteristic of amino acids and are responsible for their acid-base properties.">
+                        <span class="option-prefix">b)</span> Amino group and hydroxyl group
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! All amino acids contain both an amino group (-NH2) and a carboxyl group (-COOH). These two functional groups are the defining characteristic of amino acids and are responsible for their acid-base properties.">
+                        <span class="option-prefix">c)</span> Amino group and carboxyl group
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="All amino acids contain both an amino group (-NH2) and a carboxyl group (-COOH). These two functional groups are the defining characteristic of amino acids and are responsible for their acid-base properties.">
+                        <span class="option-prefix">d)</span> Carboxyl group and sulfhydryl group
+                    </div>
+                </div>
+                <div class="feedback" id="q1-feedback"></div>
+                <div class="time-summary" id="time-summary-q1"></div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="question" id="q2">
+                <div class="timer" id="timer-q2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>2. At physiological pH (approximately 7.4), most amino acids exist in which of the following forms?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="At physiological pH, most amino acids exist as zwitterions with a protonated amino group (H3N+) and a deprotonated carboxyl group (COO-), giving the form H3N+-CHR-COO-. This occurs because the amino group's pKa is typically higher than physiological pH while the carboxyl group's pKa is lower.">
+                        <span class="option-prefix">a)</span> H3N+-CHR-COOH
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="At physiological pH, most amino acids exist as zwitterions with a protonated amino group (H3N+) and a deprotonated carboxyl group (COO-), giving the form H3N+-CHR-COO-. This occurs because the amino group's pKa is typically higher than physiological pH while the carboxyl group's pKa is lower.">
+                        <span class="option-prefix">b)</span> H2N-CHR-COOH
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! At physiological pH, most amino acids exist as zwitterions with a protonated amino group (H3N+) and a deprotonated carboxyl group (COO-), giving the form H3N+-CHR-COO-. This occurs because the amino group's pKa is typically higher than physiological pH while the carboxyl group's pKa is lower.">
+                        <span class="option-prefix">c)</span> H3N+-CHR-COO-
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="At physiological pH, most amino acids exist as zwitterions with a protonated amino group (H3N+) and a deprotonated carboxyl group (COO-), giving the form H3N+-CHR-COO-. This occurs because the amino group's pKa is typically higher than physiological pH while the carboxyl group's pKa is lower.">
+                        <span class="option-prefix">d)</span> H2N-CHR-COO-
+                    </div>
+                </div>
+                <div class="feedback" id="q2-feedback"></div>
+                <div class="time-summary" id="time-summary-q2"></div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="question" id="q3">
+                <div class="timer" id="timer-q3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>3. Which of the following amino acids is negatively charged at physiological pH?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Glutamic acid has a carboxylic acid side chain with a pKa of approximately 4.1. At physiological pH (7.4), this side chain is deprotonated, giving glutamic acid a negative charge. The other amino acids listed either have positive charges (lysine, histidine) or are neutral (serine) at physiological pH.">
+                        <span class="option-prefix">a)</span> Lysine
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! Glutamic acid has a carboxylic acid side chain with a pKa of approximately 4.1. At physiological pH (7.4), this side chain is deprotonated, giving glutamic acid a negative charge. The other amino acids listed either have positive charges (lysine, histidine) or are neutral (serine) at physiological pH.">
+                        <span class="option-prefix">b)</span> Glutamic acid
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Glutamic acid has a carboxylic acid side chain with a pKa of approximately 4.1. At physiological pH (7.4), this side chain is deprotonated, giving glutamic acid a negative charge. The other amino acids listed either have positive charges (lysine, histidine) or are neutral (serine) at physiological pH.">
+                        <span class="option-prefix">c)</span> Histidine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Glutamic acid has a carboxylic acid side chain with a pKa of approximately 4.1. At physiological pH (7.4), this side chain is deprotonated, giving glutamic acid a negative charge. The other amino acids listed either have positive charges (lysine, histidine) or are neutral (serine) at physiological pH.">
+                        <span class="option-prefix">d)</span> Serine
+                    </div>
+                </div>
+                <div class="feedback" id="q3-feedback"></div>
+                <div class="time-summary" id="time-summary-q3"></div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="question" id="q4">
+                <div class="timer" id="timer-q4">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>4. The pKa value of an amino acid side chain indicates:</p>
+                <div class="options">
+                    <div class="option" data-correct="true" data-feedback="Correct! The pKa value represents the pH at which a functional group is exactly 50% protonated and 50% deprotonated. This is a crucial concept for understanding when amino acid side chains change their charge state as the pH of the environment changes.">
+                        <span class="option-prefix">a)</span> The pH at which the side chain is 50% protonated and 50% deprotonated
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The pKa value represents the pH at which a functional group is exactly 50% protonated and 50% deprotonated. This is a crucial concept for understanding when amino acid side chains change their charge state as the pH of the environment changes.">
+                        <span class="option-prefix">b)</span> The pH at which the side chain is fully protonated
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The pKa value represents the pH at which a functional group is exactly 50% protonated and 50% deprotonated. This is a crucial concept for understanding when amino acid side chains change their charge state as the pH of the environment changes.">
+                        <span class="option-prefix">c)</span> The pH at which the side chain is fully deprotonated
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The pKa value represents the pH at which a functional group is exactly 50% protonated and 50% deprotonated. This is a crucial concept for understanding when amino acid side chains change their charge state as the pH of the environment changes.">
+                        <span class="option-prefix">d)</span> The pH at which the amino acid has no net charge
+                    </div>
+                </div>
+                <div class="feedback" id="q4-feedback"></div>
+                <div class="time-summary" id="time-summary-q4"></div>
+            </div>
+
+            <!-- Question 5 -->
+            <div class="question" id="q5">
+                <div class="timer" id="timer-q5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>5. Which amino acid has a side chain that is partially charged at physiological pH due to its pKa being close to physiological pH?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Histidine has an imidazole ring with a pKa of approximately 6.0, which is close to physiological pH (7.4). This means at physiological pH, a significant portion of histidine side chains will be deprotonated while others remain protonated, making it partially charged. This property makes histidine particularly important in enzyme active sites.">
+                        <span class="option-prefix">a)</span> Arginine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Histidine has an imidazole ring with a pKa of approximately 6.0, which is close to physiological pH (7.4). This means at physiological pH, a significant portion of histidine side chains will be deprotonated while others remain protonated, making it partially charged. This property makes histidine particularly important in enzyme active sites.">
+                        <span class="option-prefix">b)</span> Aspartic acid
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! Histidine has an imidazole ring with a pKa of approximately 6.0, which is close to physiological pH (7.4). This means at physiological pH, a significant portion of histidine side chains will be deprotonated while others remain protonated, making it partially charged. This property makes histidine particularly important in enzyme active sites.">
+                        <span class="option-prefix">c)</span> Histidine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Histidine has an imidazole ring with a pKa of approximately 6.0, which is close to physiological pH (7.4). This means at physiological pH, a significant portion of histidine side chains will be deprotonated while others remain protonated, making it partially charged. This property makes histidine particularly important in enzyme active sites.">
+                        <span class="option-prefix">d)</span> Tyrosine
+                    </div>
+                </div>
+                <div class="feedback" id="q5-feedback"></div>
+                <div class="time-summary" id="time-summary-q5"></div>
+            </div>
+
+            <!-- Question 6 -->
+            <div class="question" id="q6">
+                <div class="timer" id="timer-q6">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>6. In an acidic environment (low pH), amino acids tend to have:</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="In acidic environments (low pH), both the amino group and carboxyl group tend to be protonated (H3N+-CHR-COOH). Since the amino group carries a positive charge when protonated and the carboxyl group is neutral when protonated, the overall result is a net positive charge on the amino acid.">
+                        <span class="option-prefix">a)</span> No net charge
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! In acidic environments (low pH), both the amino group and carboxyl group tend to be protonated (H3N+-CHR-COOH). Since the amino group carries a positive charge when protonated and the carboxyl group is neutral when protonated, the overall result is a net positive charge on the amino acid.">
+                        <span class="option-prefix">b)</span> A net positive charge
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="In acidic environments (low pH), both the amino group and carboxyl group tend to be protonated (H3N+-CHR-COOH). Since the amino group carries a positive charge when protonated and the carboxyl group is neutral when protonated, the overall result is a net positive charge on the amino acid.">
+                        <span class="option-prefix">c)</span> A net negative charge
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="In acidic environments (low pH), both the amino group and carboxyl group tend to be protonated (H3N+-CHR-COOH). Since the amino group carries a positive charge when protonated and the carboxyl group is neutral when protonated, the overall result is a net positive charge on the amino acid.">
+                        <span class="option-prefix">d)</span> A neutral side chain
+                    </div>
+                </div>
+                <div class="feedback" id="q6-feedback"></div>
+                <div class="time-summary" id="time-summary-q6"></div>
+            </div>
+
+            <!-- Question 7 -->
+            <div class="question" id="q7">
+                <div class="timer" id="timer-q7">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>7. If an amino acid has a side chain with a pKa of 4.0, what would be its predominant charge state at pH 7.4?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="At pH 7.4, which is 3.4 units higher than the pKa (4.0) of the side chain, the side chain would be predominantly deprotonated. According to the Henderson-Hasselbalch equation, when the pH is significantly above the pKa, the side chain exists mostly in its deprotonated form. For acidic side chains like those in aspartic acid and glutamic acid (with pKa values around 4.0), deprotonation results in a negative charge, making the side chain negatively charged at physiological pH.">
+                        <span class="option-prefix">a)</span> Positively charged
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! At pH 7.4, which is 3.4 units higher than the pKa (4.0) of the side chain, the side chain would be predominantly deprotonated. According to the Henderson-Hasselbalch equation, when the pH is significantly above the pKa, the side chain exists mostly in its deprotonated form. For acidic side chains like those in aspartic acid and glutamic acid (with pKa values around 4.0), deprotonation results in a negative charge, making the side chain negatively charged at physiological pH.">
+                        <span class="option-prefix">b)</span> Negatively charged
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="At pH 7.4, which is 3.4 units higher than the pKa (4.0) of the side chain, the side chain would be predominantly deprotonated. According to the Henderson-Hasselbalch equation, when the pH is significantly above the pKa, the side chain exists mostly in its deprotonated form. For acidic side chains like those in aspartic acid and glutamic acid (with pKa values around 4.0), deprotonation results in a negative charge, making the side chain negatively charged at physiological pH.">
+                        <span class="option-prefix">c)</span> Neutral
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="At pH 7.4, which is 3.4 units higher than the pKa (4.0) of the side chain, the side chain would be predominantly deprotonated. According to the Henderson-Hasselbalch equation, when the pH is significantly above the pKa, the side chain exists mostly in its deprotonated form. For acidic side chains like those in aspartic acid and glutamic acid (with pKa values around 4.0), deprotonation results in a negative charge, making the side chain negatively charged at physiological pH.">
+                        <span class="option-prefix">d)</span> Equal mixture of charged and neutral forms
+                    </div>
+                </div>
+                <div class="feedback" id="q7-feedback"></div>
+                <div class="time-summary" id="time-summary-q7"></div>
+            </div>
+
+            <!-- Question 8 -->
+            <div class="question" id="q8">
+                <div class="timer" id="timer-q8">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>8. Using the Henderson-Hasselbalch equation, if the pH is 2 units above the pKa of an amino acid's side chain, what percentage of the side chain will be in its deprotonated form?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The Henderson-Hasselbalch equation states: pH = pKa + log([A-]/[HA]). If pH = pKa + 2, then log([A-]/[HA]) = 2, so [A-]/[HA] = 100. This means there is 100 times more deprotonated form than protonated form. The percentage in deprotonated form would be 100/(100+1) × 100% = 99%.">
+                        <span class="option-prefix">a)</span> 1%
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The Henderson-Hasselbalch equation states: pH = pKa + log([A-]/[HA]). If pH = pKa + 2, then log([A-]/[HA]) = 2, so [A-]/[HA] = 100. This means there is 100 times more deprotonated form than protonated form. The percentage in deprotonated form would be 100/(100+1) × 100% = 99%.">
+                        <span class="option-prefix">b)</span> 10%
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The Henderson-Hasselbalch equation states: pH = pKa + log([A-]/[HA]). If pH = pKa + 2, then log([A-]/[HA]) = 2, so [A-]/[HA] = 100. This means there is 100 times more deprotonated form than protonated form. The percentage in deprotonated form would be 100/(100+1) × 100% = 99%.">
+                        <span class="option-prefix">c)</span> 50%
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! The Henderson-Hasselbalch equation states: pH = pKa + log([A-]/[HA]). If pH = pKa + 2, then log([A-]/[HA]) = 2, so [A-]/[HA] = 100. This means there is 100 times more deprotonated form than protonated form. The percentage in deprotonated form would be 100/(100+1) × 100% = 99%.">
+                        <span class="option-prefix">d)</span> 99%
+                    </div>
+                </div>
+                <div class="feedback" id="q8-feedback"></div>
+                <div class="time-summary" id="time-summary-q8"></div>
+            </div>
+
+            <!-- Question 9 -->
+            <div class="question" id="q9">
+                <div class="timer" id="timer-q9">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>9. A peptide contains one lysine, one glutamic acid, and three alanine residues. What would be its approximate net charge at pH 7.4?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="At physiological pH (7.4): Lysine (pKa ≈ 10.5) will be protonated with a +1 charge, Glutamic acid (pKa ≈ 4.1) will be deprotonated with a -1 charge, and Alanine residues are neutral at this pH. The total charge would be (+1) + (-1) + (0 × 3) = 0.">
+                        <span class="option-prefix">a)</span> +1
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! At physiological pH (7.4): Lysine (pKa ≈ 10.5) will be protonated with a +1 charge, Glutamic acid (pKa ≈ 4.1) will be deprotonated with a -1 charge, and Alanine residues are neutral at this pH. The total charge would be (+1) + (-1) + (0 × 3) = 0.">
+                        <span class="option-prefix">b)</span> 0
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="At physiological pH (7.4): Lysine (pKa ≈ 10.5) will be protonated with a +1 charge, Glutamic acid (pKa ≈ 4.1) will be deprotonated with a -1 charge, and Alanine residues are neutral at this pH. The total charge would be (+1) + (-1) + (0 × 3) = 0.">
+                        <span class="option-prefix">c)</span> -1
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="At physiological pH (7.4): Lysine (pKa ≈ 10.5) will be protonated with a +1 charge, Glutamic acid (pKa ≈ 4.1) will be deprotonated with a -1 charge, and Alanine residues are neutral at this pH. The total charge would be (+1) + (-1) + (0 × 3) = 0.">
+                        <span class="option-prefix">d)</span> +2
+                    </div>
+                </div>
+                <div class="feedback" id="q9-feedback"></div>
+                <div class="time-summary" id="time-summary-q9"></div>
+            </div>
+
+            <!-- Question 10 -->
+            <div class="question" id="q10">
+                <div class="timer" id="timer-q10">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>10. A researcher is designing a peptide that needs to bind strongly to a negatively charged receptor pocket at physiological pH. The peptide must change its binding affinity when the environment becomes acidic (pH 5.0). Which combination of amino acids would be most strategic to incorporate into the binding region of this peptide?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="For pH-dependent binding to a negatively charged pocket, the peptide should include amino acids whose charge changes significantly between pH 7.4 and pH 5.0. Histidine (pKa ≈ 6.0) is ideal because it transitions from partially charged at pH 7.4 to mostly positively charged at pH 5.0. Serine, while neutral, can participate in hydrogen bonding that complements the electrostatic interactions. Lysine and arginine would be strongly positive at both pH values, while aspartic and glutamic acids would repel the negatively charged pocket. Tyrosine and phenylalanine are too hydrophobic for this specific application.">
+                        <span class="option-prefix">a)</span> Lysine and arginine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="For pH-dependent binding to a negatively charged pocket, the peptide should include amino acids whose charge changes significantly between pH 7.4 and pH 5.0. Histidine (pKa ≈ 6.0) is ideal because it transitions from partially charged at pH 7.4 to mostly positively charged at pH 5.0. Serine, while neutral, can participate in hydrogen bonding that complements the electrostatic interactions. Lysine and arginine would be strongly positive at both pH values, while aspartic and glutamic acids would repel the negatively charged pocket. Tyrosine and phenylalanine are too hydrophobic for this specific application.">
+                        <span class="option-prefix">b)</span> Aspartic acid and glutamic acid
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! For pH-dependent binding to a negatively charged pocket, the peptide should include amino acids whose charge changes significantly between pH 7.4 and pH 5.0. Histidine (pKa ≈ 6.0) is ideal because it transitions from partially charged at pH 7.4 to mostly positively charged at pH 5.0. Serine, while neutral, can participate in hydrogen bonding that complements the electrostatic interactions. Lysine and arginine would be strongly positive at both pH values, while aspartic and glutamic acids would repel the negatively charged pocket. Tyrosine and phenylalanine are too hydrophobic for this specific application.">
+                        <span class="option-prefix">c)</span> Histidine and serine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="For pH-dependent binding to a negatively charged pocket, the peptide should include amino acids whose charge changes significantly between pH 7.4 and pH 5.0. Histidine (pKa ≈ 6.0) is ideal because it transitions from partially charged at pH 7.4 to mostly positively charged at pH 5.0. Serine, while neutral, can participate in hydrogen bonding that complements the electrostatic interactions. Lysine and arginine would be strongly positive at both pH values, while aspartic and glutamic acids would repel the negatively charged pocket. Tyrosine and phenylalanine are too hydrophobic for this specific application.">
+                        <span class="option-prefix">d)</span> Tyrosine and phenylalanine
+                    </div>
+                </div>
+                <div class="feedback" id="q10-feedback"></div>
+                <div class="time-summary" id="time-summary-q10"></div>
+            </div>
+
+            <!-- Question 11 -->
+            <div class="question" id="q11">
+                <div class="timer" id="timer-q11">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>11. Consider a peptide that contains all 20 common amino acids. As the pH is gradually increased from 2 to 12, which of the following sequences correctly represents the order in which different types of amino acid side chains will lose their protons?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="As pH increases (becoming more basic), groups will lose their protons (deprotonate) in order of increasing pKa values. Carboxyl groups (found in aspartic acid and glutamic acid) have pKa values around 3.9-4.1 and will deprotonate first. Next, the imidazole group of histidine (pKa ≈ 6.0) will deprotonate. As pH continues to increase, phenol groups like those in tyrosine (pKa ≈ 10.1) will deprotonate, followed by amino groups such as the side chain of lysine (pKa ≈ 10.5) and finally the guanidino group of arginine (pKa ≈ 12.5). This sequence reflects the fundamental relationship between pKa values and the pH-dependent protonation states of amino acids.">
+                        <span class="option-prefix">a)</span> Carboxyl groups → Imidazole groups → Amino groups → Phenol groups
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="As pH increases (becoming more basic), groups will lose their protons (deprotonate) in order of increasing pKa values. Carboxyl groups (found in aspartic acid and glutamic acid) have pKa values around 3.9-4.1 and will deprotonate first. Next, the imidazole group of histidine (pKa ≈ 6.0) will deprotonate. As pH continues to increase, phenol groups like those in tyrosine (pKa ≈ 10.1) will deprotonate, followed by amino groups such as the side chain of lysine (pKa ≈ 10.5) and finally the guanidino group of arginine (pKa ≈ 12.5). This sequence reflects the fundamental relationship between pKa values and the pH-dependent protonation states of amino acids.">
+                        <span class="option-prefix">b)</span> Amino groups → Imidazole groups → Carboxyl groups → Phenol groups
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! As pH increases (becoming more basic), groups will lose their protons (deprotonate) in order of increasing pKa values. Carboxyl groups (found in aspartic acid and glutamic acid) have pKa values around 3.9-4.1 and will deprotonate first. Next, the imidazole group of histidine (pKa ≈ 6.0) will deprotonate. As pH continues to increase, phenol groups like those in tyrosine (pKa ≈ 10.1) will deprotonate, followed by amino groups such as the side chain of lysine (pKa ≈ 10.5) and finally the guanidino group of arginine (pKa ≈ 12.5). This sequence reflects the fundamental relationship between pKa values and the pH-dependent protonation states of amino acids.">
+                        <span class="option-prefix">c)</span> Carboxyl groups → Imidazole groups → Phenol groups → Amino groups
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="As pH increases (becoming more basic), groups will lose their protons (deprotonate) in order of increasing pKa values. Carboxyl groups (found in aspartic acid and glutamic acid) have pKa values around 3.9-4.1 and will deprotonate first. Next, the imidazole group of histidine (pKa ≈ 6.0) will deprotonate. As pH continues to increase, phenol groups like those in tyrosine (pKa ≈ 10.1) will deprotonate, followed by amino groups such as the side chain of lysine (pKa ≈ 10.5) and finally the guanidino group of arginine (pKa ≈ 12.5). This sequence reflects the fundamental relationship between pKa values and the pH-dependent protonation states of amino acids.">
+                        <span class="option-prefix">d)</span> Imidazole groups → Carboxyl groups → Amino groups → Phenol groups
+                    </div>
+                </div>
+                <div class="feedback" id="q11-feedback"></div>
+                <div class="time-summary" id="time-summary-q11"></div>
+            </div>
+        </div>
+
+        <button id="next-btn">Next Question</button>
+        <div id="final-result"></div>
+        
+        <!-- Hidden submit container -->
+        <div id="submit-container">
+            <button id="submit-btn">Submit Quiz Results</button>
+            <div id="status-message" class="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context and Sound Management
+        const AudioManager = {
+            audioContext: null,
+            soundBuffers: {
+                correct: null,
+                final: null
+            },
+            audioInitialized: false,
+            
+            // Initialize audio immediately to ensure it's ready when first answer is selected
+            init() {
+                if (this.audioInitialized) return;
+                
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Load or create sounds
+                    this.loadSound('correct');
+                    this.createFinalSound();
+                    
+                    this.audioInitialized = true;
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                    // Create fallback sounds if loading failed
+                    if (!this.soundBuffers.correct) {
+                        this.soundBuffers.correct = this.createSuccessSound();
+                    }
+                    if (!this.soundBuffers.final) {
+                        this.soundBuffers.final = this.createFinalSound();
+                    }
+                    this.audioInitialized = true;
+                }
+            },
+            
+            // Load sound from URL or create synthetic
+            async loadSound(type) {
+                try {
+                    const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+                    const response = await

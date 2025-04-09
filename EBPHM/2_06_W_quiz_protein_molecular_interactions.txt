@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protein Folding Mastery Quiz</title>
+    <style>
+        /* NUS Colors - Updated with drag & drop quiz colors */
+        :root {
+            --primary: #003D7C; /* NUS Blue */
+            --secondary: #EF7C00; /* NUS Orange */
+            --light-bg: #f8f9fa;
+            --text-dark: #333;
+            --text-medium: #495057;
+            --text-light: #6c757d;
+            --border-light: #dee2e6;
+            --correct: #28a745;
+            --incorrect: #dc3545;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-bg);
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background-color: var(--primary);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .score-container {
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 20px;
+            font-weight: 600;
+            position: relative;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--secondary);
+            will-change: transform;
+        }
+        
+        .score {
+            color: var(--secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .question {
+            display: none;
+            margin-bottom: 20px;
+            background-color: rgba(0, 61, 124, 0.06);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .question.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .timer {
+            text-align: right;
+            font-size: 1em;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        .timer svg {
+            margin-right: 5px;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .option {
+            padding: 15px;
+            background-color: var(--light-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .option:hover {
+            background-color: rgba(0, 61, 124, 0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .option.correct {
+            background-color: var(--correct);
+            color: white;
+            animation: correctAnswer 0.8s ease forwards;
+        }
+        
+        .option.incorrect {
+            background-color: var(--incorrect);
+            color: white;
+            animation: wrongAnswer 0.6s ease forwards;
+        }
+        
+        @keyframes correctAnswer {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
+            75% { transform: scale(1.04); }
+        }
+        
+        @keyframes wrongAnswer {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .option-prefix {
+            font-weight: 600;
+            margin-right: 12px;
+            min-width: 20px;
+            color: var(--primary);
+        }
+        
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .time-summary {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(0, 61, 124, 0.06);
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        #next-btn {
+            display: none;
+            padding: 14px 28px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 20px auto;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+        
+        #next-btn:hover {
+            background-color: #00285A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+        
+        #next-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        #final-result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: var(--primary);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .point-animation {
+            position: absolute;
+            color: var(--secondary);
+            font-weight: bold;
+            font-size: 32px;
+            text-shadow: 0 0 10px rgba(239, 124, 0, 0.6);
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+        }
+        
+        /* Overlay and message styles */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.4);
+            backdrop-filter: blur(3px);
+            z-index: 1500;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .celebration-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background-color: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            z-index: 2000;
+            animation: celebrate 0.7s forwards;
+            will-change: transform, opacity;
+        }
+        
+        .celebration-message h3 {
+            color: var(--primary);
+            font-size: 28px;
+            margin: 0 0 15px 0;
+        }
+        
+        .celebration-message p {
+            color: var(--text-medium);
+            margin-bottom: 20px;
+        }
+        
+        .celebration-icon {
+            font-size: 60px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+        
+        #continue-button {
+            padding: 14px 28px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 10px auto;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--secondary);
+        }
+        
+        #continue-button:hover {
+            background-color: #00285A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+        
+        #continue-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        /* Celebrate animation */
+        @keyframes celebrate {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        /* Hidden elements */
+        #username-container, #submit-container {
+            display: none;
+        }
+        
+
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .option {
+                padding: 12px;
+            }
+            
+            .quiz-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Protein Folding Mastery Quiz</h1>
+        <div class="score-container">
+            Score: <span class="score">0</span>/11
+        </div>
+    </div>
+    
+    <div class="quiz-container">
+        <!-- Hidden username container -->
+        <div id="username-container">
+            <input type="hidden" id="username">
+        </div>
+        
+        <div id="quiz-content">
+            <!-- Question 1 -->
+            <div class="question active" id="q1">
+                <div class="timer" id="timer-q1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>1. What does the native state of a protein represent from a thermodynamic perspective?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="According to the thermodynamic perspective of protein folding, the native state represents the most energetically favorable conformation, which is characterized by the minimization of free energy (ΔG).">
+                        <span class="option-prefix">a)</span> The state with the highest kinetic energy
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="According to the thermodynamic perspective of protein folding, the native state represents the most energetically favorable conformation, which is characterized by the minimization of free energy (ΔG).">
+                        <span class="option-prefix">b)</span> The state with the most hydrogen bonds
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="According to the thermodynamic perspective of protein folding, the native state represents the most energetically favorable conformation, which is characterized by the minimization of free energy (ΔG).">
+                        <span class="option-prefix">c)</span> The most energetically favorable conformation
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="According to the thermodynamic perspective of protein folding, the native state represents the most energetically favorable conformation, which is characterized by the minimization of free energy (ΔG).">
+                        <span class="option-prefix">d)</span> The state with the most hydrophilic residues exposed
+                    </div>
+                </div>
+                <div class="feedback" id="q1-feedback"></div>
+                <div class="time-summary" id="time-summary-q1"></div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="question" id="q2">
+                <div class="timer" id="timer-q2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>2. Which of the following amino acid types are primarily involved in hydrophobic interactions?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Hydrophobic interactions primarily involve non-polar amino acids such as isoleucine, leucine, valine, phenylalanine, and methionine, which tend to aggregate in aqueous environments due to their hydrophobic nature.">
+                        <span class="option-prefix">A)</span> Positively charged amino acids (Arg, Lys)
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Hydrophobic interactions primarily involve non-polar amino acids such as isoleucine, leucine, valine, phenylalanine, and methionine, which tend to aggregate in aqueous environments due to their hydrophobic nature.">
+                        <span class="option-prefix">B)</span> Negatively charged amino acids (Asp, Glu)
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Hydrophobic interactions primarily involve non-polar amino acids such as isoleucine, leucine, valine, phenylalanine, and methionine, which tend to aggregate in aqueous environments due to their hydrophobic nature.">
+                        <span class="option-prefix">C)</span> Polar amino acids (Ser, Thr, Asn, Gln)
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Hydrophobic interactions primarily involve non-polar amino acids such as isoleucine, leucine, valine, phenylalanine, and methionine, which tend to aggregate in aqueous environments due to their hydrophobic nature.">
+                        <span class="option-prefix">D)</span> Non-polar amino acids (Ile, Leu, Val, Phe, Met)
+                    </div>
+                </div>
+                <div class="feedback" id="q2-feedback"></div>
+                <div class="time-summary" id="time-summary-q2"></div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="question" id="q3">
+                <div class="timer" id="timer-q3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>3. What is the typical strength of a hydrogen bond in protein structures?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="As stated in the learning materials, hydrogen bonds typically have a bond strength of 2-5 kcal/mol, making them stronger than van der Waals interactions but weaker than covalent bonds.">
+                        <span class="option-prefix">A)</span> 0.1-0.5 kcal/mol
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="As stated in the learning materials, hydrogen bonds typically have a bond strength of 2-5 kcal/mol, making them stronger than van der Waals interactions but weaker than covalent bonds.">
+                        <span class="option-prefix">B)</span> 1-5 kcal/mol
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="As stated in the learning materials, hydrogen bonds typically have a bond strength of 2-5 kcal/mol, making them stronger than van der Waals interactions but weaker than covalent bonds.">
+                        <span class="option-prefix">C)</span> 2-5 kcal/mol
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="As stated in the learning materials, hydrogen bonds typically have a bond strength of 2-5 kcal/mol, making them stronger than van der Waals interactions but weaker than covalent bonds.">
+                        <span class="option-prefix">D)</span> 10-15 kcal/mol
+                    </div>
+                </div>
+                <div class="feedback" id="q3-feedback"></div>
+                <div class="time-summary" id="time-summary-q3"></div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="question" id="q4">
+                <div class="timer" id="timer-q4">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>4. Which of the following best describes the Levinthal paradox principle?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The Levinthal paradox principle refers to the observation that proteins fold rapidly into their native states despite the astronomically large number of possible conformations they could theoretically adopt.">
+                        <span class="option-prefix">A)</span> Proteins fold through a random search of all possible conformations
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The Levinthal paradox principle refers to the observation that proteins fold rapidly into their native states despite the astronomically large number of possible conformations they could theoretically adopt.">
+                        <span class="option-prefix">B)</span> Proteins cannot find their native state in a reasonable timeframe
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The Levinthal paradox principle refers to the observation that proteins fold rapidly into their native states despite the astronomically large number of possible conformations they could theoretically adopt.">
+                        <span class="option-prefix">C)</span> Proteins rapidly achieve their native state despite enormous conformational possibilities
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The Levinthal paradox principle refers to the observation that proteins fold rapidly into their native states despite the astronomically large number of possible conformations they could theoretically adopt.">
+                        <span class="option-prefix">D)</span> Protein folding is driven primarily by covalent bond formation
+                    </div>
+                </div>
+                <div class="feedback" id="q4-feedback"></div>
+                <div class="time-summary" id="time-summary-q4"></div>
+            </div>
+
+            <!-- Question 5 -->
+            <div class="question" id="q5">
+                <div class="timer" id="timer-q5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>5. Which amino acids are predominantly involved in forming salt bridges?</p>
+                <div class="options">
+                    <div class="option" data-correct="true" data-feedback="Salt bridges form between oppositely charged residues. Arginine (Arg) and lysine (Lys) are positively charged, while aspartic acid (Asp) and glutamic acid (Glu) are negatively charged, making these amino acids the primary participants in salt bridge formation.">
+                        <span class="option-prefix">A)</span> Arg, Lys, Asp, Glu
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Salt bridges form between oppositely charged residues. Arginine (Arg) and lysine (Lys) are positively charged, while aspartic acid (Asp) and glutamic acid (Glu) are negatively charged, making these amino acids the primary participants in salt bridge formation.">
+                        <span class="option-prefix">B)</span> Ile, Leu, Val, Phe
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Salt bridges form between oppositely charged residues. Arginine (Arg) and lysine (Lys) are positively charged, while aspartic acid (Asp) and glutamic acid (Glu) are negatively charged, making these amino acids the primary participants in salt bridge formation.">
+                        <span class="option-prefix">C)</span> Ser, Thr, Asn, Gln
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Salt bridges form between oppositely charged residues. Arginine (Arg) and lysine (Lys) are positively charged, while aspartic acid (Asp) and glutamic acid (Glu) are negatively charged, making these amino acids the primary participants in salt bridge formation.">
+                        <span class="option-prefix">D)</span> Gly, Ala, Pro, Cys
+                    </div>
+                </div>
+                <div class="feedback" id="q5-feedback"></div>
+                <div class="time-summary" id="time-summary-q5"></div>
+            </div>
+
+            <!-- Question 6 -->
+            <div class="question" id="q6">
+                <div class="timer" id="timer-q6">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>6. What is the typical energetic contribution of hydrophobic interactions to protein stability?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="According to the learning materials, hydrophobic interactions typically contribute 2-3 kcal/mol of stabilizing energy to protein structure.">
+                        <span class="option-prefix">A)</span> 0.1-0.5 kcal/mol
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="According to the learning materials, hydrophobic interactions typically contribute 2-3 kcal/mol of stabilizing energy to protein structure.">
+                        <span class="option-prefix">B)</span> 1-2 kcal/mol
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="According to the learning materials, hydrophobic interactions typically contribute 2-3 kcal/mol of stabilizing energy to protein structure.">
+                        <span class="option-prefix">C)</span> 2-3 kcal/mol
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="According to the learning materials, hydrophobic interactions typically contribute 2-3 kcal/mol of stabilizing energy to protein structure.">
+                        <span class="option-prefix">D)</span> 5-10 kcal/mol
+                    </div>
+                </div>
+                <div class="feedback" id="q6-feedback"></div>
+                <div class="time-summary" id="time-summary-q6"></div>
+            </div>
+
+            <!-- Question 7 -->
+            <div class="question" id="q7">
+                <div class="timer" id="timer-q7">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>7. Why are van der Waals interactions significant for protein stability despite their relatively weak individual strength?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="As stated in the learning materials, van der Waals interactions are individually weak (typically 0.1-0.5 kcal/mol per interaction), but their cumulative effect becomes significant for protein stability due to the numerous atomic-level interactions that occur throughout the protein structure.">
+                        <span class="option-prefix">A)</span> They can overcome hydrogen bonds in strength when in large numbers
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="As stated in the learning materials, van der Waals interactions are individually weak (typically 0.1-0.5 kcal/mol per interaction), but their cumulative effect becomes significant for protein stability due to the numerous atomic-level interactions that occur throughout the protein structure.">
+                        <span class="option-prefix">B)</span> They operate over longer distances than other interactions
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="As stated in the learning materials, van der Waals interactions are individually weak (typically 0.1-0.5 kcal/mol per interaction), but their cumulative effect becomes significant for protein stability due to the numerous atomic-level interactions that occur throughout the protein structure.">
+                        <span class="option-prefix">C)</span> They have a cumulative effect due to their numerous occurrences
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="As stated in the learning materials, van der Waals interactions are individually weak (typically 0.1-0.5 kcal/mol per interaction), but their cumulative effect becomes significant for protein stability due to the numerous atomic-level interactions that occur throughout the protein structure.">
+                        <span class="option-prefix">D)</span> They primarily stabilize the protein's hydrophilic surface
+                    </div>
+                </div>
+                <div class="feedback" id="q7-feedback"></div>
+                <div class="time-summary" id="time-summary-q7"></div>
+            </div>
+
+            <!-- Question 8 -->
+            <div class="question" id="q8">
+                <div class="timer" id="timer-q8">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>8. Which of the following statements correctly describes the relationship between water and hydrophobic residues during protein folding?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="As described in the microscopic mechanisms of hydrophobic interactions, water molecules form structured 'cages' around hydrophobic residues, increasing water hydrogen bonding around hydrophobic surfaces. This arrangement is entropically unfavorable, driving hydrophobic residues to aggregate and minimize their exposure to water.">
+                        <span class="option-prefix">A)</span> Water molecules form ionic bonds with hydrophobic residues
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="As described in the microscopic mechanisms of hydrophobic interactions, water molecules form structured 'cages' around hydrophobic residues, increasing water hydrogen bonding around hydrophobic surfaces. This arrangement is entropically unfavorable, driving hydrophobic residues to aggregate and minimize their exposure to water.">
+                        <span class="option-prefix">B)</span> Water molecules form structured "cages" around hydrophobic residues
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="As described in the microscopic mechanisms of hydrophobic interactions, water molecules form structured 'cages' around hydrophobic residues, increasing water hydrogen bonding around hydrophobic surfaces. This arrangement is entropically unfavorable, driving hydrophobic residues to aggregate and minimize their exposure to water.">
+                        <span class="option-prefix">C)</span> Water molecules directly bond with hydrophobic residues through hydrogen bonding
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="As described in the microscopic mechanisms of hydrophobic interactions, water molecules form structured 'cages' around hydrophobic residues, increasing water hydrogen bonding around hydrophobic surfaces. This arrangement is entropically unfavorable, driving hydrophobic residues to aggregate and minimize their exposure to water.">
+                        <span class="option-prefix">D)</span> Water molecules completely avoid interaction with hydrophobic residues
+                    </div>
+                </div>
+                <div class="feedback" id="q8-feedback"></div>
+                <div class="time-summary" id="time-summary-q8"></div>
+            </div>
+
+            <!-- Question 9 -->
+            <div class="question" id="q9">
+                <div class="timer" id="timer-q9">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>9. In the context of protein folding energetics, which of the following interactions is most affected by the ionic strength of the solution?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="According to the learning materials, electrostatic interactions, particularly charge-charge interactions, are modulated by ionic strength and dielectric constant. Higher ionic strength in a solution can shield electrostatic interactions, reducing their contribution to protein stability.">
+                        <span class="option-prefix">A)</span> Hydrophobic interactions
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="According to the learning materials, electrostatic interactions, particularly charge-charge interactions, are modulated by ionic strength and dielectric constant. Higher ionic strength in a solution can shield electrostatic interactions, reducing their contribution to protein stability.">
+                        <span class="option-prefix">B)</span> Hydrogen bonding
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="According to the learning materials, electrostatic interactions, particularly charge-charge interactions, are modulated by ionic strength and dielectric constant. Higher ionic strength in a solution can shield electrostatic interactions, reducing their contribution to protein stability.">
+                        <span class="option-prefix">C)</span> Electrostatic interactions
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="According to the learning materials, electrostatic interactions, particularly charge-charge interactions, are modulated by ionic strength and dielectric constant. Higher ionic strength in a solution can shield electrostatic interactions, reducing their contribution to protein stability.">
+                        <span class="option-prefix">D)</span> Van der Waals interactions
+                    </div>
+                </div>
+                <div class="feedback" id="q9-feedback"></div>
+                <div class="time-summary" id="time-summary-q9"></div>
+            </div>
+
+            <!-- Question 10 -->
+            <div class="question" id="q10">
+                <div class="timer" id="timer-q10">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>10. A protein is engineered by replacing several surface polar residues with hydrophobic ones. Which of the following outcomes is most likely to occur?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Based on the principles of hydrophobic interactions, hydrophobic residues tend to be buried in the protein core to minimize their exposure to water. Replacing surface polar residues with hydrophobic ones creates an energetically unfavorable situation where hydrophobic residues are exposed to the aqueous environment. This would likely lead to protein aggregation (as hydrophobic surfaces from different protein molecules interact) or misfolding (as the protein attempts to bury these newly introduced hydrophobic residues).">
+                        <span class="option-prefix">A)</span> The protein will become more stable due to increased hydrogen bonding
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Based on the principles of hydrophobic interactions, hydrophobic residues tend to be buried in the protein core to minimize their exposure to water. Replacing surface polar residues with hydrophobic ones creates an energetically unfavorable situation where hydrophobic residues are exposed to the aqueous environment. This would likely lead to protein aggregation (as hydrophobic surfaces from different protein molecules interact) or misfolding (as the protein attempts to bury these newly introduced hydrophobic residues).">
+                        <span class="option-prefix">B)</span> The protein will likely aggregate or misfold due to unfavorable surface hydrophobicity
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Based on the principles of hydrophobic interactions, hydrophobic residues tend to be buried in the protein core to minimize their exposure to water. Replacing surface polar residues with hydrophobic ones creates an energetically unfavorable situation where hydrophobic residues are exposed to the aqueous environment. This would likely lead to protein aggregation (as hydrophobic surfaces from different protein molecules interact) or misfolding (as the protein attempts to bury these newly introduced hydrophobic residues).">
+                        <span class="option-prefix">C)</span> The protein structure will remain unchanged as surface residues don't affect folding
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Based on the principles of hydrophobic interactions, hydrophobic residues tend to be buried in the protein core to minimize their exposure to water. Replacing surface polar residues with hydrophobic ones creates an energetically unfavorable situation where hydrophobic residues are exposed to the aqueous environment. This would likely lead to protein aggregation (as hydrophobic surfaces from different protein molecules interact) or misfolding (as the protein attempts to bury these newly introduced hydrophobic residues).">
+                        <span class="option-prefix">D)</span> The protein will form more salt bridges, increasing stability
+                    </div>
+                </div>
+                <div class="feedback" id="q10-feedback"></div>
+                <div class="time-summary" id="time-summary-q10"></div>
+            </div>
+
+            <!-- Question 11 -->
+            <div class="question" id="q11">
+                <div class="timer" id="timer-q11">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>11. Consider a protein folding in two different environments: one at pH 7 (physiological) and another at pH 3 (acidic). How would the change in pH most significantly affect the protein folding process?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="At different pH values, the ionization states of amino acid side chains change. Acidic residues (Asp, Glu) that are negatively charged at physiological pH may become protonated and neutral at pH 3, while some basic residues might become more positively charged. These changes would significantly alter electrostatic interactions, including salt bridges that depend on charged residues. This could disrupt the normal folding pathway and potentially lead to a different protein conformation or denaturation. While hydrogen bonding and hydrophobic interactions are also important for protein folding, they are less directly affected by pH changes compared to electrostatic interactions.">
+                        <span class="option-prefix">A)</span> Only hydrogen bonding would be affected, while hydrophobic interactions remain the same
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="At different pH values, the ionization states of amino acid side chains change. Acidic residues (Asp, Glu) that are negatively charged at physiological pH may become protonated and neutral at pH 3, while some basic residues might become more positively charged. These changes would significantly alter electrostatic interactions, including salt bridges that depend on charged residues. This could disrupt the normal folding pathway and potentially lead to a different protein conformation or denaturation. While hydrogen bonding and hydrophobic interactions are also important for protein folding, they are less directly affected by pH changes compared to electrostatic interactions.">
+                        <span class="option-prefix">B)</span> Van der Waals interactions would strengthen at lower pH
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="At different pH values, the ionization states of amino acid side chains change. Acidic residues (Asp, Glu) that are negatively charged at physiological pH may become protonated and neutral at pH 3, while some basic residues might become more positively charged. These changes would significantly alter electrostatic interactions, including salt bridges that depend on charged residues. This could disrupt the normal folding pathway and potentially lead to a different protein conformation or denaturation. While hydrogen bonding and hydrophobic interactions are also important for protein folding, they are less directly affected by pH changes compared to electrostatic interactions.">
+                        <span class="option-prefix">C)</span> Electrostatic interactions would be significantly altered due to changes in amino acid ionization states
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="At different pH values, the ionization states of amino acid side chains change. Acidic residues (Asp, Glu) that are negatively charged at physiological pH may become protonated and neutral at pH 3, while some basic residues might become more positively charged. These changes would significantly alter electrostatic interactions, including salt bridges that depend on charged residues. This could disrupt the normal folding pathway and potentially lead to a different protein conformation or denaturation. While hydrogen bonding and hydrophobic interactions are also important for protein folding, they are less directly affected by pH changes compared to electrostatic interactions.">
+                        <span class="option-prefix">D)</span> The protein would fold faster at lower pH due to increased hydrogen bond strength
+                    </div>
+                </div>
+                <div class="feedback" id="q11-feedback"></div>
+                <div class="time-summary" id="time-summary-q11"></div>
+            </div>
+        </div>
+
+        <button id="next-btn">Next Question</button>
+        <div id="final-result"></div>
+        
+        <!-- Hidden submit container -->
+        <div id="submit-container">
+            <button id="submit-btn">Submit Quiz Results</button>
+            <div id="status-message" class="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context and Sound Management
+        const AudioManager = {
+            audioContext: null,
+            soundBuffers: {
+                correct: null,
+                final: null
+            },
+            audioInitialized: false,
+            
+            // Initialize audio immediately to ensure it's ready when first answer is selected
+            init() {
+                if (this.audioInitialized) return;
+                
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Load or create sounds
+                    this.loadSound('correct');
+                    this.createFinalSound();
+                    
+                    this.audioInitialized = true;
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                    // Create fallback sounds if loading failed
+                    if (!this.soundBuffers.correct) {
+                        this.soundBuffers.correct = this.createSuccessSound();
+                    }
+                    if (!this.soundBuffers.final) {
+                        this.soundBuffers.final = this.createFinalSound();
+                    }
+                    this.audioInitialized = true;
+                }
+            },
+            
+            // Load sound from URL or create synthetic
+            async loadSound(type) {
+                try {
+                    const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load sound');
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    this.soundBuffers.correct = await this.audioContext.decodeAudioData(arrayBuffer);
+                    return this.soundBuffers.correct;
+                } catch (error) {
+                    console.error('Error loading sound:', error);
+                    this.soundBuffers.correct = this.createSuccessSound();
+                    return this.soundBuffers.correct;
+                }
+            },
+            
+            // Create synthetic success sound (fallback)
+            createSuccessSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 0.6;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00]; // C, E, G
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        let envelope = t < 0.02 ? t / 0.02 : Math.pow(1 - ((t - 0.02) / (duration - 0.02)), 2);
+                        
+                        for (const freq of frequencies) {
+                            amplitude += Math.sin(freq * 2 * Math.PI * t) * envelope * 0.2;
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                return buffer;
+            },
+            
+            // Create synthetic final sound
+            createFinalSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 1.5;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                    const arpeggioDuration = 0.15;
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        
+                        for (let n = 0; n < frequencies.length; n++) {
+                            const noteStart = n * arpeggioDuration;
+                            const noteEnd = noteStart + arpeggioDuration * 2;
+                            
+                            if (t >= noteStart && t <= noteEnd) {
+                                const envelope = t - noteStart < 0.01 
+                                    ? (t - noteStart) / 0.01 
+                                    : Math.pow(1 - ((t - noteStart - 0.01) / (noteEnd - noteStart - 0.01)), 1.5);
+                                
+                                amplitude += Math.sin(frequencies[n] * 2 * Math.PI * t) * envelope * 0.2;
+                            }
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                this.soundBuffers.final = buffer;
+                return buffer;
+            },
+            
+            // Play a sound
+            playSound(type) {
+                if (!this.audioContext || !this.soundBuffers[type]) {
+                    this.init();
+                    if (!this.audioContext || !this.soundBuffers[type]) return;
+                }
+                
+                const source = this.audioContext.createBufferSource();
+                source.buffer = this.soundBuffers[type];
+                
+                const gainNode = this.audioContext.createGain();
+                gainNode.gain.value = 0.4;
+                
+                source.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                source.start();
+            },
+            
+            // Helper methods
+            playCorrectSound() {
+                this.playSound('correct');
+            },
+            
+            playFinalSound() {
+                this.playSound('final');
+            }
+        };
+        
+        // Animation for score points
+        function animatePointToScore(sourceElement) {
+            const pointElement = document.createElement('div');
+            pointElement.className = 'point-animation';
+            pointElement.textContent = '+1';
+            
+            // Position at the source element's location
+            const sourceRect = sourceElement.getBoundingClientRect();
+            const scoreElement = document.querySelector('.score-container');
+            const scoreRect = scoreElement.getBoundingClientRect();
+            
+            // Starting position
+            const startX = sourceRect.left + sourceRect.width / 2;
+            const startY = sourceRect.top + sourceRect.height / 2;
+            
+            // Ending position
+            const endX = scoreRect.left + scoreRect.width / 2;
+            const endY = scoreRect.top + scoreRect.height / 2;
+            
+            // Apply direct transform
+            pointElement.style.position = 'fixed';
+            pointElement.style.left = `${startX}px`;
+            pointElement.style.top = `${startY}px`;
+            pointElement.style.transform = 'translate(-50%, -50%)';
+            pointElement.style.opacity = '1';
+            
+            document.body.appendChild(pointElement);
+            
+            // Animation with JS for better control
+            let startTime = null;
+            const duration = 1000; // milliseconds
+            
+            const animatePoint = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Cubic bezier easing
+                const easeOut = t => 1 - Math.pow(1 - t, 3);
+                const easedProgress = easeOut(progress);
+                
+                // Calculate current position with easing
+                const currentX = startX + (endX - startX) * easedProgress;
+                const currentY = startY + (endY - startY) * easedProgress;
+                
+                // Apply transforms
+                const scale = 1 - 0.4 * easedProgress;
+                const rotation = 45 * easedProgress;
+                const opacity = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
+                
+                pointElement.style.left = `${currentX}px`;
+                pointElement.style.top = `${currentY}px`;
+                pointElement.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`;
+                pointElement.style.opacity = `${opacity}`;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animatePoint);
+                } else {
+                    // Clean up when animation completes
+                    pointElement.remove();
+                }
+            };
+            
+            // Start animation in next frame
+            requestAnimationFrame(animatePoint);
+            
+            // Pulse effect on score
+            scoreElement.style.animation = 'pulse 0.5s ease-in-out';
+            
+            // Clean up score animation
+            setTimeout(() => {
+                scoreElement.style.animation = '';
+            }, 500);
+        }
+
+        // Create particles for celebration animation
+        function createParticles() {
+            // Use canvas for particle animation instead of DOM elements
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '1600';
+            document.body.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Reduce particle count for better performance
+            const particleCount = ('ontouchstart' in window) ? 12 : 25;
+            
+            // NUS colors
+            const colors = ['#003D7C', '#EF7C00', '#4A90E2', '#FFB74D'];
+            
+            // Create particles array
+            const particles = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: canvas.height,
+                    radius: Math.random() * 6 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: Math.random() * 2 + 1,
+                    angle: Math.random() * Math.PI * 2,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 2 - 1,
+                    alpha: 0
+                });
+            }
+            
+            // Animation variables
+            let animationStartTime = null;
+            const animationDuration = 2500; // milliseconds
+            
+            // Animation function
+            function animate(timestamp) {
+                if (!animationStartTime) animationStartTime = timestamp;
+                const elapsed = timestamp - animationStartTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw particles
+                for (const p of particles) {
+                    // Calculate position based on time
+                    const distance = 150 + Math.random() * 150;
+                    const targetY = canvas.height - distance - 300 * progress;
+                    
+                    // Ease-out function for smooth animation
+                    const easeOut = function(t) {
+                        return 1 - Math.pow(1 - t, 3);
+                    };
+                    
+                    // Apply easing
+                    const easedProgress = easeOut(progress);
+                    
+                    p.y = canvas.height - (canvas.height - targetY) * easedProgress;
+                    p.x += Math.cos(p.angle) * p.speed * 0.5;
+                    p.rotation += p.rotationSpeed;
+                    
+                    // Fade in then out
+                    if (progress < 0.3) {
+                        p.alpha = progress / 0.3; // Fade in
+                    } else if (progress > 0.7) {
+                        p.alpha = 1 - (progress - 0.7) / 0.3; // Fade out
+                    } else {
+                        p.alpha = 1;
+                    }
+                    
+                    // Draw particle
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                
+                // Continue animation or clean up
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Clean up canvas when done
+                    setTimeout(() => {
+                        canvas.remove();
+                    }, 100);
+                }
+            }
+            
+            // Start animation
+            requestAnimationFrame(animate);
+        }
+
+        // Function to show celebration/completion message
+        function celebrateCompletion(title, message, type) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            document.body.appendChild(overlay);
+            
+            // Trigger CSS animation by applying class after a small delay
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+            });
+            
+            // Create particles for perfect or great scores
+            if (type === "perfect" || type === "great") {
+                createParticles();
+            }
+            
+            // Create celebration message
+            const celebrationMsg = document.createElement('div');
+            celebrationMsg.className = 'celebration-message';
+            
+            // Choose the right icon based on score
+            let iconHTML;
+            if (type === "perfect") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#EF7C00" stroke-width="2" fill="rgba(239, 124, 0, 0.1)"/>
+                        <path d="M8 12L11 15L16 9" stroke="#003D7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>`;
+            } else if (type === "great") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15.4L8.24 17.67L9.24 13.39L5.92 10.51L10.3 10.13L12 6.1L13.71 10.14L18.09 10.52L14.77 13.4L15.77 17.68L12 15.4Z" fill="#EF7C00" stroke="#003D7C" stroke-width="1.5"/>
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                    </svg>`;
+            } else if (type === "good") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 13.5C8.83333 14.8333 10.3 17 12.5 15.5C14.7 14 16 15 16.5 16" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else if (type === "try") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 14.5C9.5 13.5 14.5 13.5 16 14.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 15.5C9.5 16.5 14.5 16.5 16 15.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round" transform="rotate(180 12 16)"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            }
+            
+            celebrationMsg.innerHTML = `
+                <div class="celebration-icon">
+                    ${iconHTML}
+                </div>
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <button id="continue-button">Continue</button>
+            `;
+            
+            document.body.appendChild(celebrationMsg);
+            
+            // Add event listener to continue button
+            document.getElementById('continue-button').addEventListener('click', () => {
+                celebrationMsg.style.animation = 'celebrate 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) reverse forwards';
+                overlay.classList.remove('show');
+                
+                setTimeout(() => {
+                    celebrationMsg.remove();
+                    overlay.remove();
+                }, 600);
+            });
+        }
+
+        // Extract username from localStorage on page load
+        function getUsername() {
+            try {
+                // Try to get the accounts data from localStorage
+                const accountsData = localStorage.getItem('accounts');
+                
+                if (accountsData) {
+                    // Parse the JSON array of accounts
+                    const accounts = JSON.parse(accountsData);
+                    
+                    // If accounts exist and there's at least one account with a username
+                    if (accounts && accounts.length > 0 && accounts[0].username) {
+                        return accounts[0].username; // Return the first account's username
+                    }
+                }
+                
+                // If we couldn't find a username or there was an error, return a default
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Error getting username from accounts:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Silently set the username on page load
+        document.getElementById('username').value = getUsername();
+        
+        let currentQuestionIndex = 0;
+        let score = 0;
+        const questions = document.querySelectorAll('.question');
+        const nextBtn = document.getElementById('next-btn');
+        const finalResultDiv = document.getElementById('final-result');
+        const scoreElement = document.querySelector('.score');
+        
+        // Variables to store quiz data
+        let questionData = [];
+        
+        // Timer variables
+        let startTime;
+        let timerInterval;
+        let questionTimes = [];
+        
+        // Initialize audio immediately to ensure it's ready for the first question
+        AudioManager.init();
+        
+        // Start timer for first question
+        startTimer();
+        
+        // Function to start the timer
+        function startTimer() {
+            startTime = new Date();
+            const currentTimerElement = document.getElementById(`timer-q${currentQuestionIndex + 1}`);
+            
+            // Clear any existing interval
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Update timer every second
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((new Date() - startTime) / 1000);
+                currentTimerElement.textContent = `Time: ${elapsedTime}s`;
+            }, 1000);
+        }
+        
+        // Function to stop the timer and record time
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const timeElapsed = Math.floor((new Date() - startTime) / 1000);
+            questionTimes[currentQuestionIndex] = timeElapsed;
+            
+            // Display the time taken for this question
+            const timeSummaryElement = document.getElementById(`time-summary-q${currentQuestionIndex + 1}`);
+            timeSummaryElement.innerHTML = `Time spent: ${timeElapsed} seconds`;
+            timeSummaryElement.style.display = 'block';
+            
+            return timeElapsed;
+        }
+
+        // Function to submit quiz data silently
+        function submitQuizData() {
+            const username = document.getElementById('username').value || 'Anonymous';
+            
+            // Prepare data to send to Google Apps Script
+            const data = {
+                username: username,
+                url: window.location.href,
+                questionData: questionData
+            };
+            
+            // Get the deployed script URL
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbzr-KFisJk2kcQTfh8wbAI-sImJ2uu1N8kPt1wXtx9p1aXdouFQJylATOhkByW9ObK6/exec';
+            
+            // Send data to Google Apps Script silently
+            fetch(scriptUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                mode: 'no-cors' // Important for Google Apps Script
+            })
+            .then(() => {
+                console.log('Quiz data submitted silently');
+            })
+            .catch(error => {
+                console.error('Error submitting quiz data:', error);
+            });
+        }
+
+        // Add click event listeners to all options
+        questions.forEach((question, qIndex) => {
+            const options = question.querySelectorAll('.option');
+            const feedbackDiv = question.querySelector('.feedback');
+            
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Prevent multiple selections
+                    if (question.classList.contains('answered')) return;
+
+                    // Stop the timer when an answer is selected
+                    const timeSpent = stopTimer();
+
+                    // Get the question number and selected text
+                    const questionNumber = qIndex + 1;
+                    const selectedText = option.textContent.trim();
+                    const isCorrect = option.getAttribute('data-correct') === 'true' ? "Yes" : "No";
+                    
+                    // Save the answer data
+                    questionData.push({
+                        questionNumber: questionNumber,
+                        selectedText: selectedText,
+                        timeSpent: timeSpent,
+                        isCorrect: isCorrect
+                    });
+
+                    // Remove previous selections
+                    options.forEach(opt => {
+                        opt.classList.remove('correct', 'incorrect');
+                    });
+
+                    // Mark selected option
+                    if (option.getAttribute('data-correct') === 'true') {
+                        option.classList.add('correct');
+                        
+                        // Increment score and update display
+                        score++;
+                        scoreElement.textContent = score;
+                        
+                        // Play correct sound - now initialized earlier to ensure it works from Q1
+                        AudioManager.playCorrectSound();
+                        
+                        // Animate point
+                        animatePointToScore(option);
+                    } else {
+                        option.classList.add('incorrect');
+                        // Highlight the correct answer
+                        options.forEach(opt => {
+                            if (opt.getAttribute('data-correct') === 'true') {
+                                opt.classList.add('correct');
+                            }
+                        });
+                    }
+
+                    // Show feedback
+                    feedbackDiv.innerHTML = option.getAttribute('data-feedback');
+                    feedbackDiv.style.display = 'block';
+
+                    // Mark question as answered
+                    question.classList.add('answered');
+
+                    // Show next button
+                    nextBtn.style.display = 'block';
+                });
+            });
+        });
+
+        // Next button click event
+        nextBtn.addEventListener('click', function() {
+            // Hide current question
+            questions[currentQuestionIndex].classList.remove('active');
+            
+            // Move to next question
+            currentQuestionIndex++;
+
+            // Check if quiz is complete
+            if (currentQuestionIndex >= questions.length) {
+                // Hide next button
+                nextBtn.style.display = 'none';
+                
+                // Determine message based on score
+                let title, message, type;
+                
+                if (score === 11) {
+                    title = "Perfect Score!";
+                    message = "Congratulations! You've demonstrated exceptional understanding of protein folding principles!";
+                    type = "perfect";
+                    // Play final sound for perfect score
+                    AudioManager.playFinalSound();
+                } else if (score >= 9) {
+                    title = "Great Job!";
+                    message = "You got " + score + " out of 11 correct! You have an excellent grasp of protein folding concepts.";
+                    type = "great";
+                } else if (score >= 7) {
+                    title = "Great Job!";
+                    message = "You got " + score + " out of 11 correct! You have a solid understanding of protein folding fundamentals.";
+                    type = "great";
+                } else if (score >= 5) {
+                    title = "Good Effort!";
+                    message = "You got " + score + " out of 11 correct. You're building a good foundation in protein folding knowledge.";
+                    type = "good";
+                } else if (score >= 3) {
+                    title = "Nice Try!";
+                    message = "You got " + score + " out of 11 correct. With a bit more study, you'll improve your understanding of protein folding principles.";
+                    type = "try";
+                } else {
+                    title = "Keep Learning!";
+                    message = "Protein folding concepts can be challenging. Review the basic principles and try again!";
+                    type = "learn";
+                }
+                
+                // Show celebration/completion message
+                celebrateCompletion(title, message, type);
+                
+                // Show time summary in final result div
+                let timeHTML = '<div style="margin-top: 20px; padding: 15px; background-color: rgba(0, 61, 124, 0.06); border-radius: 8px;">';
+                timeHTML += '<h3 style="color: var(--primary); margin-bottom: 10px;">Time Summary:</h3>';
+                timeHTML += '<ul style="list-style-type: none; padding-left: 0;">';
+                
+                let totalTime = 0;
+                for (let i = 0; i < questionTimes.length; i++) {
+                    totalTime += questionTimes[i];
+                    timeHTML += `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light);">
+                        <strong>Question ${i + 1}:</strong> ${questionTimes[i]} seconds
+                    </li>`;
+                }
+                
+                timeHTML += `<li style="margin-top: 10px; font-weight: bold; color: var(--primary);">
+                    Total time: ${totalTime} seconds
+                </li>`;
+                timeHTML += '</ul></div>';
+                
+                finalResultDiv.innerHTML = timeHTML;
+                
+                // Automatically submit quiz data silently after showing results
+                submitQuizData();
+                return;
+            }
+
+            // Show next question
+            questions[currentQuestionIndex].classList.add('active');
+            
+            // Hide next button until an answer is selected
+            nextBtn.style.display = 'none';
+            
+            // Clear previous feedback
+            const previousFeedback = questions[currentQuestionIndex - 1].querySelector('.feedback');
+            previousFeedback.style.display = 'none';
+            previousFeedback.innerHTML = '';
+            
+            // Start timer for new question
+            startTimer();
+        });
+    </script>
+</body>
+</html>
