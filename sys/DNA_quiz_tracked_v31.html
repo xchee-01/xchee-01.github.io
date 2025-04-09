@@ -463,26 +463,53 @@
             audioInitialized: false,
             
             // Initialize audio on user interaction
-            init() {
+            async init() {
                 if (this.audioInitialized) return;
                 
                 try {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    this.createSounds();
+                    
+                    // Load external sound first, fall back to synthetic if needed
+                    await Promise.all([
+                        this.loadSound('correct'),
+                        this.createFinalSound()
+                    ]);
+                    
                     this.audioInitialized = true;
                 } catch (error) {
                     console.error('Audio initialization failed:', error);
+                    // Create fallback sounds if loading failed
+                    if (!this.soundBuffers.correct) {
+                        this.soundBuffers.correct = this.createSuccessSound();
+                    }
+                    if (!this.soundBuffers.final) {
+                        this.soundBuffers.final = this.createFinalSound();
+                    }
+                    this.audioInitialized = true;
                 }
             },
             
-            // Create synthetic sounds
-            createSounds() {
-                // Create success sound
-                this.soundBuffers.correct = this.createSuccessSound();
-                this.soundBuffers.final = this.createFinalSound();
+            // Load sound from URL or create synthetic
+            async loadSound(type) {
+                try {
+                    const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load sound');
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    this.soundBuffers.correct = await this.audioContext.decodeAudioData(arrayBuffer);
+                    return this.soundBuffers.correct;
+                } catch (error) {
+                    console.error('Error loading sound:', error);
+                    this.soundBuffers.correct = this.createSuccessSound();
+                    return this.soundBuffers.correct;
+                }
             },
             
-            // Create synthetic success sound
+            // Create synthetic success sound (fallback)
             createSuccessSound() {
                 if (!this.audioContext) return null;
                 
@@ -542,6 +569,7 @@
                     }
                 }
                 
+                this.soundBuffers.final = buffer;
                 return buffer;
             },
             
