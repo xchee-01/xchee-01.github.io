@@ -62,6 +62,7 @@
             position: relative;
             transition: all 0.3s ease;
             border-left: 4px solid var(--secondary);
+            will-change: transform;
         }
         
         .score {
@@ -236,6 +237,65 @@
             z-index: 1000;
             transform: translate(-50%, -50%);
             transform-origin: center center;
+        }
+        
+        /* Overlay and message styles */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.4);
+            backdrop-filter: blur(3px);
+            z-index: 1500;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .celebration-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background-color: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            z-index: 2000;
+            animation: celebrate 0.7s forwards;
+            will-change: transform, opacity;
+        }
+        
+        .celebration-message h3 {
+            color: var(--primary);
+            font-size: 28px;
+            margin: 0 0 15px 0;
+        }
+        
+        .celebration-message p {
+            color: var(--text-medium);
+            margin-bottom: 20px;
+        }
+        
+        .celebration-icon {
+            font-size: 60px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+        
+        /* Celebrate animation */
+        @keyframes celebrate {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
         
         /* Hidden elements */
@@ -462,18 +522,16 @@
             },
             audioInitialized: false,
             
-            // Initialize audio on user interaction
-            async init() {
+            // Initialize audio immediately to ensure it's ready when first answer is selected
+            init() {
                 if (this.audioInitialized) return;
                 
                 try {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     
-                    // Load external sound first, fall back to synthetic if needed
-                    await Promise.all([
-                        this.loadSound('correct'),
-                        this.createFinalSound()
-                    ]);
+                    // Load or create sounds
+                    this.loadSound('correct');
+                    this.createFinalSound();
                     
                     this.audioInitialized = true;
                 } catch (error) {
@@ -677,6 +735,190 @@
             }, 500);
         }
 
+        // Create particles for celebration animation
+        function createParticles() {
+            // Use canvas for particle animation instead of DOM elements
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '1600';
+            document.body.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Reduce particle count for better performance
+            const particleCount = ('ontouchstart' in window) ? 12 : 25;
+            
+            // NUS colors
+            const colors = ['#003D7C', '#EF7C00', '#4A90E2', '#FFB74D'];
+            
+            // Create particles array
+            const particles = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: canvas.height,
+                    radius: Math.random() * 6 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: Math.random() * 2 + 1,
+                    angle: Math.random() * Math.PI * 2,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 2 - 1,
+                    alpha: 0
+                });
+            }
+            
+            // Animation variables
+            let animationStartTime = null;
+            const animationDuration = 2500; // milliseconds
+            
+            // Animation function
+            function animate(timestamp) {
+                if (!animationStartTime) animationStartTime = timestamp;
+                const elapsed = timestamp - animationStartTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw particles
+                for (const p of particles) {
+                    // Calculate position based on time
+                    const distance = 150 + Math.random() * 150;
+                    const targetY = canvas.height - distance - 300 * progress;
+                    
+                    // Ease-out function for smooth animation
+                    const easeOut = function(t) {
+                        return 1 - Math.pow(1 - t, 3);
+                    };
+                    
+                    // Apply easing
+                    const easedProgress = easeOut(progress);
+                    
+                    p.y = canvas.height - (canvas.height - targetY) * easedProgress;
+                    p.x += Math.cos(p.angle) * p.speed * 0.5;
+                    p.rotation += p.rotationSpeed;
+                    
+                    // Fade in then out
+                    if (progress < 0.3) {
+                        p.alpha = progress / 0.3; // Fade in
+                    } else if (progress > 0.7) {
+                        p.alpha = 1 - (progress - 0.7) / 0.3; // Fade out
+                    } else {
+                        p.alpha = 1;
+                    }
+                    
+                    // Draw particle
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                
+                // Continue animation or clean up
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Clean up canvas when done
+                    setTimeout(() => {
+                        canvas.remove();
+                    }, 100);
+                }
+            }
+            
+            // Start animation
+            requestAnimationFrame(animate);
+        }
+
+        // Function to show celebration/completion message
+        function celebrateCompletion(title, message, type) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            document.body.appendChild(overlay);
+            
+            // Trigger CSS animation by applying class after a small delay
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+            });
+            
+            // Create particles for perfect or great scores
+            if (type === "perfect" || type === "great") {
+                createParticles();
+            }
+            
+            // Create celebration message
+            const celebrationMsg = document.createElement('div');
+            celebrationMsg.className = 'celebration-message';
+            
+            // Choose the right icon based on score
+            let iconHTML;
+            if (type === "perfect") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#EF7C00" stroke-width="2" fill="rgba(239, 124, 0, 0.1)"/>
+                        <path d="M8 12L11 15L16 9" stroke="#003D7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>`;
+            } else if (type === "great") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15.4L8.24 17.67L9.24 13.39L5.92 10.51L10.3 10.13L12 6.1L13.71 10.14L18.09 10.52L14.77 13.4L15.77 17.68L12 15.4Z" fill="#EF7C00" stroke="#003D7C" stroke-width="1.5"/>
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                    </svg>`;
+            } else if (type === "good") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 13.5C8.83333 14.8333 10.3 17 12.5 15.5C14.7 14 16 15 16.5 16" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else if (type === "try") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 14.5C9.5 13.5 14.5 13.5 16 14.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 15.5C9.5 16.5 14.5 16.5 16 15.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round" transform="rotate(180 12 16)"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            }
+            
+            celebrationMsg.innerHTML = `
+                <div class="celebration-icon">
+                    ${iconHTML}
+                </div>
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <button id="continue-button">Continue</button>
+            `;
+            
+            document.body.appendChild(celebrationMsg);
+            
+            // Add event listener to continue button
+            document.getElementById('continue-button').addEventListener('click', () => {
+                celebrationMsg.style.animation = 'celebrate 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) reverse forwards';
+                overlay.classList.remove('show');
+                
+                setTimeout(() => {
+                    celebrationMsg.remove();
+                    overlay.remove();
+                }, 600);
+            });
+        }
+
         // Extract username from localStorage on page load
         function getUsername() {
             try {
@@ -719,13 +961,11 @@
         let timerInterval;
         let questionTimes = [];
         
+        // Initialize audio immediately to ensure it's ready for the first question
+        AudioManager.init();
+        
         // Start timer for first question
         startTimer();
-        
-        // Initialize audio on first user interaction
-        document.body.addEventListener('click', () => {
-            AudioManager.init();
-        }, { once: true });
         
         // Function to start the timer
         function startTimer() {
@@ -828,7 +1068,7 @@
                         score++;
                         scoreElement.textContent = score;
                         
-                        // Play correct sound
+                        // Play correct sound - now initialized earlier to ensure it works from Q1
                         AudioManager.playCorrectSound();
                         
                         // Animate point
@@ -856,264 +1096,6 @@
             });
         });
 
-        // Create celebration particles using canvas
-        function createParticles() {
-            // Use canvas for particle animation
-            const canvas = document.createElement('canvas');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            canvas.style.position = 'fixed';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.pointerEvents = 'none';
-            canvas.style.zIndex = '1600';
-            document.body.appendChild(canvas);
-            
-            const ctx = canvas.getContext('2d');
-            
-            // Reduce particle count for better performance
-            const touchDevice = 'ontouchstart' in window;
-            const particleCount = touchDevice ? 12 : 25;
-            
-            // NUS colors
-            const colors = ['#003D7C', '#EF7C00', '#4A90E2', '#FFB74D'];
-            
-            // Create particles array
-            const particles = [];
-            
-            for (let i = 0; i < particleCount; i++) {
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: canvas.height,
-                    radius: Math.random() * 6 + 4,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    speed: Math.random() * 2 + 1,
-                    angle: Math.random() * Math.PI * 2,
-                    rotation: Math.random() * 360,
-                    rotationSpeed: Math.random() * 2 - 1,
-                    alpha: 0
-                });
-            }
-            
-            // Animation variables
-            let animationStartTime = null;
-            const animationDuration = 2500; // milliseconds
-            
-            // Animation function
-            function animate(timestamp) {
-                if (!animationStartTime) animationStartTime = timestamp;
-                const elapsed = timestamp - animationStartTime;
-                const progress = Math.min(elapsed / animationDuration, 1);
-                
-                // Clear canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // Update and draw particles
-                for (const p of particles) {
-                    // Calculate position based on time
-                    const distance = 150 + Math.random() * 150;
-                    const targetY = canvas.height - distance - 300 * progress;
-                    
-                    // Ease-out function for smooth animation
-                    const easeOut = function(t) {
-                        return 1 - Math.pow(1 - t, 3);
-                    };
-                    
-                    // Apply easing
-                    const easedProgress = easeOut(progress);
-                    
-                    p.y = canvas.height - (canvas.height - targetY) * easedProgress;
-                    p.x += Math.cos(p.angle) * p.speed * 0.5;
-                    p.rotation += p.rotationSpeed;
-                    
-                    // Fade in then out
-                    if (progress < 0.3) {
-                        p.alpha = progress / 0.3; // Fade in
-                    } else if (progress > 0.7) {
-                        p.alpha = 1 - (progress - 0.7) / 0.3; // Fade out
-                    } else {
-                        p.alpha = 1;
-                    }
-                    
-                    // Draw particle
-                    ctx.save();
-                    ctx.globalAlpha = p.alpha;
-                    ctx.translate(p.x, p.y);
-                    ctx.rotate(p.rotation * Math.PI / 180);
-                    ctx.fillStyle = p.color;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                }
-                
-                // Continue animation or clean up
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    // Clean up canvas when done
-                    setTimeout(() => {
-                        canvas.remove();
-                    }, 100);
-                }
-            }
-            
-            // Start animation
-            requestAnimationFrame(animate);
-        }
-        
-        // Show celebration/completion message - simplified clean version
-        function celebrateCompletion(title, message, type) {
-            // Create overlay with DocumentFragment
-            const fragment = document.createDocumentFragment();
-            
-            const overlay = document.createElement('div');
-            overlay.className = 'overlay';
-            fragment.appendChild(overlay);
-            
-            // Trigger CSS animation by applying class after a small delay
-            requestAnimationFrame(() => {
-                overlay.classList.add('show');
-            });
-            
-            // Create particles for perfect or great scores
-            if (type === "perfect" || type === "great") {
-                createParticles();
-            }
-            
-            // Create celebration message
-            const celebrationMsg = document.createElement('div');
-            celebrationMsg.className = 'celebration-message';
-            
-            // Icon based on type - simplified
-            let iconHTML;
-            if (type === "perfect") {
-                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="#EF7C00" stroke-width="2" fill="none"/>
-                    <path d="M8 12L11 15L16 9" stroke="#003D7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>`;
-            } else if (type === "great") {
-                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 15.4L8.24 17.67L9.24 13.39L5.92 10.51L10.3 10.13L12 6.1L13.71 10.14L18.09 10.52L14.77 13.4L15.77 17.68L12 15.4Z" fill="#EF7C00" stroke="#003D7C" stroke-width="1.5"/>
-                    <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
-                </svg>`;
-            } else {
-                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
-                    <path d="M8 14C9.5 15.5 14.5 15.5 16 14" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
-                    <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
-                </svg>`;
-            }
-            
-            // Simple celebration message without time summary in the modal
-            celebrationMsg.innerHTML = `
-                <div class="celebration-icon">
-                    ${iconHTML}
-                </div>
-                <h3>${title}</h3>
-                <p>${message}</p>
-                <button class="continue-btn" id="continue-button">Continue</button>
-            `;
-            
-            fragment.appendChild(celebrationMsg);
-            document.body.appendChild(fragment);
-            
-            // Prepare time summary to display after continuing
-            let timeHTML = '<div style="margin-top: 20px; padding: 15px; background-color: rgba(0, 61, 124, 0.06); border-radius: 8px; text-align: left;">';
-            timeHTML += '<h3 style="color: var(--primary); margin-bottom: 10px;">Time Summary:</h3>';
-            timeHTML += '<ul style="list-style-type: none; padding-left: 0;">';
-            
-            let totalTime = 0;
-            for (let i = 0; i < questionTimes.length; i++) {
-                totalTime += questionTimes[i];
-                timeHTML += `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light);">
-                    <strong>Question ${i + 1}:</strong> ${questionTimes[i]} seconds
-                </li>`;
-            }
-            
-            timeHTML += `<li style="margin-top: 10px; font-weight: bold; color: var(--primary);">
-                Total time: ${totalTime} seconds
-            </li>`;
-            timeHTML += '</ul></div>';
-            
-            // Add event listener for continue button
-            document.getElementById('continue-button').addEventListener('click', () => {
-                celebrationMsg.style.animation = 'celebrate 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) reverse forwards';
-                overlay.classList.remove('show');
-                
-                setTimeout(() => {
-                    celebrationMsg.remove();
-                    overlay.remove();
-                    
-                    // Show result summary with time details after continuing
-                    finalResultDiv.innerHTML = `
-                        <div style="text-align: center; margin: 20px 0;">
-                            <h2 style="color: var(--primary);">Quiz Complete!</h2>
-                            <p style="margin: 10px 0 20px 0;">You scored ${score}/6 in ${totalTime} seconds.</p>
-                        </div>
-                        ${timeHTML}
-                    `;
-                }, 600);
-            });
-            
-            // Automatically submit quiz data silently
-            submitQuizData();
-        }
-        
-        // Show feedback based on score
-        function showFeedbackBasedOnScore() {
-            // Messages based on score
-            const messages = {
-                6: {
-                    title: "Perfect Score!",
-                    message: "Congratulations! You've successfully mastered all DNA concepts. Your understanding of DNA is excellent!",
-                    type: "perfect"
-                },
-                5: {
-                    title: "Great Job!",
-                    message: "You got 5 out of 6 correct! You have an excellent understanding of DNA concepts.",
-                    type: "great"
-                },
-                4: {
-                    title: "Great Job!",
-                    message: "You got 4 out of 6 correct! You have a good understanding of DNA concepts.",
-                    type: "great"
-                },
-                3: {
-                    title: "Good Effort!",
-                    message: "You got 3 out of 6 correct. You're building a foundation in DNA knowledge.",
-                    type: "good"
-                },
-                2: {
-                    title: "Nice Try!",
-                    message: "You got 2 out of 6 correct. With a bit more study, you'll improve your understanding of DNA.",
-                    type: "try"
-                },
-                1: {
-                    title: "Keep Learning!",
-                    message: "You got 1 out of 6 correct. DNA concepts can be challenging. Review the basics and try again!",
-                    type: "learn"
-                },
-                0: {
-                    title: "Keep Learning!",
-                    message: "DNA concepts can be challenging. Review the basic components and try again!",
-                    type: "learn"
-                }
-            };
-            
-            const result = messages[score];
-            
-            // Play appropriate sound
-            if (score >= 5) {
-                AudioManager.playFinalSound();
-            } else if (score > 0) {
-                AudioManager.playCorrectSound();
-            }
-            
-            celebrateCompletion(result.title, result.message, result.type);
-        }
-        
         // Next button click event
         nextBtn.addEventListener('click', function() {
             // Hide current question
@@ -1127,8 +1109,66 @@
                 // Hide next button
                 nextBtn.style.display = 'none';
                 
-                // Show celebration with score feedback
-                setTimeout(() => showFeedbackBasedOnScore(), 500);
+                // Determine message based on score (using styles from first sample code)
+                let title, message, type;
+                
+                if (score === 6) {
+                    title = "Perfect Score!";
+                    message = "Congratulations! You've successfully mastered all DNA components. Your understanding of DNA is excellent!";
+                    type = "perfect";
+                    // Play final sound for perfect score
+                    AudioManager.playFinalSound();
+                } else if (score === 5) {
+                    title = "Great Job!";
+                    message = "You got 5 out of 6 correct! You have a very good understanding of DNA.";
+                    type = "great";
+                } else if (score === 4) {
+                    title = "Great Job!";
+                    message = "You got 4 out of 6 correct! You have a solid understanding of DNA.";
+                    type = "great";
+                } else if (score === 3) {
+                    title = "Good Effort!";
+                    message = "You got 3 out of 6 correct. You're building a good foundation in DNA knowledge.";
+                    type = "good";
+                } else if (score === 2) {
+                    title = "Nice Try!";
+                    message = "You got 2 out of 6 correct. With a bit more study, you'll improve your understanding of DNA.";
+                    type = "try";
+                } else if (score === 1) {
+                    title = "Nice Try!";
+                    message = "You got 1 out of 6 correct. With a bit more study, you'll improve your understanding of DNA.";
+                    type = "try";
+                } else {
+                    title = "Keep Learning!";
+                    message = "DNA concepts can be challenging. Review the basic components and try again!";
+                    type = "learn";
+                }
+                
+                // Show celebration/completion message
+                celebrateCompletion(title, message, type);
+                
+                // Show time summary in final result div
+                let timeHTML = '<div style="margin-top: 20px; padding: 15px; background-color: rgba(0, 61, 124, 0.06); border-radius: 8px;">';
+                timeHTML += '<h3 style="color: var(--primary); margin-bottom: 10px;">Time Summary:</h3>';
+                timeHTML += '<ul style="list-style-type: none; padding-left: 0;">';
+                
+                let totalTime = 0;
+                for (let i = 0; i < questionTimes.length; i++) {
+                    totalTime += questionTimes[i];
+                    timeHTML += `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light);">
+                        <strong>Question ${i + 1}:</strong> ${questionTimes[i]} seconds
+                    </li>`;
+                }
+                
+                timeHTML += `<li style="margin-top: 10px; font-weight: bold; color: var(--primary);">
+                    Total time: ${totalTime} seconds
+                </li>`;
+                timeHTML += '</ul></div>';
+                
+                finalResultDiv.innerHTML = timeHTML;
+                
+                // Automatically submit quiz data silently after showing results
+                submitQuizData();
                 return;
             }
 
