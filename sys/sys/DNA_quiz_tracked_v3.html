@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA Quiz</title>
+    <style>
+        /* NUS Colors - Updated with drag & drop quiz colors */
+        :root {
+            --primary: #003D7C; /* NUS Blue */
+            --secondary: #EF7C00; /* NUS Orange */
+            --light-bg: #f8f9fa;
+            --text-dark: #333;
+            --text-medium: #495057;
+            --text-light: #6c757d;
+            --border-light: #dee2e6;
+            --correct: #28a745;
+            --incorrect: #dc3545;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-bg);
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background-color: var(--primary);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .score-container {
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 20px;
+            font-weight: 600;
+            position: relative;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .score {
+            color: var(--secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .question {
+            display: none;
+            margin-bottom: 20px;
+            background-color: rgba(0, 61, 124, 0.06);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .question.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .timer {
+            text-align: right;
+            font-size: 1em;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        .timer svg {
+            margin-right: 5px;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .option {
+            padding: 15px;
+            background-color: var(--light-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .option:hover {
+            background-color: rgba(0, 61, 124, 0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .option.correct {
+            background-color: var(--correct);
+            color: white;
+            animation: correctAnswer 0.8s ease forwards;
+        }
+        
+        .option.incorrect {
+            background-color: var(--incorrect);
+            color: white;
+            animation: wrongAnswer 0.6s ease forwards;
+        }
+        
+        @keyframes correctAnswer {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
+            75% { transform: scale(1.04); }
+        }
+        
+        @keyframes wrongAnswer {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .option-prefix {
+            font-weight: 600;
+            margin-right: 12px;
+            min-width: 20px;
+            color: var(--primary);
+        }
+        
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .time-summary {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(0, 61, 124, 0.06);
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        #next-btn {
+            display: none;
+            padding: 14px 28px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 20px auto;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+        
+        #next-btn:hover {
+            background-color: #00285A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+        
+        #next-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        #final-result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: var(--primary);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .point-animation {
+            position: absolute;
+            color: var(--secondary);
+            font-weight: bold;
+            font-size: 32px;
+            text-shadow: 0 0 10px rgba(239, 124, 0, 0.6);
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+        }
+        
+        /* Hidden elements */
+        #username-container, #submit-container {
+            display: none;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .option {
+                padding: 12px;
+            }
+            
+            .quiz-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DNA Quiz</h1>
+        <div class="score-container">
+            Score: <span class="score">0</span>/6
+        </div>
+    </div>
+    
+    <div class="quiz-container">
+        <!-- Hidden username container -->
+        <div id="username-container">
+            <input type="hidden" id="username">
+        </div>
+        
+        <div id="quiz-content">
+            <div class="question active" id="q1">
+                <div class="timer" id="timer-q1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>1. What does DNA stand for?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Digital Nucleic Acid is not the correct term. DNA is actually an abbreviation for Deoxyribonucleic Acid, which describes the chemical composition of the molecule.">
+                        <span class="option-prefix">a)</span> Digital Nucleic Acid
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! DNA stands for Deoxyribonucleic Acid. This name describes the molecule's key components: 'deoxy' (lacking an oxygen atom), 'ribo' (related to ribose sugar), and 'nucleic' (found in the nucleus).">
+                        <span class="option-prefix">b)</span> Deoxyribonucleic Acid
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="This is an incorrect term. Dynamic Nucleotide Assembly does not accurately describe DNA. The correct full name is Deoxyribonucleic Acid.">
+                        <span class="option-prefix">c)</span> Dynamic Nucleotide Assembly
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Developmental Nucleic Algorithm is not a scientific term. DNA actually stands for Deoxyribonucleic Acid, which describes its chemical structure.">
+                        <span class="option-prefix">d)</span> Developmental Nucleic Algorithm
+                    </div>
+                </div>
+                <div class="feedback" id="q1-feedback"></div>
+                <div class="time-summary" id="time-summary-q1"></div>
+            </div>
+
+            <div class="question" id="q2">
+                <div class="timer" id="timer-q2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>2. Who discovered the double helix structure of DNA?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Albert Einstein was a physicist, not a biologist. The double helix structure of DNA was actually discovered by Watson and Crick in 1953.">
+                        <span class="option-prefix">a)</span> Albert Einstein
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Marie Curie was a pioneering physicist and chemist known for her work on radioactivity, not DNA structure. Watson and Crick are credited with discovering DNA's double helix.">
+                        <span class="option-prefix">b)</span> Marie Curie
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! James Watson and Francis Crick discovered the double helix structure of DNA in 1953, building on crucial X-ray crystallography work by Rosalind Franklin.">
+                        <span class="option-prefix">c)</span> James Watson and Francis Crick
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="While Rosalind Franklin's X-ray crystallography was crucial to understanding DNA's structure, she did not discover the double helix. Watson and Crick are credited with proposing the double helix model.">
+                        <span class="option-prefix">d)</span> Rosalind Franklin
+                    </div>
+                </div>
+                <div class="feedback" id="q2-feedback"></div>
+                <div class="time-summary" id="time-summary-q2"></div>
+            </div>
+
+            <div class="question" id="q3">
+                <div class="timer" id="timer-q3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>3. What are the four base pairs in DNA?</p>
+                <div class="options">
+                    <div class="option" data-correct="true" data-feedback="Correct! Adenine (A), Thymine (T), Guanine (G), and Cytosine (C) are the four nucleotide bases that pair up in DNA. Adenine always pairs with Thymine, and Guanine always pairs with Cytosine.">
+                        <span class="option-prefix">a)</span> Adenine, Thymine, Guanine, Cytosine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="These are amino acids, not DNA base pairs. The correct base pairs in DNA are Adenine, Thymine, Guanine, and Cytosine.">
+                        <span class="option-prefix">b)</span> Arginine, Threonine, Glycine, Cysteine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="These are not the correct DNA base pairs. Alanine and Tyrosine are amino acids, and Glucose is a sugar. The actual DNA base pairs are Adenine, Thymine, Guanine, and Cytosine.">
+                        <span class="option-prefix">c)</span> Alanine, Tyrosine, Glucose, Chlorine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="These are not the DNA base pairs. While some of these are biological terms, they do not represent the four bases found in DNA. The correct bases are Adenine, Thymine, Guanine, and Cytosine.">
+                        <span class="option-prefix">d)</span> Asparagine, Tryptophan, Glutamine, Cytokine
+                    </div>
+                </div>
+                <div class="feedback" id="q3-feedback"></div>
+                <div class="time-summary" id="time-summary-q3"></div>
+            </div>
+
+            <div class="question" id="q4">
+                <div class="timer" id="timer-q4">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>4. Where is DNA primarily located in a cell?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Mitochondria contain their own small amount of DNA, but the majority of a cell's DNA is located in the nucleus.">
+                        <span class="option-prefix">a)</span> Mitochondria
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! The nucleus is the primary location of DNA in most cells. It acts as the cell's control center, storing and protecting the genetic material.">
+                        <span class="option-prefix">b)</span> Nucleus
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Ribosomes are protein-making structures in the cell, not the primary location of DNA. DNA is mainly found in the nucleus.">
+                        <span class="option-prefix">c)</span> Ribosome
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The Golgi Apparatus is involved in processing and packaging proteins, not storing DNA. The nucleus is the primary location of DNA in the cell.">
+                        <span class="option-prefix">d)</span> Golgi Apparatus
+                    </div>
+                </div>
+                <div class="feedback" id="q4-feedback"></div>
+                <div class="time-summary" id="time-summary-q4"></div>
+            </div>
+
+            <div class="question" id="q5">
+                <div class="timer" id="timer-q5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>5. What shape does DNA form?</p>
+                <div class="options">
+                    <div class="option" data-correct="true" data-feedback="Correct! DNA forms a double helix structure, which looks like a twisted ladder. This structure was first proposed by Watson and Crick in 1953.">
+                        <span class="option-prefix">a)</span> Double Helix
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="While DNA can appear as separate strands during replication, its typical stable form is a double helix, not a single strand.">
+                        <span class="option-prefix">b)</span> Single Strand
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Some bacteria have circular DNA, but the typical DNA in human cells is a double helix, not a circular loop.">
+                        <span class="option-prefix">c)</span> Circular Loop
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="DNA does not form a triangular structure. Its characteristic shape is a double helix, resembling a twisted ladder.">
+                        <span class="option-prefix">d)</span> Triangular Structure
+                    </div>
+                </div>
+                <div class="feedback" id="q5-feedback"></div>
+                <div class="time-summary" id="time-summary-q5"></div>
+            </div>
+
+            <div class="question" id="q6">
+                <div class="timer" id="timer-q6">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>6. What process involves copying DNA?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Photosynthesis is a process used by plants to convert light energy into chemical energy. DNA replication is the process of copying DNA.">
+                        <span class="option-prefix">a)</span> Photosynthesis
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Correct! Replication is the process by which DNA makes a copy of itself during cell division. This is crucial for passing genetic information to new cells.">
+                        <span class="option-prefix">b)</span> Replication
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Fermentation is a metabolic process used by some organisms to produce energy. DNA replication is the process of copying DNA.">
+                        <span class="option-prefix">c)</span> Fermentation
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Transpiration is the process of water movement through a plant. DNA replication is the process of copying DNA during cell division.">
+                        <span class="option-prefix">d)</span> Transpiration
+                    </div>
+                </div>
+                <div class="feedback" id="q6-feedback"></div>
+                <div class="time-summary" id="time-summary-q6"></div>
+            </div>
+        </div>
+
+        <button id="next-btn">Next Question</button>
+        <div id="final-result"></div>
+        
+        <!-- Hidden submit container -->
+        <div id="submit-container">
+            <button id="submit-btn">Submit Quiz Results</button>
+            <div id="status-message" class="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context and Sound Management
+        const AudioManager = {
+            audioContext: null,
+            soundBuffers: {
+                correct: null,
+                final: null
+            },
+            audioInitialized: false,
+            
+            // Initialize audio on user interaction
+            init() {
+                if (this.audioInitialized) return;
+                
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.createSounds();
+                    this.audioInitialized = true;
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                }
+            },
+            
+            // Create synthetic sounds
+            createSounds() {
+                // Create success sound
+                this.soundBuffers.correct = this.createSuccessSound();
+                this.soundBuffers.final = this.createFinalSound();
+            },
+            
+            // Create synthetic success sound
+            createSuccessSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 0.6;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00]; // C, E, G
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        let envelope = t < 0.02 ? t / 0.02 : Math.pow(1 - ((t - 0.02) / (duration - 0.02)), 2);
+                        
+                        for (const freq of frequencies) {
+                            amplitude += Math.sin(freq * 2 * Math.PI * t) * envelope * 0.2;
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                return buffer;
+            },
+            
+            // Create synthetic final sound
+            createFinalSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 1.5;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                    const arpeggioDuration = 0.15;
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        
+                        for (let n = 0; n < frequencies.length; n++) {
+                            const noteStart = n * arpeggioDuration;
+                            const noteEnd = noteStart + arpeggioDuration * 2;
+                            
+                            if (t >= noteStart && t <= noteEnd) {
+                                const envelope = t - noteStart < 0.01 
+                                    ? (t - noteStart) / 0.01 
+                                    : Math.pow(1 - ((t - noteStart - 0.01) / (noteEnd - noteStart - 0.01)), 1.5);
+                                
+                                amplitude += Math.sin(frequencies[n] * 2 * Math.PI * t) * envelope * 0.2;
+                            }
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                return buffer;
+            },
+            
+            // Play a sound
+            playSound(type) {
+                if (!this.audioContext || !this.soundBuffers[type]) {
+                    this.init();
+                    if (!this.audioContext || !this.soundBuffers[type]) return;
+                }
+                
+                const source = this.audioContext.createBufferSource();
+                source.buffer = this.soundBuffers[type];
+                
+                const gainNode = this.audioContext.createGain();
+                gainNode.gain.value = 0.4;
+                
+                source.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                source.start();
+            },
+            
+            // Helper methods
+            playCorrectSound() {
+                this.playSound('correct');
+            },
+            
+            playFinalSound() {
+                this.playSound('final');
+            }
+        };
+        
+        // Animation for score points
+        function animatePointToScore(sourceElement) {
+            const pointElement = document.createElement('div');
+            pointElement.className = 'point-animation';
+            pointElement.textContent = '+1';
+            
+            // Position at the source element's location
+            const sourceRect = sourceElement.getBoundingClientRect();
+            const scoreElement = document.querySelector('.score-container');
+            const scoreRect = scoreElement.getBoundingClientRect();
+            
+            // Starting position
+            const startX = sourceRect.left + sourceRect.width / 2;
+            const startY = sourceRect.top + sourceRect.height / 2;
+            
+            // Ending position
+            const endX = scoreRect.left + scoreRect.width / 2;
+            const endY = scoreRect.top + scoreRect.height / 2;
+            
+            // Apply direct transform
+            pointElement.style.position = 'fixed';
+            pointElement.style.left = `${startX}px`;
+            pointElement.style.top = `${startY}px`;
+            pointElement.style.transform = 'translate(-50%, -50%)';
+            pointElement.style.opacity = '1';
+            
+            document.body.appendChild(pointElement);
+            
+            // Animation with JS for better control
+            let startTime = null;
+            const duration = 1000; // milliseconds
+            
+            const animatePoint = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Cubic bezier easing
+                const easeOut = t => 1 - Math.pow(1 - t, 3);
+                const easedProgress = easeOut(progress);
+                
+                // Calculate current position with easing
+                const currentX = startX + (endX - startX) * easedProgress;
+                const currentY = startY + (endY - startY) * easedProgress;
+                
+                // Apply transforms
+                const scale = 1 - 0.4 * easedProgress;
+                const rotation = 45 * easedProgress;
+                const opacity = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
+                
+                pointElement.style.left = `${currentX}px`;
+                pointElement.style.top = `${currentY}px`;
+                pointElement.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`;
+                pointElement.style.opacity = `${opacity}`;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animatePoint);
+                } else {
+                    // Clean up when animation completes
+                    pointElement.remove();
+                }
+            };
+            
+            // Start animation in next frame
+            requestAnimationFrame(animatePoint);
+            
+            // Pulse effect on score
+            scoreElement.style.animation = 'pulse 0.5s ease-in-out';
+            
+            // Clean up score animation
+            setTimeout(() => {
+                scoreElement.style.animation = '';
+            }, 500);
+        }
+
+        // Extract username from localStorage on page load
+        function getUsername() {
+            try {
+                // Try to get the accounts data from localStorage
+                const accountsData = localStorage.getItem('accounts');
+                
+                if (accountsData) {
+                    // Parse the JSON array of accounts
+                    const accounts = JSON.parse(accountsData);
+                    
+                    // If accounts exist and there's at least one account with a username
+                    if (accounts && accounts.length > 0 && accounts[0].username) {
+                        return accounts[0].username; // Return the first account's username
+                    }
+                }
+                
+                // If we couldn't find a username or there was an error, return a default
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Error getting username from accounts:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Silently set the username on page load
+        document.getElementById('username').value = getUsername();
+        
+        let currentQuestionIndex = 0;
+        let score = 0;
+        const questions = document.querySelectorAll('.question');
+        const nextBtn = document.getElementById('next-btn');
+        const finalResultDiv = document.getElementById('final-result');
+        const scoreElement = document.querySelector('.score');
+        
+        // Variables to store quiz data
+        let questionData = [];
+        
+        // Timer variables
+        let startTime;
+        let timerInterval;
+        let questionTimes = [];
+        
+        // Start timer for first question
+        startTimer();
+        
+        // Initialize audio on first user interaction
+        document.body.addEventListener('click', () => {
+            AudioManager.init();
+        }, { once: true });
+        
+        // Function to start the timer
+        function startTimer() {
+            startTime = new Date();
+            const currentTimerElement = document.getElementById(`timer-q${currentQuestionIndex + 1}`);
+            
+            // Clear any existing interval
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Update timer every second
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((new Date() - startTime) / 1000);
+                currentTimerElement.textContent = `Time: ${elapsedTime}s`;
+            }, 1000);
+        }
+        
+        // Function to stop the timer and record time
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const timeElapsed = Math.floor((new Date() - startTime) / 1000);
+            questionTimes[currentQuestionIndex] = timeElapsed;
+            
+            // Display the time taken for this question
+            const timeSummaryElement = document.getElementById(`time-summary-q${currentQuestionIndex + 1}`);
+            timeSummaryElement.innerHTML = `Time spent: ${timeElapsed} seconds`;
+            timeSummaryElement.style.display = 'block';
+            
+            return timeElapsed;
+        }
+
+        // Function to submit quiz data silently
+        function submitQuizData() {
+            const username = document.getElementById('username').value || 'Anonymous';
+            
+            // Prepare data to send to Google Apps Script
+            const data = {
+                username: username,
+                url: window.location.href,
+                questionData: questionData
+            };
+            
+            // Get the deployed script URL
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbzr-KFisJk2kcQTfh8wbAI-sImJ2uu1N8kPt1wXtx9p1aXdouFQJylATOhkByW9ObK6/exec';
+            
+            // Send data to Google Apps Script silently
+            fetch(scriptUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                mode: 'no-cors' // Important for Google Apps Script
+            })
+            .then(() => {
+                console.log('Quiz data submitted silently');
+            })
+            .catch(error => {
+                console.error('Error submitting quiz data:', error);
+            });
+        }
+
+        // Add click event listeners to all options
+        questions.forEach((question, qIndex) => {
+            const options = question.querySelectorAll('.option');
+            const feedbackDiv = question.querySelector('.feedback');
+            
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Prevent multiple selections
+                    if (question.classList.contains('answered')) return;
+
+                    // Stop the timer when an answer is selected
+                    const timeSpent = stopTimer();
+
+                    // Get the question number and selected text
+                    const questionNumber = qIndex + 1;
+                    const selectedText = option.textContent.trim();
+                    const isCorrect = option.getAttribute('data-correct') === 'true' ? "Yes" : "No";
+                    
+                    // Save the answer data
+                    questionData.push({
+                        questionNumber: questionNumber,
+                        selectedText: selectedText,
+                        timeSpent: timeSpent,
+                        isCorrect: isCorrect
+                    });
+
+                    // Remove previous selections
+                    options.forEach(opt => {
+                        opt.classList.remove('correct', 'incorrect');
+                    });
+
+                    // Mark selected option
+                    if (option.getAttribute('data-correct') === 'true') {
+                        option.classList.add('correct');
+                        
+                        // Increment score and update display
+                        score++;
+                        scoreElement.textContent = score;
+                        
+                        // Play correct sound
+                        AudioManager.playCorrectSound();
+                        
+                        // Animate point
+                        animatePointToScore(option);
+                    } else {
+                        option.classList.add('incorrect');
+                        // Highlight the correct answer
+                        options.forEach(opt => {
+                            if (opt.getAttribute('data-correct') === 'true') {
+                                opt.classList.add('correct');
+                            }
+                        });
+                    }
+
+                    // Show feedback
+                    feedbackDiv.innerHTML = option.getAttribute('data-feedback');
+                    feedbackDiv.style.display = 'block';
+
+                    // Mark question as answered
+                    question.classList.add('answered');
+
+                    // Show next button
+                    nextBtn.style.display = 'block';
+                });
+            });
+        });
+
+        // Next button click event
+        nextBtn.addEventListener('click', function() {
+            // Hide current question
+            questions[currentQuestionIndex].classList.remove('active');
+            
+            // Move to next question
+            currentQuestionIndex++;
+
+            // Check if quiz is complete
+            if (currentQuestionIndex >= questions.length) {
+                // Hide next button
+                nextBtn.style.display = 'none';
+                
+                // Play final sound if perfect score
+                if (score === 6) {
+                    AudioManager.playFinalSound();
+                }
+                
+                // Show final result with time summary
+                let timeHTML = '<div style="margin-top: 20px; padding: 15px; background-color: rgba(0, 61, 124, 0.06); border-radius: 8px;">';
+                timeHTML += '<h3 style="color: var(--primary); margin-bottom: 10px;">Time Summary:</h3>';
+                timeHTML += '<ul style="list-style-type: none; padding-left: 0;">';
+                
+                let totalTime = 0;
+                for (let i = 0; i < questionTimes.length; i++) {
+                    totalTime += questionTimes[i];
+                    timeHTML += `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light);">
+                        <strong>Question ${i + 1}:</strong> ${questionTimes[i]} seconds
+                    </li>`;
+                }
+                
+                timeHTML += `<li style="margin-top: 10px; font-weight: bold; color: var(--primary);">
+                    Total time: ${totalTime} seconds
+                </li>`;
+                timeHTML += '</ul></div>';
+                
+                let resultContent = '';
+                let iconHTML = '';
+                
+                if (score === 6) {
+                    iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 15px;">
+                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#EF7C00" stroke-width="2" fill="rgba(239, 124, 0, 0.1)"/>
+                        <path d="M8 12L11 15L16 9" stroke="#003D7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>`;
+                    resultContent = `🏆 Congratulations! You scored ${score}/6! You're a DNA Expert! Perfect score! 🧬`;
+                } else if (score >= 4) {
+                    iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 15px;">
+                        <path d="M12 15.4L8.24 17.67L9.24 13.39L5.92 10.51L10.3 10.13L12 6.1L13.71 10.14L18.09 10.52L14.77 13.4L15.77 17.68L12 15.4Z" fill="#EF7C00" stroke="#003D7C" stroke-width="1.5"/>
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                    </svg>`;
+                    resultContent = `👍 Great job! You scored ${score}/6. You have a solid understanding of DNA!`;
+                } else if (score >= 2) {
+                    iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 15px;">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 13.5C8.83333 14.8333 10.3 17 12.5 15.5C14.7 14 16 15 16.5 16" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+                    resultContent = `📚 You scored ${score}/6. Not bad, but you can improve. Keep learning about DNA!`;
+                } else {
+                    iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 15px;">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 15.5C9.5 16.5 14.5 16.5 16 15.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round" transform="rotate(180 12 16)"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+                    resultContent = `🤔 You scored ${score}/6. You might want to review some basic DNA concepts!`;
+                }
+                
+                finalResultDiv.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        ${iconHTML}
+                        <h2 style="color: var(--primary); margin-bottom: 15px;">${resultContent}</h2>
+                    </div>
+                    ${timeHTML}
+                `;
+                
+                // Automatically submit quiz data silently after showing results
+                submitQuizData();
+                return;
+            }
+
+            // Show next question
+            questions[currentQuestionIndex].classList.add('active');
+            
+            // Hide next button until an answer is selected
+            nextBtn.style.display = 'none';
+            
+            // Clear previous feedback
+            const previousFeedback = questions[currentQuestionIndex - 1].querySelector('.feedback');
+            previousFeedback.style.display = 'none';
+            previousFeedback.innerHTML = '';
+            
+            // Start timer for new question
+            startTimer();
+        });
+    </script>
+</body>
+</html>
