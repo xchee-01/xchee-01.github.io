@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amino Acid Structure: Interactive Learning Module</title>
+    <style>
+        :root {
+            /* NUS Color Palette */
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #7BAFD4;
+            --nus-light-orange: #F5A623;
+            --nus-grey: #4A4A4A;
+            --nus-light-grey: #F2F2F2;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 25px;
+            background-color: #FAFAFA;
+            color: var(--nus-grey);
+            line-height: 1.6;
+        }
+        
+        h1 {
+            color: var(--nus-blue);
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 3px solid var(--nus-orange);
+            padding-bottom: 15px;
+        }
+        
+        #videoContainer {
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        #player {
+            width: 100%;
+        }
+        
+        #questionContainer {
+            display: none;
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-orange);
+            transition: all 0.3s ease;
+        }
+        
+        #questionText {
+            color: var(--nus-blue);
+            margin-top: 0;
+            font-size: 1.4rem;
+        }
+        
+        .option {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: var(--nus-light-grey);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 4px solid var(--nus-blue);
+            color: #333333;
+            font-weight: 600;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .option:hover {
+            background-color: #E8E8E8;
+            transform: translateX(5px);
+            color: var(--nus-blue);
+            border-left: 6px solid var(--nus-orange);
+        }
+        
+        #feedback {
+            margin-top: 20px;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        #continueButton {
+            display: none;
+            margin: 20px auto 0;
+            padding: 12px 30px;
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        #continueButton:hover {
+            background-color: #00326A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        #restartVideoButton {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 30px;
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        #restartVideoButton:hover {
+            background-color: #00326A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: var(--nus-light-grey);
+            height: 8px;
+            border-radius: 4px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: var(--nus-orange);
+            transition: width 0.3s ease;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        #mainContent {
+            display: block;
+        }
+        
+        #statsPanel {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-blue);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background-color: var(--nus-light-grey);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--nus-blue);
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--nus-grey);
+        }
+        
+        #summaryPanel {
+            display: none;
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-orange);
+        }
+        
+        .question-summary {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .question-summary h3 {
+            color: var(--nus-blue);
+            margin-bottom: 10px;
+        }
+        
+        .summary-correct {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .summary-incorrect {
+            color: #F44336;
+            font-weight: bold;
+        }
+        
+        .explanation {
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 10px;
+            border-left: 3px solid var(--nus-light-blue);
+        }
+        
+        /* Analytics section (only visible to instructors) */
+        .analytics-section {
+            margin-top: 25px;
+            background-color: #f7fbff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--nus-light-blue);
+        }
+        
+        .analytics-title {
+            color: var(--nus-blue);
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .analytics-item {
+            padding: 8px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* Heatmap styles for analytics visualization */
+        .heatmap-container {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .heatmap-segment {
+            height: 25px;
+            display: flex;
+            margin-bottom: 5px;
+        }
+        
+        .heatmap-label {
+            width: 100px;
+            font-size: 0.8rem;
+            padding: 3px;
+        }
+        
+        .heatmap-bar {
+            flex-grow: 1;
+            display: flex;
+        }
+        
+        .heatmap-chunk {
+            height: 100%;
+            flex-grow: 1;
+            margin: 0 1px;
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <h1>Amino Acid Structure: Interactive Learning Module</h1>
+    
+    <!-- Main Content -->
+    <div id="mainContent">
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div id="videoContainer">
+            <!-- YouTube video will be embedded here -->
+            <div id="player"></div>
+        </div>
+        
+        <div id="questionContainer">
+            <h2 id="questionText">Question goes here</h2>
+            <div id="options"></div>
+            <div id="feedback"></div>
+            <button id="continueButton">Continue Video</button>
+        </div>
+        
+        <!-- Stats Panel - Simplified for users (hiding tracking metrics) -->
+        <div id="statsPanel">
+            <h2>Your Progress</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="correctAnswers">0</div>
+                    <div class="stat-label">Correct Answers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="accuracy">0%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="videoProgress">0%</div>
+                    <div class="stat-label">Video Progress</div>
+                </div>
+            </div>
+            
+            <!-- Hidden tracking elements (not visible but used for data collection) -->
+            <div style="display: none;">
+                <div id="totalAttempts">0</div>
+                <div id="pauseCount">0</div>
+                <div id="rewindCount">0</div>
+                <div id="speedChanges">0</div>
+                <div id="currentSpeed">1x</div>
+            </div>
+        </div>
+        
+        <!-- Summary Panel (shown at the end) -->
+        <div id="summaryPanel">
+            <h2>Learning Module Summary</h2>
+            <div id="questionsSummary"></div>
+            <div id="overallScore"></div>
+            
+            <!-- Detailed analytics section (only visible to instructors) -->
+            <div id="detailedAnalytics" class="analytics-section" style="display: none;">
+                <div class="analytics-title">Detailed Learning Analytics</div>
+                <div id="analyticsContent"></div>
+                
+                <!-- Additional instructor-only analytics visualizations -->
+                <div class="heatmap-container">
+                    <h4>Rewatch Heatmap</h4>
+                    <p>Segments most frequently rewatched (darker = more rewatches)</p>
+                    <div id="rewatchHeatmap"></div>
+                </div>
+                
+                <div class="analytics-title" style="margin-top: 20px;">Playback Speed Analysis</div>
+                <div id="speedMetrics"></div>
+                
+                <div class="analytics-title" style="margin-top: 20px;">Pause Pattern Analysis</div>
+                <div id="pauseMetrics"></div>
+            </div>
+            
+            <button id="restartVideoButton">Restart Learning Video</button>
+        </div>
+    </div>
+    
+    <script>
+        // Authentication Constants
+        const SIGN_IN_URL = 'https://xchee-01.github.io/EBPHM/1_signin.html';
+        
+        // Initialize variables
+        let player;
+        let currentQuestion = 0;
+        let currentSection = -1; // Track which section we're currently showing
+        let totalQuestions = 6; // Updated to 6 questions total
+        let totalSections = 3; // Total number of sections (slides)
+        let programmaticPause = false; // Flag to distinguish manual vs. programmatic pauses
+        let lastPlayerState = null;
+        let lastTimeUpdate = 0;
+        let checkTimeInterval = null;
+        let sectionQuestions = []; // Will store which questions belong to each section
+        
+        // Enhanced student data model with tracking metrics
+        let studentData = {
+            name: "",
+            id: "",
+            startTime: null,
+            endTime: null,
+            totalTimeSpent: 0,
+            videoWatchedPercentage: 0,
+            questionAttempts: [],
+            correctAnswers: 0,
+            totalAttempts: 0,
+            pageUrl: window.location.href
+        };
+        
+        // Comprehensive video interaction tracking
+        let videoMetrics = {
+            // Playback speed tracking
+            playbackSpeeds: [],         // Array of {speed, startTime, duration}
+            currentSpeed: 1,            // Current playback speed
+            speedChanges: 0,            // Count of speed changes
+            timeAtSpeed: {},            // Object mapping speed to time spent
+            
+            // Pause tracking
+            pauses: [],                 // Array of {timestamp, duration, videoPosition}
+            pauseCount: 0,              // Total manual pauses
+            isProgrammaticPause: false, // Flag for question pauses
+            pauseStartTime: null,       // When a pause began
+            
+            // Rewatch/seek tracking
+            rewatches: {},              // Object mapping time segments to rewatch count
+            rewindCount: 0,             // Total rewind events
+            seekEvents: [],             // When user seeks/jumps in the video
+            segmentsWatched: [],        // Array of {start, end} segments actually watched
+            
+            // Position tracking
+            lastPosition: 0,            // Last time position for tracking
+            lastTimestamp: null,        // Timestamp of last check
+            lastPlayerState: -1,        // Track previous player state
+            
+            // Additional metrics
+            totalActualWatchTime: 0,    // Time spent actively watching 
+            timeSpentOnQuestions: 0,    // Time spent answering questions
+            segmentResolution: 5,       // Track segments in 5-second intervals
+            checkInterval: null         // Interval for position checking
+        };
+
+        // Define the amino acid questions with sections
+        // Times based on slide appearances: Slide 1 at 76s, Slide 2 at 95s, Slide 3 at 213s
+        const questions = [
+            {
+                section: 0, // Slide 1
+                time: 77, // When Slide 1 appears
+                question: "What type of reaction joins amino acids together during protein synthesis?",
+                options: [
+                    { text: "Oxidation reaction", correct: false },
+                    { text: "Condensation reaction", correct: true },
+                    { text: "Substitution reaction", correct: false },
+                    { text: "Hydrolysis reaction", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "As shown in slide 1, amino acids are joined together through peptide bond formation, which is specifically described as a 'condensation reaction' in protein synthesis. During this process, the carboxyl group (-COOH) of one amino acid reacts with the amino group (-NH2) of another, releasing a water molecule and creating a covalent C-N bond known as a peptide bond."
+            },
+            {
+                section: 0, // Slide 1
+                time: 77, // When Slide 1 appears
+                question: "What is the general formula of an amino acid?",
+                options: [
+                    { text: "H-CαHR-COOH", correct: false },
+                    { text: "H2N-CHR-COOH", correct: false },
+                    { text: "H2N-CαHR-COOH", correct: true },
+                    { text: "H2N-CαHR-CO", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "As stated in slide 1, amino acids have the general formula of H2N-CαHR-COOH, which includes an amino group (H2N-), an alpha carbon with a hydrogen and R-group (CαHR), and a carboxyl group (-COOH)."
+            },
+            {
+                section: 1, // Slide 2
+                time: 95, // When Slide 2 appears
+                question: "What are the four substituents attached to the α carbon in an amino acid?",
+                options: [
+                    { text: "Carboxyl group, R group, two hydrogen atoms", correct: false },
+                    { text: "Amino group, carboxyl group, hydrogen, R group", correct: true },
+                    { text: "Amino group, hydroxyl group, hydrogen, R group", correct: false },
+                    { text: "Carboxyl group, amine group, two R groups", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "As detailed in slide 2, the α carbon in an amino acid always has four substituents in a tetrahedral arrangement: an acidic carboxyl group (-COOH), a basic amino group (-NH2), an α hydrogen, and a fourth substituent called an 'R group' which varies between different amino acids."
+            },
+            {
+                section: 1, // Slide 2
+                time: 95, // When Slide 2 appears
+                question: "What distinguishes α-amino acids from β- and γ-amino acids?",
+                options: [
+                    { text: "The position of the carboxyl group", correct: false },
+                    { text: "The type of R group attached", correct: false },
+                    { text: "The position of the amino group relative to the carboxyl group", correct: true },
+                    { text: "The number of carbon atoms in the molecule", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "The slide shows examples of α-glycine, β-alanine, and γ-amino acid, illustrating that these classifications refer to the position of the amino group in relation to the carboxyl group. In α-amino acids, the amino group is attached to the carbon adjacent to the carboxyl group (the α-carbon). In β-amino acids, it's attached to the β-carbon (one carbon further away), and in γ-amino acids, it's attached to the γ-carbon (two carbons away from the carboxyl group)."
+            },
+            {
+                section: 2, // Slide 3
+                time: 214, // When Slide 3 appears (updated from 213)
+                question: "Why is glycine not considered a chiral amino acid?",
+                options: [
+                    { text: "Because it lacks a carboxyl group", correct: false },
+                    { text: "Because it has two amino groups", correct: false },
+                    { text: "Because its R group is a hydrogen atom, making two identical substituents on the α-carbon", correct: true },
+                    { text: "Because it only exists in D-configuration", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "The slide mentions that in most amino acids, the α-carbon serves as a chiral center, creating molecular asymmetry through the attachment of four distinct groups 'except glycine.' Glycine's R group is a hydrogen atom, which means the α-carbon has two hydrogen atoms attached (the R group hydrogen and the α-hydrogen). Since chirality requires four different substituents, glycine with two identical hydrogens is not chiral."
+            },
+            {
+                section: 2, // Slide 3
+                time: 214, // When Slide 3 appears (updated from 213)
+                question: "Which configuration of amino acids predominates in naturally occurring proteins?",
+                options: [
+                    { text: "D-configuration", correct: false },
+                    { text: "L-configuration", correct: true },
+                    { text: "Equal mixture of D and L configurations", correct: false },
+                    { text: "Neither D nor L configuration", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "According to slide 3, 'Biological systems overwhelmingly favor the L-configuration, with nearly all naturally occurring proteins composed exclusively of L-amino acids.' This stereospecificity is a fundamental characteristic of biological systems."
+            }
+        ];
+        
+        // Organize questions by section
+        function initializeSectionQuestions() {
+            sectionQuestions = Array(totalSections).fill().map(() => []);
+            
+            // Group questions by section
+            questions.forEach((question, index) => {
+                sectionQuestions[question.section].push(index);
+            });
+            
+            console.log("Questions organized by section:", sectionQuestions);
+        }
+        
+        // =========== AUTHENTICATION FUNCTIONS ===========
+        
+        // Store current URL for potential redirect back
+        function storeCurrentUrl() {
+            try {
+                localStorage.setItem('lastVisitedUrl', window.location.href);
+            } catch (error) {
+                console.error('URL storage error:', error);
+            }
+        }
+        
+        // Check if user is authenticated
+        function checkAuthentication() {
+            const accountsData = localStorage.getItem('accounts');
+            if (!accountsData) {
+                redirectToSignIn();
+                return false;
+            }
+            
+            try {
+                const accounts = JSON.parse(accountsData);
+                if (!accounts || accounts.length === 0 || !accounts[0].username) {
+                    redirectToSignIn();
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Authentication check error:', error);
+                redirectToSignIn();
+                return false;
+            }
+        }
+        
+        // Redirect to sign-in page
+        function redirectToSignIn() {
+            storeCurrentUrl();
+            window.location.href = SIGN_IN_URL;
+        }
+        
+        // Get username from local storage
+        function getUsername() {
+            try {
+                const accountsData = localStorage.getItem('accounts');
+                
+                if (accountsData) {
+                    const accounts = JSON.parse(accountsData);
+                    
+                    if (accounts && accounts.length > 0 && accounts[0].username) {
+                        return accounts[0].username;
+                    }
+                }
+                
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Error getting username from accounts:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Check if user is an instructor (for showing detailed analytics)
+        function isInstructor(username) {
+            // List of instructor usernames (customize as needed)
+            const instructors = ['instructor', 'admin', 'teacher', 'professor'];
+            
+            // Check if username contains any instructor keywords
+            return instructors.some(instructor => 
+                username.toLowerCase().includes(instructor));
+        }
+        
+        // =========== TRACKING FUNCTIONS ===========
+        
+        // Initialize enhanced tracking
+        function initializeTracking() {
+            // Set initial values
+            videoMetrics.lastTimestamp = Date.now();
+            videoMetrics.lastPosition = 0;
+            videoMetrics.currentSpeed = 1;
+            videoMetrics.lastPlayerState = -1;
+            
+            // Record initial playback speed
+            videoMetrics.playbackSpeeds.push({
+                speed: videoMetrics.currentSpeed,
+                startTime: videoMetrics.lastTimestamp,
+                duration: 0,
+                segment: 0
+            });
+            
+            // Set up position tracking interval (check every 250ms for accuracy)
+            videoMetrics.checkInterval = setInterval(trackVideoPosition, 250);
+            
+            console.log("Enhanced tracking initialized");
+        }
+        
+        // Track video position and detect interaction patterns
+        function trackVideoPosition() {
+            if (!player || typeof player.getCurrentTime !== 'function') return;
+            
+            const currentTime = player.getCurrentTime();
+            const playerState = player.getPlayerState();
+            const now = Date.now();
+            
+            // Track segments watched for accurate progress calculation
+            trackWatchedSegment(currentTime, playerState, now);
+            
+            // Detect rewinding/seeking
+            detectSeekEvents(currentTime, playerState);
+            
+            // Track player state changes (play/pause)
+            if (playerState !== videoMetrics.lastPlayerState) {
+                handlePlayerStateChange(playerState, currentTime, now);
+                videoMetrics.lastPlayerState = playerState;
+            }
+            
+            // Update tracking variables
+            videoMetrics.lastPosition = currentTime;
+            videoMetrics.lastTimestamp = now;
+            
+            // Update the hidden tracking counters (but don't show to user)
+            updateHiddenCounters();
+        }
+        
+        // Track segments actually watched for accurate progress calculation
+        function trackWatchedSegment(currentTime, playerState, now) {
+            // Only track during playback
+            if (playerState === YT.PlayerState.PLAYING) {
+                const timeDiff = (now - videoMetrics.lastTimestamp) / 1000;
+                
+                // Only count if actually watching (not a jump)
+                if (currentTime > videoMetrics.lastPosition && 
+                    currentTime - videoMetrics.lastPosition < 1) {
+                    
+                    // Increase actual watch time counter
+                    videoMetrics.totalActualWatchTime += timeDiff;
+                    
+                    // Track this segment in the watched segments array
+                    const currentSegment = Math.floor(currentTime / videoMetrics.segmentResolution) * videoMetrics.segmentResolution;
+                    
+                    if (videoMetrics.segmentsWatched.length === 0 || 
+                        currentTime > videoMetrics.segmentsWatched[videoMetrics.segmentsWatched.length - 1].end + 1) {
+                        // Start a new segment
+                        videoMetrics.segmentsWatched.push({
+                            start: videoMetrics.lastPosition,
+                            end: currentTime,
+                            duration: timeDiff,
+                            speed: videoMetrics.currentSpeed,
+                            segment: currentSegment
+                        });
+                    } else {
+                        // Extend the last segment
+                        const lastSegment = videoMetrics.segmentsWatched[videoMetrics.segmentsWatched.length - 1];
+                        lastSegment.end = currentTime;
+                        lastSegment.duration += timeDiff;
+                    }
+                }
+            }
+        }
+        
+        // Detect seek events including rewinds (going backwards)
+        function detectSeekEvents(currentTime, playerState) {
+            // Detect significant position changes
+            if (Math.abs(currentTime - videoMetrics.lastPosition) > 2 && videoMetrics.lastPosition > 0) {
+                // Record seek event
+                videoMetrics.seekEvents.push({
+                    from: videoMetrics.lastPosition,
+                    to: currentTime,
+                    timestamp: Date.now()
+                });
+                
+                // Check if this was a rewind (going backwards)
+                if (currentTime < videoMetrics.lastPosition - 2) { // At least 2 seconds back to count as rewind
+                    // Track rewind event
+                    videoMetrics.rewindCount++;
+                    
+                    // Update hidden counter
+                    document.getElementById("rewindCount").textContent = videoMetrics.rewindCount;
+                    
+                    // Track in rewatch data by segment
+                    const segment = Math.floor(currentTime / videoMetrics.segmentResolution) * videoMetrics.segmentResolution;
+                    videoMetrics.rewatches[segment] = (videoMetrics.rewatches[segment] || 0) + 1;
+                    
+                    console.log(`Rewind detected: ${formatTime(videoMetrics.lastPosition)} → ${formatTime(currentTime)}`);
+                }
+            }
+        }
+        
+        // Handle player state changes (play/pause)
+        function handlePlayerStateChange(newState, currentTime, timestamp) {
+            // Handle pause events
+            if (newState === YT.PlayerState.PAUSED && !videoMetrics.isProgrammaticPause) {
+                // This is a manual pause (not triggered by question)
+                videoMetrics.pauseStartTime = timestamp;
+                videoMetrics.pauseCount++;
+                
+                // Update hidden counter
+                document.getElementById("pauseCount").textContent = videoMetrics.pauseCount;
+                
+                // Record pause data
+                videoMetrics.pauses.push({
+                    videoPosition: currentTime,
+                    timestamp: new Date().toISOString(),
+                    startTime: timestamp,
+                    duration: 0,
+                    segment: Math.floor(currentTime / videoMetrics.segmentResolution) * videoMetrics.segmentResolution
+                });
+                
+                console.log(`Manual pause at ${formatTime(currentTime)}`);
+            }
+            // Handle resume after pause
+            else if (newState === YT.PlayerState.PLAYING && videoMetrics.pauseStartTime) {
+                // Calculate pause duration
+                const lastPauseIndex = videoMetrics.pauses.length - 1;
+                if (lastPauseIndex >= 0) {
+                    videoMetrics.pauses[lastPauseIndex].duration = 
+                        (timestamp - videoMetrics.pauses[lastPauseIndex].startTime) / 1000;
+                    
+                    console.log(`Pause ended after ${videoMetrics.pauses[lastPauseIndex].duration.toFixed(1)} seconds`);
+                }
+                
+                // Reset pause tracking
+                videoMetrics.pauseStartTime = null;
+                videoMetrics.isProgrammaticPause = false;
+            }
+        }
+        
+        // Track playback rate changes
+        function trackPlaybackRateChange(event) {
+            const newSpeed = player.getPlaybackRate();
+            const currentTime = player.getCurrentTime();
+            const segment = Math.floor(currentTime / videoMetrics.segmentResolution) * videoMetrics.segmentResolution;
+            const now = Date.now();
+            
+            // Only process if speed actually changed
+            if (newSpeed !== videoMetrics.currentSpeed) {
+                // Increment speed change counter
+                videoMetrics.speedChanges++;
+                
+                // Update hidden counter
+                document.getElementById("speedChanges").textContent = videoMetrics.speedChanges;
+                document.getElementById("currentSpeed").textContent = newSpeed + "x";
+                
+                // Update duration for the previous speed setting
+                const lastIndex = videoMetrics.playbackSpeeds.length - 1;
+                if (lastIndex >= 0) {
+                    videoMetrics.playbackSpeeds[lastIndex].duration = 
+                        (now - videoMetrics.playbackSpeeds[lastIndex].startTime) / 1000;
+                        
+                    // Track time at each speed
+                    const prevSpeed = videoMetrics.playbackSpeeds[lastIndex].speed;
+                    if (!videoMetrics.timeAtSpeed[prevSpeed]) {
+                        videoMetrics.timeAtSpeed[prevSpeed] = 0;
+                    }
+                    videoMetrics.timeAtSpeed[prevSpeed] += videoMetrics.playbackSpeeds[lastIndex].duration;
+                }
+                
+                // Add new speed entry
+                videoMetrics.playbackSpeeds.push({
+                    speed: newSpeed,
+                    startTime: now,
+                    duration: 0,
+                    segment: segment,
+                    videoPosition: currentTime
+                });
+                
+                videoMetrics.currentSpeed = newSpeed;
+                
+                console.log(`Playback speed changed to ${newSpeed}x at ${formatTime(currentTime)}`);
+            }
+        }
+        
+        // Calculate accurate video watch percentage
+        function calculateActualWatchPercentage() {
+            if (!player || typeof player.getDuration !== 'function') return 0;
+            
+            const duration = player.getDuration();
+            if (duration <= 0) return 0;
+            
+            // Create an array to track which seconds were actually watched
+            const watchedSeconds = new Array(Math.ceil(duration)).fill(false);
+            
+            // Mark all seconds that were watched in segments
+            videoMetrics.segmentsWatched.forEach(segment => {
+                for (let i = Math.floor(segment.start); i <= Math.floor(segment.end); i++) {
+                    if (i < watchedSeconds.length) {
+                        watchedSeconds[i] = true;
+                    }
+                }
+            });
+            
+            // Count total watched seconds
+            const totalWatchedSeconds = watchedSeconds.filter(watched => watched).length;
+            
+            // Calculate percentage (capped at 100%)
+            return Math.min(100, Math.round((totalWatchedSeconds / duration) * 100));
+        }
+        
+        // Update the hidden tracking counters (these won't be displayed to users)
+        function updateHiddenCounters() {
+            // We keep these updated but they aren't shown in UI
+            document.getElementById("totalAttempts").textContent = studentData.totalAttempts;
+            document.getElementById("pauseCount").textContent = videoMetrics.pauseCount;
+            document.getElementById("rewindCount").textContent = videoMetrics.rewindCount;
+            document.getElementById("speedChanges").textContent = videoMetrics.speedChanges;
+            document.getElementById("currentSpeed").textContent = videoMetrics.currentSpeed + "x";
+        }
+        
+        // Finalize metrics before submitting data
+        function finalizeMetrics() {
+            // Update duration for the last speed entry
+            const now = Date.now();
+            const lastSpeedIndex = videoMetrics.playbackSpeeds.length - 1;
+            
+            if (lastSpeedIndex >= 0) {
+                videoMetrics.playbackSpeeds[lastSpeedIndex].duration = 
+                    (now - videoMetrics.playbackSpeeds[lastSpeedIndex].startTime) / 1000;
+                    
+                // Update time at speed
+                const lastSpeed = videoMetrics.playbackSpeeds[lastSpeedIndex].speed;
+                if (!videoMetrics.timeAtSpeed[lastSpeed]) {
+                    videoMetrics.timeAtSpeed[lastSpeed] = 0;
+                }
+                videoMetrics.timeAtSpeed[lastSpeed] += videoMetrics.playbackSpeeds[lastSpeedIndex].duration;
+            }
+            
+            // Calculate metrics summaries
+            const metricsToReturn = {
+                // Viewing stats
+                actualWatchPercentage: calculateActualWatchPercentage(),
+                totalActualWatchTime: Math.round(videoMetrics.totalActualWatchTime),
+                
+                // Playback speed stats
+                playbackSpeedChanges: videoMetrics.speedChanges,
+                playbackSpeedData: videoMetrics.playbackSpeeds,
+                timeAtSpeed: videoMetrics.timeAtSpeed,
+                averagePlaybackSpeed: calculateAveragePlaybackSpeed(),
+                
+                // Pause stats
+                pauseCount: videoMetrics.pauseCount,
+                pauseData: videoMetrics.pauses,
+                averagePauseDuration: calculateAveragePauseDuration(),
+                
+                // Rewatch stats
+                rewindCount: videoMetrics.rewindCount,
+                seekCount: videoMetrics.seekEvents.length,
+                seekData: videoMetrics.seekEvents,
+                rewatchData: videoMetrics.rewatches,
+                highInterestSegments: findHighInterestSegments(),
+                
+                // Question stats
+                timeSpentOnQuestions: videoMetrics.timeSpentOnQuestions,
+                averageResponseTime: calculateAverageResponseTime()
+            };
+            
+            // Attach to studentData
+            studentData.enhancedMetrics = metricsToReturn;
+            
+            return metricsToReturn;
+        }
+        
+        // Calculate average playback speed weighted by duration
+        function calculateAveragePlaybackSpeed() {
+            let totalDuration = 0;
+            let speedTimeProduct = 0;
+            
+            Object.keys(videoMetrics.timeAtSpeed).forEach(speed => {
+                const duration = videoMetrics.timeAtSpeed[speed];
+                totalDuration += duration;
+                speedTimeProduct += (parseFloat(speed) * duration);
+            });
+            
+            return totalDuration > 0 ? 
+                parseFloat((speedTimeProduct / totalDuration).toFixed(2)) : 1;
+        }
+        
+        // Calculate average pause duration
+        function calculateAveragePauseDuration() {
+            if (videoMetrics.pauses.length === 0) return 0;
+            
+            let totalDuration = 0;
+            let validPauses = 0;
+            
+            videoMetrics.pauses.forEach(pause => {
+                if (pause.duration) {
+                    totalDuration += pause.duration;
+                    validPauses++;
+                }
+            });
+            
+            return validPauses > 0 ? 
+                parseFloat((totalDuration / validPauses).toFixed(2)) : 0;
+        }
+        
+        // Calculate average response time for questions
+        function calculateAverageResponseTime() {
+            let totalTime = 0;
+            let answeredCount = 0;
+            
+            studentData.questionAttempts.forEach(attempt => {
+                if (attempt.timeToAnswer) {
+                    totalTime += parseFloat(attempt.timeToAnswer);
+                    answeredCount++;
+                }
+            });
+            
+            return answeredCount > 0 ? 
+                parseFloat((totalTime / answeredCount).toFixed(2)) : 0;
+        }
+        
+        // Find segments with highest rewatch counts
+        function findHighInterestSegments() {
+            const segments = [];
+            
+            for (const segmentKey in videoMetrics.rewatches) {
+                segments.push({
+                    startTime: parseInt(segmentKey),
+                    endTime: parseInt(segmentKey) + videoMetrics.segmentResolution,
+                    rewatchCount: videoMetrics.rewatches[segmentKey]
+                });
+            }
+            
+            // Sort by rewatch count (highest first)
+            segments.sort((a, b) => b.rewatchCount - a.rewatchCount);
+            
+            // Return top 5 or fewer if not enough data
+            return segments.slice(0, 5);
+        }
+        
+        // Prepare data for submission to tracking system
+        function prepareTrackingData() {
+            // Finalize metrics
+            const metrics = finalizeMetrics();
+            
+            // Create a flattened structure compatible with the Google Apps Script
+            // Make sure field names match exactly with what the server expects
+            return {
+                // User and session data
+                username: studentData.name,
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                id: studentData.id,
+                
+                // Question performance
+                totalQuestions: totalQuestions,
+                correctAnswers: studentData.correctAnswers,
+                totalAttempts: studentData.totalAttempts,
+                accuracy: Math.round((studentData.correctAnswers / totalQuestions) * 100),
+                
+                // Video engagement
+                videoProgress: metrics.actualWatchPercentage,
+                totalTimeSpent: studentData.totalTimeSpent,
+                
+                // Enhanced tracking metrics that match the Google Apps Script fields
+                rewindCount: metrics.rewindCount, 
+                pauseCount: metrics.pauseCount,
+                averagePauseDuration: metrics.averagePauseDuration,
+                playbackSpeedChanges: metrics.playbackSpeedChanges,
+                averagePlaybackSpeed: metrics.averagePlaybackSpeed,
+                
+                // JSON data for detailed metrics - ensuring these are strings
+                mostRewatchedSegments: JSON.stringify(metrics.highInterestSegments),
+                speedData: JSON.stringify(metrics.timeAtSpeed),
+                
+                // Send question data as an array (not stringified)
+                // This matches the Apps Script processor which handles both direct objects and strings
+                questionData: studentData.questionAttempts.map(q => ({
+                    questionIndex: q.questionIndex,
+                    question: q.question,
+                    attemptsNeeded: q.attemptsNeeded,
+                    answeredCorrectly: q.answeredCorrectly,
+                    selectedAnswer: q.selectedAnswer,
+                    correctAnswer: q.correctAnswer,
+                    timeToAnswer: q.timeToAnswer
+                }))
+            };
+        }
+        
+        // Submit data to tracking system
+        function submitTrackingData() {
+            const data = prepareTrackingData();
+            
+            // Log data for debugging
+            console.log("Submitting tracking data:", data);
+            
+            // Use your Google Apps Script URL - REPLACE THIS after deployment
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbwqm_MQz4ThfA4llCdXiZ4L8VlkCSiWIYRaixHYUuBFqOwKMYBnSQ0S9viCRvnek426/exec';
+            
+            // Send data to Google Apps Script
+            fetch(scriptUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                mode: 'no-cors'
+            })
+            .then(() => {
+                console.log('Enhanced tracking data submitted successfully');
+            })
+            .catch(error => {
+                console.error('Error submitting tracking data:', error);
+            });
+        }
+        
+        // Log page visit
+        function logPageVisit() {
+            const username = getUsername();
+            
+            // Prepare visit data
+            const visitData = {
+                username: username,
+                accessTime: new Date().toLocaleString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            };
+            
+            // Use the same Google Apps Script URL as tracking data
+            const pageTrackUrl = 'https://script.google.com/macros/s/AKfycbwqm_MQz4ThfA4llCdXiZ4L8VlkCSiWIYRaixHYUuBFqOwKMYBnSQ0S9viCRvnek426/exec'; // REPLACE AFTER DEPLOYMENT
+            
+            // Send data
+            fetch(pageTrackUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(visitData),
+                mode: 'no-cors'
+            })
+            .then(() => {
+                console.log('Page visit logged successfully');
+            })
+            .catch(error => {
+                console.error('Error logging page visit:', error);
+            });
+        }
+        
+        // Initialize student data
+        function initializeStudentData() {
+            // Generate a random session ID
+            const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+            
+            studentData.id = sessionId;
+            studentData.name = getUsername();
+            studentData.startTime = new Date();
+            studentData.pageUrl = window.location.href;
+            
+            console.log("Session started with ID:", sessionId);
+        }
+        
+        // =========== INITIALIZATION FUNCTION ===========
+        
+        // Main initialization function
+        function init() {
+            // Store current URL for potential redirect
+            storeCurrentUrl();
+            
+            // Log page visit
+            logPageVisit();
+            
+            // Check authentication
+            if (!checkAuthentication()) {
+                return; // Stop if not authenticated
+            }
+            
+            // Initialize session data
+            initializeStudentData();
+            
+            // Load YouTube API
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            
+            // Enable instructor view if applicable
+            if (isInstructor(getUsername())) {
+                document.getElementById('detailedAnalytics').style.display = 'block';
+            }
+        }
+        
+        // Initialize on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeSectionQuestions(); // Initialize question sections
+                init();
+            });
+        } else {
+            initializeSectionQuestions(); // Initialize question sections
+            init();
+        }
+        
+        // =========== YOUTUBE PLAYER FUNCTIONS ===========
+        
+        // Create YouTube player
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '480',
+                width: '100%',
+                videoId: 'fqWALFD190M', // Updated to new video ID
+                playerVars: {
+                    'playsinline': 1,
+                    'modestbranding': 1,
+                    'rel': 0,
+                    'controls': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange,
+                    'onPlaybackRateChange': trackPlaybackRateChange
+                }
+            });
+        }
+        
+        // When player is ready
+        function onPlayerReady(event) {
+            console.log("Player is ready");
+            updateProgressBar(0);
+            
+            // Initialize tracking
+            initializeTracking();
+            
+            // Update progress at regular intervals
+            setInterval(updateVideoProgress, 1000);
+        }
+        
+        // Update video progress
+        function updateVideoProgress() {
+            if (!player || typeof player.getCurrentTime !== 'function') return;
+            
+            // Calculate accurate percentage
+            const accuratePercentage = calculateActualWatchPercentage();
+            
+            // Update student data
+            studentData.videoWatchedPercentage = accuratePercentage;
+            
+            // Update UI
+            document.getElementById("videoProgress").textContent = accuratePercentage + "%";
+        }
+        
+        // Handle player state changes
+        function onPlayerStateChange(event) {
+            // For timestamps to show questions while the video is playing
+            if (event.data == YT.PlayerState.PLAYING) {
+                checkTime();
+            } else if (event.data == YT.PlayerState.ENDED) {
+                // Video ended, show summary
+                showSummary();
+            }
+        }
+        
+        // Track which questions have been asked
+        let askedQuestions = [];
+        
+        // Button text for continuing after questions
+        const CONTINUE_VIDEO_TEXT = "Continue Video";
+        const NEXT_QUESTION_TEXT = "Next Question";
+        
+        // Check if we need to pause for a section of questions
+        function checkTime() {
+            if (!player || typeof player.getCurrentTime !== 'function') return;
+            
+            const currentTime = Math.floor(player.getCurrentTime());
+            
+            // Update progress bar
+            updateProgressBar(
+                Math.min(
+                    studentData.videoWatchedPercentage, 
+                    (askedQuestions.length / totalQuestions) * 100
+                )
+            );
+            
+            // Check if we should start a new section of questions
+            for (let sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
+                // Skip sections we've already shown
+                if (sectionIndex <= currentSection) continue;
+                
+                // Get the first question of this section to check its time
+                const firstQuestionIndex = sectionQuestions[sectionIndex][0];
+                const sectionTime = questions[firstQuestionIndex].time;
+                
+                // If we've reached the time for this section, show its first question
+                if (sectionTime <= currentTime) {
+                    // Set programmatic pause flag
+                    videoMetrics.isProgrammaticPause = true;
+                    
+                    // Pause video and switch to this section
+                    player.pauseVideo();
+                    currentSection = sectionIndex;
+                    
+                    // Show the first question in this section
+                    const questionIndex = sectionQuestions[currentSection][0];
+                    askedQuestions.push(questionIndex); // Mark this question as asked
+                    showQuestion(questionIndex);
+                    return;
+                }
+            }
+            
+            // Continue checking time if no new section needs to be shown
+            setTimeout(checkTime, 1000);
+        }
+        
+        // =========== QUESTION HANDLING FUNCTIONS ===========
+        
+        // Display a question
+        function showQuestion(index) {
+            currentQuestion = index;
+            const questionData = questions[index];
+            
+            // Set question text
+            document.getElementById("questionText").textContent = questionData.question;
+            
+            // Clear previous options
+            const optionsContainer = document.getElementById("options");
+            optionsContainer.innerHTML = "";
+            
+            // Add options
+            questionData.options.forEach((option, i) => {
+                const optionElement = document.createElement("div");
+                optionElement.className = "option";
+                optionElement.textContent = option.text;
+                optionElement.onclick = function() { checkAnswer(i); };
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // Reset feedback and continue button
+            document.getElementById("feedback").textContent = "";
+            document.getElementById("feedback").style.backgroundColor = "transparent";
+            document.getElementById("continueButton").style.display = "none";
+            
+            // Start timing for question response
+            questionData.startTime = performance.now();
+            
+            // Show question container with animation
+            const questionContainer = document.getElementById("questionContainer");
+            questionContainer.style.display = "block";
+            setTimeout(() => {
+                questionContainer.style.opacity = "1";
+                questionContainer.style.transform = "translateY(0)";
+            }, 10);
+        }
+        
+        // Check the selected answer
+        function checkAnswer(selectedIndex) {
+            const questionData = questions[currentQuestion];
+            const isCorrect = questionData.options[selectedIndex].correct;
+            
+            // Calculate precise response time
+            if (!questionData.timeToAnswer) {
+                questionData.timeToAnswer = (performance.now() - questionData.startTime) / 1000;
+                // Add to time spent on questions
+                videoMetrics.timeSpentOnQuestions += questionData.timeToAnswer;
+            }
+            
+            // Increment attempts
+            questionData.attempts++;
+            studentData.totalAttempts++;
+            
+            // Update hidden counter (not visible to users)
+            document.getElementById("totalAttempts").textContent = studentData.totalAttempts;
+            
+            // Store selected option
+            questionData.selectedOption = selectedIndex;
+            
+            // Disable all option clicks after answer is selected
+            const optionElements = document.querySelectorAll('.option');
+            optionElements.forEach(element => {
+                element.style.pointerEvents = 'none';
+                element.style.opacity = '0.7';
+            });
+            
+            // Show feedback
+            const feedbackElement = document.getElementById("feedback");
+            if (isCorrect) {
+                feedbackElement.textContent = "Correct! Well done!";
+                feedbackElement.style.color = "black";
+                feedbackElement.style.backgroundColor = "#4CAF50";
+                
+                // Highlight correct answer
+                optionElements[selectedIndex].style.backgroundColor = "#DFF2BF";
+                optionElements[selectedIndex].style.borderLeft = "4px solid #4CAF50";
+                optionElements[selectedIndex].style.opacity = "1";
+                
+                // Add explanation
+                const explanation = document.createElement("div");
+                explanation.className = "explanation";
+                explanation.textContent = questionData.explanation;
+                feedbackElement.appendChild(explanation);
+                
+                                    // Show continue button immediately
+                    const continueButton = document.getElementById("continueButton");
+                    
+                    // Check if there are more questions in this section
+                    const nextQuestionExists = sectionQuestions[currentSection].some(qIndex => !askedQuestions.includes(qIndex));
+                    continueButton.textContent = nextQuestionExists ? NEXT_QUESTION_TEXT : CONTINUE_VIDEO_TEXT;
+                    continueButton.style.display = "block";
+                
+                // Update progress and tracking
+                updateProgressBar(askedQuestions.length / totalQuestions * 100);
+                questionData.answeredCorrectly = true;
+                
+                // Update student stats
+                studentData.correctAnswers++;
+                document.getElementById("correctAnswers").textContent = studentData.correctAnswers;
+                
+                // Track student data
+                studentData.questionAttempts.push({
+                    questionIndex: currentQuestion,
+                    question: questionData.question,
+                    attemptsNeeded: questionData.attempts,
+                    answeredCorrectly: true,
+                    selectedAnswer: questionData.options[selectedIndex].text,
+                    correctAnswer: getCorrectAnswer(questionData),
+                    timeToAnswer: questionData.timeToAnswer.toFixed(2)
+                });
+                
+                // Update accuracy
+                updateAccuracy();
+            } else {
+                feedbackElement.textContent = "Incorrect. The correct answer is: " + getCorrectAnswer(questionData);
+                feedbackElement.style.color = "black";
+                feedbackElement.style.backgroundColor = "#F44336";
+                
+                // Highlight incorrect answer in red
+                optionElements[selectedIndex].style.backgroundColor = "#FFBABA";
+                optionElements[selectedIndex].style.borderLeft = "4px solid #F44336";
+                
+                // Find and highlight the correct answer in green
+                for (let i = 0; i < questionData.options.length; i++) {
+                    if (questionData.options[i].correct) {
+                        optionElements[i].style.backgroundColor = "#DFF2BF";
+                        optionElements[i].style.borderLeft = "4px solid #4CAF50";
+                        optionElements[i].style.opacity = "1";
+                        break;
+                    }
+                }
+                
+                // Add explanation
+                const explanation = document.createElement("div");
+                explanation.className = "explanation";
+                explanation.textContent = questionData.explanation;
+                feedbackElement.appendChild(explanation);
+                
+                // Track student data for incorrect answer
+                studentData.questionAttempts.push({
+                    questionIndex: currentQuestion,
+                    question: questionData.question,
+                    attemptsNeeded: questionData.attempts,
+                    answeredCorrectly: false,
+                    selectedAnswer: questionData.options[selectedIndex].text,
+                    correctAnswer: getCorrectAnswer(questionData),
+                    timeToAnswer: questionData.timeToAnswer.toFixed(2)
+                });
+                
+                // Update accuracy
+                updateAccuracy();
+                
+                // Show continue button immediately without delay
+                const continueButton = document.getElementById("continueButton");
+                
+                // Check if there are more questions in this section
+                const nextQuestionExists = sectionQuestions[currentSection].some(qIndex => !askedQuestions.includes(qIndex));
+                continueButton.textContent = nextQuestionExists ? NEXT_QUESTION_TEXT : CONTINUE_VIDEO_TEXT;
+                continueButton.style.display = "block";
+            }
+        }
+        
+        // Get the correct answer text for a question
+        function getCorrectAnswer(questionData) {
+            for (let i = 0; i < questionData.options.length; i++) {
+                if (questionData.options[i].correct) {
+                    return questionData.options[i].text;
+                }
+            }
+            return "";
+        }
+        
+        // Update accuracy statistic
+        function updateAccuracy() {
+            const accuracy = Math.round((studentData.correctAnswers / studentData.totalAttempts) * 100);
+            document.getElementById("accuracy").textContent = accuracy + "%";
+        }
+        
+        // =========== BUTTON HANDLERS ===========
+        
+        // Continue button handler
+        document.getElementById("continueButton").addEventListener("click", function() {
+            // Get the current section questions
+            const currentSectionQuestions = sectionQuestions[currentSection];
+            
+            // Find if there's another question in this section that hasn't been asked yet
+            let nextQuestionInSection = null;
+            for (const questionIndex of currentSectionQuestions) {
+                if (!askedQuestions.includes(questionIndex)) {
+                    nextQuestionInSection = questionIndex;
+                    break;
+                }
+            }
+            
+            // Hide question container
+            const questionContainer = document.getElementById("questionContainer");
+            questionContainer.style.opacity = "0";
+            questionContainer.style.transform = "translateY(10px)";
+            
+            setTimeout(() => {
+                questionContainer.style.display = "none";
+                
+                // Reset the options for next time
+                const optionElements = document.querySelectorAll('.option');
+                optionElements.forEach(element => {
+                    element.style.pointerEvents = 'auto';
+                    element.style.opacity = '1';
+                    element.style.backgroundColor = 'var(--nus-light-grey)';
+                    element.style.borderLeft = '4px solid var(--nus-blue)';
+                });
+                
+                // Reset feedback
+                document.getElementById("feedback").style.backgroundColor = "transparent";
+                document.getElementById("feedback").innerHTML = "";
+                
+                // Check if this was the last question overall
+                if (askedQuestions.length === totalQuestions) {
+                    // All questions answered, show summary
+                    showSummary();
+                } 
+                // If there's another question in this section, show it
+                else if (nextQuestionInSection !== null) {
+                    askedQuestions.push(nextQuestionInSection);
+                    showQuestion(nextQuestionInSection);
+                }
+                // If all questions in this section are done, resume video
+                else {
+                    // Resume video
+                    videoMetrics.isProgrammaticPause = false;
+                    player.playVideo();
+                    
+                    // Start checking time again
+                    setTimeout(checkTime, 1000);
+                }
+            }, 300);
+        });
+        
+        // Restart button handler
+        document.getElementById("restartVideoButton").addEventListener("click", function() {
+            // Submit final data for this session
+            submitTrackingData();
+            
+            // Reset student data for a new session
+            const oldId = studentData.id;
+            studentData = {
+                name: getUsername(),
+                id: oldId + "_retry",      // Add retry suffix to session ID
+                startTime: new Date(),
+                endTime: null,
+                totalTimeSpent: 0,
+                videoWatchedPercentage: 0,
+                questionAttempts: [],
+                correctAnswers: 0,
+                totalAttempts: 0,
+                pageUrl: window.location.href
+            };
+            
+            // Reset tracking metrics
+            // Clear any existing interval
+            if (videoMetrics.checkInterval) {
+                clearInterval(videoMetrics.checkInterval);
+            }
+            
+            // Reset video metrics
+            videoMetrics = {
+                playbackSpeeds: [],
+                pauses: [],
+                rewatches: {},
+                segmentsWatched: [],
+                lastPosition: 0,
+                lastTimestamp: null,
+                currentSpeed: 1,
+                pauseStartTime: null,
+                isProgrammaticPause: false,
+                pauseCount: 0,
+                rewindCount: 0,
+                speedChanges: 0,
+                segmentResolution: 5,
+                seekEvents: [],
+                checkInterval: null,
+                lastPlayerState: -1,
+                totalActualWatchTime: 0,
+                timeSpentOnQuestions: 0
+            };
+            
+            // Reset questions data
+            questions.forEach(q => {
+                q.attempts = 0;
+                q.answeredCorrectly = false;
+                q.selectedOption = null;
+                q.timeToAnswer = 0;
+            });
+            
+            // Reset UI elements
+            document.getElementById("correctAnswers").textContent = "0";
+            document.getElementById("accuracy").textContent = "0%";
+            document.getElementById("videoProgress").textContent = "0%";
+            
+            // Also reset hidden counters
+            document.getElementById("totalAttempts").textContent = "0";
+            document.getElementById("pauseCount").textContent = "0";
+            document.getElementById("rewindCount").textContent = "0";
+            document.getElementById("speedChanges").textContent = "0";
+            document.getElementById("currentSpeed").textContent = "1x";
+            
+            // Reset askedQuestions array
+            askedQuestions = [];
+            
+            // Hide summary panel and show video container
+            document.getElementById("summaryPanel").style.display = "none";
+            document.getElementById("videoContainer").style.display = "block";
+            
+            // Reset progress bar
+            updateProgressBar(0);
+            
+            // Reinitialize tracking
+            initializeTracking();
+            
+            // Restart video
+            player.seekTo(0);
+            player.playVideo();
+            
+            // Start checking time again
+            setTimeout(checkTime, 1000);
+        });
+        
+        // =========== VISUALIZATION FUNCTIONS ===========
+        
+        // Generate rewatch heatmap for instructors
+        function generateRewatchHeatmap() {
+            const heatmapContainer = document.getElementById("rewatchHeatmap");
+            heatmapContainer.innerHTML = "";
+            
+            // Get video duration
+            const duration = player.getDuration();
+            const totalSegments = Math.ceil(duration / videoMetrics.segmentResolution);
+            
+            // Find max rewatch count for normalization
+            let maxRewatches = 0;
+            for (const segment in videoMetrics.rewatches) {
+                if (videoMetrics.rewatches[segment] > maxRewatches) {
+                    maxRewatches = videoMetrics.rewatches[segment];
+                }
+            }
+            
+            // If no rewatches, show message
+            if (maxRewatches === 0) {
+                heatmapContainer.innerHTML = "<p>No rewatch data available yet.</p>";
+                return;
+            }
+            
+            // Create heatmap rows - divide video into 5 parts for display
+            const displayGroups = 5;
+            const segmentsPerGroup = Math.ceil(totalSegments / displayGroups);
+            
+            for (let group = 0; group < displayGroups; group++) {
+                const startSegment = group * segmentsPerGroup;
+                const endSegment = Math.min(startSegment + segmentsPerGroup, totalSegments);
+                
+                // Create row
+                const row = document.createElement("div");
+                row.className = "heatmap-segment";
+                
+                // Add label
+                const label = document.createElement("div");
+                label.className = "heatmap-label";
+                label.textContent = `${formatTime(startSegment * videoMetrics.segmentResolution)}-${formatTime(endSegment * videoMetrics.segmentResolution)}`;
+                row.appendChild(label);
+                
+                // Add bar container
+                const barContainer = document.createElement("div");
+                barContainer.className = "heatmap-bar";
+                
+                // Fill with segment chunks
+                for (let i = startSegment; i < endSegment; i++) {
+                    const chunk = document.createElement("div");
+                    chunk.className = "heatmap-chunk";
+                    
+                    // Set intensity based on rewatch count
+                    if (videoMetrics.rewatches[i]) {
+                        const intensity = videoMetrics.rewatches[i] / maxRewatches;
+                        const blue = Math.floor(255 * (1 - intensity));
+                        chunk.style.backgroundColor = `rgb(0, ${blue}, 255)`;
+                        
+                        // Add tooltip with exact count
+                        chunk.title = `${formatTime(i * videoMetrics.segmentResolution)}: Rewatched ${videoMetrics.rewatches[i]} times`;
+                    }
+                    
+                    barContainer.appendChild(chunk);
+                }
+                
+                row.appendChild(barContainer);
+                heatmapContainer.appendChild(row);
+            }
+        }
+        
+        // Generate playback speed metrics visualization
+        function generateSpeedMetrics() {
+            const container = document.getElementById("speedMetrics");
+            container.innerHTML = "";
+            
+            // If no speed changes
+            if (videoMetrics.speedChanges === 0) {
+                container.innerHTML = "<p>No playback speed changes detected.</p>";
+                return;
+            }
+            
+            // Create a breakdown of time spent at each speed
+            const timeAtSpeedDiv = document.createElement("div");
+            timeAtSpeedDiv.innerHTML = "<h4>Time spent at each playback speed:</h4>";
+            
+            const speedList = document.createElement("ul");
+            
+            // Calculate total time for percentage
+            let totalTrackedTime = 0;
+            for (const speed in videoMetrics.timeAtSpeed) {
+                totalTrackedTime += videoMetrics.timeAtSpeed[speed];
+            }
+            
+            // Add each speed with percentage
+            for (const speed in videoMetrics.timeAtSpeed) {
+                if (videoMetrics.timeAtSpeed[speed] > 0) {
+                    const percentage = Math.round((videoMetrics.timeAtSpeed[speed] / totalTrackedTime) * 100);
+                    const item = document.createElement("li");
+                    item.innerHTML = `<strong>${speed}x speed</strong>: ${formatTime(videoMetrics.timeAtSpeed[speed])} (${percentage}%)`;
+                    speedList.appendChild(item);
+                }
+            }
+            
+            timeAtSpeedDiv.appendChild(speedList);
+            container.appendChild(timeAtSpeedDiv);
+            
+            // Add average speed
+            const avgSpeedDiv = document.createElement("div");
+            avgSpeedDiv.innerHTML = `<p><strong>Average playback speed:</strong> ${calculateAveragePlaybackSpeed()}x</p>`;
+            container.appendChild(avgSpeedDiv);
+            
+            // Add speed change frequency
+            const speedChangesDiv = document.createElement("div");
+            speedChangesDiv.innerHTML = `<p><strong>Total speed changes:</strong> ${videoMetrics.speedChanges}</p>`;
+            container.appendChild(speedChangesDiv);
+        }
+        
+        // Generate pause pattern analysis
+        function generatePauseMetrics() {
+            const container = document.getElementById("pauseMetrics");
+            container.innerHTML = "";
+            
+            // If no pauses
+            if (videoMetrics.pauseCount === 0) {
+                container.innerHTML = "<p>No manual pauses detected.</p>";
+                return;
+            }
+            
+            // Create pause summary
+            const pauseSummaryDiv = document.createElement("div");
+            
+            // Calculate average pause duration
+            const avgDuration = calculateAveragePauseDuration();
+            
+            // Find longest pause
+            let longestPause = 0;
+            let longestPauseTime = 0;
+            
+            videoMetrics.pauses.forEach(pause => {
+                if (pause.duration > longestPause) {
+                    longestPause = pause.duration;
+                    longestPauseTime = pause.videoPosition;
+                }
+            });
+            
+            // Group pauses by video segment
+            const pausesBySegment = {};
+            videoMetrics.pauses.forEach(pause => {
+                const segment = Math.floor(pause.videoPosition / 30) * 30; // Group in 30-second chunks
+                pausesBySegment[segment] = (pausesBySegment[segment] || 0) + 1;
+            });
+            
+            // Find hotspots (segments with most pauses)
+            const hotspots = Object.keys(pausesBySegment)
+                .sort((a, b) => pausesBySegment[b] - pausesBySegment[a])
+                .slice(0, 3); // Top 3
+            
+            // Create summary
+            pauseSummaryDiv.innerHTML = `
+                <h4>Pause Analysis</h4>
+                <p><strong>Total manual pauses:</strong> ${videoMetrics.pauseCount}</p>
+                <p><strong>Average pause duration:</strong> ${avgDuration.toFixed(1)} seconds</p>
+                <p><strong>Longest pause:</strong> ${longestPause.toFixed(1)} seconds at ${formatTime(longestPauseTime)}</p>
+            `;
+            
+            // Add hotspots if available
+            if (hotspots.length > 0) {
+                const hotspotDiv = document.createElement("div");
+                hotspotDiv.innerHTML = "<h4>Pause hotspots:</h4>";
+                
+                const hotspotList = document.createElement("ul");
+                hotspots.forEach(segment => {
+                    const item = document.createElement("li");
+                    item.textContent = `${formatTime(parseInt(segment))}-${formatTime(parseInt(segment) + 30)}: ${pausesBySegment[segment]} pauses`;
+                    hotspotList.appendChild(item);
+                });
+                
+                hotspotDiv.appendChild(hotspotList);
+                pauseSummaryDiv.appendChild(hotspotDiv);
+            }
+            
+            container.appendChild(pauseSummaryDiv);
+        }
+        
+        // =========== SUMMARY FUNCTIONS ===========
+        
+        // Show summary at the end with enhanced metrics
+        function showSummary() {
+            // Stop tracking
+            if (videoMetrics.checkInterval) {
+                clearInterval(videoMetrics.checkInterval);
+            }
+            
+            // Calculate end time and total time spent
+            studentData.endTime = new Date();
+            studentData.totalTimeSpent = Math.floor((studentData.endTime - studentData.startTime) / 1000);
+            
+            // Finalize metrics
+            const enhancedMetrics = finalizeMetrics();
+            
+            // Hide video container
+            document.getElementById("videoContainer").style.display = "none";
+            
+            // Generate summary content
+            const summaryContainer = document.getElementById("questionsSummary");
+            summaryContainer.innerHTML = "";
+            
+            // Add each question to the summary
+            questions.forEach((q, index) => {
+                const questionDiv = document.createElement("div");
+                questionDiv.className = "question-summary";
+                
+                const questionTitle = document.createElement("h3");
+                questionTitle.textContent = `Question ${index + 1}: ${q.question}`;
+                questionDiv.appendChild(questionTitle);
+                
+                const attemptsInfo = document.createElement("p");
+                attemptsInfo.textContent = `Attempts: ${q.attempts}`;
+                questionDiv.appendChild(attemptsInfo);
+                
+                const answerInfo = document.createElement("p");
+                const studentAttempt = studentData.questionAttempts.find(a => a.questionIndex === index);
+                
+                if (studentAttempt && studentAttempt.answeredCorrectly) {
+                    answerInfo.innerHTML = `Your answer: <span class="summary-correct">${studentAttempt.selectedAnswer}</span>`;
+                } else if (studentAttempt) {
+                    answerInfo.innerHTML = `Your answer: <span class="summary-incorrect">${studentAttempt.selectedAnswer}</span>`;
+                    const correctAnswer = document.createElement("p");
+                    correctAnswer.innerHTML = `Correct answer: <span class="summary-correct">${getCorrectAnswer(q)}</span>`;
+                    questionDiv.appendChild(correctAnswer);
+                } else {
+                    answerInfo.textContent = "Question not attempted";
+                }
+                
+                questionDiv.appendChild(answerInfo);
+                
+                // Add explanation
+                const explanationDiv = document.createElement("div");
+                explanationDiv.className = "explanation";
+                explanationDiv.textContent = q.explanation;
+                questionDiv.appendChild(explanationDiv);
+                
+                summaryContainer.appendChild(questionDiv);
+            });
+            
+            // Calculate overall score
+            const overallScoreDiv = document.getElementById("overallScore");
+            const scorePercentage = Math.round((studentData.correctAnswers / totalQuestions) * 100);
+            
+            // Display user-facing summary (without revealing tracking data)
+            overallScoreDiv.innerHTML = `
+                <h3>Overall Performance</h3>
+                <p>Score: ${studentData.correctAnswers} out of ${totalQuestions} (${scorePercentage}%)</p>
+                <p>Video Completion: ${enhancedMetrics.actualWatchPercentage}%</p>
+                <p>Total Time Spent: ${formatTime(studentData.totalTimeSpent)}</p>
+            `;
+            
+            // For instructors only: generate detailed analytics
+            if (isInstructor(getUsername())) {
+                // Generate analytics visualizations
+                document.getElementById('detailedAnalytics').style.display = 'block';
+                
+                // Generate instructor analytics content
+                const analyticsContent = document.getElementById('analyticsContent');
+                analyticsContent.innerHTML = `
+                    <div class="analytics-grid">
+                        <div class="analytics-item">
+                            <strong>Actual Watch Time:</strong> ${formatTime(enhancedMetrics.totalActualWatchTime)}
+                        </div>
+                        <div class="analytics-item">
+                            <strong>Pause Count:</strong> ${enhancedMetrics.pauseCount}
+                        </div>
+                        <div class="analytics-item">
+                            <strong>Rewind Count:</strong> ${enhancedMetrics.rewindCount}
+                        </div>
+                        <div class="analytics-item">
+                            <strong>Speed Changes:</strong> ${enhancedMetrics.playbackSpeedChanges}
+                        </div>
+                        <div class="analytics-item">
+                            <strong>Avg. Response Time:</strong> ${enhancedMetrics.averageResponseTime}s
+                        </div>
+                        <div class="analytics-item">
+                            <strong>Avg. Speed:</strong> ${enhancedMetrics.averagePlaybackSpeed}x
+                        </div>
+                    </div>
+                `;
+                
+                // Generate visualizations
+                generateRewatchHeatmap();
+                generateSpeedMetrics();
+                generatePauseMetrics();
+            }
+            
+            // Submit tracking data
+            submitTrackingData();
+            
+            // Show the summary panel
+            document.getElementById("summaryPanel").style.display = "block";
+        }
+        
+        // Format time in seconds to MM:SS format
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+        
+        // Update progress bar
+        function updateProgressBar(percentage) {
+            document.getElementById("progressBar").style.width = percentage + "%";
+        }
+    </script>
+</body>
+</html>
