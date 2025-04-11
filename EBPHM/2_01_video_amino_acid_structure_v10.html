@@ -383,11 +383,14 @@
         // Initialize variables
         let player;
         let currentQuestion = 0;
+        let currentSection = -1; // Track which section we're currently showing
         let totalQuestions = 6; // Updated to 6 questions total
+        let totalSections = 3; // Total number of sections (slides)
         let programmaticPause = false; // Flag to distinguish manual vs. programmatic pauses
         let lastPlayerState = null;
         let lastTimeUpdate = 0;
         let checkTimeInterval = null;
+        let sectionQuestions = []; // Will store which questions belong to each section
         
         // Enhanced student data model with tracking metrics
         let studentData = {
@@ -435,11 +438,12 @@
             checkInterval: null         // Interval for position checking
         };
 
-        // Define the amino acid questions
+        // Define the amino acid questions with sections
         // Times based on slide appearances: Slide 1 at 76s, Slide 2 at 95s, Slide 3 at 213s
         const questions = [
             {
-                time: 80, // After Slide 1 appears (76s)
+                section: 0, // Slide 1
+                time: 76, // When Slide 1 appears
                 question: "What type of reaction joins amino acids together during protein synthesis?",
                 options: [
                     { text: "Oxidation reaction", correct: false },
@@ -454,7 +458,8 @@
                 explanation: "As shown in slide 1, amino acids are joined together through peptide bond formation, which is specifically described as a 'condensation reaction' in protein synthesis. During this process, the carboxyl group (-COOH) of one amino acid reacts with the amino group (-NH2) of another, releasing a water molecule and creating a covalent C-N bond known as a peptide bond."
             },
             {
-                time: 85, // Second question for Slide 1
+                section: 0, // Slide 1
+                time: 76, // When Slide 1 appears
                 question: "What is the general formula of an amino acid?",
                 options: [
                     { text: "H-CαHR-COOH", correct: false },
@@ -469,7 +474,8 @@
                 explanation: "As stated in slide 1, amino acids have the general formula of H2N-CαHR-COOH, which includes an amino group (H2N-), an alpha carbon with a hydrogen and R-group (CαHR), and a carboxyl group (-COOH)."
             },
             {
-                time: 100, // After Slide 2 appears (95s)
+                section: 1, // Slide 2
+                time: 95, // When Slide 2 appears
                 question: "What are the four substituents attached to the α carbon in an amino acid?",
                 options: [
                     { text: "Carboxyl group, R group, two hydrogen atoms", correct: false },
@@ -484,7 +490,8 @@
                 explanation: "As detailed in slide 2, the α carbon in an amino acid always has four substituents in a tetrahedral arrangement: an acidic carboxyl group (-COOH), a basic amino group (-NH2), an α hydrogen, and a fourth substituent called an 'R group' which varies between different amino acids."
             },
             {
-                time: 105, // Second question for Slide 2
+                section: 1, // Slide 2
+                time: 95, // When Slide 2 appears
                 question: "What distinguishes α-amino acids from β- and γ-amino acids?",
                 options: [
                     { text: "The position of the carboxyl group", correct: false },
@@ -499,7 +506,8 @@
                 explanation: "The slide shows examples of α-glycine, β-alanine, and γ-amino acid, illustrating that these classifications refer to the position of the amino group in relation to the carboxyl group. In α-amino acids, the amino group is attached to the carbon adjacent to the carboxyl group (the α-carbon). In β-amino acids, it's attached to the β-carbon (one carbon further away), and in γ-amino acids, it's attached to the γ-carbon (two carbons away from the carboxyl group)."
             },
             {
-                time: 220, // After Slide 3 appears (213s)
+                section: 2, // Slide 3
+                time: 213, // When Slide 3 appears
                 question: "Why is glycine not considered a chiral amino acid?",
                 options: [
                     { text: "Because it lacks a carboxyl group", correct: false },
@@ -514,7 +522,8 @@
                 explanation: "The slide mentions that in most amino acids, the α-carbon serves as a chiral center, creating molecular asymmetry through the attachment of four distinct groups 'except glycine.' Glycine's R group is a hydrogen atom, which means the α-carbon has two hydrogen atoms attached (the R group hydrogen and the α-hydrogen). Since chirality requires four different substituents, glycine with two identical hydrogens is not chiral."
             },
             {
-                time: 225, // Second question for Slide 3
+                section: 2, // Slide 3
+                time: 213, // When Slide 3 appears
                 question: "Which configuration of amino acids predominates in naturally occurring proteins?",
                 options: [
                     { text: "D-configuration", correct: false },
@@ -529,6 +538,18 @@
                 explanation: "According to slide 3, 'Biological systems overwhelmingly favor the L-configuration, with nearly all naturally occurring proteins composed exclusively of L-amino acids.' This stereospecificity is a fundamental characteristic of biological systems."
             }
         ];
+        
+        // Organize questions by section
+        function initializeSectionQuestions() {
+            sectionQuestions = Array(totalSections).fill().map(() => []);
+            
+            // Group questions by section
+            questions.forEach((question, index) => {
+                sectionQuestions[question.section].push(index);
+            });
+            
+            console.log("Questions organized by section:", sectionQuestions);
+        }
         
         // =========== AUTHENTICATION FUNCTIONS ===========
         
@@ -1109,8 +1130,12 @@
         
         // Initialize on page load
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeSectionQuestions(); // Initialize question sections
+                init();
+            });
         } else {
+            initializeSectionQuestions(); // Initialize question sections
             init();
         }
         
@@ -1176,7 +1201,11 @@
         // Track which questions have been asked
         let askedQuestions = [];
         
-        // Check if we need to pause for a question
+        // Button text for continuing after questions
+        const CONTINUE_VIDEO_TEXT = "Continue Video";
+        const NEXT_QUESTION_TEXT = "Next Question";
+        
+        // Check if we need to pause for a section of questions
         function checkTime() {
             if (!player || typeof player.getCurrentTime !== 'function') return;
             
@@ -1190,22 +1219,33 @@
                 )
             );
             
-            // Check if we should show a question
-            for (let i = 0; i < questions.length; i++) {
-                // Only show questions that haven't been asked yet
-                if (questions[i].time <= currentTime && !askedQuestions.includes(i)) {
+            // Check if we should start a new section of questions
+            for (let sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
+                // Skip sections we've already shown
+                if (sectionIndex <= currentSection) continue;
+                
+                // Get the first question of this section to check its time
+                const firstQuestionIndex = sectionQuestions[sectionIndex][0];
+                const sectionTime = questions[firstQuestionIndex].time;
+                
+                // If we've reached the time for this section, show its first question
+                if (sectionTime <= currentTime) {
                     // Set programmatic pause flag
                     videoMetrics.isProgrammaticPause = true;
                     
-                    // Pause video and show question
+                    // Pause video and switch to this section
                     player.pauseVideo();
-                    askedQuestions.push(i); // Mark this question as asked
-                    showQuestion(i);
+                    currentSection = sectionIndex;
+                    
+                    // Show the first question in this section
+                    const questionIndex = sectionQuestions[currentSection][0];
+                    askedQuestions.push(questionIndex); // Mark this question as asked
+                    showQuestion(questionIndex);
                     return;
                 }
             }
             
-            // Continue checking time if no question is shown
+            // Continue checking time if no new section needs to be shown
             setTimeout(checkTime, 1000);
         }
         
@@ -1296,8 +1336,13 @@
                 explanation.textContent = questionData.explanation;
                 feedbackElement.appendChild(explanation);
                 
-                // Show continue button immediately
-                document.getElementById("continueButton").style.display = "block";
+                                    // Show continue button immediately
+                    const continueButton = document.getElementById("continueButton");
+                    
+                    // Check if there are more questions in this section
+                    const nextQuestionExists = sectionQuestions[currentSection].some(qIndex => !askedQuestions.includes(qIndex));
+                    continueButton.textContent = nextQuestionExists ? NEXT_QUESTION_TEXT : CONTINUE_VIDEO_TEXT;
+                    continueButton.style.display = "block";
                 
                 // Update progress and tracking
                 updateProgressBar(askedQuestions.length / totalQuestions * 100);
@@ -1329,6 +1374,16 @@
                 optionElements[selectedIndex].style.backgroundColor = "#FFBABA";
                 optionElements[selectedIndex].style.borderLeft = "4px solid #F44336";
                 
+                // Find and highlight the correct answer in green
+                for (let i = 0; i < questionData.options.length; i++) {
+                    if (questionData.options[i].correct) {
+                        optionElements[i].style.backgroundColor = "#DFF2BF";
+                        optionElements[i].style.borderLeft = "4px solid #4CAF50";
+                        optionElements[i].style.opacity = "1";
+                        break;
+                    }
+                }
+                
                 // Add explanation
                 const explanation = document.createElement("div");
                 explanation.className = "explanation";
@@ -1351,7 +1406,12 @@
                 
                 // Show continue button after delay
                 setTimeout(() => {
-                    document.getElementById("continueButton").style.display = "block";
+                    const continueButton = document.getElementById("continueButton");
+                    
+                    // Check if there are more questions in this section
+                    const nextQuestionExists = sectionQuestions[currentSection].some(qIndex => !askedQuestions.includes(qIndex));
+                    continueButton.textContent = nextQuestionExists ? NEXT_QUESTION_TEXT : CONTINUE_VIDEO_TEXT;
+                    continueButton.style.display = "block";
                 }, 2000);
             }
         }
@@ -1376,6 +1436,18 @@
         
         // Continue button handler
         document.getElementById("continueButton").addEventListener("click", function() {
+            // Get the current section questions
+            const currentSectionQuestions = sectionQuestions[currentSection];
+            
+            // Find if there's another question in this section that hasn't been asked yet
+            let nextQuestionInSection = null;
+            for (const questionIndex of currentSectionQuestions) {
+                if (!askedQuestions.includes(questionIndex)) {
+                    nextQuestionInSection = questionIndex;
+                    break;
+                }
+            }
+            
             // Hide question container
             const questionContainer = document.getElementById("questionContainer");
             questionContainer.style.opacity = "0";
@@ -1397,11 +1469,18 @@
                 document.getElementById("feedback").style.backgroundColor = "transparent";
                 document.getElementById("feedback").innerHTML = "";
                 
-                // Check if this was the last question
+                // Check if this was the last question overall
                 if (askedQuestions.length === totalQuestions) {
                     // All questions answered, show summary
                     showSummary();
-                } else {
+                } 
+                // If there's another question in this section, show it
+                else if (nextQuestionInSection !== null) {
+                    askedQuestions.push(nextQuestionInSection);
+                    showQuestion(nextQuestionInSection);
+                }
+                // If all questions in this section are done, resume video
+                else {
                     // Resume video
                     videoMetrics.isProgrammaticPause = false;
                     player.playVideo();
