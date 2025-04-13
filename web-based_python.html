@@ -3,401 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browser Python</title>
+    <title>Python Plotting in the Browser</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        
-        .container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        .editor-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        #code {
-            width: 100%;
-            height: 200px;
-            font-family: monospace;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            resize: vertical;
-        }
-        
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        #output {
-            width: 100%;
-            min-height: 100px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 10px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            background-color: #f8f8f8;
-        }
-        
-        .spinner {
-            display: none;
-            width: 40px;
-            height: 40px;
-            margin: 10px auto;
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top: 4px solid #3498db;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .examples {
-            margin-top: 20px;
-        }
-        
-        .example-item {
-            margin-bottom: 10px;
-            cursor: pointer;
-            color: #0066cc;
-        }
-        
-        .example-item:hover {
-            text-decoration: underline;
-        }
+        /* Basic styling - feel free to enhance */
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
+        #container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
+        h1 { color: #333; text-align: center; }
+        textarea { width: 98%; min-height: 200px; border: 1px solid #ccc; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 14px; margin-bottom: 10px; display: block; }
+        button { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; margin-right: 10px; }
+        button:hover:not(:disabled) { background-color: #218838; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #output-area, #plot-output-area { margin-top: 15px; border: 1px solid #eee; background-color: #f9f9f9; padding: 15px; border-radius: 4px; min-height: 80px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
+        #plot-output-area img { max-width: 100%; height: auto; display: block; margin: 10px auto; border: 1px solid #ddd; background-color: white;}
+        #status { margin-top: 15px; font-style: italic; color: #555; text-align: center; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .output-label { font-weight: bold; margin-bottom: 5px; display: block; margin-top: 15px;}
     </style>
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 </head>
 <body>
-    <h1>Browser-based Python Interpreter</h1>
-    
-    <div class="container">
-        <div class="editor-container">
-            <h2>Python Code</h2>
-            <textarea id="code" placeholder="Enter your Python code here...">print("Hello, World!")
+    <div id="container">
+        <h1>Python Plotting (Matplotlib/Seaborn) in Browser</h1>
 
-# Try some math
-result = 0
-for i in range(10):
-    result += i
-print(f"Sum of numbers 0-9: {result}")
+        <p>
+            Run Python code using Pyodide. This example includes plotting with Matplotlib/Seaborn.
+            Required packages will be loaded on startup (may take some time).
+        </p>
 
-# Try importing a module
-import math
-print(f"Value of π: {math.pi:.6f}")
-</textarea>
-            <button id="run">Run Code</button>
-        </div>
-        
-        <div id="spinner" class="spinner"></div>
-        
-        <div>
-            <h2>Output</h2>
-            <div id="output">Results will appear here...</div>
-        </div>
-        
-        <div class="examples">
-            <h2>Example Code</h2>
-            <div class="example-item" id="example1">Basic Example</div>
-            <div class="example-item" id="example2">List Comprehension</div>
-            <div class="example-item" id="example3">NumPy Example (with plotting)</div>
-            <div class="example-item" id="example4">Simple Classes</div>
-            <div class="example-item" id="example5">Simple Plot</div>
-        </div>
-    </div>
-    
-    <script>
-        // Define example codes
-        const examples = {
-            example1: `print("Hello, World!")
-
-# Try some math
-result = 0
-for i in range(10):
-    result += i
-print(f"Sum of numbers 0-9: {result}")
-
-# Try importing a module
-import math
-print(f"Value of π: {math.pi:.6f}")`,
-            
-            example2: `# List comprehension example
-squares = [x**2 for x in range(10)]
-print("Squares:", squares)
-
-# Filter even numbers
-even_squares = [x**2 for x in range(10) if x % 2 == 0]
-print("Even squares:", even_squares)
-
-# Dictionary comprehension
-word = "hello"
-char_positions = {char: index for index, char in enumerate(word)}
-print("Character positions:", char_positions)`,
-            
-            example3: `# NumPy and Matplotlib example
-import numpy as np
+        <label for="python-code">Enter Python Code:</label>
+        <textarea id="python-code">
+# IMPORTANT: Imports and backend setting MUST happen first
+import matplotlib
+matplotlib.use('agg') # Use non-interactive backend suitable for web workers/WASM
 import matplotlib.pyplot as plt
+import numpy as np
+import io, base64
 
-# Create data
+# --- Example 1: Simple Matplotlib Plot ---
+print("Generating Matplotlib plot...")
 x = np.linspace(0, 10, 100)
-y = np.sin(x)
+y = np.sin(x) * np.exp(-x/5)
 
-# Create a figure using matplotlib
-fig, ax = plt.subplots(figsize=(8, 4))
-ax.plot(x, y, 'r-', linewidth=2)
-ax.set_title('Sine Wave')
-ax.set_xlabel('x')
-ax.set_ylabel('sin(x)')
-ax.grid(True)
-
-# Display the plot in the output div
-plt.close()  # Close the figure to prevent it from displaying elsewhere
-display(fig)`,
-            
-            example4: `# Python classes example
-class Person:
-    def __init__(self, name, age):
-        self.name = name
-        self.age = age
-        
-    def greet(self):
-        return f"Hello, my name is {self.name} and I am {self.age} years old."
-    
-    def have_birthday(self):
-        self.age += 1
-        return f"{self.name} is now {self.age} years old!"
-
-# Create some people
-alice = Person("Alice", 25)
-bob = Person("Bob", 30)
-
-# Use the Person class
-print(alice.greet())
-print(bob.greet())
-print(alice.have_birthday())
-print(bob.have_birthday())`,
-
-            example5: `# Simple plot example
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Create some simple data
-x = np.linspace(0, 10, 100)  # 100 points from 0 to 10
-y = np.sin(x)                # Sine wave
-
-# Create a figure
-fig, ax = plt.subplots(figsize=(8, 4))
-
-# Plot the data
-ax.plot(x, y, 'b-', linewidth=2, label='sin(x)')
-
-# Add a second line for comparison
-ax.plot(x, np.cos(x), 'r--', linewidth=2, label='cos(x)')
-
-# Add labels and title
-ax.set_title('Sine and Cosine Waves')
-ax.set_xlabel('x')
-ax.set_ylabel('y')
-ax.grid(True)
+fig, ax = plt.subplots(figsize=(6, 4)) # Control figure size
+ax.plot(x, y, label='Damped Sine Wave')
+ax.set_xlabel("X-axis")
+ax.set_ylabel("Y-axis")
+ax.set_title("Matplotlib Example")
 ax.legend()
+ax.grid(True)
+# --- End Example 1 ---
 
-# Display the plot
-plt.close()  # Close the figure to prevent it from displaying elsewhere
-display(fig)`
-        };
-        
-        // Set up event listeners for example code
-        document.getElementById('example1').addEventListener('click', () => {
-            document.getElementById('code').value = examples.example1;
-        });
-        
-        document.getElementById('example2').addEventListener('click', () => {
-            document.getElementById('code').value = examples.example2;
-        });
-        
-        document.getElementById('example3').addEventListener('click', () => {
-            document.getElementById('code').value = examples.example3;
-        });
-        
-        document.getElementById('example4').addEventListener('click', () => {
-            document.getElementById('code').value = examples.example4;
-        });
-        
-        document.getElementById('example5').addEventListener('click', () => {
-            document.getElementById('code').value = examples.example5;
-        });
-        
-        // Function to show loading spinner
-        function showSpinner() {
-            document.getElementById('spinner').style.display = 'block';
-        }
-        
-        // Function to hide loading spinner
-        function hideSpinner() {
-            document.getElementById('spinner').style.display = 'none';
-        }
-        
-        // Initialize Pyodide
+
+# --- Example 2: Seaborn Plot (Uncomment to try) ---
+# import seaborn as sns
+# import pandas as pd
+# print("Generating Seaborn plot...")
+# # Requires 'pandas', make sure it's loaded
+# tips = sns.load_dataset("tips") # Seaborn has sample datasets
+# fig, ax = plt.subplots(figsize=(7, 5))
+# sns.scatterplot(data=tips, x="total_bill", y="tip", hue="time", ax=ax)
+# ax.set_title("Seaborn Scatter Plot (Tips Dataset)")
+# --- End Example 2 ---
+
+
+# --- Example 3: SciPy usage (No plot, just calculation) ---
+# from scipy.stats import norm
+# print("\nUsing SciPy:")
+# mu, std = norm.fit(y) # Fit data from first plot
+# print(f"Fitted Normal Distribution (SciPy): mu={mu:.4f}, std={std:.4f}")
+# --- End Example 3 ---
+
+
+# --- Code to save plot to buffer and return as Base64 ---
+buf = io.BytesIO()
+fig.savefig(buf, format='png', bbox_inches='tight') # Save figure to buffer
+buf.seek(0) # Rewind buffer
+img_str = base64.b64encode(buf.read()).decode('utf-8') # Encode as base64
+plt.close(fig) # Close the plot to free memory
+
+# Return the Base64 string prepended with the data URI scheme
+# JavaScript will use this to display the image
+f"data:image/png;base64,{img_str}"
+
+</textarea>
+
+        <button id="run-button" disabled>Run Python & Generate Plot</button>
+        <button id="clear-button">Clear Output & Plot</button>
+
+        <div id="status">Loading Pyodide runtime... Please wait.</div>
+
+        <label for="plot-output-area" class="output-label">Plot Output:</label>
+        <div id="plot-output-area"> (Plot will appear here) </div>
+
+        <label for="output-area" class="output-label">Text Output:</label>
+        <pre id="output-area"></pre>
+
+    </div>
+
+    <script>
+        const codeInput = document.getElementById('python-code');
+        const runButton = document.getElementById('run-button');
+        const clearButton = document.getElementById('clear-button');
+        const outputArea = document.getElementById('output-area');
+        const plotOutputArea = document.getElementById('plot-output-area');
+        const statusElement = document.getElementById('status');
+        let pyodide = null;
+
+        // List required Python packages for plotting
+        // Add 'pandas' if using seaborn examples that need it
+        const requiredPackages = ['matplotlib', 'numpy', 'scipy', 'seaborn', 'pandas'];
+
         async function main() {
-            showSpinner();
-            const output = document.getElementById('output');
-            output.textContent = "Loading Python environment...";
-            
             try {
-                // Load Pyodide
-                self.pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/"
-                });
-                
-                // Set up redirecting stdout
-                await self.pyodide.runPythonAsync(`
-                    import sys
-                    from io import StringIO
-                    
-                    class PyodideOutput:
-                        def __init__(self):
-                            self.stdout = StringIO()
-                            self.stderr = StringIO()
-                            self._old_stdout = sys.stdout
-                            self._old_stderr = sys.stderr
-                            
-                        def start_capture(self):
-                            sys.stdout = self.stdout
-                            sys.stderr = self.stderr
-                            
-                        def get_output(self):
-                            stdout_value = self.stdout.getvalue()
-                            stderr_value = self.stderr.getvalue()
-                            return stdout_value, stderr_value
-                            
-                        def reset(self):
-                            self.stdout = StringIO()
-                            self.stderr = StringIO()
-                            
-                        def stop_capture(self):
-                            sys.stdout = self._old_stdout
-                            sys.stderr = self._old_stderr
-                    
-                    pyodide_output = PyodideOutput()
-                `);
-                
-                output.textContent = "Python environment loaded. You can run code now!";
-                hideSpinner();
-                
-                // Add event listener for the run button
-                document.getElementById('run').addEventListener('click', async () => {
-                    const code = document.getElementById('code').value;
-                    output.textContent = "Running...";
-                    showSpinner();
-                    
-                    try {
-                        // Check for required packages and install them if needed
-                        if (code.includes('matplotlib') || code.includes('numpy')) {
-                            // Instead of checking if packages are installed, we'll use a Python-side check
-                            const checkPackages = await self.pyodide.runPythonAsync(`
-                                import sys
-                                needed_packages = []
-                                
-                                # Check if matplotlib is needed and not installed
-                                if 'matplotlib' in ${JSON.stringify(code)} and 'matplotlib' not in sys.modules:
-                                    needed_packages.append('matplotlib')
-                                
-                                # Check if numpy is needed and not installed
-                                if 'numpy' in ${JSON.stringify(code)} and 'numpy' not in sys.modules:
-                                    needed_packages.append('numpy')
-                                
-                                needed_packages
-                            `);
-                            
-                            const packagesToInstall = checkPackages.toJs();
-                            
-                            if (packagesToInstall.length > 0) {
-                                output.textContent = `Installing packages: ${packagesToInstall.join(', ')}... This may take a moment.`;
-                                await self.pyodide.loadPackage(packagesToInstall);
-                                output.textContent = `Packages installed. Running code...`;
-                            }
-                        }
-                        
-                        // Start capturing stdout/stderr
-                        await self.pyodide.runPythonAsync(`
-                            pyodide_output.reset()
-                            pyodide_output.start_capture()
-                        `);
-                        
-                        // Run the code
-                        await self.pyodide.runPythonAsync(code);
-                        
-                        // Get the captured output
-                        const result = await self.pyodide.runPythonAsync(`
-                            pyodide_output.stop_capture()
-                            pyodide_output.get_output()
-                        `);
-                        
-                        const stdout = result.toJs()[0];
-                        const stderr = result.toJs()[1];
-                        
-                        if (stderr) {
-                            output.textContent = stderr;
-                            output.style.color = "red";
-                        } else if (stdout) {
-                            output.textContent = stdout;
-                            output.style.color = "black";
-                        } else {
-                            output.textContent = "Code executed with no output.";
-                            output.style.color = "black";
-                        }
-                    } catch (error) {
-                        output.textContent = "Error: " + error.message;
-                        output.style.color = "red";
-                    } finally {
-                        hideSpinner();
-                    }
-                });
-                
+                statusElement.textContent = 'Loading Pyodide core...';
+                pyodide = await loadPyodide();
+                statusElement.textContent = 'Pyodide loaded. Loading Python packages (matplotlib, numpy, scipy, seaborn, pandas)... This may take a moment.';
+
+                // Redirect stdout/stderr for text output
+                pyodide.setStdout({ batched: (msg) => appendToOutputArea(msg) });
+                pyodide.setStderr({ batched: (msg) => appendToOutputArea(`Error: ${msg}`) });
+
+                // Load the required scientific packages
+                await pyodide.loadPackage(requiredPackages);
+
+                statusElement.textContent = 'Pyodide and packages are ready!';
+                runButton.disabled = false; // Enable the run button
+                console.log("Pyodide Ready with packages!");
+
             } catch (error) {
-                output.textContent = "Failed to load Pyodide: " + error.message;
-                output.style.color = "red";
-                hideSpinner();
+                statusElement.textContent = `Error loading Pyodide or packages: ${error}`;
+                console.error("Pyodide loading error:", error);
+                runButton.disabled = true; // Keep button disabled if loading fails
             }
         }
-        
-        // Load Pyodide script
-        const script = document.createElement('script');
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/pyodide.js";
-        script.onload = main;
-        document.head.appendChild(script);
+
+        // Function to append text messages to the text output area
+        function appendToOutputArea(message) {
+            outputArea.textContent += message + (message.endsWith('\n') ? '' : '\n');
+            outputArea.scrollTop = outputArea.scrollHeight; // Scroll to bottom
+        }
+
+        // Function to display the plot image
+        function displayPlot(imageDataUri) {
+            plotOutputArea.innerHTML = ''; // Clear previous plot
+            if (imageDataUri && imageDataUri.startsWith('data:image/png;base64,')) {
+                const img = document.createElement('img');
+                img.src = imageDataUri;
+                img.alt = "Generated Plot";
+                plotOutputArea.appendChild(img);
+                 plotOutputArea. GscrollIntoView({ behavior: 'smooth', block: 'nearest' }); // Scroll plot into view
+            } else if (imageDataUri) {
+                // Handle cases where the Python code might return something else
+                appendToOutputArea(`\n[Received non-image data from Python code: ${typeof imageDataUri}]`);
+                 plotOutputArea.textContent = "(No plot image returned)";
+            } else {
+                 plotOutputArea.textContent = "(No plot generated or returned by code)";
+            }
+        }
+
+
+        // Run Python code when the button is clicked
+        runButton.addEventListener('click', async () => {
+            if (!pyodide) {
+                appendToOutputArea("Error: Pyodide is not loaded yet.");
+                return;
+            }
+
+            const pythonCode = codeInput.value;
+            outputArea.textContent = ''; // Clear previous text output for new run
+            plotOutputArea.innerHTML = '(Generating plot...)'; // Clear plot area and show placeholder
+
+            statusElement.textContent = 'Running Python code...';
+            runButton.disabled = true;
+            clearButton.disabled = true;
+
+            try {
+                // runPythonAsync executes the code and returns the result of the last expression
+                let result = await pyodide.runPythonAsync(pythonCode);
+
+                // Display the plot if the result looks like our data URI
+                displayPlot(result);
+
+                statusElement.textContent = 'Execution finished.';
+
+            } catch (error) {
+                console.error("Python execution error:", error);
+                // Display error in the text output area
+                appendToOutputArea(`\n--- Execution Error --- \n${error}\n------------------------`);
+                plotOutputArea.innerHTML = '(Error during execution, see text output)';
+                statusElement.textContent = 'Error during execution.';
+            } finally {
+                runButton.disabled = false; // Re-enable buttons
+                clearButton.disabled = false;
+            }
+        });
+
+        // Clear the output areas
+        clearButton.addEventListener('click', () => {
+            outputArea.textContent = '';
+            plotOutputArea.innerHTML = '(Plot will appear here)';
+            statusElement.textContent = 'Output cleared. Pyodide is ready.';
+        });
+
+        // Start loading Pyodide and packages when the script runs
+        main();
+
     </script>
+
 </body>
 </html>
