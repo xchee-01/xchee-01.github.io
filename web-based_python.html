@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Python</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        #code {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        #output {
+            width: 100%;
+            min-height: 100px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #f8f8f8;
+        }
+        
+        .spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            margin: 10px auto;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .examples {
+            margin-top: 20px;
+        }
+        
+        .example-item {
+            margin-bottom: 10px;
+            cursor: pointer;
+            color: #0066cc;
+        }
+        
+        .example-item:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Browser-based Python Interpreter</h1>
+    
+    <div class="container">
+        <div class="editor-container">
+            <h2>Python Code</h2>
+            <textarea id="code" placeholder="Enter your Python code here...">print("Hello, World!")
+
+# Try some math
+result = 0
+for i in range(10):
+    result += i
+print(f"Sum of numbers 0-9: {result}")
+
+# Try importing a module
+import math
+print(f"Value of π: {math.pi:.6f}")
+</textarea>
+            <button id="run">Run Code</button>
+        </div>
+        
+        <div id="spinner" class="spinner"></div>
+        
+        <div>
+            <h2>Output</h2>
+            <div id="output">Results will appear here...</div>
+        </div>
+        
+        <div class="examples">
+            <h2>Example Code</h2>
+            <div class="example-item" id="example1">Basic Example</div>
+            <div class="example-item" id="example2">List Comprehension</div>
+            <div class="example-item" id="example3">NumPy Example (with plotting)</div>
+            <div class="example-item" id="example4">Simple Classes</div>
+        </div>
+    </div>
+    
+    <script>
+        // Define example codes
+        const examples = {
+            example1: `print("Hello, World!")
+
+# Try some math
+result = 0
+for i in range(10):
+    result += i
+print(f"Sum of numbers 0-9: {result}")
+
+# Try importing a module
+import math
+print(f"Value of π: {math.pi:.6f}")`,
+            
+            example2: `# List comprehension example
+squares = [x**2 for x in range(10)]
+print("Squares:", squares)
+
+# Filter even numbers
+even_squares = [x**2 for x in range(10) if x % 2 == 0]
+print("Even squares:", even_squares)
+
+# Dictionary comprehension
+word = "hello"
+char_positions = {char: index for index, char in enumerate(word)}
+print("Character positions:", char_positions)`,
+            
+            example3: `# NumPy and Matplotlib example
+import numpy as np
+import matplotlib.pyplot as plt
+from js import document
+from pyodide.ffi import create_proxy, to_js
+
+# Create data
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+# Create a figure using matplotlib
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.plot(x, y, 'r-', linewidth=2)
+ax.set_title('Sine Wave')
+ax.set_xlabel('x')
+ax.set_ylabel('sin(x)')
+ax.grid(True)
+
+# Display the plot in the output div
+plt.close()  # Close the figure to prevent it from displaying elsewhere
+display(fig)`,
+            
+            example4: `# Python classes example
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+        
+    def greet(self):
+        return f"Hello, my name is {self.name} and I am {self.age} years old."
+    
+    def have_birthday(self):
+        self.age += 1
+        return f"{self.name} is now {self.age} years old!"
+
+# Create some people
+alice = Person("Alice", 25)
+bob = Person("Bob", 30)
+
+# Use the Person class
+print(alice.greet())
+print(bob.greet())
+print(alice.have_birthday())
+print(bob.have_birthday())`
+        };
+        
+        // Set up event listeners for example code
+        document.getElementById('example1').addEventListener('click', () => {
+            document.getElementById('code').value = examples.example1;
+        });
+        
+        document.getElementById('example2').addEventListener('click', () => {
+            document.getElementById('code').value = examples.example2;
+        });
+        
+        document.getElementById('example3').addEventListener('click', () => {
+            document.getElementById('code').value = examples.example3;
+        });
+        
+        document.getElementById('example4').addEventListener('click', () => {
+            document.getElementById('code').value = examples.example4;
+        });
+        
+        // Function to show loading spinner
+        function showSpinner() {
+            document.getElementById('spinner').style.display = 'block';
+        }
+        
+        // Function to hide loading spinner
+        function hideSpinner() {
+            document.getElementById('spinner').style.display = 'none';
+        }
+        
+        // Initialize Pyodide
+        async function main() {
+            showSpinner();
+            const output = document.getElementById('output');
+            output.textContent = "Loading Python environment...";
+            
+            try {
+                // Load Pyodide
+                self.pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/"
+                });
+                
+                // Set up redirecting stdout
+                await self.pyodide.runPythonAsync(`
+                    import sys
+                    from io import StringIO
+                    
+                    class PyodideOutput:
+                        def __init__(self):
+                            self.stdout = StringIO()
+                            self.stderr = StringIO()
+                            self._old_stdout = sys.stdout
+                            self._old_stderr = sys.stderr
+                            
+                        def start_capture(self):
+                            sys.stdout = self.stdout
+                            sys.stderr = self.stderr
+                            
+                        def get_output(self):
+                            stdout_value = self.stdout.getvalue()
+                            stderr_value = self.stderr.getvalue()
+                            return stdout_value, stderr_value
+                            
+                        def reset(self):
+                            self.stdout = StringIO()
+                            self.stderr = StringIO()
+                            
+                        def stop_capture(self):
+                            sys.stdout = self._old_stdout
+                            sys.stderr = self._old_stderr
+                    
+                    pyodide_output = PyodideOutput()
+                `);
+                
+                output.textContent = "Python environment loaded. You can run code now!";
+                hideSpinner();
+                
+                // Add event listener for the run button
+                document.getElementById('run').addEventListener('click', async () => {
+                    const code = document.getElementById('code').value;
+                    output.textContent = "Running...";
+                    showSpinner();
+                    
+                    try {
+                        // Install matplotlib if the code contains matplotlib
+                        if (code.includes('matplotlib') && !self.pyodide.isPyodidePackage('matplotlib')) {
+                            output.textContent = "Installing matplotlib (this may take a moment)...";
+                            await self.pyodide.loadPackage(["matplotlib", "numpy"]);
+                        }
+                        
+                        // Install numpy if the code contains numpy
+                        if (code.includes('numpy') && !self.pyodide.isPyodidePackage('numpy')) {
+                            output.textContent = "Installing numpy...";
+                            await self.pyodide.loadPackage("numpy");
+                        }
+                        
+                        // Start capturing stdout/stderr
+                        await self.pyodide.runPythonAsync(`
+                            pyodide_output.reset()
+                            pyodide_output.start_capture()
+                        `);
+                        
+                        // Run the code
+                        await self.pyodide.runPythonAsync(code);
+                        
+                        // Get the captured output
+                        const result = await self.pyodide.runPythonAsync(`
+                            pyodide_output.stop_capture()
+                            pyodide_output.get_output()
+                        `);
+                        
+                        const stdout = result.toJs()[0];
+                        const stderr = result.toJs()[1];
+                        
+                        if (stderr) {
+                            output.textContent = stderr;
+                            output.style.color = "red";
+                        } else if (stdout) {
+                            output.textContent = stdout;
+                            output.style.color = "black";
+                        } else {
+                            output.textContent = "Code executed with no output.";
+                            output.style.color = "black";
+                        }
+                    } catch (error) {
+                        output.textContent = "Error: " + error.message;
+                        output.style.color = "red";
+                    } finally {
+                        hideSpinner();
+                    }
+                });
+                
+            } catch (error) {
+                output.textContent = "Failed to load Pyodide: " + error.message;
+                output.style.color = "red";
+                hideSpinner();
+            }
+        }
+        
+        // Load Pyodide script
+        const script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/pyodide.js";
+        script.onload = main;
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
