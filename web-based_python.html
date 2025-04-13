@@ -134,6 +134,7 @@ print(f"Value of π: {math.pi:.6f}")
             <div class="example-item" id="example2">List Comprehension</div>
             <div class="example-item" id="example3">NumPy Example (with plotting)</div>
             <div class="example-item" id="example4">Simple Classes</div>
+            <div class="example-item" id="example5">Simple Plot</div>
         </div>
     </div>
     
@@ -168,8 +169,6 @@ print("Character positions:", char_positions)`,
             example3: `# NumPy and Matplotlib example
 import numpy as np
 import matplotlib.pyplot as plt
-from js import document
-from pyodide.ffi import create_proxy, to_js
 
 # Create data
 x = np.linspace(0, 10, 100)
@@ -208,7 +207,35 @@ bob = Person("Bob", 30)
 print(alice.greet())
 print(bob.greet())
 print(alice.have_birthday())
-print(bob.have_birthday())`
+print(bob.have_birthday())`,
+
+            example5: `# Simple plot example
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Create some simple data
+x = np.linspace(0, 10, 100)  # 100 points from 0 to 10
+y = np.sin(x)                # Sine wave
+
+# Create a figure
+fig, ax = plt.subplots(figsize=(8, 4))
+
+# Plot the data
+ax.plot(x, y, 'b-', linewidth=2, label='sin(x)')
+
+# Add a second line for comparison
+ax.plot(x, np.cos(x), 'r--', linewidth=2, label='cos(x)')
+
+# Add labels and title
+ax.set_title('Sine and Cosine Waves')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.grid(True)
+ax.legend()
+
+# Display the plot
+plt.close()  # Close the figure to prevent it from displaying elsewhere
+display(fig)`
         };
         
         // Set up event listeners for example code
@@ -226,6 +253,10 @@ print(bob.have_birthday())`
         
         document.getElementById('example4').addEventListener('click', () => {
             document.getElementById('code').value = examples.example4;
+        });
+        
+        document.getElementById('example5').addEventListener('click', () => {
+            document.getElementById('code').value = examples.example5;
         });
         
         // Function to show loading spinner
@@ -292,16 +323,31 @@ print(bob.have_birthday())`
                     showSpinner();
                     
                     try {
-                        // Install matplotlib if the code contains matplotlib
-                        if (code.includes('matplotlib') && !self.pyodide.isPyodidePackage('matplotlib')) {
-                            output.textContent = "Installing matplotlib (this may take a moment)...";
-                            await self.pyodide.loadPackage(["matplotlib", "numpy"]);
-                        }
-                        
-                        // Install numpy if the code contains numpy
-                        if (code.includes('numpy') && !self.pyodide.isPyodidePackage('numpy')) {
-                            output.textContent = "Installing numpy...";
-                            await self.pyodide.loadPackage("numpy");
+                        // Check for required packages and install them if needed
+                        if (code.includes('matplotlib') || code.includes('numpy')) {
+                            // Instead of checking if packages are installed, we'll use a Python-side check
+                            const checkPackages = await self.pyodide.runPythonAsync(`
+                                import sys
+                                needed_packages = []
+                                
+                                # Check if matplotlib is needed and not installed
+                                if 'matplotlib' in ${JSON.stringify(code)} and 'matplotlib' not in sys.modules:
+                                    needed_packages.append('matplotlib')
+                                
+                                # Check if numpy is needed and not installed
+                                if 'numpy' in ${JSON.stringify(code)} and 'numpy' not in sys.modules:
+                                    needed_packages.append('numpy')
+                                
+                                needed_packages
+                            `);
+                            
+                            const packagesToInstall = checkPackages.toJs();
+                            
+                            if (packagesToInstall.length > 0) {
+                                output.textContent = `Installing packages: ${packagesToInstall.join(', ')}... This may take a moment.`;
+                                await self.pyodide.loadPackage(packagesToInstall);
+                                output.textContent = `Packages installed. Running code...`;
+                            }
                         }
                         
                         // Start capturing stdout/stderr
