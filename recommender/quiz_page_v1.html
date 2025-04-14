@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Question Bank Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .question-container {
+      margin-bottom: 20px;
+    }
+    .options-container {
+      margin-bottom: 20px;
+    }
+    .option {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .option:hover {
+      background-color: #e0e0e0;
+    }
+    .option input {
+      margin-right: 10px;
+    }
+    .btn {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: #3367d6;
+    }
+    .btn:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .explanation-container {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #e8f4fe;
+      border-radius: 4px;
+      display: none;
+    }
+    .hint-container {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #fff8e1;
+      border-radius: 4px;
+    }
+    .code-snippet {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-top: 10px;
+    }
+    .media-link {
+      margin-top: 10px;
+    }
+    .correct {
+      background-color: #d4edda;
+    }
+    .incorrect {
+      background-color: #f8d7da;
+    }
+    .loading {
+      text-align: center;
+      margin: 20px 0;
+      font-style: italic;
+    }
+    .question-id {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 20px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Question Bank Quiz</h1>
+    
+    <div id="loading" class="loading">Loading question...</div>
+    <div id="error-message" class="error" style="display:none;"></div>
+    
+    <div id="question-area" style="display:none;">
+      <div class="question-id" id="question-id"></div>
+      <div class="question-container" id="question-text"></div>
+      
+      <div class="options-container" id="options-container"></div>
+      
+      <button id="submit-btn" class="btn">Submit Answer</button>
+      <button id="next-btn" class="btn" style="display:none;">Next Question</button>
+      
+      <div id="explanation-container" class="explanation-container">
+        <h3>Explanation:</h3>
+        <div id="explanation-text"></div>
+        
+        <div id="hint-container" class="hint-container" style="display:none;">
+          <h3>Hint:</h3>
+          <div id="hint-text"></div>
+        </div>
+        
+        <div id="code-container" style="display:none;">
+          <h3>Code Snippet:</h3>
+          <div id="code-snippet" class="code-snippet"></div>
+        </div>
+        
+        <div id="media-container" style="display:none;">
+          <h3>Media:</h3>
+          <div id="media-link" class="media-link"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global variables
+    let currentQuestion = null;
+    let selectedOption = null;
+    
+    // Configure your Google Apps Script Web App URL here
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_O9htHWpaW6FqOC0x-Ecv9VhE5glo4uA6T5FN40nNGY4tE2ujsN2srOVleyntmRYQRw/exec';
+    
+    // Initialize the quiz when the page loads
+    window.onload = function() {
+      getRandomQuestion();
+    };
+    
+    // Get a random question from the server
+    function getRandomQuestion() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('question-area').style.display = 'none';
+      document.getElementById('explanation-container').style.display = 'none';
+      document.getElementById('submit-btn').style.display = 'block';
+      document.getElementById('next-btn').style.display = 'none';
+      
+      // Reset selected option
+      selectedOption = null;
+      
+      // Fetch a random question from the Google Apps Script
+      fetch(`${GOOGLE_SCRIPT_URL}?action=getRandomQuestion`)
+        .then(response => response.json())
+        .then(data => displayQuestion(data))
+        .catch(error => showError(error.message || 'Failed to fetch question'));
+    }
+    
+    // Display the question and options
+    function displayQuestion(questionData) {
+      if (!questionData) {
+        showError("No questions available");
+        return;
+      }
+      
+      currentQuestion = questionData;
+      
+      // Set question ID and text
+      document.getElementById('question-id').textContent = "Question ID: " + questionData.id;
+      document.getElementById('question-text').innerHTML = questionData.text;
+      
+      // Set options
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+      
+      const options = questionData.options.split('\n').filter(opt => opt.trim() !== '');
+      
+      options.forEach((option, index) => {
+        const optionElement = document.createElement('label');
+        optionElement.className = 'option';
+        
+        const radioInput = document.createElement('input');
+        radioInput.type = 'radio';
+        radioInput.name = 'answer';
+        radioInput.value = option;
+        radioInput.onclick = function() {
+          selectedOption = option;
+        };
+        
+        optionElement.appendChild(radioInput);
+        optionElement.appendChild(document.createTextNode(option));
+        optionsContainer.appendChild(optionElement);
+      });
+      
+      // Show the question area and hide loading
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('question-area').style.display = 'block';
+      
+      // Set up the submit button event
+      document.getElementById('submit-btn').onclick = submitAnswer;
+      
+      // Set up the next button event
+      document.getElementById('next-btn').onclick = getRandomQuestion;
+    }
+    
+    // Submit the answer and show explanation
+    function submitAnswer() {
+      if (!selectedOption) {
+        alert("Please select an answer");
+        return;
+      }
+      
+      // Show the correct answer and explanation
+      const optionElements = document.querySelectorAll('.option');
+      optionElements.forEach(optEl => {
+        const inputEl = optEl.querySelector('input');
+        const optionText = inputEl.value;
+        
+        if (optionText === currentQuestion.correctAnswer) {
+          optEl.classList.add('correct');
+        } else if (optionText === selectedOption && optionText !== currentQuestion.correctAnswer) {
+          optEl.classList.add('incorrect');
+        }
+        
+        // Disable all inputs
+        inputEl.disabled = true;
+      });
+      
+      // Show explanation
+      document.getElementById('explanation-text').innerHTML = currentQuestion.explanation || "No explanation available.";
+      document.getElementById('explanation-container').style.display = 'block';
+      
+      // Show hint if available
+      if (currentQuestion.hints && currentQuestion.hints.trim() !== '') {
+        document.getElementById('hint-text').innerHTML = currentQuestion.hints;
+        document.getElementById('hint-container').style.display = 'block';
+      } else {
+        document.getElementById('hint-container').style.display = 'none';
+      }
+      
+      // Show code snippet if available
+      if (currentQuestion.codeSnippets && currentQuestion.codeSnippets.trim() !== '') {
+        document.getElementById('code-snippet').innerHTML = currentQuestion.codeSnippets;
+        document.getElementById('code-container').style.display = 'block';
+      } else {
+        document.getElementById('code-container').style.display = 'none';
+      }
+      
+      // Show media links if available
+      if (currentQuestion.mediaLinks && currentQuestion.mediaLinks.trim() !== '') {
+        // Check if it's a URL and create a link, otherwise just display text
+        if (currentQuestion.mediaLinks.startsWith('http')) {
+          document.getElementById('media-link').innerHTML = 
+            `<a href="${currentQuestion.mediaLinks}" target="_blank">${currentQuestion.mediaLinks}</a>`;
+        } else {
+          document.getElementById('media-link').innerHTML = currentQuestion.mediaLinks;
+        }
+        document.getElementById('media-container').style.display = 'block';
+      } else {
+        document.getElementById('media-container').style.display = 'none';
+      }
+      
+      // Hide submit button and show next button
+      document.getElementById('submit-btn').style.display = 'none';
+      document.getElementById('next-btn').style.display = 'block';
+    }
+    
+    // Show error message
+    function showError(error) {
+      const errorElement = document.getElementById('error-message');
+      errorElement.textContent = "Error: " + error;
+      errorElement.style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
