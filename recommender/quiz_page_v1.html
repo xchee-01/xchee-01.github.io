@@ -4,7 +4,7 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Question Bank Quiz</title>
+  <title>Python Data Types Quiz</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -51,6 +51,7 @@
       cursor: pointer;
       font-size: 16px;
       transition: background-color 0.3s;
+      margin-right: 10px;
     }
     .btn:hover {
       background-color: #3367d6;
@@ -79,6 +80,7 @@
       font-family: monospace;
       white-space: pre-wrap;
       margin-top: 10px;
+      overflow-x: auto;
     }
     .media-link {
       margin-top: 10px;
@@ -107,23 +109,48 @@
       margin: 20px 0;
       text-align: center;
     }
+    .meta-info {
+      display: flex;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 15px;
+    }
+    .meta-item {
+      margin-right: 15px;
+      background: #eee;
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+    .buttons-container {
+      display: flex;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Question Bank Quiz</h1>
+    <h1>Python Data Types Quiz</h1>
     
     <div id="loading" class="loading">Loading question...</div>
     <div id="error-message" class="error" style="display:none;"></div>
     
     <div id="question-area" style="display:none;">
-      <div class="question-id" id="question-id"></div>
+      <div class="meta-info">
+        <div class="meta-item" id="question-id"></div>
+        <div class="meta-item" id="difficulty-level"></div>
+        <div class="meta-item" id="learning-concept"></div>
+      </div>
+      
       <div class="question-container" id="question-text"></div>
       
       <div class="options-container" id="options-container"></div>
       
-      <button id="submit-btn" class="btn">Submit Answer</button>
-      <button id="next-btn" class="btn" style="display:none;">Next Question</button>
+      <div class="buttons-container">
+        <button id="submit-btn" class="btn">Submit Answer</button>
+        <button id="hint-btn" class="btn">Show Hint</button>
+        <button id="next-btn" class="btn" style="display:none;">Next Question</button>
+      </div>
       
       <div id="explanation-container" class="explanation-container">
         <h3>Explanation:</h3>
@@ -158,6 +185,12 @@
     // Initialize the quiz when the page loads
     window.onload = function() {
       getRandomQuestion();
+      
+      // Set up the hint button event
+      document.getElementById('hint-btn').onclick = function() {
+        document.getElementById('hint-container').style.display = 'block';
+        this.style.display = 'none';
+      };
     };
     
     // Get a random question from the server
@@ -165,8 +198,11 @@
       document.getElementById('loading').style.display = 'block';
       document.getElementById('question-area').style.display = 'none';
       document.getElementById('explanation-container').style.display = 'none';
-      document.getElementById('submit-btn').style.display = 'block';
+      document.getElementById('submit-btn').style.display = 'inline-block';
+      document.getElementById('hint-btn').style.display = 'inline-block';
       document.getElementById('next-btn').style.display = 'none';
+      document.getElementById('hint-container').style.display = 'none';
+      document.getElementById('error-message').style.display = 'none';
       
       // Reset selected option
       selectedOption = null;
@@ -174,7 +210,13 @@
       // Fetch a random question from the Google Apps Script
       fetch(`${GOOGLE_SCRIPT_URL}?action=getRandomQuestion`)
         .then(response => response.json())
-        .then(data => displayQuestion(data))
+        .then(data => {
+          if (data.error) {
+            showError(data.error);
+          } else {
+            displayQuestion(data);
+          }
+        })
         .catch(error => showError(error.message || 'Failed to fetch question'));
     }
     
@@ -187,8 +229,12 @@
       
       currentQuestion = questionData;
       
-      // Set question ID and text
-      document.getElementById('question-id').textContent = "Question ID: " + questionData.id;
+      // Set question ID and metadata
+      document.getElementById('question-id').textContent = "ID: " + questionData.id;
+      document.getElementById('difficulty-level').textContent = "Difficulty: " + (questionData.difficultyLevel || "N/A");
+      document.getElementById('learning-concept').textContent = "Topic: " + (questionData.learningConcepts || "N/A");
+      
+      // Set question text
       document.getElementById('question-text').innerHTML = questionData.text;
       
       // Set options
@@ -213,6 +259,17 @@
         optionElement.appendChild(document.createTextNode(option));
         optionsContainer.appendChild(optionElement);
       });
+      
+      // Set up hint content in advance
+      document.getElementById('hint-text').innerHTML = questionData.hints || "No hints available.";
+      
+      // Set up code snippet in advance
+      if (questionData.codeSnippets && questionData.codeSnippets.trim() !== '') {
+        document.getElementById('code-snippet').innerHTML = questionData.codeSnippets;
+        document.getElementById('code-container').style.display = 'block';
+      } else {
+        document.getElementById('code-container').style.display = 'none';
+      }
       
       // Show the question area and hide loading
       document.getElementById('loading').style.display = 'none';
@@ -252,22 +309,6 @@
       document.getElementById('explanation-text').innerHTML = currentQuestion.explanation || "No explanation available.";
       document.getElementById('explanation-container').style.display = 'block';
       
-      // Show hint if available
-      if (currentQuestion.hints && currentQuestion.hints.trim() !== '') {
-        document.getElementById('hint-text').innerHTML = currentQuestion.hints;
-        document.getElementById('hint-container').style.display = 'block';
-      } else {
-        document.getElementById('hint-container').style.display = 'none';
-      }
-      
-      // Show code snippet if available
-      if (currentQuestion.codeSnippets && currentQuestion.codeSnippets.trim() !== '') {
-        document.getElementById('code-snippet').innerHTML = currentQuestion.codeSnippets;
-        document.getElementById('code-container').style.display = 'block';
-      } else {
-        document.getElementById('code-container').style.display = 'none';
-      }
-      
       // Show media links if available
       if (currentQuestion.mediaLinks && currentQuestion.mediaLinks.trim() !== '') {
         // Check if it's a URL and create a link, otherwise just display text
@@ -282,9 +323,10 @@
         document.getElementById('media-container').style.display = 'none';
       }
       
-      // Hide submit button and show next button
+      // Hide submit and hint buttons, show next button
       document.getElementById('submit-btn').style.display = 'none';
-      document.getElementById('next-btn').style.display = 'block';
+      document.getElementById('hint-btn').style.display = 'none';
+      document.getElementById('next-btn').style.display = 'inline-block';
     }
     
     // Show error message
