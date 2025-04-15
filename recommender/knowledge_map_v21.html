@@ -1,31 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- ... (keep existing head content: meta, title, d3 script, styles) ... -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Map Visualization</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
-    /* ... (keep existing styles) ... */
-
-    /* Optional: Slightly different style for parent nodes */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      height: calc(100vh - 60px);
+    }
+    .header {
+      background-color: #3f51b5;
+      color: white;
+      padding: 15px;
+      height: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sidebar {
+      width: 300px;
+      background-color: #f5f5f5;
+      padding: 15px;
+      overflow-y: auto;
+      height: 100%;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    .visualization {
+      flex-grow: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .controls {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      background: rgba(255,255,255,0.8);
+      padding: 5px;
+      border-radius: 5px;
+      display: flex;
+      gap: 5px;
+    }
+    .controls button {
+      background: #3f51b5;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .filters {
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+    .filters h3 {
+      margin-top: 0;
+    }
+    .filter-group {
+      margin-bottom: 10px;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .filter-item input {
+      margin-right: 8px;
+    }
+    .progress-bar {
+      height: 8px;
+      background-color: #eee;
+      border-radius: 4px;
+      margin: 5px 0 10px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+    }
+    .recommendation-item {
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 3px solid #3f51b5;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .loading-message {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .error-message {
+      color: #f44336;
+      padding: 10px;
+      margin: 10px 0;
+      background-color: #ffebee;
+      border-radius: 4px;
+    }
+    .retry-button {
+      background: #3f51b5;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .node {
+      stroke: #fff;
+      stroke-width: 1.5px;
+    }
+    .link {
+      stroke: #999;
+      stroke-opacity: 0.6;
+    }
+    .tooltip {
+      position: absolute;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+      pointer-events: none;
+      font-size: 12px;
+      max-width: 300px;
+      z-index: 10;
+      transition: opacity 0.2s;
+    }
+    
+    /* Parent nodes */
     .node.parent {
-      stroke: #3f51b5; /* Use theme color for border */
+      stroke: #3f51b5;
       stroke-width: 2.5px;
     }
 
-     /* Optional: Style for parent labels */
+    /* Parent labels */
     .node-label.parent-label {
-        font-weight: bold;
-        fill: #3f51b5; /* Theme color for label */
-        font-size: 11px; /* Slightly larger label */
+      font-weight: bold;
+      fill: #3f51b5;
+      font-size: 11px;
     }
-     .node-label.child-label {
-        font-size: 10px;
-        fill: #333;
+    .node-label.child-label {
+      font-size: 10px;
+      fill: #333;
     }
-
   </style>
 </head>
 <body>
-  <!-- ... (keep existing body structure: header, container, sidebar, visualization) ... -->
+  <div class="header">
+    <h2>Knowledge Map</h2>
+    <div>
+      <button id="test-data-button">Use Test Data</button>
+    </div>
+  </div>
+  <div class="container">
+    <div class="sidebar">
+      <div class="filters">
+        <h3>Filters</h3>
+        <div class="filter-group">
+          <h4>Mastery Level</h4>
+          <div class="filter-item">
+            <input type="checkbox" id="show-mastered" checked>
+            <label for="show-mastered">Mastered</label>
+          </div>
+          <div class="filter-item">
+            <input type="checkbox" id="show-developing" checked>
+            <label for="show-developing">Developing</label>
+          </div>
+          <div class="filter-item">
+            <input type="checkbox" id="show-needs-work" checked>
+            <label for="show-needs-work">Needs Work</label>
+          </div>
+          <div class="filter-item">
+            <input type="checkbox" id="show-not-attempted" checked>
+            <label for="show-not-attempted">Not Attempted</label>
+          </div>
+        </div>
+        <div class="filter-group">
+          <h4>Difficulty Level</h4>
+          <div class="filter-item">
+            <input type="checkbox" id="show-easy" checked>
+            <label for="show-easy">Easy</label>
+          </div>
+          <div class="filter-item">
+            <input type="checkbox" id="show-medium" checked>
+            <label for="show-medium">Medium</label>
+          </div>
+          <div class="filter-item">
+            <input type="checkbox" id="show-hard" checked>
+            <label for="show-hard">Hard</label>
+          </div>
+        </div>
+      </div>
+      
+      <h3>Summary Stats</h3>
+      <div id="summary-loader" class="loading-message">
+        <div class="loader"></div>
+        <span>Loading summary stats...</span>
+      </div>
+      <div id="summary-stats"></div>
+      
+      <h3>Recommendations</h3>
+      <div id="recs-loader" class="loading-message">
+        <div class="loader"></div>
+        <span>Loading recommendations...</span>
+      </div>
+      <div id="recommendations-container"></div>
+    </div>
+    
+    <div id="visualization" class="visualization">
+      <div id="main-loader" class="loading-message" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        <div class="loader"></div>
+        <span>Loading knowledge map data...</span>
+      </div>
+      <svg id="graph"></svg>
+      <div class="controls">
+        <button id="zoom-in">+</button>
+        <button id="zoom-out">-</button>
+        <button id="reset-zoom">Reset</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // --- Configuration ---
@@ -39,16 +253,103 @@
     let g = null; // Make the main group accessible
 
     // --- DOM Elements ---
-    // ... (keep existing DOM element variables) ...
+    const mainLoader = document.getElementById('main-loader');
+    const summaryLoader = document.getElementById('summary-loader');
+    const recsLoader = document.getElementById('recs-loader');
+    const summaryStatsDiv = document.getElementById('summary-stats');
+    const recommendationsContainer = document.getElementById('recommendations-container');
+    const tooltipDiv = document.createElement('div');
+    tooltipDiv.className = 'tooltip';
+    tooltipDiv.style.opacity = 0;
+    document.body.appendChild(tooltipDiv);
 
     // --- Event Listeners ---
-    // ... (keep existing event listeners: DOMContentLoaded, retry, test data) ...
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM loaded, initializing...');
+      
+      // Initialize retry button listener for errors
+      document.getElementById('test-data-button').addEventListener('click', () => {
+        console.log('Using test data');
+        const testData = generateTestData();
+        renderKnowledgeMap(testData);
+      });
+      
+      // Start loading data
+      loadData();
+    });
 
     // --- Core Functions ---
-    // ... (keep loadData, cleanupJsonp, showError) ...
+    function loadData() {
+      console.log('Loading data from API...');
+      mainLoader.style.display = 'block';
+      
+      // Set a timeout to use test data if API fails to respond
+      let dataLoaded = false;
+      const apiTimeout = setTimeout(() => {
+        if (!dataLoaded) {
+          console.warn('API timeout, using test data as fallback');
+          const testData = generateTestData();
+          renderKnowledgeMap(testData);
+        }
+      }, 8000); // 8 second timeout
+      
+      // Create a unique callback name
+      const callbackName = 'handleKnowledgeData_' + Date.now();
+      
+      // Define the callback function
+      window[callbackName] = function(data) {
+        dataLoaded = true;
+        clearTimeout(apiTimeout);
+        console.log('JSONP callback received data');
+        
+        if (data && data.error) {
+          showError('API Error: ' + data.error);
+        } else if (data && data.nodes && data.links) {
+          renderKnowledgeMap(data);
+        } else {
+          showError('Invalid data format received from API');
+        }
+        
+        // Clean up the callback function
+        delete window[callbackName];
+      };
+      
+      // Create and append the script tag for JSONP
+      const script = document.createElement('script');
+      script.src = `${apiUrl}?callback=${callbackName}`;
+      script.onerror = function() {
+        if (!dataLoaded) {
+          clearTimeout(apiTimeout);
+          console.error('Script load error');
+          showError('Failed to load data from API. Using test data instead.');
+          const testData = generateTestData();
+          renderKnowledgeMap(testData);
+        }
+      };
+      
+      document.body.appendChild(script);
+    }
+
+    function showError(message) {
+      console.error('Error:', message);
+      mainLoader.style.display = 'none';
+      
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+      errorDiv.innerHTML = `
+        <p>${message}</p>
+        <button class="retry-button" onclick="location.reload()">Retry</button>
+      `;
+      
+      const visContainer = document.getElementById('visualization');
+      // Remove any existing error messages
+      const existingErrors = visContainer.querySelectorAll('.error-message');
+      existingErrors.forEach(el => el.remove());
+      
+      visContainer.appendChild(errorDiv);
+    }
 
     // --- D3 Rendering and Interaction ---
-
     function renderKnowledgeMap(data) {
        console.log('Rendering hierarchical knowledge map with data:', data);
        mainLoader.style.display = 'none';
@@ -234,10 +535,6 @@
              } else if (d.mastery !== 'Not Attempted') {
                  tooltipContent += '<br>No difficulty data.';
              }
-             // Optionally add back tags if useful, though name is often a tag now
-             // if (Array.isArray(d.tags) && d.tags.length > 0) {
-             //    tooltipContent += `<br>Tags: ${d.tags.join(', ')}`;
-             // }
        }
 
       tooltipDiv.innerHTML = tooltipContent;
@@ -259,7 +556,23 @@
       tooltipDiv.style.opacity = 0;
     }
 
-    // dragstarted, dragged, dragended remain the same
+    // Drag functions for nodes
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
 
     // --- Filtering Logic ---
     function setupFilters(data) { // Pass data if needed later
@@ -473,56 +786,57 @@
     }
 
 
-    // --- Test Data Generation (Needs Update) ---
+    // --- Test Data Generation ---
     function generateTestData() {
-      console.warn("generateTestData needs updating for the new hierarchical structure. Using simplified flat data for now.");
-      // TODO: Update this function to generate parent/child nodes and appropriate links
-      // For now, return the old flat structure as a placeholder if needed, or a basic hierarchy
-       const parents = ["Strings", "Numbers", "Booleans", "Types"];
-       const nodes = [];
-       const links = [];
-       let idCounter = 0;
-       const parentIds = [];
+      console.log("Generating test data with hierarchical structure");
+      
+      const parents = ["Strings", "Numbers", "Booleans", "Types"];
+      const nodes = [];
+      const links = [];
+      let idCounter = 0;
+      const parentIds = [];
 
-       parents.forEach(pName => {
-          const pId = idCounter++;
-          nodes.push({id: pId, name: pName, type: 'parent', mastery: 'N/A'});
-          parentIds.push(pId);
-          const numChildren = 3 + Math.floor(Math.random() * 5);
-          for(let i=0; i<numChildren; i++) {
-             const cId = idCounter++;
-             const masteryLevels = ["Mastered", "Developing", "Needs Work", "Not Attempted"];
-             const mastery = masteryLevels[Math.floor(Math.random() * masteryLevels.length)];
-             let performance = 0;
-             if (mastery === "Mastered") performance = 0.8 + Math.random() * 0.2;
-             else if (mastery === "Developing") performance = 0.5 + Math.random() * 0.29;
-             else if (mastery === "Needs Work") performance = Math.random() * 0.49;
+      parents.forEach(pName => {
+         const pId = idCounter++;
+         nodes.push({id: pId, name: pName, type: 'parent', mastery: 'N/A'});
+         parentIds.push(pId);
+         const numChildren = 3 + Math.floor(Math.random() * 5);
+         for(let i=0; i<numChildren; i++) {
+            const cId = idCounter++;
+            const masteryLevels = ["Mastered", "Developing", "Needs Work", "Not Attempted"];
+            const mastery = masteryLevels[Math.floor(Math.random() * masteryLevels.length)];
+            let performance = 0;
+            if (mastery === "Mastered") performance = 0.8 + Math.random() * 0.2;
+            else if (mastery === "Developing") performance = 0.5 + Math.random() * 0.29;
+            else if (mastery === "Needs Work") performance = Math.random() * 0.49;
 
-             nodes.push({
-                id: cId,
-                name: `${pName} Sub-Concept ${i+1}`,
-                type: 'child',
-                description: `Detail for ${pName} Sub-Concept ${i+1}`,
-                mastery: mastery,
-                performance: performance,
-                difficulties: {}, // Simplified
-                tags: [pName]
-             });
-             links.push({source: pId, target: cId, strength: 0.9});
-          }
-       });
+            nodes.push({
+               id: cId,
+               name: `${pName} Sub-Concept ${i+1}`,
+               type: 'child',
+               description: `Detail for ${pName} Sub-Concept ${i+1}`,
+               mastery: mastery,
+               performance: performance,
+               difficulties: {
+                  "Easy": { total: Math.floor(Math.random() * 10), correct: Math.floor(Math.random() * 5) },
+                  "Medium": { total: Math.floor(Math.random() * 8), correct: Math.floor(Math.random() * 4) },
+                  "Hard": { total: Math.floor(Math.random() * 6), correct: Math.floor(Math.random() * 3) }
+               },
+               tags: [pName]
+            });
+            links.push({source: pId, target: cId, strength: 0.9});
+         }
+      });
 
-       // Add parent-parent links
-        for (let i = 0; i < parentIds.length; i++) {
-          for (let j = i + 1; j < parentIds.length; j++) {
-            links.push({ source: parentIds[i], target: parentIds[j], strength: 0.1 });
-          }
-        }
-       console.log(`Generated ${nodes.length} test nodes and ${links.length} test links.`);
-       return { nodes, links };
-
+      // Add parent-parent links
+       for (let i = 0; i < parentIds.length; i++) {
+         for (let j = i + 1; j < parentIds.length; j++) {
+           links.push({ source: parentIds[i], target: parentIds[j], strength: 0.1 });
+         }
+       }
+      console.log(`Generated ${nodes.length} test nodes and ${links.length} test links.`);
+      return { nodes, links };
     }
-
   </script>
 </body>
 </html>
