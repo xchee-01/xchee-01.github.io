@@ -283,6 +283,16 @@
       console.log('Loading data from API...');
       mainLoader.style.display = 'block';
       
+      // Check if we should use test data immediately (for development)
+      const useTestImmediately = true; // Set to false to try the API first
+      
+      if (useTestImmediately) {
+        console.log('Using test data immediately');
+        const testData = generateTestData();
+        renderKnowledgeMap(testData);
+        return;
+      }
+      
       // Set a timeout to use test data if API fails to respond
       let dataLoaded = false;
       const apiTimeout = setTimeout(() => {
@@ -305,6 +315,17 @@
         if (data && data.error) {
           showError('API Error: ' + data.error);
         } else if (data && data.nodes && data.links) {
+          // Filter out parent-parent links if they exist
+          if (data.links) {
+            data.links = data.links.filter(link => {
+              // Keep links if they're not between two parent nodes
+              if (data.nodes[link.source] && data.nodes[link.target]) {
+                return !(data.nodes[link.source].type === 'parent' && 
+                         data.nodes[link.target].type === 'parent');
+              }
+              return true;
+            });
+          }
           renderKnowledgeMap(data);
         } else {
           showError('Invalid data format received from API');
@@ -389,10 +410,63 @@
 
        // --- Simulation Setup ---
        const numNodes = data.nodes.length;
-       // Adjust parameters potentially based on hierarchy? Maybe simpler forces work better now.
-       const linkDistance = (d) => d.source.type === 'parent' && d.target.type === 'child' ? 60 : 150; // Shorter parent-child links
-       const chargeStrength = -400 - numNodes * 1.5; // Adjust as needed
-        const linkStrength = (d) => d.strength || 0.1; // Use strength from data
+       
+       // Initial group positioning - separate parent nodes
+       const parentNodes = data.nodes.filter(n => n.type === 'parent');
+       const parentCount = parentNodes.length;
+       
+       // Position parent nodes in a grid layout
+       if (parentCount > 0) {
+         const gridSize = Math.ceil(Math.sqrt(parentCount));
+         const gridWidth = width / (gridSize + 1);
+         const gridHeight = height / (gridSize + 1);
+         
+         parentNodes.forEach((node, i) => {
+           const col = i % gridSize;
+           const row = Math.floor(i / gridSize);
+           node.x = gridWidth * (col + 1);
+           node.y = gridHeight * (row + 1);
+           node.fx = node.x; // Fix position initially
+           node.fy = node.y; // Fix position initially
+         });
+         
+         // Position child nodes around their parents
+         data.nodes.forEach(node => {
+           if (node.type === 'child') {
+             // Find this node's parent link
+             const parentLink = data.links.find(link => link.target === node.id);
+             if (parentLink) {
+               const parentNode = data.nodes.find(n => n.id === parentLink.source);
+               if (parentNode) {
+                 // Position around parent with some randomness
+                 const angle = Math.random() * 2 * Math.PI;
+                 const distance = 50 + Math.random() * 30;
+                 node.x = parentNode.x + Math.cos(angle) * distance;
+                 node.y = parentNode.y + Math.sin(angle) * distance;
+               }
+             }
+           }
+         });
+       }
+       
+       // Adjust link parameters for hierarchical structure
+       const linkDistance = (d) => {
+         if (d.source.type === 'parent' && d.target.type === 'child') {
+           return 80; // Distance from parent to child
+         }
+         return 200; // Distance between unrelated nodes (should rarely be used now)
+       };
+       
+       // Stronger charge for better separation
+       const chargeStrength = -800 - numNodes * 3; 
+        
+       // Stronger link strength for parent-child connections
+       const linkStrength = (d) => {
+         if (d.source.type === 'parent' && d.target.type === 'child') {
+           return d.strength || 0.7; // Strong parent-child connection
+         }
+         return 0.1; // Weak for any other connections
+       };
 
        console.log(`Sim Params: Nodes=${numNodes}, Charge=${chargeStrength.toFixed(1)}`);
 
@@ -400,13 +474,23 @@
             simulation.stop();
        }
 
+       // Create simulation with optimized forces for hierarchical layout
        simulation = d3.forceSimulation(data.nodes)
          .force('link', d3.forceLink(data.links).id(d => d.id).distance(linkDistance).strength(linkStrength))
          .force('charge', d3.forceManyBody().strength(chargeStrength))
-         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05)) // Weaker center
-         .force('collide', d3.forceCollide().radius(d => getNodeSize(d) + 6).strength(0.7)) // Collision padding
-         .force('x', d3.forceX(width / 2).strength(0.02)) // Weaker pull to center X
-         .force('y', d3.forceY(height / 2).strength(0.02)); // Weaker pull to center Y
+         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.02)) // Very weak center pull
+         .force('collide', d3.forceCollide().radius(d => getNodeSize(d) + 15).strength(0.8)) // Stronger collision
+         .force('x', d3.forceX(width / 2).strength(0.01)) // Minimal X centering
+         .force('y', d3.forceY(height / 2).strength(0.01)); // Minimal Y centering
+         
+       // After a short time, release the fixed positions to allow some movement
+       setTimeout(() => {
+         parentNodes.forEach(node => {
+           node.fx = null;
+           node.fy = null;
+         });
+         simulation.alpha(0.3).restart(); // Restart with lower alpha
+       }, 1500);
 
        // --- Links ---
        const link = g.append('g')
@@ -800,7 +884,7 @@
          const pId = idCounter++;
          nodes.push({id: pId, name: pName, type: 'parent', mastery: 'N/A'});
          parentIds.push(pId);
-         const numChildren = 3 + Math.floor(Math.random() * 5);
+         const numChildren = 3 + Math.floor(Math.random() * 3); // Fewer children for clarity
          for(let i=0; i<numChildren; i++) {
             const cId = idCounter++;
             const masteryLevels = ["Mastered", "Developing", "Needs Work", "Not Attempted"];
@@ -828,12 +912,7 @@
          }
       });
 
-      // Add parent-parent links
-       for (let i = 0; i < parentIds.length; i++) {
-         for (let j = i + 1; j < parentIds.length; j++) {
-           links.push({ source: parentIds[i], target: parentIds[j], strength: 0.1 });
-         }
-       }
+      // IMPORTANT: Removed parent-parent links to achieve hierarchical structure
       console.log(`Generated ${nodes.length} test nodes and ${links.length} test links.`);
       return { nodes, links };
     }
