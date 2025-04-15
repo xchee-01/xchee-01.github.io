@@ -229,34 +229,14 @@
       100% { transform: rotate(360deg); }
     }
     
-    #api-url-form {
-      margin-top: 20px;
-      padding: 15px;
-      background-color: #f0f0f0;
-      border-radius: 5px;
-    }
-    
-    #api-url-form input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    
-    #api-url-form button {
-      background-color: #3f51b5;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 8px 15px;
-      cursor: pointer;
-    }
-    
     #error-message {
       color: #F44336;
       margin-top: 10px;
       font-weight: bold;
+      padding: 10px;
+      background-color: #FFEBEE;
+      border-radius: 5px;
+      display: none;
     }
   </style>
 </head>
@@ -267,12 +247,7 @@
   
   <div id="container">
     <div id="sidebar">
-      <div id="api-url-form">
-        <h3>GScript API URL</h3>
-        <input type="text" id="api-url" placeholder="https://script.google.com/macros/s/AKfycbxMJoTHiMtetsKXc9Y0m0n2zsGGpYjTpZ1dJw31G4ToGodj47zrgpYMfAOGOVl5biPHmw/exec">
-        <button id="load-data-btn">Load Data</button>
-        <div id="error-message"></div>
-      </div>
+      <div id="error-message"></div>
       
       <div class="filter-section">
         <h3>Mastery Level</h3>
@@ -333,14 +308,20 @@
       <div class="summary-section">
         <h3>Knowledge Summary</h3>
         <div id="summary-stats">
-          <p>Enter your API URL and click "Load Data" to see your knowledge summary.</p>
+          <div class="loader">
+            <div class="spinner"></div>
+            <p>Loading summary data...</p>
+          </div>
         </div>
       </div>
       
       <div class="recommendations">
         <h3>Recommendations</h3>
         <div id="recommendations-container">
-          <p>Enter your API URL and click "Load Data" to generate personalized recommendations.</p>
+          <div class="loader">
+            <div class="spinner"></div>
+            <p>Generating recommendations...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -353,7 +334,7 @@
         <button class="control-button" id="zoom-out">Zoom Out</button>
         <button class="control-button" id="reset-zoom">Reset View</button>
       </div>
-      <div class="loader" id="main-loader" style="display: none;">
+      <div class="loader" id="main-loader">
         <div class="spinner"></div>
         <p>Loading knowledge map...</p>
       </div>
@@ -362,43 +343,11 @@
   
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Set up the API URL input form
-      const apiUrlInput = document.getElementById('api-url');
-      const loadDataBtn = document.getElementById('load-data-btn');
-      const errorMessage = document.getElementById('error-message');
+      // Hardcoded Google Apps Script URL
+      const apiUrl = 'https://script.google.com/macros/s/AKfycbxMJoTHiMtetsKXc9Y0m0n2zsGGpYjTpZ1dJw31G4ToGodj47zrgpYMfAOGOVl5biPHmw/exec';
       
-      // Check for saved API URL in localStorage
-      const savedApiUrl = localStorage.getItem('knowledgeMapApiUrl');
-      if (savedApiUrl) {
-        apiUrlInput.value = savedApiUrl;
-      }
-      
-      // Load data button click handler
-      loadDataBtn.addEventListener('click', function() {
-        const apiUrl = apiUrlInput.value.trim();
-        
-        if (!apiUrl) {
-          errorMessage.textContent = 'Please enter a valid Google Apps Script web app URL';
-          return;
-        }
-        
-        // Save the API URL to localStorage
-        localStorage.setItem('knowledgeMapApiUrl', apiUrl);
-        
-        // Clear previous error message
-        errorMessage.textContent = '';
-        
-        // Show loader
-        document.getElementById('main-loader').style.display = 'block';
-        
-        // Fetch data with JSONP
-        fetchDataWithJSONP(apiUrl);
-      });
-      
-      // If there's a saved URL, load the data automatically
-      if (savedApiUrl) {
-        loadDataBtn.click();
-      }
+      // Automatically load data when page loads
+      fetchDataWithJSONP(apiUrl);
     });
     
     // JSONP implementation to bypass CORS
@@ -431,36 +380,31 @@
         
         // Show error
         document.getElementById('main-loader').style.display = 'none';
-        document.getElementById('error-message').textContent = 
-          'Failed to load data. Make sure your API URL is correct and the script is published as a web app with "Anyone, even anonymous" access.';
+        const errorElement = document.getElementById('error-message');
+        errorElement.textContent = 'Failed to load data. Please check your network connection and try again later.';
+        errorElement.style.display = 'block';
       };
       
       // Add the script to the page
       document.body.appendChild(script);
-    }
-    
-    // Alternative fetch with no-cors mode (note: this won't work for reading the response)
-    function fetchDataWithNoCors(url) {
-      fetch(url, {
-        method: 'GET',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json'
+      
+      // Set a timeout in case the request takes too long
+      setTimeout(function() {
+        if (window[callbackName]) {
+          // The callback hasn't been called yet, so the request might have failed
+          // Clean up
+          if (document.body.contains(script)) {
+            document.body.removeChild(script);
+          }
+          delete window[callbackName];
+          
+          // Show error
+          document.getElementById('main-loader').style.display = 'none';
+          const errorElement = document.getElementById('error-message');
+          errorElement.textContent = 'Request timed out. Please check your connection and refresh the page.';
+          errorElement.style.display = 'block';
         }
-      })
-      .then(response => {
-        console.log('Response received, but cannot read content in no-cors mode');
-        // This won't work - no-cors prevents reading the response
-        return response.json();
-      })
-      .then(data => {
-        renderKnowledgeMap(data);
-      })
-      .catch(error => {
-        document.getElementById('main-loader').style.display = 'none';
-        document.getElementById('error-message').textContent = 
-          'Error loading data: ' + error.message + '. Try using JSONP method instead.';
-      });
+      }, 30000); // 30 second timeout
     }
     
     function renderKnowledgeMap(data) {
@@ -468,8 +412,9 @@
       document.getElementById('main-loader').style.display = 'none';
       
       if (!data || data.error) {
-        document.getElementById('error-message').textContent = 
-          'Error loading data: ' + (data.error || 'Invalid data received');
+        const errorElement = document.getElementById('error-message');
+        errorElement.textContent = 'Error loading data: ' + (data.error || 'Invalid data received');
+        errorElement.style.display = 'block';
         return;
       }
       
