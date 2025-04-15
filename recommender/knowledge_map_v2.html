@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ... (keep existing head content: meta, title, d3 script, styles) ... -->
+  <style>
+    /* ... (keep existing styles) ... */
+
+    /* Optional: Slightly different style for parent nodes */
+    .node.parent {
+      stroke: #3f51b5; /* Use theme color for border */
+      stroke-width: 2.5px;
+    }
+
+     /* Optional: Style for parent labels */
+    .node-label.parent-label {
+        font-weight: bold;
+        fill: #3f51b5; /* Theme color for label */
+        font-size: 11px; /* Slightly larger label */
+    }
+     .node-label.child-label {
+        font-size: 10px;
+        fill: #333;
+    }
+
+  </style>
+</head>
+<body>
+  <!-- ... (keep existing body structure: header, container, sidebar, visualization) ... -->
+
+  <script>
+    // --- Configuration ---
+    const apiUrl = 'YOUR_NEW_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE'; // <--- UPDATE THIS!
+
+    // --- Global Variables ---
+    let knowledgeData = null;
+    let simulation = null;
+    let svg = null;
+    let zoom = null;
+    let g = null; // Make the main group accessible
+
+    // --- DOM Elements ---
+    // ... (keep existing DOM element variables) ...
+
+    // --- Event Listeners ---
+    // ... (keep existing event listeners: DOMContentLoaded, retry, test data) ...
+
+    // --- Core Functions ---
+    // ... (keep loadData, cleanupJsonp, showError) ...
+
+    // --- D3 Rendering and Interaction ---
+
+    function renderKnowledgeMap(data) {
+       console.log('Rendering hierarchical knowledge map with data:', data);
+       mainLoader.style.display = 'none';
+
+       if (!data || !data.nodes || !data.links) {
+           showError('Invalid data provided to renderKnowledgeMap.');
+           return;
+       }
+       knowledgeData = data; // Store the data
+
+       const visContainer = document.getElementById('visualization');
+       const width = visContainer.clientWidth;
+       const height = visContainer.clientHeight;
+
+       if (width <= 0 || height <= 0) {
+           console.error("Visualization container has zero width or height.");
+           showError("Cannot render visualization. Container size is invalid.");
+           return;
+       }
+
+       d3.select('#graph').selectAll('*').remove(); // Clear previous
+
+       zoom = d3.zoom()
+         .scaleExtent([0.1, 8]) // Wider zoom range might be needed for hierarchy
+         .on('zoom', (event) => {
+           if (g) g.attr('transform', event.transform); // Check if g exists
+         });
+
+       svg = d3.select('#graph')
+         .attr('width', width)
+         .attr('height', height)
+         .call(zoom)
+         .on("dblclick.zoom", null);
+
+       // Main group for zoom/pan
+       g = svg.append('g'); // Assign to global 'g'
+
+       // --- Simulation Setup ---
+       const numNodes = data.nodes.length;
+       // Adjust parameters potentially based on hierarchy? Maybe simpler forces work better now.
+       const linkDistance = (d) => d.source.type === 'parent' && d.target.type === 'child' ? 60 : 150; // Shorter parent-child links
+       const chargeStrength = -400 - numNodes * 1.5; // Adjust as needed
+        const linkStrength = (d) => d.strength || 0.1; // Use strength from data
+
+       console.log(`Sim Params: Nodes=${numNodes}, Charge=${chargeStrength.toFixed(1)}`);
+
+       if (simulation) {
+            simulation.stop();
+       }
+
+       simulation = d3.forceSimulation(data.nodes)
+         .force('link', d3.forceLink(data.links).id(d => d.id).distance(linkDistance).strength(linkStrength))
+         .force('charge', d3.forceManyBody().strength(chargeStrength))
+         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05)) // Weaker center
+         .force('collide', d3.forceCollide().radius(d => getNodeSize(d) + 6).strength(0.7)) // Collision padding
+         .force('x', d3.forceX(width / 2).strength(0.02)) // Weaker pull to center X
+         .force('y', d3.forceY(height / 2).strength(0.02)); // Weaker pull to center Y
+
+       // --- Links ---
+       const link = g.append('g')
+            .attr('class', 'links')
+            .selectAll('line')
+            .data(data.links)
+            .enter()
+            .append('line')
+            .attr('class', 'link')
+            .attr('stroke-width', d => Math.max(1, (d.strength || 0.1) * 2.5))
+            .style('stroke', d => d.source.type === 'parent' && d.target.type === 'parent' ? '#ddd' : '#bbb'); // Lighter parent-parent links
+
+
+       // --- Nodes ---
+        const nodeGroup = g.append('g')
+            .attr('class', 'nodes')
+            .selectAll('g.node-group')
+            .data(data.nodes, d => d.id) // Key function important for updates
+            .enter()
+            .append('g')
+            .attr('class', 'node-group')
+            .call(d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended))
+            .on('mouseover', showTooltip)
+            .on('mouseout', hideTooltip);
+
+       // Add circles
+        nodeGroup.append('circle')
+            .attr('class', d => `node ${d.type || 'child'}`) // Add parent/child class
+            .attr('r', d => getNodeSize(d))
+            .attr('fill', d => getNodeColor(d));
+
+       // Add labels
+        nodeGroup.append('text')
+             .attr('class', d => `node-label ${d.type === 'parent' ? 'parent-label' : 'child-label'}`) // Class labels
+             .attr('dy', d => getNodeSize(d) + 12) // Position below node
+             .text(d => d.name) // Name is now tag (child) or category (parent)
+             .attr('display', 'none'); // Initially hidden
+
+       // --- Simulation Tick ---
+       simulation.on('tick', () => {
+         link
+           .attr('x1', d => d.source.x)
+           .attr('y1', d => d.source.y)
+           .attr('x2', d => d.target.x)
+           .attr('y2', d => d.target.y);
+
+         nodeGroup.attr('transform', d => `translate(${d.x}, ${d.y})`);
+       });
+
+       // --- Zoom Controls --- (Ensure 'g' is defined before listeners use it)
+        // Clone/replace needed if renderKnowledgeMap can be called multiple times
+       document.getElementById('zoom-in').replaceWith(document.getElementById('zoom-in').cloneNode(true));
+       document.getElementById('zoom-out').replaceWith(document.getElementById('zoom-out').cloneNode(true));
+       document.getElementById('reset-zoom').replaceWith(document.getElementById('reset-zoom').cloneNode(true));
+
+       document.getElementById('zoom-in').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1.3));
+       document.getElementById('zoom-out').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.3));
+       document.getElementById('reset-zoom').addEventListener('click', () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity));
+
+       // --- Filters & Sidebar ---
+       setupFilters(data); // Pass data if needed by filters, though maybe not directly
+       applyFilters(); // Apply initial filters
+
+       // Filter child nodes for summary/recs
+       const childNodes = data.nodes.filter(n => n.type === 'child');
+       updateSummary(childNodes);
+       generateRecommendations(childNodes);
+     }
+
+
+    function getNodeSize(d) {
+      if (d.type === 'parent') return 15; // Make parents larger
+
+      // Child node sizing based on mastery
+      let size = 8; // Base size for 'Needs Work' or 'Not Attempted' children
+      if (d.mastery === 'Mastered') size = 12;
+      else if (d.mastery === 'Developing') size = 10;
+      // Optionally add difficulty bonus:
+      // if (d.difficulties && Object.keys(d.difficulties).length > 0) size += 1;
+      return Math.max(6, size); // Min size
+    }
+
+    function getNodeColor(d) {
+      if (d.type === 'parent') return '#e8eaf6'; // Light indigo for parent background
+
+      // Child node coloring based on mastery
+      switch (d.mastery) {
+        case 'Mastered': return '#4CAF50'; // Green
+        case 'Developing': return '#FFC107'; // Amber
+        case 'Needs Work': return '#F44336'; // Red
+        case 'Not Attempted':
+        default: return '#BDBDBD'; // Slightly darker Grey for not attempted children
+      }
+    }
+
+    function showTooltip(event, d) {
+       const [pointerX, pointerY] = d3.pointer(event, document.body);
+       let tooltipContent = '';
+
+       if (d.type === 'parent') {
+           tooltipContent = `<strong>${d.name}</strong><br><i>Category</i>`;
+           // Future: Could add summary of child mastery here
+       } else { // Child node
+           tooltipContent = `
+             <strong>${d.name}</strong> (${d.mastery || 'N/A'})<br>
+             <span style="font-size:0.9em; color:#666;">${d.description || 'No description'}</span><br>
+             Performance: ${d.mastery !== 'Not Attempted' ? Math.round((d.performance || 0) * 100) + '%' : 'N/A'}`;
+
+             if (d.mastery !== 'Not Attempted' && d.difficulties && Object.keys(d.difficulties).length > 0) {
+               tooltipContent += `<br><br><strong>By Difficulty:</strong><br>`;
+               Object.entries(d.difficulties)
+                 .sort() // Sort difficulties (e.g., Easy, Hard, Medium)
+                 .forEach(([level, stats]) => {
+                   const total = stats.total || 0;
+                   const correct = stats.correct || 0;
+                   if (total > 0) {
+                      const rate = (correct / total) * 100;
+                      tooltipContent += `${level}: ${correct}/${total} (${Math.round(rate)}%)<br>`;
+                   } else {
+                       tooltipContent += `${level}: 0/0<br>`;
+                   }
+               });
+             } else if (d.mastery !== 'Not Attempted') {
+                 tooltipContent += '<br>No difficulty data.';
+             }
+             // Optionally add back tags if useful, though name is often a tag now
+             // if (Array.isArray(d.tags) && d.tags.length > 0) {
+             //    tooltipContent += `<br>Tags: ${d.tags.join(', ')}`;
+             // }
+       }
+
+      tooltipDiv.innerHTML = tooltipContent;
+      tooltipDiv.style.opacity = 1;
+
+      // Tooltip positioning (keep existing logic)
+      const tooltipRect = tooltipDiv.getBoundingClientRect();
+      const visRect = document.getElementById('visualization').getBoundingClientRect();
+      let left = pointerX + 15;
+      let top = pointerY - 15;
+      if (left + tooltipRect.width > visRect.right) left = pointerX - 15 - tooltipRect.width;
+      if (top < visRect.top) top = pointerY + 15;
+      if (top + tooltipRect.height > visRect.bottom) top = pointerY - 15 - tooltipRect.height;
+      tooltipDiv.style.left = `${left}px`;
+      tooltipDiv.style.top = `${top}px`;
+    }
+
+    function hideTooltip() {
+      tooltipDiv.style.opacity = 0;
+    }
+
+    // dragstarted, dragged, dragended remain the same
+
+    // --- Filtering Logic ---
+    function setupFilters(data) { // Pass data if needed later
+       const checkboxes = document.querySelectorAll('#sidebar input[type="checkbox"]');
+       checkboxes.forEach(cb => {
+           // Remove old listener before adding new one if setupFilters can be called multiple times
+           cb.removeEventListener('change', applyFilters);
+           cb.addEventListener('change', applyFilters);
+       });
+    }
+
+    function applyFilters() {
+        if (!knowledgeData || !g) { // Check for knowledgeData and main group 'g'
+            console.warn("Cannot apply filters: Data or SVG group not ready.");
+            return;
+        }
+
+        const showMastered = document.getElementById('show-mastered').checked;
+        const showDeveloping = document.getElementById('show-developing').checked;
+        const showNeedsWork = document.getElementById('show-needs-work').checked;
+        const showNotAttempted = document.getElementById('show-not-attempted').checked;
+
+        const showEasy = document.getElementById('show-easy').checked;
+        const showMedium = document.getElementById('show-medium').checked;
+        const showHard = document.getElementById('show-hard').checked;
+
+        const nodeGroups = g.selectAll('g.node-group');
+        const links = g.selectAll('line.link');
+        const labels = g.selectAll('text.node-label');
+
+        const visibleNodeIds = new Set();
+
+        // Determine node visibility
+        nodeGroups.each(function(d) {
+            const nodeElement = d3.select(this);
+            let isVisible = false;
+
+            if (d.type === 'parent') {
+                 // Parents are visible if 'Not Attempted' is checked OR if any specific filter matches their (currently non-existent) mastery/difficulty.
+                 // Simplest: Show parents if 'Not Attempted' is checked, as they don't have mastery themselves.
+                 // Or, always show parents? Let's try always showing them for structure.
+                 isVisible = true; // Decision: Keep parents always visible for structural context.
+                                   // Alternative: isVisible = showNotAttempted;
+            } else {
+                // Child node filtering (existing logic)
+                if (d.mastery === 'Mastered' && showMastered) isVisible = true;
+                else if (d.mastery === 'Developing' && showDeveloping) isVisible = true;
+                else if (d.mastery === 'Needs Work' && showNeedsWork) isVisible = true;
+                else if (d.mastery === 'Not Attempted' && showNotAttempted) isVisible = true;
+
+                 // Difficulty filter (only if mastery passed and node is attempted)
+                 if (isVisible && d.mastery !== 'Not Attempted') {
+                     const difficulties = d.difficulties || {};
+                     const attemptedDifficulties = Object.keys(difficulties);
+                     const hasAttemptedData = attemptedDifficulties.some(level => difficulties[level].total > 0);
+
+                     if (hasAttemptedData) {
+                         // Check if *any* of its attempted difficulties are selected
+                         const hasVisibleDifficulty = attemptedDifficulties.some(level =>
+                             difficulties[level].total > 0 && // Only consider levels actually attempted
+                             ( (level === 'Easy' && showEasy) ||
+                               (level === 'Medium' && showMedium) ||
+                               (level === 'Hard' && showHard) ||
+                               // If difficulty is 'Unknown' or other, show if any relevant filter is on
+                               (!['Easy', 'Medium', 'Hard'].includes(level) && (showEasy || showMedium || showHard))
+                             )
+                         );
+                         // If *no* relevant difficulty is checked, hide node
+                         if (!showEasy && !showMedium && !showHard) {
+                             // If all difficulty filters are off, don't hide based on difficulty.
+                         } else if (!hasVisibleDifficulty) {
+                             isVisible = false;
+                         }
+                     } else {
+                         // Node was attempted (e.g., Needs Work) but has no specific difficulty data.
+                         // Show if any difficulty filter is on? Or only if all are off?
+                         // Let's show it if its mastery is visible and *any* difficulty filter is on (or all off)
+                         // If all difficulty filters are OFF, it remains visible.
+                         // If *some* difficulty filters are ON, should it be hidden? Let's hide it.
+                         if (showEasy || showMedium || showHard) {
+                            // isVisible = false; // Hide if filters are on but no data matches
+                            // Let's keep it visible - simpler. If mastery matches, show.
+                         }
+                     }
+                 }
+            }
+
+
+            // Apply visibility
+            nodeElement.transition().duration(300)
+                 .style('opacity', isVisible ? 1 : 0.1)
+                 .style('pointer-events', isVisible ? 'all' : 'none');
+
+            if (isVisible) {
+                visibleNodeIds.add(d.id);
+            }
+        });
+
+        // Update link visibility
+        links.transition().duration(300)
+            .style('opacity', d => {
+                const sourceVisible = visibleNodeIds.has(d.source.id);
+                const targetVisible = visibleNodeIds.has(d.target.id);
+                // Dim parent-parent links more if one end is hidden
+                const baseOpacity = (d.source.type === 'parent' && d.target.type === 'parent') ? 0.3 : 0.6;
+                return (sourceVisible && targetVisible) ? baseOpacity : 0.05;
+            });
+
+        // Update label visibility
+        labels.transition().duration(300)
+            .attr('display', d => visibleNodeIds.has(d.id) ? null : 'none');
+
+        console.log(`Filters applied. Visible nodes: ${visibleNodeIds.size}`);
+    }
+
+
+    // --- Sidebar Updates ---
+    // Update summary/recommendations based on CHILD nodes only
+    function updateSummary(childNodes) { // Pass only child nodes
+       summaryLoader.style.display = 'none';
+       const total = childNodes.length;
+       if (total === 0) {
+           summaryStatsDiv.innerHTML = '<p>No specific concept data available.</p>';
+           return;
+       }
+       // ... (rest of summary calculation remains the same, using childNodes) ...
+        const mastered = childNodes.filter(d => d.mastery === 'Mastered').length;
+        const developing = childNodes.filter(d => d.mastery === 'Developing').length;
+        const needsWork = childNodes.filter(d => d.mastery === 'Needs Work').length;
+        const notAttempted = total - mastered - developing - needsWork; // Recalculate based on children
+
+        const masteredPercent = total > 0 ? (mastered / total) * 100 : 0;
+        const developingPercent = total > 0 ? (developing / total) * 100 : 0;
+        const needsWorkPercent = total > 0 ? (needsWork / total) * 100 : 0;
+        const notAttemptedPercent = total > 0 ? (notAttempted / total) * 100 : 0;
+
+        // Keep the same HTML structure for summary
+        const summaryHtml = `
+          <div><strong>Mastered:</strong> ${mastered}/${total} (${Math.round(masteredPercent)}%)<div class="progress-bar"><div class="progress-fill" style="width: ${masteredPercent}%; background-color: #4CAF50;"></div></div></div>
+          <div><strong>Developing:</strong> ${developing}/${total} (${Math.round(developingPercent)}%)<div class="progress-bar"><div class="progress-fill" style="width: ${developingPercent}%; background-color: #FFC107;"></div></div></div>
+          <div><strong>Needs Work:</strong> ${needsWork}/${total} (${Math.round(needsWorkPercent)}%)<div class="progress-bar"><div class="progress-fill" style="width: ${needsWorkPercent}%; background-color: #F44336;"></div></div></div>
+          <div><strong>Not Attempted:</strong> ${notAttempted}/${total} (${Math.round(notAttemptedPercent)}%)<div class="progress-bar"><div class="progress-fill" style="width: ${notAttemptedPercent}%; background-color: #BDBDBD;"></div></div></div>
+        `;
+        summaryStatsDiv.innerHTML = summaryHtml;
+
+    }
+
+    function generateRecommendations(childNodes) { // Pass only child nodes
+       recsLoader.style.display = 'none';
+        if (!childNodes || childNodes.length === 0) {
+            recommendationsContainer.innerHTML = '<p>No recommendation data available.</p>';
+            return;
+        }
+       // ... (rest of recommendation logic remains the same, using childNodes) ...
+       // Sort nodes by performance within categories
+        const needsWorkNodes = childNodes.filter(d => d.mastery === 'Needs Work').sort((a, b) => (a.performance || 0) - (b.performance || 0));
+        const developingNodes = childNodes.filter(d => d.mastery === 'Developing').sort((a, b) => (a.performance || 0) - (b.performance || 0));
+        const notAttemptedNodes = childNodes.filter(d => d.mastery === 'Not Attempted');
+
+        let recommendationsHtml = '';
+        const maxRecsPerCategory = 2;
+
+        // 1. Recommend improving weakest 'Needs Work' concepts
+        if (needsWorkNodes.length > 0) {
+          recommendationsHtml += '<p><strong>Focus on improving:</strong></p>';
+          needsWorkNodes.slice(0, maxRecsPerCategory).forEach(node => {
+            // Use node.name (the tag) and maybe description in tooltip/details later
+            recommendationsHtml += `<div class="recommendation-item"><strong>${node.name}</strong> (${Math.round((node.performance || 0) * 100)}%) - Practice this.</div>`;
+          });
+        }
+        // ... (rest of recommendation logic is the same) ...
+         // 2. Recommend 'Developing' concepts closest to mastery
+        const almostMastered = developingNodes.filter(d => (d.performance || 0) >= 0.65).reverse(); // Get highest first
+        if (almostMastered.length > 0) {
+          recommendationsHtml += '<p><strong>Push these to mastery:</strong></p>';
+          almostMastered.slice(0, maxRecsPerCategory).forEach(node => {
+            recommendationsHtml += `<div class="recommendation-item"><strong>${node.name}</strong> (${Math.round((node.performance || 0) * 100)}%) - You're close!</div>`;
+          });
+        }
+         // 3. Recommend other 'Developing' concepts if few 'almost mastered'
+        else if (developingNodes.length > 0 && needsWorkNodes.length < maxRecsPerCategory) {
+            recommendationsHtml += '<p><strong>Continue developing:</strong></p>';
+            developingNodes.slice(0, maxRecsPerCategory).forEach(node => {
+               recommendationsHtml += `<div class="recommendation-item"><strong>${node.name}</strong> (${Math.round((node.performance || 0) * 100)}%) - Keep practicing.</div>`;
+             });
+        }
+
+        // 4. Recommend 'Not Attempted' concepts
+        if (notAttemptedNodes.length > 0 && (needsWorkNodes.length + developingNodes.length + childNodes.filter(d => d.mastery === 'Mastered').length > 0) ) {
+           const recommendedNew = notAttemptedNodes.slice(0, maxRecsPerCategory);
+            if (recommendedNew.length > 0) {
+               recommendationsHtml += '<p><strong>Explore new concepts:</strong></p>';
+               recommendedNew.forEach(node => {
+                 recommendationsHtml += `<div class="recommendation-item">Explore: <strong>${node.name}</strong></div>`;
+               });
+            }
+        }
+
+        // Fallback messages
+        if (recommendationsHtml === '') {
+           if (childNodes.every(d => d.mastery === 'Mastered')) {
+               recommendationsHtml = '<p>Excellent work! All specific concepts are mastered.</p>';
+           } else if (childNodes.every(d => d.mastery === 'Not Attempted')) {
+               recommendationsHtml = '<p>Start exploring concepts to build your knowledge map!</p>';
+           } else {
+               recommendationsHtml = '<p>Keep up the great work! Continue practicing concepts.</p>'; // Generic fallback
+           }
+        }
+
+        recommendationsContainer.innerHTML = recommendationsHtml;
+    }
+
+
+    // --- Test Data Generation (Needs Update) ---
+    function generateTestData() {
+      console.warn("generateTestData needs updating for the new hierarchical structure. Using simplified flat data for now.");
+      // TODO: Update this function to generate parent/child nodes and appropriate links
+      // For now, return the old flat structure as a placeholder if needed, or a basic hierarchy
+       const parents = ["Strings", "Numbers", "Booleans", "Types"];
+       const nodes = [];
+       const links = [];
+       let idCounter = 0;
+       const parentIds = [];
+
+       parents.forEach(pName => {
+          const pId = idCounter++;
+          nodes.push({id: pId, name: pName, type: 'parent', mastery: 'N/A'});
+          parentIds.push(pId);
+          const numChildren = 3 + Math.floor(Math.random() * 5);
+          for(let i=0; i<numChildren; i++) {
+             const cId = idCounter++;
+             const masteryLevels = ["Mastered", "Developing", "Needs Work", "Not Attempted"];
+             const mastery = masteryLevels[Math.floor(Math.random() * masteryLevels.length)];
+             let performance = 0;
+             if (mastery === "Mastered") performance = 0.8 + Math.random() * 0.2;
+             else if (mastery === "Developing") performance = 0.5 + Math.random() * 0.29;
+             else if (mastery === "Needs Work") performance = Math.random() * 0.49;
+
+             nodes.push({
+                id: cId,
+                name: `${pName} Sub-Concept ${i+1}`,
+                type: 'child',
+                description: `Detail for ${pName} Sub-Concept ${i+1}`,
+                mastery: mastery,
+                performance: performance,
+                difficulties: {}, // Simplified
+                tags: [pName]
+             });
+             links.push({source: pId, target: cId, strength: 0.9});
+          }
+       });
+
+       // Add parent-parent links
+        for (let i = 0; i < parentIds.length; i++) {
+          for (let j = i + 1; j < parentIds.length; j++) {
+            links.push({ source: parentIds[i], target: parentIds[j], strength: 0.1 });
+          }
+        }
+       console.log(`Generated ${nodes.length} test nodes and ${links.length} test links.`);
+       return { nodes, links };
+
+    }
+
+  </script>
+</body>
+</html>
