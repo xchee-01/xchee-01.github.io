@@ -231,12 +231,22 @@
     
     #error-message {
       color: #F44336;
-      margin-top: 10px;
-      font-weight: bold;
-      padding: 10px;
       background-color: #FFEBEE;
+      padding: 10px;
+      margin-bottom: 15px;
       border-radius: 5px;
       display: none;
+    }
+    
+    #retry-button {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 15px;
+      cursor: pointer;
+      margin-top: 10px;
+      display: block;
     }
   </style>
 </head>
@@ -247,7 +257,10 @@
   
   <div id="container">
     <div id="sidebar">
-      <div id="error-message"></div>
+      <div id="error-message">
+        Failed to load data. Please check your network connection and try again.
+        <button id="retry-button">Retry</button>
+      </div>
       
       <div class="filter-section">
         <h3>Mastery Level</h3>
@@ -346,75 +359,101 @@
       // Hardcoded Google Apps Script URL
       const apiUrl = 'https://script.google.com/macros/s/AKfycbxMJoTHiMtetsKXc9Y0m0n2zsGGpYjTpZ1dJw31G4ToGodj47zrgpYMfAOGOVl5biPHmw/exec';
       
-      // Automatically load data when page loads
-      fetchDataWithJSONP(apiUrl);
-    });
-    
-    // JSONP implementation to bypass CORS
-    function fetchDataWithJSONP(url) {
-      // Add callback parameter
-      const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+      // Hide error message initially
+      document.getElementById('error-message').style.display = 'none';
       
-      // Ensure the URL has proper parameters
-      const jsonpUrl = url + (url.indexOf('?') === -1 ? '?' : '&') + 'callback=' + callbackName;
+      // Set up retry button
+      document.getElementById('retry-button').addEventListener('click', function() {
+        document.getElementById('error-message').style.display = 'none';
+        document.getElementById('main-loader').style.display = 'block';
+        loadData();
+      });
       
-      // Create script element
-      const script = document.createElement('script');
-      script.src = jsonpUrl;
+      // Load data immediately when page loads
+      loadData();
       
-      // Define the callback function in the global scope
-      window[callbackName] = function(data) {
-        // Clean up
-        document.body.removeChild(script);
-        delete window[callbackName];
+      // Function to load data
+      function loadData() {
+        // Create a unique callback name
+        const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
         
-        // Process the data
-        renderKnowledgeMap(data);
-      };
-      
-      // Add error handling
-      script.onerror = function() {
-        // Clean up
-        document.body.removeChild(script);
-        delete window[callbackName];
+        // Define the callback function
+        window[callbackName] = function(data) {
+          try {
+            // Process the data
+            renderKnowledgeMap(data);
+            
+            // Clean up the script tag and callback function
+            if (script.parentNode) {
+              script.parentNode.removeChild(script);
+            }
+            delete window[callbackName];
+          } catch (error) {
+            console.error('Error processing data:', error);
+            showError('Error processing data: ' + error.message);
+          }
+        };
         
-        // Show error
-        document.getElementById('main-loader').style.display = 'none';
-        const errorElement = document.getElementById('error-message');
-        errorElement.textContent = 'Failed to load data. Please check your network connection and try again later.';
-        errorElement.style.display = 'block';
-      };
-      
-      // Add the script to the page
-      document.body.appendChild(script);
-      
-      // Set a timeout in case the request takes too long
-      setTimeout(function() {
-        if (window[callbackName]) {
-          // The callback hasn't been called yet, so the request might have failed
+        // Create the script element
+        const script = document.createElement('script');
+        script.src = apiUrl + '?callback=' + callbackName + '&t=' + new Date().getTime(); // Add timestamp to prevent caching
+        
+        // Handle script loading error
+        script.onerror = function() {
+          console.error('Failed to load script');
+          showError('Failed to load data. Please check your network connection and try again.');
+          
           // Clean up
-          if (document.body.contains(script)) {
-            document.body.removeChild(script);
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
           }
           delete window[callbackName];
-          
-          // Show error
-          document.getElementById('main-loader').style.display = 'none';
-          const errorElement = document.getElementById('error-message');
-          errorElement.textContent = 'Request timed out. Please check your connection and refresh the page.';
-          errorElement.style.display = 'block';
+        };
+        
+        // Add the script to the page
+        document.head.appendChild(script);
+        
+        // Set a timeout for the request
+        setTimeout(function() {
+          if (window[callbackName]) {
+            console.error('Request timed out');
+            showError('Request timed out. Please try again later.');
+            
+            // Clean up
+            if (script.parentNode) {
+              script.parentNode.removeChild(script);
+            }
+            delete window[callbackName];
+          }
+        }, 30000); // 30 second timeout
+      }
+      
+      function showError(message) {
+        // Hide loader
+        document.getElementById('main-loader').style.display = 'none';
+        
+        // Show error message
+        const errorElement = document.getElementById('error-message');
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        
+        // Append retry button if it was removed
+        if (!errorElement.contains(document.getElementById('retry-button'))) {
+          const retryButton = document.getElementById('retry-button');
+          errorElement.appendChild(retryButton);
         }
-      }, 30000); // 30 second timeout
-    }
+        
+        // Show retry button
+        document.getElementById('retry-button').style.display = 'block';
+      }
+    });
     
     function renderKnowledgeMap(data) {
       // Hide loader
       document.getElementById('main-loader').style.display = 'none';
       
       if (!data || data.error) {
-        const errorElement = document.getElementById('error-message');
-        errorElement.textContent = 'Error loading data: ' + (data.error || 'Invalid data received');
-        errorElement.style.display = 'block';
+        showError('Error loading data: ' + (data.error || 'Invalid data received'));
         return;
       }
       
@@ -599,6 +638,23 @@
         event.subject.fx = null;
         event.subject.fy = null;
       }
+    }
+    
+    function showError(message) {
+      // Hide loader
+      document.getElementById('main-loader').style.display = 'none';
+      
+      // Show error message
+      const errorElement = document.getElementById('error-message');
+      errorElement.innerHTML = message + '<button id="retry-button">Retry</button>';
+      errorElement.style.display = 'block';
+      
+      // Set up retry button
+      document.getElementById('retry-button').addEventListener('click', function() {
+        document.getElementById('error-message').style.display = 'none';
+        document.getElementById('main-loader').style.display = 'block';
+        location.reload(); // Simple reload as a fallback
+      });
     }
     
     function setupFilters(data, node, link, label) {
