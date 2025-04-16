@@ -723,4 +723,633 @@
             async loadSound(type) {
                 try {
                     const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
-                    const response = await
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load sound');
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    this.soundBuffers.correct = await this.audioContext.decodeAudioData(arrayBuffer);
+                    return this.soundBuffers.correct;
+                } catch (error) {
+                    console.error('Error loading sound:', error);
+                    this.soundBuffers.correct = this.createSuccessSound();
+                    return this.soundBuffers.correct;
+                }
+            },
+            
+            // Create synthetic success sound (fallback)
+            createSuccessSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 0.6;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00]; // C, E, G
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        let envelope = t < 0.02 ? t / 0.02 : Math.pow(1 - ((t - 0.02) / (duration - 0.02)), 2);
+                        
+                        for (const freq of frequencies) {
+                            amplitude += Math.sin(freq * 2 * Math.PI * t) * envelope * 0.2;
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                return buffer;
+            },
+            
+            // Create synthetic final sound
+            createFinalSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 1.5;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                    const arpeggioDuration = 0.15;
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        
+                        for (let n = 0; n < frequencies.length; n++) {
+                            const noteStart = n * arpeggioDuration;
+                            const noteEnd = noteStart + arpeggioDuration * 2;
+                            
+                            if (t >= noteStart && t <= noteEnd) {
+                                const envelope = t - noteStart < 0.01 
+                                    ? (t - noteStart) / 0.01 
+                                    : Math.pow(1 - ((t - noteStart - 0.01) / (noteEnd - noteStart - 0.01)), 1.5);
+                                
+                                amplitude += Math.sin(frequencies[n] * 2 * Math.PI * t) * envelope * 0.2;
+                            }
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                this.soundBuffers.final = buffer;
+                return buffer;
+            },
+            
+            // Play a sound
+            playSound(type) {
+                if (!this.audioContext || !this.soundBuffers[type]) {
+                    this.init();
+                    if (!this.audioContext || !this.soundBuffers[type]) return;
+                }
+                
+                const source = this.audioContext.createBufferSource();
+                source.buffer = this.soundBuffers[type];
+                
+                const gainNode = this.audioContext.createGain();
+                gainNode.gain.value = 0.4;
+                
+                source.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                source.start();
+            },
+            
+            // Helper methods
+            playCorrectSound() {
+                this.playSound('correct');
+            },
+            
+            playFinalSound() {
+                this.playSound('final');
+            }
+        };
+        
+        // Animation for score points
+        function animatePointToScore(sourceElement) {
+            const pointElement = document.createElement('div');
+            pointElement.className = 'point-animation';
+            pointElement.textContent = '+1';
+            
+            // Position at the source element's location
+            const sourceRect = sourceElement.getBoundingClientRect();
+            const scoreElement = document.querySelector('.score-container');
+            const scoreRect = scoreElement.getBoundingClientRect();
+            
+            // Starting position
+            const startX = sourceRect.left + sourceRect.width / 2;
+            const startY = sourceRect.top + sourceRect.height / 2;
+            
+            // Ending position
+            const endX = scoreRect.left + scoreRect.width / 2;
+            const endY = scoreRect.top + scoreRect.height / 2;
+            
+            // Apply direct transform
+            pointElement.style.position = 'fixed';
+            pointElement.style.left = `${startX}px`;
+            pointElement.style.top = `${startY}px`;
+            pointElement.style.transform = 'translate(-50%, -50%)';
+            pointElement.style.opacity = '1';
+            
+            document.body.appendChild(pointElement);
+            
+            // Animation with JS for better control
+            let startTime = null;
+            const duration = 1000; // milliseconds
+            
+            const animatePoint = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Cubic bezier easing
+                const easeOut = t => 1 - Math.pow(1 - t, 3);
+                const easedProgress = easeOut(progress);
+                
+                // Calculate current position with easing
+                const currentX = startX + (endX - startX) * easedProgress;
+                const currentY = startY + (endY - startY) * easedProgress;
+                
+                // Apply transforms
+                const scale = 1 - 0.4 * easedProgress;
+                const rotation = 45 * easedProgress;
+                const opacity = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
+                
+                pointElement.style.left = `${currentX}px`;
+                pointElement.style.top = `${currentY}px`;
+                pointElement.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`;
+                pointElement.style.opacity = `${opacity}`;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animatePoint);
+                } else {
+                    // Clean up when animation completes
+                    pointElement.remove();
+                }
+            };
+            
+            // Start animation in next frame
+            requestAnimationFrame(animatePoint);
+            
+            // Pulse effect on score
+            scoreElement.style.animation = 'pulse 0.5s ease-in-out';
+            
+            // Clean up score animation
+            setTimeout(() => {
+                scoreElement.style.animation = '';
+            }, 500);
+        }
+
+        // Create particles for celebration animation
+        function createParticles() {
+            // Use canvas for particle animation instead of DOM elements
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '1600';
+            document.body.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Reduce particle count for better performance
+            const particleCount = ('ontouchstart' in window) ? 12 : 25;
+            
+            // NUS colors
+            const colors = ['#003D7C', '#EF7C00', '#4A90E2', '#FFB74D'];
+            
+            // Create particles array
+            const particles = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: canvas.height,
+                    radius: Math.random() * 6 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: Math.random() * 2 + 1,
+                    angle: Math.random() * Math.PI * 2,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 2 - 1,
+                    alpha: 0
+                });
+            }
+            
+            // Animation variables
+            let animationStartTime = null;
+            const animationDuration = 2500; // milliseconds
+            
+            // Animation function
+            function animate(timestamp) {
+                if (!animationStartTime) animationStartTime = timestamp;
+                const elapsed = timestamp - animationStartTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw particles
+                for (const p of particles) {
+                    // Calculate position based on time
+                    const distance = 150 + Math.random() * 150;
+                    const targetY = canvas.height - distance - 300 * progress;
+                    
+                    // Ease-out function for smooth animation
+                    const easeOut = function(t) {
+                        return 1 - Math.pow(1 - t, 3);
+                    };
+                    
+                    // Apply easing
+                    const easedProgress = easeOut(progress);
+                    
+                    p.y = canvas.height - (canvas.height - targetY) * easedProgress;
+                    p.x += Math.cos(p.angle) * p.speed * 0.5;
+                    p.rotation += p.rotationSpeed;
+                    
+                    // Fade in then out
+                    if (progress < 0.3) {
+                        p.alpha = progress / 0.3; // Fade in
+                    } else if (progress > 0.7) {
+                        p.alpha = 1 - (progress - 0.7) / 0.3; // Fade out
+                    } else {
+                        p.alpha = 1;
+                    }
+                    
+                    // Draw particle
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                
+                // Continue animation or clean up
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Clean up canvas when done
+                    setTimeout(() => {
+                        canvas.remove();
+                    }, 100);
+                }
+            }
+            
+            // Start animation
+            requestAnimationFrame(animate);
+        }
+
+        // Function to show celebration/completion message
+        function celebrateCompletion(title, message, type) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            document.body.appendChild(overlay);
+            
+            // Trigger CSS animation by applying class after a small delay
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+            });
+            
+            // Create particles for perfect or great scores
+            if (type === "perfect" || type === "great") {
+                createParticles();
+            }
+            
+            // Create celebration message
+            const celebrationMsg = document.createElement('div');
+            celebrationMsg.className = 'celebration-message';
+            
+            // Choose the right icon based on score
+            let iconHTML;
+            if (type === "perfect") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#EF7C00" stroke-width="2" fill="rgba(239, 124, 0, 0.1)"/>
+                        <path d="M8 12L11 15L16 9" stroke="#003D7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>`;
+            } else if (type === "great") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15.4L8.24 17.67L9.24 13.39L5.92 10.51L10.3 10.13L12 6.1L13.71 10.14L18.09 10.52L14.77 13.4L15.77 17.68L12 15.4Z" fill="#EF7C00" stroke="#003D7C" stroke-width="1.5"/>
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                    </svg>`;
+            } else if (type === "good") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 13.5C8.83333 14.8333 10.3 17 12.5 15.5C14.7 14 16 15 16.5 16" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else if (type === "try") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 14.5C9.5 13.5 14.5 13.5 16 14.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 15.5C9.5 16.5 14.5 16.5 16 15.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round" transform="rotate(180 12 16)"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            }
+            
+            celebrationMsg.innerHTML = `
+                <div class="celebration-icon">
+                    ${iconHTML}
+                </div>
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <button id="continue-button">Continue</button>
+            `;
+            
+            document.body.appendChild(celebrationMsg);
+            
+            // Add event listener to continue button
+            document.getElementById('continue-button').addEventListener('click', () => {
+                celebrationMsg.style.animation = 'celebrate 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) reverse forwards';
+                overlay.classList.remove('show');
+                
+                setTimeout(() => {
+                    celebrationMsg.remove();
+                    overlay.remove();
+                }, 600);
+            });
+        }
+
+        // Extract username from localStorage on page load
+        function getUsername() {
+            try {
+                // Try to get the accounts data from localStorage
+                const accountsData = localStorage.getItem('accounts');
+                
+                if (accountsData) {
+                    // Parse the JSON array of accounts
+                    const accounts = JSON.parse(accountsData);
+                    
+                    // If accounts exist and there's at least one account with a username
+                    if (accounts && accounts.length > 0 && accounts[0].username) {
+                        return accounts[0].username; // Return the first account's username
+                    }
+                }
+                
+                // If we couldn't find a username or there was an error, return a default
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Error getting username from accounts:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Silently set the username on page load
+        document.getElementById('username').value = getUsername();
+        
+        let currentQuestionIndex = 0;
+        let score = 0;
+        const questions = document.querySelectorAll('.question');
+        const nextBtn = document.getElementById('next-btn');
+        const finalResultDiv = document.getElementById('final-result');
+        const scoreElement = document.querySelector('.score');
+        
+        // Variables to store quiz data
+        let questionData = [];
+        
+        // Timer variables
+        let startTime;
+        let timerInterval;
+        let questionTimes = [];
+        
+        // Initialize audio immediately to ensure it's ready for the first question
+        AudioManager.init();
+        
+        // Start timer for first question
+        startTimer();
+        
+        // Function to start the timer
+        function startTimer() {
+            startTime = new Date();
+            const currentTimerElement = document.getElementById(`timer-q${currentQuestionIndex + 1}`);
+            
+            // Clear any existing interval
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Update timer every second
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((new Date() - startTime) / 1000);
+                currentTimerElement.textContent = `Time: ${elapsedTime}s`;
+            }, 1000);
+        }
+        
+        // Function to stop the timer and record time
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const timeElapsed = Math.floor((new Date() - startTime) / 1000);
+            questionTimes[currentQuestionIndex] = timeElapsed;
+            
+            // Display the time taken for this question
+            const timeSummaryElement = document.getElementById(`time-summary-q${currentQuestionIndex + 1}`);
+            timeSummaryElement.innerHTML = `Time spent: ${timeElapsed} seconds`;
+            timeSummaryElement.style.display = 'block';
+            
+            return timeElapsed;
+        }
+
+        // Function to submit quiz data silently
+        function submitQuizData() {
+            const username = document.getElementById('username').value || 'Anonymous';
+            
+            // Prepare data to send to Google Apps Script
+            const data = {
+                username: username,
+                url: window.location.href,
+                questionData: questionData
+            };
+            
+            // Get the deployed script URL
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbzr-KFisJk2kcQTfh8wbAI-sImJ2uu1N8kPt1wXtx9p1aXdouFQJylATOhkByW9ObK6/exec';
+            
+            // Send data to Google Apps Script silently
+            fetch(scriptUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                mode: 'no-cors' // Important for Google Apps Script
+            })
+            .then(() => {
+                console.log('Quiz data submitted silently');
+            })
+            .catch(error => {
+                console.error('Error submitting quiz data:', error);
+            });
+        }
+
+        // Add click event listeners to all options
+        questions.forEach((question, qIndex) => {
+            const options = question.querySelectorAll('.option');
+            const feedbackDiv = question.querySelector('.feedback');
+            
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Prevent multiple selections
+                    if (question.classList.contains('answered')) return;
+
+                    // Stop the timer when an answer is selected
+                    const timeSpent = stopTimer();
+
+                    // Get the question number and selected text
+                    const questionNumber = qIndex + 1;
+                    const selectedText = option.textContent.trim();
+                    const isCorrect = option.getAttribute('data-correct') === 'true' ? "Yes" : "No";
+                    
+                    // Save the answer data
+                    questionData.push({
+                        questionNumber: questionNumber,
+                        selectedText: selectedText,
+                        timeSpent: timeSpent,
+                        isCorrect: isCorrect
+                    });
+
+                    // Remove previous selections
+                    options.forEach(opt => {
+                        opt.classList.remove('correct', 'incorrect');
+                    });
+
+                    // Mark selected option
+                    if (option.getAttribute('data-correct') === 'true') {
+                        option.classList.add('correct');
+                        
+                        // Increment score and update display
+                        score++;
+                        scoreElement.textContent = score;
+                        
+                        // Play correct sound - now initialized earlier to ensure it works from Q1
+                        AudioManager.playCorrectSound();
+                        
+                        // Animate point
+                        animatePointToScore(option);
+                    } else {
+                        option.classList.add('incorrect');
+                        // Highlight the correct answer
+                        options.forEach(opt => {
+                            if (opt.getAttribute('data-correct') === 'true') {
+                                opt.classList.add('correct');
+                            }
+                        });
+                    }
+
+                    // Show feedback
+                    feedbackDiv.innerHTML = option.getAttribute('data-feedback');
+                    feedbackDiv.style.display = 'block';
+
+                    // Mark question as answered
+                    question.classList.add('answered');
+
+                    // Show next button
+                    nextBtn.style.display = 'block';
+                });
+            });
+        });
+
+        // Next button click event
+        nextBtn.addEventListener('click', function() {
+            // Hide current question
+            questions[currentQuestionIndex].classList.remove('active');
+            
+            // Move to next question
+            currentQuestionIndex++;
+
+            // Check if quiz is complete
+            if (currentQuestionIndex >= questions.length) {
+                // Hide next button
+                nextBtn.style.display = 'none';
+                
+                // Determine message based on score
+                let title, message, type;
+                
+                if (score === 11) {
+                    title = "Perfect Score!";
+                    message = "Congratulations! You've successfully mastered amino acid charge concepts. Your understanding is excellent!";
+                    type = "perfect";
+                    // Play final sound for perfect score
+                    AudioManager.playFinalSound();
+                } else if (score >= 9) {
+                    title = "Great Job!";
+                    message = `You got ${score} out of 11 correct! You have a very good understanding of amino acid charge concepts.`;
+                    type = "great";
+                } else if (score >= 7) {
+                    title = "Good Effort!";
+                    message = `You got ${score} out of 11 correct. You have a solid understanding of amino acid charge concepts.`;
+                    type = "good";
+                } else if (score >= 5) {
+                    title = "Nice Try!";
+                    message = `You got ${score} out of 11 correct. With a bit more study, you'll improve your understanding of amino acid charge.`;
+                    type = "try";
+                } else {
+                    title = "Keep Learning!";
+                    message = "Amino acid charge concepts can be challenging. Review the basic principles and try again!";
+                    type = "learn";
+                }
+                
+                // Show celebration/completion message
+                celebrateCompletion(title, message, type);
+                
+                // Show time summary in final result div
+                let timeHTML = '<div style="margin-top: 20px; padding: 15px; background-color: rgba(0, 61, 124, 0.06); border-radius: 8px;">';
+                timeHTML += '<h3 style="color: var(--primary); margin-bottom: 10px;">Time Summary:</h3>';
+                timeHTML += '<ul style="list-style-type: none; padding-left: 0;">';
+                
+                let totalTime = 0;
+                for (let i = 0; i < questionTimes.length; i++) {
+                    totalTime += questionTimes[i];
+                    timeHTML += `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light);">
+                        <strong>Question ${i + 1}:</strong> ${questionTimes[i]} seconds
+                    </li>`;
+                }
+                
+                timeHTML += `<li style="margin-top: 10px; font-weight: bold; color: var(--primary);">
+                    Total time: ${totalTime} seconds
+                </li>`;
+                timeHTML += '</ul></div>';
+                
+                finalResultDiv.innerHTML = timeHTML;
+                
+                // Automatically submit quiz data silently after showing results
+                submitQuizData();
+                return;
+            }
+
+            // Show next question
+            questions[currentQuestionIndex].classList.add('active');
+            
+            // Hide next button until an answer is selected
+            nextBtn.style.display = 'none';
+            
+            // Clear previous feedback
+            const previousFeedback = questions[currentQuestionIndex - 1].querySelector('.feedback');
+            previousFeedback.style.display = 'none';
+            previousFeedback.innerHTML = '';
+            
+            // Start timer for new question
+            startTimer();
+        });
+    </script>
+</body>
+</html>
