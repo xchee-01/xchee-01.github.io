@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mRNA Structure Quiz</title>
+    <style>
+        /* NUS Colors - Updated with drag & drop quiz colors */
+        :root {
+            --primary: #003D7C; /* NUS Blue */
+            --secondary: #EF7C00; /* NUS Orange */
+            --light-bg: #f8f9fa;
+            --text-dark: #333;
+            --text-medium: #495057;
+            --text-light: #6c757d;
+            --border-light: #dee2e6;
+            --correct: #28a745;
+            --incorrect: #dc3545;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-bg);
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background-color: var(--primary);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .score-container {
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 20px;
+            font-weight: 600;
+            position: relative;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--secondary);
+            will-change: transform;
+        }
+        
+        .score {
+            color: var(--secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .question {
+            display: none;
+            margin-bottom: 20px;
+            background-color: rgba(0, 61, 124, 0.06);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .question.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .timer {
+            text-align: right;
+            font-size: 1em;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        .timer svg {
+            margin-right: 5px;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .option {
+            padding: 15px;
+            background-color: var(--light-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .option:hover {
+            background-color: rgba(0, 61, 124, 0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .option.correct {
+            background-color: var(--correct);
+            color: white;
+            animation: correctAnswer 0.8s ease forwards;
+        }
+        
+        .option.incorrect {
+            background-color: var(--incorrect);
+            color: white;
+            animation: wrongAnswer 0.6s ease forwards;
+        }
+        
+        @keyframes correctAnswer {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
+            75% { transform: scale(1.04); }
+        }
+        
+        @keyframes wrongAnswer {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .option-prefix {
+            font-weight: 600;
+            margin-right: 12px;
+            min-width: 20px;
+            color: var(--primary);
+        }
+        
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .time-summary {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(0, 61, 124, 0.06);
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        #next-btn {
+            display: none;
+            padding: 14px 28px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 20px auto;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+        
+        #next-btn:hover {
+            background-color: #00285A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+        
+        #next-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        #final-result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: var(--primary);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .point-animation {
+            position: absolute;
+            color: var(--secondary);
+            font-weight: bold;
+            font-size: 32px;
+            text-shadow: 0 0 10px rgba(239, 124, 0, 0.6);
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+        }
+        
+        /* Overlay and message styles */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.4);
+            backdrop-filter: blur(3px);
+            z-index: 1500;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .celebration-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background-color: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            z-index: 2000;
+            animation: celebrate 0.7s forwards;
+            will-change: transform, opacity;
+        }
+        
+        .celebration-message h3 {
+            color: var(--primary);
+            font-size: 28px;
+            margin: 0 0 15px 0;
+        }
+        
+        .celebration-message p {
+            color: var(--text-medium);
+            margin-bottom: 20px;
+        }
+        
+        .celebration-icon {
+            font-size: 60px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+        
+        #continue-button {
+            padding: 14px 28px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 10px auto;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--secondary);
+        }
+        
+        #continue-button:hover {
+            background-color: #00285A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+        
+        #continue-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        /* Celebrate animation */
+        @keyframes celebrate {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        /* Hidden elements */
+        #username-container, #submit-container {
+            display: none;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .option {
+                padding: 12px;
+            }
+            
+            .quiz-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>mRNA Structure Quiz</h1>
+        <div class="score-container">
+            Score: <span class="score">0</span>/19
+        </div>
+    </div>
+    
+    <div class="quiz-container">
+        <!-- Hidden username container -->
+        <div id="username-container">
+            <input type="hidden" id="username">
+        </div>
+        
+        <div id="quiz-content">
+            <!-- Question 1 -->
+            <div class="question active" id="q1">
+                <div class="timer" id="timer-q1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>1. What are the five main components of a mature eukaryotic mRNA from 5' to 3' end?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="A mature eukaryotic mRNA molecule consists of five distinct components arranged in a specific order from 5' to 3': the 5' cap (a modified guanine nucleotide), the 5' untranslated region (UTR), the open reading frame (ORF) which encodes the protein, the 3' untranslated region (UTR), and the poly(A) tail (a stretch of adenine nucleotides).">
+                        <span class="option-prefix">a)</span> Promoter, 5' UTR, ORF, 3' UTR, terminator
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="A mature eukaryotic mRNA molecule consists of five distinct components arranged in a specific order from 5' to 3': the 5' cap (a modified guanine nucleotide), the 5' untranslated region (UTR), the open reading frame (ORF) which encodes the protein, the 3' untranslated region (UTR), and the poly(A) tail (a stretch of adenine nucleotides).">
+                        <span class="option-prefix">b)</span> 5' Cap, 5' UTR, ORF, 3' UTR, Poly(A) tail
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="A mature eukaryotic mRNA molecule consists of five distinct components arranged in a specific order from 5' to 3': the 5' cap (a modified guanine nucleotide), the 5' untranslated region (UTR), the open reading frame (ORF) which encodes the protein, the 3' untranslated region (UTR), and the poly(A) tail (a stretch of adenine nucleotides).">
+                        <span class="option-prefix">c)</span> 5' UTR, start codon, coding sequence, stop codon, 3' UTR
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="A mature eukaryotic mRNA molecule consists of five distinct components arranged in a specific order from 5' to 3': the 5' cap (a modified guanine nucleotide), the 5' untranslated region (UTR), the open reading frame (ORF) which encodes the protein, the 3' untranslated region (UTR), and the poly(A) tail (a stretch of adenine nucleotides).">
+                        <span class="option-prefix">d)</span> Enhancer, promoter, coding sequence, terminator, poly(A) signal
+                    </div>
+                </div>
+                <div class="feedback" id="q1-feedback"></div>
+                <div class="time-summary" id="time-summary-q1"></div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="question" id="q2">
+                <div class="timer" id="timer-q2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>2. What is the main structure of the 5' cap in eukaryotic mRNA?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The 5' cap is a modified guanine nucleotide, specifically 7-methylguanosine (m7G), that is connected to the first nucleotide of the mRNA via a 5'-5' triphosphate bridge. This structure is often denoted as m7G(5')ppp(5')N, where N is the first nucleotide of the mRNA.">
+                        <span class="option-prefix">a)</span> A stretch of adenine nucleotides
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The 5' cap is a modified guanine nucleotide, specifically 7-methylguanosine (m7G), that is connected to the first nucleotide of the mRNA via a 5'-5' triphosphate bridge. This structure is often denoted as m7G(5')ppp(5')N, where N is the first nucleotide of the mRNA.">
+                        <span class="option-prefix">b)</span> A 7-methylguanosine connected via a 5'-5' triphosphate bridge
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The 5' cap is a modified guanine nucleotide, specifically 7-methylguanosine (m7G), that is connected to the first nucleotide of the mRNA via a 5'-5' triphosphate bridge. This structure is often denoted as m7G(5')ppp(5')N, where N is the first nucleotide of the mRNA.">
+                        <span class="option-prefix">c)</span> A series of uracil nucleotides
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The 5' cap is a modified guanine nucleotide, specifically 7-methylguanosine (m7G), that is connected to the first nucleotide of the mRNA via a 5'-5' triphosphate bridge. This structure is often denoted as m7G(5')ppp(5')N, where N is the first nucleotide of the mRNA.">
+                        <span class="option-prefix">d)</span> A methylated adenosine residue
+                    </div>
+                </div>
+                <div class="feedback" id="q2-feedback"></div>
+                <div class="time-summary" id="time-summary-q2"></div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="question" id="q3">
+                <div class="timer" id="timer-q3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>3. Which of the following is NOT a function of the poly(A) tail?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The poly(A) tail serves multiple functions including protecting mRNA from degradation by 3' exonucleases, enhancing translation efficiency through interactions with the 5' cap, and facilitating nuclear export. However, it does not play a role in initiating transcription, which occurs before the poly(A) tail is added to the mRNA.">
+                        <span class="option-prefix">a)</span> Protecting mRNA from degradation
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The poly(A) tail serves multiple functions including protecting mRNA from degradation by 3' exonucleases, enhancing translation efficiency through interactions with the 5' cap, and facilitating nuclear export. However, it does not play a role in initiating transcription, which occurs before the poly(A) tail is added to the mRNA.">
+                        <span class="option-prefix">b)</span> Enhancing translation efficiency
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The poly(A) tail serves multiple functions including protecting mRNA from degradation by 3' exonucleases, enhancing translation efficiency through interactions with the 5' cap, and facilitating nuclear export. However, it does not play a role in initiating transcription, which occurs before the poly(A) tail is added to the mRNA.">
+                        <span class="option-prefix">c)</span> Facilitating nuclear export
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The poly(A) tail serves multiple functions including protecting mRNA from degradation by 3' exonucleases, enhancing translation efficiency through interactions with the 5' cap, and facilitating nuclear export. However, it does not play a role in initiating transcription, which occurs before the poly(A) tail is added to the mRNA.">
+                        <span class="option-prefix">d)</span> Initiating transcription
+                    </div>
+                </div>
+                <div class="feedback" id="q3-feedback"></div>
+                <div class="time-summary" id="time-summary-q3"></div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="question" id="q4">
+                <div class="timer" id="timer-q4">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>4. What specifically happens during the process of deadenylation?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Deadenylation is the process of progressively shortening the poly(A) tail of an mRNA. This process is typically the first step in mRNA degradation and is carried out by deadenylase enzymes. As the poly(A) tail is shortened, the mRNA becomes more susceptible to degradation since the tail normally protects the mRNA from exonucleolytic attack.">
+                        <span class="option-prefix">a)</span> Addition of adenine nucleotides to the mRNA
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Deadenylation is the process of progressively shortening the poly(A) tail of an mRNA. This process is typically the first step in mRNA degradation and is carried out by deadenylase enzymes. As the poly(A) tail is shortened, the mRNA becomes more susceptible to degradation since the tail normally protects the mRNA from exonucleolytic attack.">
+                        <span class="option-prefix">b)</span> Shortening of the poly(A) tail
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Deadenylation is the process of progressively shortening the poly(A) tail of an mRNA. This process is typically the first step in mRNA degradation and is carried out by deadenylase enzymes. As the poly(A) tail is shortened, the mRNA becomes more susceptible to degradation since the tail normally protects the mRNA from exonucleolytic attack.">
+                        <span class="option-prefix">c)</span> Removal of the 5' cap
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Deadenylation is the process of progressively shortening the poly(A) tail of an mRNA. This process is typically the first step in mRNA degradation and is carried out by deadenylase enzymes. As the poly(A) tail is shortened, the mRNA becomes more susceptible to degradation since the tail normally protects the mRNA from exonucleolytic attack.">
+                        <span class="option-prefix">d)</span> Addition of methyl groups to the mRNA
+                    </div>
+                </div>
+                <div class="feedback" id="q4-feedback"></div>
+                <div class="time-summary" id="time-summary-q4"></div>
+            </div>
+
+            <!-- Question 5 -->
+            <div class="question" id="q5">
+                <div class="timer" id="timer-q5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>5. Which statement about the Open Reading Frame (ORF) is FALSE?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The Open Reading Frame (ORF) is specifically the portion of the mRNA that is translated into protein. It begins with a start codon (usually AUG) and ends with a stop codon (UAA, UAG, or UGA), but it does NOT include the 5' and 3' untranslated regions (UTRs). The UTRs flank the ORF but are not translated into protein.">
+                        <span class="option-prefix">a)</span> It begins with a start codon, usually AUG
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The Open Reading Frame (ORF) is specifically the portion of the mRNA that is translated into protein. It begins with a start codon (usually AUG) and ends with a stop codon (UAA, UAG, or UGA), but it does NOT include the 5' and 3' untranslated regions (UTRs). The UTRs flank the ORF but are not translated into protein.">
+                        <span class="option-prefix">b)</span> It ends with a stop codon (UAA, UAG, or UGA)
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The Open Reading Frame (ORF) is specifically the portion of the mRNA that is translated into protein. It begins with a start codon (usually AUG) and ends with a stop codon (UAA, UAG, or UGA), but it does NOT include the 5' and 3' untranslated regions (UTRs). The UTRs flank the ORF but are not translated into protein.">
+                        <span class="option-prefix">c)</span> It consists of triplets of nucleotides called codons
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The Open Reading Frame (ORF) is specifically the portion of the mRNA that is translated into protein. It begins with a start codon (usually AUG) and ends with a stop codon (UAA, UAG, or UGA), but it does NOT include the 5' and 3' untranslated regions (UTRs). The UTRs flank the ORF but are not translated into protein.">
+                        <span class="option-prefix">d)</span> It includes the 5' and 3' untranslated regions
+                    </div>
+                </div>
+                <div class="feedback" id="q5-feedback"></div>
+                <div class="time-summary" id="time-summary-q5"></div>
+            </div>
+
+            <!-- Question 6 -->
+            <div class="question" id="q6">
+                <div class="timer" id="timer-q6">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>6. Which process occurs co-transcriptionally during mRNA synthesis?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The 5' cap is added co-transcriptionally, meaning it is added to the 5' end of the nascent RNA while the RNA polymerase II is still synthesizing the rest of the transcript. This process occurs in the nucleus before the mRNA is fully mature.">
+                        <span class="option-prefix">a)</span> Translation
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The 5' cap is added co-transcriptionally, meaning it is added to the 5' end of the nascent RNA while the RNA polymerase II is still synthesizing the rest of the transcript. This process occurs in the nucleus before the mRNA is fully mature.">
+                        <span class="option-prefix">b)</span> Addition of the 5' cap
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The 5' cap is added co-transcriptionally, meaning it is added to the 5' end of the nascent RNA while the RNA polymerase II is still synthesizing the rest of the transcript. This process occurs in the nucleus before the mRNA is fully mature.">
+                        <span class="option-prefix">c)</span> Shortening of the poly(A) tail
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The 5' cap is added co-transcriptionally, meaning it is added to the 5' end of the nascent RNA while the RNA polymerase II is still synthesizing the rest of the transcript. This process occurs in the nucleus before the mRNA is fully mature.">
+                        <span class="option-prefix">d)</span> Binding of microRNAs
+                    </div>
+                </div>
+                <div class="feedback" id="q6-feedback"></div>
+                <div class="time-summary" id="time-summary-q6"></div>
+            </div>
+
+            <!-- Question 7 -->
+            <div class="question" id="q7">
+                <div class="timer" id="timer-q7">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>7. What is the function of AU-rich elements (AREs) found in the 3' UTR?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="AU-rich elements (AREs) are sequences rich in adenine and uracil found in the 3' UTR of many mRNAs. They often function as signals for rapid mRNA degradation by recruiting proteins that promote destabilization of the transcript, thereby regulating gene expression at the post-transcriptional level.">
+                        <span class="option-prefix">a)</span> Enhancing translation efficiency
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="AU-rich elements (AREs) are sequences rich in adenine and uracil found in the 3' UTR of many mRNAs. They often function as signals for rapid mRNA degradation by recruiting proteins that promote destabilization of the transcript, thereby regulating gene expression at the post-transcriptional level.">
+                        <span class="option-prefix">b)</span> Often signaling rapid mRNA degradation
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="AU-rich elements (AREs) are sequences rich in adenine and uracil found in the 3' UTR of many mRNAs. They often function as signals for rapid mRNA degradation by recruiting proteins that promote destabilization of the transcript, thereby regulating gene expression at the post-transcriptional level.">
+                        <span class="option-prefix">c)</span> Promoting nuclear retention of mRNA
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="AU-rich elements (AREs) are sequences rich in adenine and uracil found in the 3' UTR of many mRNAs. They often function as signals for rapid mRNA degradation by recruiting proteins that promote destabilization of the transcript, thereby regulating gene expression at the post-transcriptional level.">
+                        <span class="option-prefix">d)</span> Initiating transcription
+                    </div>
+                </div>
+                <div class="feedback" id="q7-feedback"></div>
+                <div class="time-summary" id="time-summary-q7"></div>
+            </div>
+
+            <!-- Question 8 -->
+            <div class="question" id="q8">
+                <div class="timer" id="timer-q8">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>8. Which region of mRNA contains binding sites for microRNAs?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="MicroRNA binding sites are predominantly found in the 3' untranslated region (3' UTR) of mRNAs. When microRNAs bind to these sites, they can repress translation or induce degradation of the mRNA, thereby regulating gene expression post-transcriptionally.">
+                        <span class="option-prefix">a)</span> 5' Cap
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="MicroRNA binding sites are predominantly found in the 3' untranslated region (3' UTR) of mRNAs. When microRNAs bind to these sites, they can repress translation or induce degradation of the mRNA, thereby regulating gene expression post-transcriptionally.">
+                        <span class="option-prefix">b)</span> 5' UTR
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="MicroRNA binding sites are predominantly found in the 3' untranslated region (3' UTR) of mRNAs. When microRNAs bind to these sites, they can repress translation or induce degradation of the mRNA, thereby regulating gene expression post-transcriptionally.">
+                        <span class="option-prefix">c)</span> Open Reading Frame
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="MicroRNA binding sites are predominantly found in the 3' untranslated region (3' UTR) of mRNAs. When microRNAs bind to these sites, they can repress translation or induce degradation of the mRNA, thereby regulating gene expression post-transcriptionally.">
+                        <span class="option-prefix">d)</span> 3' UTR
+                    </div>
+                </div>
+                <div class="feedback" id="q8-feedback"></div>
+                <div class="time-summary" id="time-summary-q8"></div>
+            </div>
+
+            <!-- Question 9 -->
+            <div class="question" id="q9">
+                <div class="timer" id="timer-q9">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>9. What is the first step in mRNA degradation?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The degradation of most eukaryotic mRNAs begins with deadenylation, which is the progressive shortening of the poly(A) tail by deadenylase enzymes. This is typically followed by decapping (removal of the 5' cap) and then exonucleolytic degradation from both ends of the mRNA.">
+                        <span class="option-prefix">a)</span> Decapping
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The degradation of most eukaryotic mRNAs begins with deadenylation, which is the progressive shortening of the poly(A) tail by deadenylase enzymes. This is typically followed by decapping (removal of the 5' cap) and then exonucleolytic degradation from both ends of the mRNA.">
+                        <span class="option-prefix">b)</span> Deadenylation (shortening of the poly(A) tail)
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The degradation of most eukaryotic mRNAs begins with deadenylation, which is the progressive shortening of the poly(A) tail by deadenylase enzymes. This is typically followed by decapping (removal of the 5' cap) and then exonucleolytic degradation from both ends of the mRNA.">
+                        <span class="option-prefix">c)</span> Endonucleolytic cleavage
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The degradation of most eukaryotic mRNAs begins with deadenylation, which is the progressive shortening of the poly(A) tail by deadenylase enzymes. This is typically followed by decapping (removal of the 5' cap) and then exonucleolytic degradation from both ends of the mRNA.">
+                        <span class="option-prefix">d)</span> Removal of the 5' UTR
+                    </div>
+                </div>
+                <div class="feedback" id="q9-feedback"></div>
+                <div class="time-summary" id="time-summary-q9"></div>
+            </div>
+
+            <!-- Question 10 -->
+            <div class="question" id="q10">
+                <div class="timer" id="timer-q10">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>10. What does IRES stand for and where is it found in mRNA?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="IRES stands for Internal Ribosome Entry Site. These are structural elements typically found in the 5' UTR of some mRNAs that allow for cap-independent translation initiation. They enable ribosomes to directly bind to the mRNA and initiate translation under conditions where normal cap-dependent translation is compromised, such as during cellular stress.">
+                        <span class="option-prefix">a)</span> Internal RNA Editing Site, found in the ORF
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="IRES stands for Internal Ribosome Entry Site. These are structural elements typically found in the 5' UTR of some mRNAs that allow for cap-independent translation initiation. They enable ribosomes to directly bind to the mRNA and initiate translation under conditions where normal cap-dependent translation is compromised, such as during cellular stress.">
+                        <span class="option-prefix">b)</span> Internal Ribosome Entry Site, found in the 5' UTR
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="IRES stands for Internal Ribosome Entry Site. These are structural elements typically found in the 5' UTR of some mRNAs that allow for cap-independent translation initiation. They enable ribosomes to directly bind to the mRNA and initiate translation under conditions where normal cap-dependent translation is compromised, such as during cellular stress.">
+                        <span class="option-prefix">c)</span> Intronic RNA Excision Signal, found in pre-mRNA
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="IRES stands for Internal Ribosome Entry Site. These are structural elements typically found in the 5' UTR of some mRNAs that allow for cap-independent translation initiation. They enable ribosomes to directly bind to the mRNA and initiate translation under conditions where normal cap-dependent translation is compromised, such as during cellular stress.">
+                        <span class="option-prefix">d)</span> Intracellular RNA Export Sequence, found in the 3' UTR
+                    </div>
+                </div>
+                <div class="feedback" id="q10-feedback"></div>
+                <div class="time-summary" id="time-summary-q10"></div>
+            </div>
+
+            <!-- Question 11 -->
+            <div class="question" id="q11">
+                <div class="timer" id="timer-q11">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>11. What role does the 5' cap play in protecting mRNA from degradation?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The 5' cap (7-methylguanosine) plays a crucial role in protecting mRNA from degradation specifically by preventing 5'→3' exonucleases from accessing and degrading the mRNA from the 5' end. This protection mechanism works because the unique 5'-5' triphosphate linkage of the cap cannot be recognized by conventional exonucleases, which typically require a 5'-3' phosphodiester bond. Additionally, the cap is bound by cap-binding proteins that further shield it from degradative enzymes. Only after the cap is removed by decapping enzymes can 5'→3' exonucleolytic degradation proceed efficiently.">
+                        <span class="option-prefix">a)</span> It prevents binding of the small ribosomal subunit
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The 5' cap (7-methylguanosine) plays a crucial role in protecting mRNA from degradation specifically by preventing 5'→3' exonucleases from accessing and degrading the mRNA from the 5' end. This protection mechanism works because the unique 5'-5' triphosphate linkage of the cap cannot be recognized by conventional exonucleases, which typically require a 5'-3' phosphodiester bond. Additionally, the cap is bound by cap-binding proteins that further shield it from degradative enzymes. Only after the cap is removed by decapping enzymes can 5'→3' exonucleolytic degradation proceed efficiently.">
+                        <span class="option-prefix">b)</span> It blocks degradation from the 3' end
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The 5' cap (7-methylguanosine) plays a crucial role in protecting mRNA from degradation specifically by preventing 5'→3' exonucleases from accessing and degrading the mRNA from the 5' end. This protection mechanism works because the unique 5'-5' triphosphate linkage of the cap cannot be recognized by conventional exonucleases, which typically require a 5'-3' phosphodiester bond. Additionally, the cap is bound by cap-binding proteins that further shield it from degradative enzymes. Only after the cap is removed by decapping enzymes can 5'→3' exonucleolytic degradation proceed efficiently.">
+                        <span class="option-prefix">c)</span> It prevents 5'→3' exonucleases from degrading the mRNA
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The 5' cap (7-methylguanosine) plays a crucial role in protecting mRNA from degradation specifically by preventing 5'→3' exonucleases from accessing and degrading the mRNA from the 5' end. This protection mechanism works because the unique 5'-5' triphosphate linkage of the cap cannot be recognized by conventional exonucleases, which typically require a 5'-3' phosphodiester bond. Additionally, the cap is bound by cap-binding proteins that further shield it from degradative enzymes. Only after the cap is removed by decapping enzymes can 5'→3' exonucleolytic degradation proceed efficiently.">
+                        <span class="option-prefix">d)</span> It primarily protects against endonucleolytic cleavage in the middle of the mRNA
+                    </div>
+                </div>
+                <div class="feedback" id="q11-feedback"></div>
+                <div class="time-summary" id="time-summary-q11"></div>
+            </div>
+
+            <!-- Question 12 -->
+            <div class="question" id="q12">
+                <div class="timer" id="timer-q12">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>12. What is the significance of upstream open reading frames (uORFs) in the 5' UTR?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Upstream open reading frames (uORFs) are small ORFs located in the 5' UTR, upstream of the main ORF. They can regulate translation of the main ORF by affecting ribosome scanning. When a ribosome translates a uORF, it may dissociate from the mRNA afterward, reducing the likelihood of the main ORF being translated. Alternatively, under certain conditions, ribosomes may resume scanning after translating a uORF and reinitiate translation at the main ORF. This mechanism allows for sophisticated regulation of gene expression in response to cellular conditions.">
+                        <span class="option-prefix">a)</span> They encode essential signal peptides
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Upstream open reading frames (uORFs) are small ORFs located in the 5' UTR, upstream of the main ORF. They can regulate translation of the main ORF by affecting ribosome scanning. When a ribosome translates a uORF, it may dissociate from the mRNA afterward, reducing the likelihood of the main ORF being translated. Alternatively, under certain conditions, ribosomes may resume scanning after translating a uORF and reinitiate translation at the main ORF. This mechanism allows for sophisticated regulation of gene expression in response to cellular conditions.">
+                        <span class="option-prefix">b)</span> They can regulate translation of the main ORF
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Upstream open reading frames (uORFs) are small ORFs located in the 5' UTR, upstream of the main ORF. They can regulate translation of the main ORF by affecting ribosome scanning. When a ribosome translates a uORF, it may dissociate from the mRNA afterward, reducing the likelihood of the main ORF being translated. Alternatively, under certain conditions, ribosomes may resume scanning after translating a uORF and reinitiate translation at the main ORF. This mechanism allows for sophisticated regulation of gene expression in response to cellular conditions.">
+                        <span class="option-prefix">c)</span> They provide binding sites for the 5' cap
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Upstream open reading frames (uORFs) are small ORFs located in the 5' UTR, upstream of the main ORF. They can regulate translation of the main ORF by affecting ribosome scanning. When a ribosome translates a uORF, it may dissociate from the mRNA afterward, reducing the likelihood of the main ORF being translated. Alternatively, under certain conditions, ribosomes may resume scanning after translating a uORF and reinitiate translation at the main ORF. This mechanism allows for sophisticated regulation of gene expression in response to cellular conditions.">
+                        <span class="option-prefix">d)</span> They are always translated in addition to the main ORF
+                    </div>
+                </div>
+                <div class="feedback" id="q12-feedback"></div>
+                <div class="time-summary" id="time-summary-q12"></div>
+            </div>
+
+            <!-- Question 13 -->
+            <div class="question" id="q13">
+                <div class="timer" id="timer-q13">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>13. How do secondary structures in the 5' UTR affect translation?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Secondary structures such as hairpins and stem-loops in the 5' UTR can significantly impede ribosome scanning during translation initiation. The small ribosomal subunit, along with initiation factors, binds at the 5' cap and scans along the mRNA until it reaches the start codon. Complex or stable secondary structures can slow down or stall this scanning process, reducing translation efficiency. Very stable structures may require RNA helicases (like eIF4A) to unwind them, and extremely stable structures can block translation almost entirely. This mechanism serves as a regulatory control for gene expression, particularly for mRNAs encoding regulatory proteins.">
+                        <span class="option-prefix">a)</span> They only affect transcription rate, not translation
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Secondary structures such as hairpins and stem-loops in the 5' UTR can significantly impede ribosome scanning during translation initiation. The small ribosomal subunit, along with initiation factors, binds at the 5' cap and scans along the mRNA until it reaches the start codon. Complex or stable secondary structures can slow down or stall this scanning process, reducing translation efficiency. Very stable structures may require RNA helicases (like eIF4A) to unwind them, and extremely stable structures can block translation almost entirely. This mechanism serves as a regulatory control for gene expression, particularly for mRNAs encoding regulatory proteins.">
+                        <span class="option-prefix">b)</span> They can impede ribosome scanning and reduce translation efficiency
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Secondary structures such as hairpins and stem-loops in the 5' UTR can significantly impede ribosome scanning during translation initiation. The small ribosomal subunit, along with initiation factors, binds at the 5' cap and scans along the mRNA until it reaches the start codon. Complex or stable secondary structures can slow down or stall this scanning process, reducing translation efficiency. Very stable structures may require RNA helicases (like eIF4A) to unwind them, and extremely stable structures can block translation almost entirely. This mechanism serves as a regulatory control for gene expression, particularly for mRNAs encoding regulatory proteins.">
+                        <span class="option-prefix">c)</span> They always enhance translation by stabilizing the mRNA
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Secondary structures such as hairpins and stem-loops in the 5' UTR can significantly impede ribosome scanning during translation initiation. The small ribosomal subunit, along with initiation factors, binds at the 5' cap and scans along the mRNA until it reaches the start codon. Complex or stable secondary structures can slow down or stall this scanning process, reducing translation efficiency. Very stable structures may require RNA helicases (like eIF4A) to unwind them, and extremely stable structures can block translation almost entirely. This mechanism serves as a regulatory control for gene expression, particularly for mRNAs encoding regulatory proteins.">
+                        <span class="option-prefix">d)</span> They prevent binding of the poly(A) tail to PABPs
+                    </div>
+                </div>
+                <div class="feedback" id="q13-feedback"></div>
+                <div class="time-summary" id="time-summary-q13"></div>
+            </div>
+
+            <!-- Question 14 -->
+            <div class="question" id="q14">
+                <div class="timer" id="timer-q14">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>14. What happens during the process of mRNA decapping?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Decapping is a critical step in mRNA degradation where the 7-methylguanosine (m7G) cap is enzymatically removed from the 5' end of the mRNA by decapping enzymes (such as Dcp1/Dcp2 complex). This typically occurs after deadenylation (shortening of the poly(A) tail) and exposes the 5' end of the mRNA to 5'→3' exonucleases, leading to rapid degradation of the transcript.">
+                        <span class="option-prefix">a)</span> The poly(A) tail is removed
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Decapping is a critical step in mRNA degradation where the 7-methylguanosine (m7G) cap is enzymatically removed from the 5' end of the mRNA by decapping enzymes (such as Dcp1/Dcp2 complex). This typically occurs after deadenylation (shortening of the poly(A) tail) and exposes the 5' end of the mRNA to 5'→3' exonucleases, leading to rapid degradation of the transcript.">
+                        <span class="option-prefix">b)</span> The 7-methylguanosine cap is enzymatically removed from the 5' end
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Decapping is a critical step in mRNA degradation where the 7-methylguanosine (m7G) cap is enzymatically removed from the 5' end of the mRNA by decapping enzymes (such as Dcp1/Dcp2 complex). This typically occurs after deadenylation (shortening of the poly(A) tail) and exposes the 5' end of the mRNA to 5'→3' exonucleases, leading to rapid degradation of the transcript.">
+                        <span class="option-prefix">c)</span> The ribosome dissociates from the mRNA
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Decapping is a critical step in mRNA degradation where the 7-methylguanosine (m7G) cap is enzymatically removed from the 5' end of the mRNA by decapping enzymes (such as Dcp1/Dcp2 complex). This typically occurs after deadenylation (shortening of the poly(A) tail) and exposes the 5' end of the mRNA to 5'→3' exonucleases, leading to rapid degradation of the transcript.">
+                        <span class="option-prefix">d)</span> The mRNA is cleaved at the stop codon
+                    </div>
+                </div>
+                <div class="feedback" id="q14-feedback"></div>
+                <div class="time-summary" id="time-summary-q14"></div>
+            </div>
+
+            <!-- Question 15 -->
+            <div class="question" id="q15">
+                <div class="timer" id="timer-q15">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>15. What is the function of Poly(A) Binding Proteins (PABPs) in mRNA metabolism?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Poly(A) Binding Proteins (PABPs) are key regulators of mRNA function that bind along the poly(A) tail. They serve multiple important roles: they protect the poly(A) tail from immediate degradation; they interact with proteins bound to the 5' cap (particularly eIF4G) to form a 'closed loop' structure that enhances translation efficiency; they participate in ribosome recycling for efficient translation; and they can influence mRNA stability and fate in the cytoplasm. This multifunctional nature makes PABPs central players in post-transcriptional gene regulation.">
+                        <span class="option-prefix">a)</span> They catalyze the addition of the poly(A) tail
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Poly(A) Binding Proteins (PABPs) are key regulators of mRNA function that bind along the poly(A) tail. They serve multiple important roles: they protect the poly(A) tail from immediate degradation; they interact with proteins bound to the 5' cap (particularly eIF4G) to form a 'closed loop' structure that enhances translation efficiency; they participate in ribosome recycling for efficient translation; and they can influence mRNA stability and fate in the cytoplasm. This multifunctional nature makes PABPs central players in post-transcriptional gene regulation.">
+                        <span class="option-prefix">b)</span> They directly initiate transcription
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Poly(A) Binding Proteins (PABPs) are key regulators of mRNA function that bind along the poly(A) tail. They serve multiple important roles: they protect the poly(A) tail from immediate degradation; they interact with proteins bound to the 5' cap (particularly eIF4G) to form a 'closed loop' structure that enhances translation efficiency; they participate in ribosome recycling for efficient translation; and they can influence mRNA stability and fate in the cytoplasm. This multifunctional nature makes PABPs central players in post-transcriptional gene regulation.">
+                        <span class="option-prefix">c)</span> They bind to the poly(A) tail and mediate interactions with the 5' end
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Poly(A) Binding Proteins (PABPs) are key regulators of mRNA function that bind along the poly(A) tail. They serve multiple important roles: they protect the poly(A) tail from immediate degradation; they interact with proteins bound to the 5' cap (particularly eIF4G) to form a 'closed loop' structure that enhances translation efficiency; they participate in ribosome recycling for efficient translation; and they can influence mRNA stability and fate in the cytoplasm. This multifunctional nature makes PABPs central players in post-transcriptional gene regulation.">
+                        <span class="option-prefix">d)</span> They exclusively function in mRNA splicing
+                    </div>
+                </div>
+                <div class="feedback" id="q15-feedback"></div>
+                <div class="time-summary" id="time-summary-q15"></div>
+            </div>
+
+            <!-- Question 16 -->
+            <div class="question" id="q16">
+                <div class="timer" id="timer-q16">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>16. A researcher discovers an mRNA with an unusually long and structured 5' UTR containing multiple upstream AUG codons. What is the most likely impact on the translation of this mRNA?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="An unusually long and structured 5' UTR containing multiple upstream AUG codons would likely reduce translation efficiency of the main ORF. Complex secondary structures in the 5' UTR can impede ribosome scanning by creating physical barriers that slow down or stall the scanning 40S ribosomal subunit. Additionally, upstream AUG codons may initiate translation of small upstream open reading frames (uORFs), potentially causing ribosomes to dissociate before reaching the main ORF. This type of regulatory mechanism is often found in mRNAs encoding regulatory proteins whose expression needs to be tightly controlled, such as growth factors, transcription factors, and proto-oncogenes.">
+                        <span class="option-prefix">a)</span> Enhanced translation due to multiple potential start sites
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="An unusually long and structured 5' UTR containing multiple upstream AUG codons would likely reduce translation efficiency of the main ORF. Complex secondary structures in the 5' UTR can impede ribosome scanning by creating physical barriers that slow down or stall the scanning 40S ribosomal subunit. Additionally, upstream AUG codons may initiate translation of small upstream open reading frames (uORFs), potentially causing ribosomes to dissociate before reaching the main ORF. This type of regulatory mechanism is often found in mRNAs encoding regulatory proteins whose expression needs to be tightly controlled, such as growth factors, transcription factors, and proto-oncogenes.">
+                        <span class="option-prefix">b)</span> Reduced translation efficiency due to impeded ribosome scanning
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="An unusually long and structured 5' UTR containing multiple upstream AUG codons would likely reduce translation efficiency of the main ORF. Complex secondary structures in the 5' UTR can impede ribosome scanning by creating physical barriers that slow down or stall the scanning 40S ribosomal subunit. Additionally, upstream AUG codons may initiate translation of small upstream open reading frames (uORFs), potentially causing ribosomes to dissociate before reaching the main ORF. This type of regulatory mechanism is often found in mRNAs encoding regulatory proteins whose expression needs to be tightly controlled, such as growth factors, transcription factors, and proto-oncogenes.">
+                        <span class="option-prefix">c)</span> No effect on translation as the 5' UTR is not involved in this process
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="An unusually long and structured 5' UTR containing multiple upstream AUG codons would likely reduce translation efficiency of the main ORF. Complex secondary structures in the 5' UTR can impede ribosome scanning by creating physical barriers that slow down or stall the scanning 40S ribosomal subunit. Additionally, upstream AUG codons may initiate translation of small upstream open reading frames (uORFs), potentially causing ribosomes to dissociate before reaching the main ORF. This type of regulatory mechanism is often found in mRNAs encoding regulatory proteins whose expression needs to be tightly controlled, such as growth factors, transcription factors, and proto-oncogenes.">
+                        <span class="option-prefix">d)</span> Rapid degradation of the mRNA
+                    </div>
+                </div>
+                <div class="feedback" id="q16-feedback"></div>
+                <div class="time-summary" id="time-summary-q16"></div>
+            </div>
+
+            <!-- Question 17 -->
+            <div class="question" id="q17">
+                <div class="timer" id="timer-q17">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>17. How would mutations affecting the polyadenylation signal impact mRNA function?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Mutations affecting the polyadenylation signal could lead to improper 3' end processing of the mRNA, which would have multiple downstream consequences. The polyadenylation signal (typically AAUAAA in mammals) directs the cleavage of the pre-mRNA and the addition of the poly(A) tail. If this process is disrupted, it could result in: 1) Altered mRNA stability due to improper or absent poly(A) tail formation; 2) Impaired nuclear export, as the poly(A) tail facilitates transport to the cytoplasm; 3) Reduced translation efficiency, as the poly(A) tail enhances translation; 4) Potential use of alternative polyadenylation sites, which could change the length of the 3' UTR and alter the regulatory elements present. These effects could significantly impact gene expression and protein production.">
+                        <span class="option-prefix">a)</span> They would only affect transcription initiation
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Mutations affecting the polyadenylation signal could lead to improper 3' end processing of the mRNA, which would have multiple downstream consequences. The polyadenylation signal (typically AAUAAA in mammals) directs the cleavage of the pre-mRNA and the addition of the poly(A) tail. If this process is disrupted, it could result in: 1) Altered mRNA stability due to improper or absent poly(A) tail formation; 2) Impaired nuclear export, as the poly(A) tail facilitates transport to the cytoplasm; 3) Reduced translation efficiency, as the poly(A) tail enhances translation; 4) Potential use of alternative polyadenylation sites, which could change the length of the 3' UTR and alter the regulatory elements present. These effects could significantly impact gene expression and protein production.">
+                        <span class="option-prefix">b)</span> They would primarily alter the coding sequence of the protein
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Mutations affecting the polyadenylation signal could lead to improper 3' end processing of the mRNA, which would have multiple downstream consequences. The polyadenylation signal (typically AAUAAA in mammals) directs the cleavage of the pre-mRNA and the addition of the poly(A) tail. If this process is disrupted, it could result in: 1) Altered mRNA stability due to improper or absent poly(A) tail formation; 2) Impaired nuclear export, as the poly(A) tail facilitates transport to the cytoplasm; 3) Reduced translation efficiency, as the poly(A) tail enhances translation; 4) Potential use of alternative polyadenylation sites, which could change the length of the 3' UTR and alter the regulatory elements present. These effects could significantly impact gene expression and protein production.">
+                        <span class="option-prefix">c)</span> They could lead to improper 3' end processing, affecting stability, export, and translation
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Mutations affecting the polyadenylation signal could lead to improper 3' end processing of the mRNA, which would have multiple downstream consequences. The polyadenylation signal (typically AAUAAA in mammals) directs the cleavage of the pre-mRNA and the addition of the poly(A) tail. If this process is disrupted, it could result in: 1) Altered mRNA stability due to improper or absent poly(A) tail formation; 2) Impaired nuclear export, as the poly(A) tail facilitates transport to the cytoplasm; 3) Reduced translation efficiency, as the poly(A) tail enhances translation; 4) Potential use of alternative polyadenylation sites, which could change the length of the 3' UTR and alter the regulatory elements present. These effects could significantly impact gene expression and protein production.">
+                        <span class="option-prefix">d)</span> They would only influence splicing patterns
+                    </div>
+                </div>
+                <div class="feedback" id="q17-feedback"></div>
+                <div class="time-summary" id="time-summary-q17"></div>
+            </div>
+
+            <!-- Question 18 -->
+            <div class="question" id="q18">
+                <div class="timer" id="timer-q18">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>18. During cellular stress, cap-dependent translation is often inhibited. What alternative mechanisms might allow for continued translation of certain mRNAs, and what structural features would these mRNAs need?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="During cellular stress (such as viral infection, apoptosis, or nutrient deprivation), cap-dependent translation is often inhibited due to the inactivation of translation initiation factors. However, certain mRNAs can continue to be translated through cap-independent mechanisms, primarily through the use of Internal Ribosome Entry Sites (IRES). IRES are complex structural elements typically found in the 5' UTR that allow ribosomes to directly bind and initiate translation without requiring some or all of the canonical initiation factors that recognize the 5' cap. These structures often consist of elaborate secondary and tertiary RNA conformations that can directly recruit the ribosome or specific initiation factors. mRNAs encoding proteins needed during stress (such as chaperones, anti-apoptotic factors, or cell cycle regulators) often contain IRES elements, allowing their continued expression when most protein synthesis is shut down. This mechanism provides cells with an elegant way to selectively express proteins necessary for stress response or recovery while conserving energy by limiting global translation.">
+                        <span class="option-prefix">a)</span> Use of alternative splicing; they would need multiple exons
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="During cellular stress (such as viral infection, apoptosis, or nutrient deprivation), cap-dependent translation is often inhibited due to the inactivation of translation initiation factors. However, certain mRNAs can continue to be translated through cap-independent mechanisms, primarily through the use of Internal Ribosome Entry Sites (IRES). IRES are complex structural elements typically found in the 5' UTR that allow ribosomes to directly bind and initiate translation without requiring some or all of the canonical initiation factors that recognize the 5' cap. These structures often consist of elaborate secondary and tertiary RNA conformations that can directly recruit the ribosome or specific initiation factors. mRNAs encoding proteins needed during stress (such as chaperones, anti-apoptotic factors, or cell cycle regulators) often contain IRES elements, allowing their continued expression when most protein synthesis is shut down. This mechanism provides cells with an elegant way to selectively express proteins necessary for stress response or recovery while conserving energy by limiting global translation.">
+                        <span class="option-prefix">b)</span> Use of Internal Ribosome Entry Sites (IRES); they would need specific structural elements in their 5' UTR
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="During cellular stress (such as viral infection, apoptosis, or nutrient deprivation), cap-dependent translation is often inhibited due to the inactivation of translation initiation factors. However, certain mRNAs can continue to be translated through cap-independent mechanisms, primarily through the use of Internal Ribosome Entry Sites (IRES). IRES are complex structural elements typically found in the 5' UTR that allow ribosomes to directly bind and initiate translation without requiring some or all of the canonical initiation factors that recognize the 5' cap. These structures often consist of elaborate secondary and tertiary RNA conformations that can directly recruit the ribosome or specific initiation factors. mRNAs encoding proteins needed during stress (such as chaperones, anti-apoptotic factors, or cell cycle regulators) often contain IRES elements, allowing their continued expression when most protein synthesis is shut down. This mechanism provides cells with an elegant way to selectively express proteins necessary for stress response or recovery while conserving energy by limiting global translation.">
+                        <span class="option-prefix">c)</span> Use of nonsense-mediated decay; they would need premature stop codons
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="During cellular stress (such as viral infection, apoptosis, or nutrient deprivation), cap-dependent translation is often inhibited due to the inactivation of translation initiation factors. However, certain mRNAs can continue to be translated through cap-independent mechanisms, primarily through the use of Internal Ribosome Entry Sites (IRES). IRES are complex structural elements typically found in the 5' UTR that allow ribosomes to directly bind and initiate translation without requiring some or all of the canonical initiation factors that recognize the 5' cap. These structures often consist of elaborate secondary and tertiary RNA conformations that can directly recruit the ribosome or specific initiation factors. mRNAs encoding proteins needed during stress (such as chaperones, anti-apoptotic factors, or cell cycle regulators) often contain IRES elements, allowing their continued expression when most protein synthesis is shut down. This mechanism provides cells with an elegant way to selectively express proteins necessary for stress response or recovery while conserving energy by limiting global translation.">
+                        <span class="option-prefix">d)</span> Use of RNA editing; they would need extensive double-stranded regions
+                    </div>
+                </div>
+                <div class="feedback" id="q18-feedback"></div>
+                <div class="time-summary" id="time-summary-q18"></div>
+            </div>
+
+            <!-- Question 19 -->
+            <div class="question" id="q19">
+                <div class="timer" id="timer-q19">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>19. How do microRNAs and RNA-binding proteins interact with the 3' UTR to create a complex regulatory network controlling mRNA fate?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="MicroRNAs and RNA-binding proteins create a complex regulatory network by interacting with the 3' UTR to control multiple aspects of mRNA fate: 1) Cooperative regulation: Some RNA-binding proteins can enhance microRNA binding by reshaping the mRNA structure or recruiting microRNA-containing complexes. Conversely, microRNAs can affect which RNA-binding proteins access the mRNA. 2) Antagonistic regulation: RNA-binding proteins can block microRNA binding sites, protecting the mRNA from repression. Similarly, microRNAs can displace stabilizing RNA-binding proteins. 3) Combinatorial control: The specific combination of microRNAs and RNA-binding proteins bound to an mRNA creates a unique 'regulatory code' that determines stability, translation efficiency, subcellular localization, and temporal regulation. 4) Context-dependent regulation: The cellular environment (stress, developmental stage, cell type) can alter the expression or activity of microRNAs and RNA-binding proteins, creating dynamic regulation. This intricate network allows for precise post-transcriptional control of gene expression, fine-tuning protein production in response to changing cellular needs and environmental conditions.">
+                        <span class="option-prefix">a)</span> They exclusively compete with each other for binding sites
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="MicroRNAs and RNA-binding proteins create a complex regulatory network by interacting with the 3' UTR to control multiple aspects of mRNA fate: 1) Cooperative regulation: Some RNA-binding proteins can enhance microRNA binding by reshaping the mRNA structure or recruiting microRNA-containing complexes. Conversely, microRNAs can affect which RNA-binding proteins access the mRNA. 2) Antagonistic regulation: RNA-binding proteins can block microRNA binding sites, protecting the mRNA from repression. Similarly, microRNAs can displace stabilizing RNA-binding proteins. 3) Combinatorial control: The specific combination of microRNAs and RNA-binding proteins bound to an mRNA creates a unique 'regulatory code' that determines stability, translation efficiency, subcellular localization, and temporal regulation. 4) Context-dependent regulation: The cellular environment (stress, developmental stage, cell type) can alter the expression or activity of microRNAs and RNA-binding proteins, creating dynamic regulation. This intricate network allows for precise post-transcriptional control of gene expression, fine-tuning protein production in response to changing cellular needs and environmental conditions.">
+                        <span class="option-prefix">b)</span> They only function in nuclear pre-mRNA processing
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="MicroRNAs and RNA-binding proteins create a complex regulatory network by interacting with the 3' UTR to control multiple aspects of mRNA fate: 1) Cooperative regulation: Some RNA-binding proteins can enhance microRNA binding by reshaping the mRNA structure or recruiting microRNA-containing complexes. Conversely, microRNAs can affect which RNA-binding proteins access the mRNA. 2) Antagonistic regulation: RNA-binding proteins can block microRNA binding sites, protecting the mRNA from repression. Similarly, microRNAs can displace stabilizing RNA-binding proteins. 3) Combinatorial control: The specific combination of microRNAs and RNA-binding proteins bound to an mRNA creates a unique 'regulatory code' that determines stability, translation efficiency, subcellular localization, and temporal regulation. 4) Context-dependent regulation: The cellular environment (stress, developmental stage, cell type) can alter the expression or activity of microRNAs and RNA-binding proteins, creating dynamic regulation. This intricate network allows for precise post-transcriptional control of gene expression, fine-tuning protein production in response to changing cellular needs and environmental conditions.">
+                        <span class="option-prefix">c)</span> They can cooperatively or antagonistically regulate mRNA stability, localization, and translation
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="MicroRNAs and RNA-binding proteins create a complex regulatory network by interacting with the 3' UTR to control multiple aspects of mRNA fate: 1) Cooperative regulation: Some RNA-binding proteins can enhance microRNA binding by reshaping the mRNA structure or recruiting microRNA-containing complexes. Conversely, microRNAs can affect which RNA-binding proteins access the mRNA. 2) Antagonistic regulation: RNA-binding proteins can block microRNA binding sites, protecting the mRNA from repression. Similarly, microRNAs can displace stabilizing RNA-binding proteins. 3) Combinatorial control: The specific combination of microRNAs and RNA-binding proteins bound to an mRNA creates a unique 'regulatory code' that determines stability, translation efficiency, subcellular localization, and temporal regulation. 4) Context-dependent regulation: The cellular environment (stress, developmental stage, cell type) can alter the expression or activity of microRNAs and RNA-binding proteins, creating dynamic regulation. This intricate network allows for precise post-transcriptional control of gene expression, fine-tuning protein production in response to changing cellular needs and environmental conditions.">
+                        <span class="option-prefix">d)</span> They primarily affect transcription rates rather than post-transcriptional processes
+                    </div>
+                </div>
+                <div class="feedback" id="q19-feedback"></div>
+                <div class="time-summary" id="time-summary-q19"></div>
+            </div>
+        </div>
+
+        <button id="next-btn">Next Question</button>
+        <div id="final-result"></div>
+        
+        <!-- Hidden submit container -->
+        <div id="submit-container">
+            <button id="submit-btn">Submit Quiz Results</button>
+            <div id="status-message" class="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context and Sound Management
+        const AudioManager = {
+            audioContext: null,
+            soundBuffers: {
+                correct: null,
+                final: null
+            },
+            audioInitialized: false,
+            
+            // Initialize audio immediately to ensure it's ready when first answer is selected
+            init() {
+                if (this.audioInitialized) return;
+                
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Load or create sounds
+                    this.loadSound('correct');
+                    this.createFinalSound();
+                    
+                    this.audioInitialized = true;
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                    // Create fallback sounds if loading failed
+                    if (!this.soundBuffers.correct) {
+                        this.soundBuffers.correct = this.createSuccessSound();
+                    }
+                    if (!this.soundBuffers.final) {
+                        this.soundBuffers.final = this.createFinalSound();
+                    }
+                    this.audioInitialized = true;
+                }
+            },
+            
+            // Load sound from URL or create synthetic
+            async loadSound(type) {
+                try {
+                    const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load sound');
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    this.soundBuffers.correct = await this.audioContext.decodeAudioData(arrayBuffer);
+                    return this.soundBuffers.correct;
+                } catch (error) {
+                    console.error('Error loading sound:', error);
+                    this.soundBuffers.correct = this.createSuccessSound();
+                    return this.soundBuffers.correct;
+                }
+            },
+            
+            // Create synthetic success sound (fallback)
+            createSuccessSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 0.6;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00]; // C, E, G
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        let envelope = t < 0.02 ? t / 0.02 : Math.pow(1 - ((t - 0.02) / (duration - 0.02)), 2);
+                        
+                        for (const freq of frequencies) {
+                            amplitude += Math.sin(freq * 2 * Math.PI * t) * envelope * 0.2;
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                return buffer;
+            },
+            
+            // Create synthetic final sound
+            createFinalSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 1.5;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                    const arpeggioDuration = 0.15;
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        
+                        for (let n = 0; n < frequencies.length; n++) {
+                            const noteStart = n * arpeggioDuration;
+                            const noteEnd = noteStart + arpeggioDuration * 2;
+                            
+                            if (t >= noteStart && t <= noteEnd) {
+                                const envelope = t - noteStart < 0.01 
+                                    ? (t - noteStart) / 0.01 
+                                    : Math.pow(1 - ((t - noteStart - 0.01) / (noteEnd - noteStart - 0.01)), 1.5);
+                                
+                                amplitude += Math.sin(frequencies[n] * 2 * Math.PI * t) * envelope * 0.2;
+                            }
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                this.soundBuffers.final = buffer;
+                return buffer;
+            },
+            
+            // Play a sound
+            playSound(type) {
+                if (!this.audioContext || !this.soundBuffers[type]) {
+                    this.init();
+                    if (!this.audioContext || !this.soundBuffers[type]) return;
+                }
+                
+                const source = this.audioContext.createBufferSource();
+                source.buffer = this.soundBuffers[type];
+                
+                const gainNode = this.audioContext.createGain();
+                gainNode.gain.value = 0.4;
+                
+                source.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                source.start();
+            },
+            
+            // Helper methods
+            playCorrectSound() {
+                this.playSound('correct');
+            },
+            
+            playFinalSound() {
+                this.playSound('final');
+            }
+        };
+        
+        // Animation for score points
+        function animatePointToScore(sourceElement) {
+            const pointElement = document.createElement('div');
+            pointElement.className = 'point-animation';
+            pointElement.textContent = '+1';
+            
+            // Position at the source element's location
+            const sourceRect = sourceElement.getBoundingClientRect();
+            const scoreElement = document.querySelector('.score-container');
+            const scoreRect = scoreElement.getBoundingClientRect();
+            
+            // Starting position
+            const startX = sourceRect.left + sourceRect.width / 2;
+            const startY = sourceRect.top + sourceRect.height / 2;
+            
+            // Ending position
+            const endX = scoreRect.left + scoreRect.width / 2;
+            const endY = scoreRect.top + scoreRect.height / 2;
+            
+            // Apply direct transform
+            pointElement.style.position = 'fixed';
+            pointElement.style.left = `${startX}px`;
+            pointElement.style.top = `${startY}px`;
+            pointElement.style.transform = 'translate(-50%, -50%)';
+            pointElement.style.opacity = '1';
+            
+            document.body.appendChild(pointElement);
+            
+            // Animation with JS for better control
+            let startTime = null;
+            const duration = 1000; // milliseconds
+            
+            const animatePoint = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Cubic bezier easing
+                const easeOut = t => 1 - Math.pow(1 - t, 3);
+                const easedProgress = easeOut(progress);
+                
+                // Calculate current position with easing
+                const currentX = startX + (endX - startX) * easedProgress;
+                const currentY = startY + (endY - startY) * easedProgress;
+                
+                // Apply transforms
+                const scale = 1 - 0.4 * easedProgress;
+                const rotation = 45 * easedProgress;
+                const opacity = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
+                
+                pointElement.style.left = `${currentX}px`;
+                pointElement.style.top = `${currentY}px`;
+                pointElement.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`;
+                pointElement.style.opacity = `${opacity}`;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animatePoint);
+                } else {
+                    // Clean up when animation completes
+                    pointElement.remove();
+                }
+            };
+            
+            // Start animation in next frame
+            requestAnimationFrame(animatePoint);
+            
+            // Pulse effect on score
+            scoreElement.style.animation = 'pulse 0.5s ease-in-out';
+            
+            // Clean up score animation
+            setTimeout(() => {
+                scoreElement.style.animation = '';
+            }, 500);
+        }
+
+        // Create particles for celebration animation
+        function createParticles() {
+            // Use canvas for particle animation instead of DOM elements
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '1600';
+            document.body.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Reduce particle count for better performance
+            const particleCount = ('ontouchstart' in window) ? 12 : 25;
+            
+            // NUS colors
+            const colors = ['#003D7C', '#EF7C00', '#4A90E2', '#FFB74D'];
+            
+            // Create particles array
+            const particles = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: canvas.height,
+                    radius: Math.random() * 6 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: Math.random() * 2 + 1,
+                    angle: Math.random() * Math.PI * 2,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 2 - 1,
+                    alpha: 0
+                });
+            }
+            
+            // Animation variables
+            let animationStartTime = null;
+            const animationDuration = 2500; // milliseconds
+            
+            // Animation function
+            function animate(timestamp) {
+                if (!animationStartTime) animationStartTime = timestamp;
+                const elapsed = timestamp - animationStartTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw particles
+                for (const p of particles) {
+                    // Calculate position based on time
+                    const distance = 150 + Math.random() * 150;
+                    const targetY = canvas.height - distance - 300 * progress;
+                    
+                    // Ease-out function for smooth animation
+                    const easeOut = function(t) {
+                        return 1 - Math.pow(1 - t, 3);
+                    };
+                    
+                    // Apply easing
+                    const easedProgress = easeOut(progress);
+                    
+                    p.y = canvas.height - (canvas.height - targetY) * easedProgress;
+                    p.x += Math.cos(p.angle) * p.speed * 0.5;
+                    p.rotation += p.rotationSpeed;
+                    
+                    // Fade in then out
+                    if (progress < 0.3) {
+                        p.alpha = progress / 0.3; // Fade in
+                    } else if (progress > 0.7) {
+                        p.alpha = 1 - (progress - 0.7) / 0.3; // Fade out
+                    } else {
+                        p.alpha = 1;
+                    }
+                    
+                    // Draw particle
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                
+                // Continue animation or clean up
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Clean up canvas when done
+                    setTimeout(() => {
+                        canvas.remove();
+                    }, 100);
+                }
+            }
+            
+            // Start animation
+            requestAnimationFrame(animate);
+        }
+
+        // Function to show celebration/completion message
+        function celebrateCompletion(title, message, type) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            document.body.appendChild(overlay);
+            
+            // Trigger CSS animation by applying class after a small delay
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+            });
+            
+            // Create particles for perfect or great scores
+            if (type === "perfect" || type === "great") {
+                createParticles();
+            }
+            
+            // Create celebration message
+            const celebrationMsg = document.createElement('div');
+            celebrationMsg.className = 'celebration-message';
+            
+            // Choose the right icon based on score
+            let iconHTML;
+            if (type === "perfect") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#EF7C00" stroke-width="2" fill="rgba(239, 124, 0, 0.1)"/>
+                        <path d="M8 12L11 15L16 9" stroke="#003D7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>`;
+            } else if (type === "great") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15.4L8.24 17.67L9.24 13.39L5.92 10.51L10.3 10.13L12 6.1L13.71 10.14L18.09 10.52L14.77 13.4L15.77 17.68L12 15.4Z" fill="#EF7C00" stroke="#003D7C" stroke-width="1.5"/>
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                    </svg>`;
+            } else if (type === "good") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 13.5C8.83333 14.8333 10.3 17 12.5 15.5C14.7 14 16 15 16.5 16" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else if (type === "try") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 14.5C9.5 13.5 14.5 13.5 16 14.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 15.5C9.5 16.5 14.5 16.5 16 15.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round" transform="rotate(180 12 16)"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            }
+            
+            celebrationMsg.innerHTML = `
+                <div class="celebration-icon">
+                    ${iconHTML}
+                </div>
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <button id="continue-button">Continue</button>
+            `;
+            
+            document.body.appendChild(celebrationMsg);
+            
+            // Add event listener to continue button
+            document.getElementById('continue-button').addEventListener('click', () => {
+                celebrationMsg.style.animation = 'celebrate 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) reverse forwards';
+                overlay.classList.remove('show');
+                
+                setTimeout(() => {
+                    celebrationMsg.remove();
+                    overlay.remove();
+                }, 600);
+            });
+        }
+
+        // Extract username from localStorage on page load
+        function getUsername() {
+            try {
+                // Try to get the accounts data from localStorage
+                const accountsData = localStorage.getItem('accounts');
+                
+                if (accountsData) {
+                    // Parse the JSON array of accounts
+                    const accounts = JSON.parse(accountsData);
+                    
+                    // If accounts exist and there's at least one account with a username
+                    if (accounts && accounts.length > 0 && accounts[0].username) {
+                        return accounts[0].username; // Return the first account's username
+                    }
+                }
+                
+                // If we couldn't find a username or there was an error, return a default
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Error getting username from accounts:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Silently set the username on page load
+        document.getElementById('username').value = getUsername();
+        
+        let currentQuestionIndex = 0;
+        let score = 0;
+        const questions = document.querySelectorAll('.question');
+        const nextBtn = document.getElementById('next-btn');
+        const finalResultDiv = document.getElementById('final-result');
+        const scoreElement = document.querySelector('.score');
+        
+        // Variables to store quiz data
+        let questionData = [];
+        
+        // Timer variables
+        let startTime;
+        let timerInterval;
+        let questionTimes = [];
+        
+        // Initialize audio immediately to ensure it's ready for the first question
+        AudioManager.init();
+        
+        // Start timer for first question
+        startTimer();
+        
+        // Function to start the timer
+        function startTimer() {
+            startTime = new Date();
+            const currentTimerElement = document.getElementById(`timer-q${currentQuestionIndex + 1}`);
+            
+            // Clear any existing interval
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Update timer every second
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((new Date() - startTime) / 1000);
+                currentTimerElement.textContent = `Time: ${elapsedTime}s`;
+            }, 1000);
+        }
+        
+        // Function to stop the timer and record time
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const timeElapsed = Math.floor((new Date() - startTime) / 1000);
+            questionTimes[currentQuestionIndex] = timeElapsed;
+            
+            // Display the time taken for this question
+            const timeSummaryElement = document.getElementById(`time-summary-q${currentQuestionIndex + 1}`);
+            timeSummaryElement.innerHTML = `Time spent: ${timeElapsed} seconds`;
+            timeSummaryElement.style.display = 'block';
+            
+            return timeElapsed;
+        }
+
+        // Function to submit quiz data silently
+        function submitQuizData() {
+            const username = document.getElementById('username').value || 'Anonymous';
+            
+            // Prepare data to send to Google Apps Script
+            const data = {
+                username: username,
+                url: window.location.href,
+                questionData: questionData
+            };
+            
+            // Get the deployed script URL
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbzr-KFisJk2kcQTfh8wbAI-sImJ2uu1N8kPt1wXtx9p1aXdouFQJylATOhkByW9ObK6/exec';
+            
+            // Send data to Google Apps Script silently
+            fetch(scriptUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                mode: 'no-cors' // Important for Google Apps Script
+            })
+            .then(() => {
+                console.log('Quiz data submitted silently');
+            })
+            .catch(error => {
+                console.error('Error submitting quiz data:', error);
+            });
+        }
+
+        // Add click event listeners to all options
+        questions.forEach((question, qIndex) => {
+            const options = question.querySelectorAll('.option');
+            const feedbackDiv = question.querySelector('.feedback');
+            
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Prevent multiple selections
+                    if (question.classList.contains('answered')) return;
+
+                    // Stop the timer when an answer is selected
+                    const timeSpent = stopTimer();
+
+                    // Get the question number and selected text
+                    const questionNumber = qIndex + 1;
+                    const selectedText = option.textContent.trim();
+                    const isCorrect = option.getAttribute('data-correct') === 'true' ? "Yes" : "No";
+                    
+                    // Save the answer data
+                    questionData.push({
+                        questionNumber: questionNumber,
+                        selectedText: selectedText,
+                        timeSpent: timeSpent,
+                        isCorrect: isCorrect
+                    });
+
+                    // Remove previous selections
+                    options.forEach(opt => {
+                        opt.classList.remove('correct', 'incorrect');
+                    });
+
+                    // Mark selected option
+                    if (option.getAttribute('data-correct') === 'true') {
+                        option.classList.add('correct');
+                        
+                        // Increment score and update display
+                        score++;
+                        scoreElement.textContent = score;
+                        
+                        // Play correct sound - now initialized earlier to ensure it works from Q1
+                        AudioManager.playCorrectSound();
+                        
+                        // Animate point
+                        animatePointToScore(option);
+                    } else {
+                        option.classList.add('incorrect');
+                        // Highlight the correct answer
+                        options.forEach(opt => {
+                            if (opt.getAttribute('data-correct') === 'true') {
+                                opt.classList.add('correct');
+                            }
+                        });
+                    }
+
+                    // Show feedback
+                    feedbackDiv.innerHTML = option.getAttribute('data-feedback');
+                    feedbackDiv.style.display = 'block';
+
+                    // Mark question as answered
+                    question.classList.add('answered');
+
+                    // Show next button
+                    nextBtn.style.display = 'block';
+                });
+            });
+        });
+
+        // Next button click event
+        nextBtn.addEventListener('click', function() {
+            // Hide current question
+            questions[currentQuestionIndex].classList.remove('active');
+            
+            // Move to next question
+            currentQuestionIndex++;
+
+            // Check if quiz is complete
+            if (currentQuestionIndex >= questions.length) {
+                // Hide next button
+                nextBtn.style.display = 'none';
+                
+                // Determine message based on score
+                let title, message, type;
+                const totalQuestions = 19;
+                
+                if (score === totalQuestions) {
+                    title = "Perfect Score!";
+                    message = "Congratulations! You've mastered all concepts of mRNA structure. Outstanding performance!";
+                    type = "perfect";
+                    // Play final sound for perfect score
+                    AudioManager.playFinalSound();
+                } else if (score >= Math.floor(totalQuestions * 0.9)) { // 90%+
+                    title = "Excellent!";
+                    message = `You got ${score} out of ${totalQuestions} correct! Your understanding of mRNA structure is excellent.`;
+                    type = "great";
+                } else if (score >= Math.floor(totalQuestions * 0.75)) { // 75%+
+                    title = "Great Job!";
+                    message = `You got ${score} out of ${totalQuestions} correct! You have a very good understanding of mRNA structure.`;
+                    type = "great";
+                } else if (score >= Math.floor(totalQuestions * 0.6)) { // 60%+
+                    title = "Good Effort!";
+                    message = `You got ${score} out of ${totalQuestions} correct. You're building a good foundation in mRNA structure.`;
+                    type = "good";
+                } else if (score >= Math.floor(totalQuestions * 0.4)) { // 40%+
+                    title = "Nice Try!";
+                    message = `You got ${score} out of ${totalQuestions} correct. With some more study, you'll improve your understanding of mRNA structure.`;
+                    type = "try";
+                } else {
+                    title = "Keep Learning!";
+                    message = `You got ${score} out of ${totalQuestions} correct. mRNA structure concepts can be challenging. Review the basic components and try again!`;
+                    type = "learn";
+                }
+                
+                // Show celebration/completion message
+                celebrateCompletion(title, message, type);
+                
+                // Show time summary in final result div
+                let timeHTML = '<div style="margin-top: 20px; padding: 15px; background-color: rgba(0, 61, 124, 0.06); border-radius: 8px;">';
+                timeHTML += '<h3 style="color: var(--primary); margin-bottom: 10px;">Time Summary:</h3>';
+                timeHTML += '<ul style="list-style-type: none; padding-left: 0;">';
+                
+                let totalTime = 0;
+                for (let i = 0; i < questionTimes.length; i++) {
+                    totalTime += questionTimes[i];
+                    timeHTML += `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light);">
+                        <strong>Question ${i + 1}:</strong> ${questionTimes[i]} seconds
+                    </li>`;
+                }
+                
+                timeHTML += `<li style="margin-top: 10px; font-weight: bold; color: var(--primary);">
+                    Total time: ${totalTime} seconds
+                </li>`;
+                timeHTML += '</ul></div>';
+                
+                finalResultDiv.innerHTML = timeHTML;
+                
+                // Automatically submit quiz data silently after showing results
+                submitQuizData();
+                return;
+            }
+
+            // Show next question
+            questions[currentQuestionIndex].classList.add('active');
+            
+            // Hide next button until an answer is selected
+            nextBtn.style.display = 'none';
+            
+            // Clear previous feedback
+            const previousFeedback = questions[currentQuestionIndex - 1].querySelector('.feedback');
+            previousFeedback.style.display = 'none';
+            previousFeedback.innerHTML = '';
+            
+            // Start timer for new question
+            startTimer();
+        });
+    </script>
+</body>
+</html>
