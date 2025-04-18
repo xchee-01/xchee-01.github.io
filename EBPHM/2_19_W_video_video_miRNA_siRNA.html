@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>miRNA and siRNA: Interactive Learning Module</title>
+    <style>
+        :root {
+            /* NUS Color Palette */
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #7BAFD4;
+            --nus-light-orange: #F5A623;
+            --nus-grey: #4A4A4A;
+            --nus-light-grey: #F2F2F2;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 25px;
+            background-color: #FAFAFA;
+            color: var(--nus-grey);
+            line-height: 1.6;
+        }
+        
+        h1 {
+            color: var(--nus-blue);
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 3px solid var(--nus-orange);
+            padding-bottom: 15px;
+        }
+        
+        #videoContainer {
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        #player {
+            width: 100%;
+        }
+        
+        #questionContainer {
+            display: none;
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-orange);
+            transition: all 0.3s ease;
+        }
+        
+        #questionText {
+            color: var(--nus-blue);
+            margin-top: 0;
+            font-size: 1.4rem;
+        }
+        
+        .option {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: var(--nus-light-grey);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 4px solid var(--nus-blue);
+            color: #333333;
+            font-weight: 600;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .option:hover {
+            background-color: #E8E8E8;
+            transform: translateX(5px);
+            color: var(--nus-blue);
+            border-left: 6px solid var(--nus-orange);
+        }
+        
+        #feedback {
+            margin-top: 20px;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        #continueButton {
+            display: none;
+            margin: 20px auto 0;
+            padding: 12px 30px;
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        #continueButton:hover {
+            background-color: #00326A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        #restartVideoButton {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 30px;
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        #restartVideoButton:hover {
+            background-color: #00326A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: var(--nus-light-grey);
+            height: 8px;
+            border-radius: 4px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: var(--nus-orange);
+            transition: width 0.3s ease;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        #mainContent {
+            display: block;
+        }
+        
+        #statsPanel {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-blue);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background-color: var(--nus-light-grey);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--nus-blue);
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--nus-grey);
+        }
+        
+        #summaryPanel {
+            display: none;
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--nus-orange);
+        }
+        
+        .question-summary {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .question-summary h3 {
+            color: var(--nus-blue);
+            margin-bottom: 10px;
+        }
+        
+        .summary-correct {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .summary-incorrect {
+            color: #F44336;
+            font-weight: bold;
+        }
+        
+        .explanation {
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 10px;
+            border-left: 3px solid var(--nus-light-blue);
+        }
+        
+        /* Analytics section (only visible to instructors) */
+        .analytics-section {
+            margin-top: 25px;
+            background-color: #f7fbff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--nus-light-blue);
+        }
+        
+        .analytics-title {
+            color: var(--nus-blue);
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .analytics-item {
+            padding: 8px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* Heatmap styles for analytics visualization */
+        .heatmap-container {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .heatmap-segment {
+            height: 25px;
+            display: flex;
+            margin-bottom: 5px;
+        }
+        
+        .heatmap-label {
+            width: 100px;
+            font-size: 0.8rem;
+            padding: 3px;
+        }
+        
+        .heatmap-bar {
+            flex-grow: 1;
+            display: flex;
+        }
+        
+        .heatmap-chunk {
+            height: 100%;
+            flex-grow: 1;
+            margin: 0 1px;
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <h1>miRNA and siRNA: Interactive Learning Module</h1>
+    
+    <!-- Main Content -->
+    <div id="mainContent">
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div id="videoContainer">
+            <!-- YouTube video will be embedded here -->
+            <div id="player"></div>
+        </div>
+        
+        <div id="questionContainer">
+            <h2 id="questionText">Question goes here</h2>
+            <div id="options"></div>
+            <div id="feedback"></div>
+            <button id="continueButton">Continue Video</button>
+        </div>
+        
+        <!-- Stats Panel - Simplified for users (hiding tracking metrics) -->
+        <div id="statsPanel">
+            <h2>Your Progress</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="correctAnswers">0</div>
+                    <div class="stat-label">Correct Answers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="accuracy">0%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="videoProgress">0%</div>
+                    <div class="stat-label">Video Progress</div>
+                </div>
+            </div>
+            
+            <!-- Hidden tracking elements (not visible but used for data collection) -->
+            <div style="display: none;">
+                <div id="totalAttempts">0</div>
+                <div id="pauseCount">0</div>
+                <div id="rewindCount">0</div>
+                <div id="speedChanges">0</div>
+                <div id="currentSpeed">1x</div>
+            </div>
+        </div>
+        
+        <!-- Summary Panel (shown at the end) -->
+        <div id="summaryPanel">
+            <h2>Learning Module Summary</h2>
+            <div id="questionsSummary"></div>
+            <div id="overallScore"></div>
+            
+            <!-- Detailed analytics section (only visible to instructors) -->
+            <div id="detailedAnalytics" class="analytics-section" style="display: none;">
+                <div class="analytics-title">Detailed Learning Analytics</div>
+                <div id="analyticsContent"></div>
+                
+                <!-- Additional instructor-only analytics visualizations -->
+                <div class="heatmap-container">
+                    <h4>Rewatch Heatmap</h4>
+                    <p>Segments most frequently rewatched (darker = more rewatches)</p>
+                    <div id="rewatchHeatmap"></div>
+                </div>
+                
+                <div class="analytics-title" style="margin-top: 20px;">Playback Speed Analysis</div>
+                <div id="speedMetrics"></div>
+                
+                <div class="analytics-title" style="margin-top: 20px;">Pause Pattern Analysis</div>
+                <div id="pauseMetrics"></div>
+            </div>
+            
+            <button id="restartVideoButton">Restart Learning Video</button>
+        </div>
+    </div>
+    
+    <script>
+        // Authentication Constants
+        const SIGN_IN_URL = 'https://xchee-01.github.io/EBPHM/1_signin.html';
+        
+        // Initialize variables
+        let player;
+        let currentQuestion = 0;
+        let currentSection = -1; // Track which section we're currently showing
+        let totalQuestions = 13; // Updated total questions based on the quiz document
+        let totalSections = 6; // Total number of sections based on timestamps
+        let programmaticPause = false; // Flag to distinguish manual vs. programmatic pauses
+        let lastPlayerState = null;
+        let lastTimeUpdate = 0;
+        let checkTimeInterval = null;
+        let sectionQuestions = []; // Will store which questions belong to each section
+        
+        // Enhanced student data model with tracking metrics
+        let studentData = {
+            name: "",
+            id: "",
+            startTime: null,
+            endTime: null,
+            totalTimeSpent: 0,
+            videoWatchedPercentage: 0,
+            questionAttempts: [],
+            correctAnswers: 0,
+            totalAttempts: 0,
+            pageUrl: window.location.href
+        };
+        
+        // Comprehensive video interaction tracking
+        let videoMetrics = {
+            // Playback speed tracking
+            playbackSpeeds: [],         // Array of {speed, startTime, duration}
+            currentSpeed: 1,            // Current playback speed
+            speedChanges: 0,            // Count of speed changes
+            timeAtSpeed: {},            // Object mapping speed to time spent
+            
+            // Pause tracking
+            pauses: [],                 // Array of {timestamp, duration, videoPosition}
+            pauseCount: 0,              // Total manual pauses
+            isProgrammaticPause: false, // Flag for question pauses
+            pauseStartTime: null,       // When a pause began
+            
+            // Rewatch/seek tracking
+            rewatches: {},              // Object mapping time segments to rewatch count
+            rewindCount: 0,             // Total rewind events
+            seekEvents: [],             // When user seeks/jumps in the video
+            segmentsWatched: [],        // Array of {start, end} segments actually watched
+            
+            // Position tracking
+            lastPosition: 0,            // Last time position for tracking
+            lastTimestamp: null,        // Timestamp of last check
+            lastPlayerState: -1,        // Track previous player state
+            
+            // Additional metrics
+            totalActualWatchTime: 0,    // Time spent actively watching 
+            timeSpentOnQuestions: 0,    // Time spent answering questions
+            segmentResolution: 5,       // Track segments in 5-second intervals
+            checkInterval: null         // Interval for position checking
+        };
+
+        // Define the questions with sections based on the quiz document
+        const questions = [
+            {
+                section: 0, // Section 1: What is miRNA (51s)
+                time: 51,
+                question: "MicroRNAs were first discovered in which organism, and what was the identification that led to this discovery?",
+                options: [
+                    { text: "Homo sapiens, with the identification of let-7", correct: false },
+                    { text: "Caenorhabditis elegans, with the identification of lin-4", correct: true },
+                    { text: "Drosophila melanogaster, with the identification of miR-1", correct: false },
+                    { text: "Mus musculus, with the identification of miR-15", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "MicroRNAs were first discovered in Caenorhabditis elegans (C. elegans) in 1993 with the identification of lin-4. While other miRNAs were later discovered in other organisms, lin-4 in C. elegans was the first discovered miRNA, though its universal importance wasn't recognized until the early 2000s."
+            },
+            {
+                section: 0, // Section 1: What is miRNA (51s)
+                time: 51,
+                question: "What is the typical length range of mature microRNA molecules?",
+                options: [
+                    { text: "5-10 nucleotides", correct: false },
+                    { text: "12-18 nucleotides", correct: false },
+                    { text: "20-24 nucleotides", correct: true },
+                    { text: "30-40 nucleotides", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "MicroRNAs are small non-coding RNA molecules that are typically 20-24 nucleotides in length. This size range is important for their specific function in post-transcriptional gene regulation, as it allows precise targeting of mRNAs."
+            },
+            {
+                section: 1, // Section 2: miRNA Biogenesis - Canonical Pathway (191s)
+                time: 191,
+                question: "In the canonical miRNA biogenesis pathway, which enzyme processes the pri-miRNA into pre-miRNA in the nucleus?",
+                options: [
+                    { text: "Dicer", correct: false },
+                    { text: "Drosha", correct: true },
+                    { text: "Exportin-5", correct: false },
+                    { text: "RISC", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "In the canonical miRNA biogenesis pathway, Drosha (an RNase III enzyme) processes primary miRNA (pri-miRNA) into precursor miRNA (pre-miRNA) in the nucleus. This is a crucial first processing step that occurs before the pre-miRNA is exported to the cytoplasm for further processing by Dicer."
+            },
+            {
+                section: 1, // Section 2: miRNA Biogenesis - Canonical Pathway (191s)
+                time: 191,
+                question: "Which protein is responsible for transporting pre-miRNA from the nucleus to the cytoplasm?",
+                options: [
+                    { text: "RNA polymerase II", correct: false },
+                    { text: "Dicer", correct: false },
+                    { text: "Exportin-5", correct: true },
+                    { text: "Argonaute", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "Exportin-5 is the protein responsible for translocating (transporting) the pre-miRNA from the nucleus into the cytoplasm. This nuclear export step is essential in the miRNA biogenesis pathway, as it allows the pre-miRNA to be further processed by Dicer in the cytoplasm to form the mature miRNA."
+            },
+            {
+                section: 2, // Section 3: miRNA Mechanism of Action (273s)
+                time: 273,
+                question: "Which proteins are the core components of the RNA-induced silencing complex (RISC) in humans, and which one has catalytic activity?",
+                options: [
+                    { text: "DGCR8 proteins, with DGCR4 having catalytic activity", correct: false },
+                    { text: "Argonaute (AGO) proteins, with AGO2 having catalytic activity", correct: true },
+                    { text: "Drosha proteins, with Drosha-3 having catalytic activity", correct: false },
+                    { text: "Exportin proteins, with Exportin-2 having catalytic activity", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "Argonaute (AGO) proteins are the core components of RISC. In humans, four AGO proteins (AGO1-4) participate in miRNA-mediated gene silencing, but AGO2 is specifically the most prevalent and the only one with catalytic activity."
+            },
+            {
+                section: 2, // Section 3: miRNA Mechanism of Action (273s)
+                time: 273,
+                question: "What determines whether a miRNA induces target mRNA degradation or translational repression?",
+                options: [
+                    { text: "The length of the miRNA molecule", correct: false },
+                    { text: "The level of binding complementarity between miRNA and target mRNA", correct: true },
+                    { text: "The concentration of miRNA in the cell", correct: false },
+                    { text: "The presence of RNA polymerase II", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "The mechanism of action for miRNAs depends on the level of binding complementarity between the miRNA and its target mRNA. Partial complementarity typically leads to translational repression, while complete complementarity can result in either mRNA degradation or repression. This is a key determinant of the specific outcome of miRNA-mediated gene regulation."
+            },
+            {
+                section: 2, // Section 3: miRNA Mechanism of Action (273s)
+                time: 273,
+                question: "Besides targeting the 3' UTR of mRNAs, what other non-classical functions can miRNAs have?",
+                options: [
+                    { text: "Activating transcription of target genes", correct: false },
+                    { text: "Acting as mediators of intracellular communication via extracellular vesicles", correct: true },
+                    { text: "Direct binding to DNA to regulate transcription", correct: false },
+                    { text: "Catalyzing the splicing of pre-mRNAs", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "According to the extended mechanisms of action, miRNAs can act as mediators of intracellular communication by being secreted via extracellular vesicles and acting as hormones. This is one of the non-classical functions described, along with targeting 5' UTR or coding sequences and interacting with non-Argonaute proteins."
+            },
+            {
+                section: 3, // Section 4: siRNA Biogenesis (346s)
+                time: 346,
+                question: "Which of the following statements about siRNA production in humans is correct?",
+                options: [
+                    { text: "All siRNAs in humans are produced endogenously in large quantities", correct: false },
+                    { text: "Only a limited amount of siRNAs are produced endogenously (endo-siRNA) in humans", correct: true },
+                    { text: "Humans cannot produce any endogenous siRNAs", correct: false },
+                    { text: "Humans produce more endogenous siRNAs than miRNAs", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "Only a limited amount of siRNAs are produced endogenously (endo-siRNA) in humans. This distinguishes human siRNA production from some other organisms and also contrasts with the more abundant endogenous miRNA production in humans."
+            },
+            {
+                section: 3, // Section 4: siRNA Biogenesis (346s)
+                time: 346,
+                question: "In the siRNA biogenesis pathway, what enzyme is responsible for processing double-stranded RNA (dsRNA) into siRNAs?",
+                options: [
+                    { text: "Drosha", correct: false },
+                    { text: "RNA polymerase II", correct: false },
+                    { text: "Dicer", correct: true },
+                    { text: "RNA-dependent RNA polymerase (RdRP)", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "In the siRNA biogenesis pathway, the ribonuclease III Dicer processes (or \"dices\") double-stranded RNA (dsRNA) into short interfering RNAs (siRNAs). This is a crucial step in the pathway before the siRNAs can be loaded onto the RISC complex."
+            },
+            {
+                section: 4, // Section 5: siRNA Mechanism of Action (379s)
+                time: 379,
+                question: "What is the primary outcome when the siRNA-RISC complex binds to its target mRNA?",
+                options: [
+                    { text: "Enhancement of translation", correct: false },
+                    { text: "Addition of a poly-A tail", correct: false },
+                    { text: "AGO2-mediated cleavage of the mRNA", correct: true },
+                    { text: "Recruitment of transcription factors", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "When the siRNA-RISC complex binds to its target mRNA, AGO2 cleaves the mRNA, preventing its translation into protein. This is the primary mechanism by which siRNAs effectively silence specific genes at the post-transcriptional level."
+            },
+            {
+                section: 4, // Section 5: siRNA Mechanism of Action (379s)
+                time: 379,
+                question: "Which protein in the RISC complex is primarily responsible for the cleavage of target mRNA during siRNA-mediated gene silencing?",
+                options: [
+                    { text: "Dicer", correct: false },
+                    { text: "Drosha", correct: false },
+                    { text: "AGO2", correct: true },
+                    { text: "Exportin-5", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "When the siRNA-RISC complex binds to its target mRNA, AGO2 cleaves the mRNA. AGO2 is the protein within the RISC complex that possesses the catalytic activity necessary for this cleavage function, which is central to siRNA-mediated gene silencing."
+            },
+            {
+                section: 5, // Section 6: Difference between siRNA and miRNA (385s)
+                time: 385,
+                question: "What is a key difference in the origin of siRNAs versus miRNAs?",
+                options: [
+                    { text: "siRNAs originate from exogenous dsRNA or endogenous convergent transcription, while miRNAs originate from endogenous genomic loci", correct: true },
+                    { text: "siRNAs originate only from viral sources, while miRNAs originate only from bacterial sources", correct: false },
+                    { text: "siRNAs originate from coding regions of the genome, while miRNAs originate from non-coding regions", correct: false },
+                    { text: "siRNAs are artificially synthesized, while miRNAs are naturally occurring", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "siRNAs originate from exogenous double-stranded RNA (dsRNA) or endogenous convergent transcription, whereas miRNAs originate from endogenous genomic loci (which can be introns or independent miRNA genes). This difference in origin is a fundamental distinction between these two types of small non-coding RNAs."
+            },
+            {
+                section: 5, // Section 6: Difference between siRNA and miRNA (385s)
+                time: 385,
+                question: "How do siRNAs and miRNAs differ in terms of target recognition and number of targets?",
+                options: [
+                    { text: "siRNAs require seed region complementarity, while miRNAs require perfect complementarity", correct: false },
+                    { text: "siRNAs typically target multiple mRNAs, while miRNAs usually target just one specific mRNA", correct: false },
+                    { text: "siRNAs require perfect or near-perfect complementarity and usually target one specific mRNA, while miRNAs rely primarily on seed region complementarity and can target multiple mRNAs", correct: true },
+                    { text: "Both siRNAs and miRNAs require perfect complementarity and target single specific mRNAs", correct: false }
+                ],
+                attempts: 0,
+                answeredCorrectly: false,
+                selectedOption: null,
+                timeToAnswer: 0,
+                explanation: "siRNAs require perfect or near-perfect complementarity to their targets and usually target one specific mRNA. In contrast, miRNAs rely primarily on the seed region (nucleotides 2-8) for target recognition and can target multiple mRNAs, sometimes hundreds. This difference in targeting specificity is a key functional distinction between siRNAs and miRNAs."
+            }
+        ];
+        
+        // Organize questions by section
+        function initializeSectionQuestions() {
+            sectionQuestions = Array(totalSections).fill().map(() => []);
+            
+            // Group questions by section
+            questions.forEach((question, index) => {
+                sectionQuestions[question.section].push(index);
+            });
+            
+            console.log("Questions organized by section:", sectionQuestions);
+        }
+        
+        // =========== AUTHENTICATION FUNCTIONS ===========
+        
+        // Store current URL for potential redirect back
+        function storeCurrentUrl() {
+            try {
+                localStorage.setItem('lastVisitedUrl', window.location.href);
+            } catch (error) {
+                console.error('URL storage error:', error);
+            }
+        }
+        
+        // Check if user is authenticated
+        function checkAuthentication() {
+            const accountsData = localStorage.getItem('accounts');
+            if (!accountsData) {
+                redirectToSignIn();
+                return false;
+            }
+            
+            try {
+                const accounts = JSON.parse(accountsData);
+                if (!accounts || accounts.length === 0 || !accounts[0].username) {
+                    redirectToSignIn();
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Authentication check
