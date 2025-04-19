@@ -309,7 +309,17 @@
         
         <div id="videoContainer">
             <!-- YouTube video will be embedded here -->
-            <div id="player"></div>
+            <div id="player">
+                <!-- Fallback if JavaScript or YouTube API fails -->
+                <iframe width="100%" height="480" 
+                        src="https://www.youtube.com/embed/8y7rjrFA1vM" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen></iframe>
+            </div>
+            <div id="videoLoadingError" style="display:none; padding: 20px; text-align: center; background-color: #f8d7da; color: #721c24; border-radius: 5px; margin-top: 10px;">
+                <p>If you're having trouble viewing the video, you can <a href="https://www.youtube.com/watch?v=8y7rjrFA1vM" target="_blank">watch it directly on YouTube</a>.</p>
+            </div>
         </div>
         
         <div id="questionContainer">
@@ -1217,6 +1227,8 @@
         
         // Main initialization function
         function init() {
+            console.log("Initializing application...");
+            
             // Store current URL for potential redirect
             storeCurrentUrl();
             
@@ -1231,7 +1243,25 @@
             // Initialize session data
             initializeStudentData();
             
+            // Add backup direct embed if the API fails
+            const playerDiv = document.getElementById('player');
+            playerDiv.innerHTML = '<div id="youtube-player-api"></div>' + 
+                '<iframe id="fallback-player" style="display:none" width="100%" height="480" ' +
+                'src="https://www.youtube.com/embed/8y7rjrFA1vM?enablejsapi=1" ' +
+                'frameborder="0" allow="accelerometer; autoplay; clipboard-write; ' +
+                'encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+            
+            // Set a fallback timer to show the iframe directly if API doesn't load
+            setTimeout(function() {
+                if (!window.YT || !player) {
+                    console.log("YouTube API failed to load, showing fallback player");
+                    document.getElementById('youtube-player-api').style.display = 'none';
+                    document.getElementById('fallback-player').style.display = 'block';
+                }
+            }, 3000);
+            
             // Load YouTube API
+            console.log("Loading YouTube API...");
             const tag = document.createElement('script');
             tag.src = "https://www.youtube.com/iframe_api";
             const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -1258,6 +1288,7 @@
         
         // Create YouTube player
         function onYouTubeIframeAPIReady() {
+            console.log("YouTube iframe API is ready");
             player = new YT.Player('player', {
                 height: '480',
                 width: '100%',
@@ -1266,12 +1297,16 @@
                     'playsinline': 1,
                     'modestbranding': 1,
                     'rel': 0,
-                    'controls': 1
+                    'controls': 1,
+                    'origin': window.location.origin
                 },
                 events: {
                     'onReady': onPlayerReady,
                     'onStateChange': onPlayerStateChange,
-                    'onPlaybackRateChange': trackPlaybackRateChange
+                    'onPlaybackRateChange': trackPlaybackRateChange,
+                    'onError': function(event) {
+                        console.error("YouTube player error:", event.data);
+                    }
                 }
             });
         }
