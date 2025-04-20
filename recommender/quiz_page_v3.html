@@ -1,4 +1,5 @@
 <!-- This code works. Extracts quiz from Question Bank sheet and track responses into the Recommender System sheet. To be used together with question_picker_v3.gs --> 
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -140,6 +141,9 @@
   <div class="container">
     <h1>Python Data Types Quiz</h1>
     
+    <!-- Test connection button -->
+    <button id="test-connection" class="btn" style="margin-bottom: 20px;">Test Connection</button>
+    
     <div id="loading" class="loading">Loading question...</div>
     <div id="error-message" class="error" style="display:none;"></div>
     
@@ -205,7 +209,7 @@
       };
     };
     
-    // Get a random question from the server - IMPROVED VERSION
+    // Get a random question from the server - JSONP version
     function getRandomQuestion() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('question-area').style.display = 'none';
@@ -220,33 +224,77 @@
       // Reset selected option
       selectedOption = null;
       
-      // Add a timestamp to prevent caching issues
+      // Add a cache-busting timestamp
       const timestamp = new Date().getTime();
+      const sessionId = 'default'; // You can customize this
       
-      // Changed getRandomQuestion to getNextQuestion to match the backend
-      fetch(`${GOOGLE_SCRIPT_URL}?action=getNextQuestion&timestamp=${timestamp}`)
-        .then(response => {
-          console.log("Response status:", response.status);
-          if (!response.ok) {
-            throw new Error(`Server responded with status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log("Data received:", data);
-          if (data.error) {
-            showError(data.error);
-          } else {
-            displayQuestion(data);
-          }
-        })
-        .catch(error => {
-          console.error("Fetch error:", error);
-          showError(error.message || 'Failed to fetch question');
-        });
+      // Create a unique callback name
+      const callbackName = 'questionCallback_' + timestamp;
+      
+      // Define the callback function
+      window[callbackName] = function(data) {
+        console.log("Question data received:", data);
+        
+        if (data && data.error) {
+          showError(data.error);
+        } else {
+          displayQuestion(data);
+        }
+        
+        // Clean up by removing the script
+        const scriptElement = document.getElementById('question-script');
+        if (scriptElement) {
+          document.body.removeChild(scriptElement);
+        }
+        
+        // Remove the callback after a delay
+        setTimeout(() => {
+          delete window[callbackName];
+        }, 1000);
+      };
+      
+      // Create and add the script element
+      const script = document.createElement('script');
+      script.id = 'question-script';
+      script.src = `${GOOGLE_SCRIPT_URL}?action=getNextQuestion&timestamp=${timestamp}&sessionId=${sessionId}&callback=${callbackName}`;
+      
+      // Set a timeout for the request
+      const timeoutId = setTimeout(() => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error-message').style.display = 'block';
+        document.getElementById('error-message').textContent = 'Request timed out. Please check your connection and try again.';
+        
+        // Clean up
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      }, 10000); // 10 second timeout
+      
+      // Set up error handler
+      script.onerror = function() {
+        clearTimeout(timeoutId);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error-message').style.display = 'block';
+        document.getElementById('error-message').textContent = 'Failed to load question data. Check your connection and try again.';
+        
+        // Clean up
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      };
+      
+      // Set load handler to clear timeout
+      script.onload = function() {
+        clearTimeout(timeoutId);
+      };
+      
+      // Add the script to initiate the request
+      document.body.appendChild(script);
     }
     
-    // Display the question and options - IMPROVED VERSION
+    // Display the question and options
     function displayQuestion(questionData) {
       if (!questionData) {
         showError("No questions available");
@@ -254,7 +302,7 @@
       }
       
       // Log data for debugging
-      console.log("Question data received:", questionData);
+      console.log("Question data for display:", questionData);
       
       currentQuestion = questionData;
       
@@ -402,7 +450,7 @@
       trackResponse();
     }
     
-    // Track the user's response in the spreadsheet
+    // Track the user's response using JSONP approach
     function trackResponse() {
       const isCorrect = selectedOption === (currentQuestion.correctAnswer || currentQuestion["Correct Answer"]);
       
@@ -425,27 +473,157 @@
       trackingStatus.textContent = "Saving your response...";
       trackingStatus.style.display = 'block';
       
-      // Send the data to Google Apps Script
-      const formData = new FormData();
-      formData.append('action', 'trackResponse');
-      formData.append('data', JSON.stringify(responseData));
+      // Create a unique callback name
+      const callbackName = 'trackCallback_' + new Date().getTime();
       
-      fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        body: formData,
-        mode: 'no-cors'
-      })
-      .then(() => {
-        trackingStatus.textContent = "Response saved!";
+      // Define the callback function
+      window[callbackName] = function(data) {
+        console.log("Tracking response:", data);
+        
+        if (data && data.success) {
+          trackingStatus.textContent = "Response saved!";
+        } else {
+          trackingStatus.textContent = "Error saving response: " + (data ? data.error : "Unknown error");
+          console.error("Error saving response:", data);
+        }
+        
         setTimeout(() => {
           trackingStatus.style.display = 'none';
         }, 3000);
-      })
-      .catch(error => {
+        
+        // Clean up by removing the script
+        const scriptElement = document.getElementById('track-script');
+        if (scriptElement) {
+          document.body.removeChild(scriptElement);
+        }
+        
+        // Remove the callback after a delay
+        setTimeout(() => {
+          delete window[callbackName];
+        }, 1000);
+      };
+      
+      // Create and add the script element with URL-encoded data
+      const script = document.createElement('script');
+      script.id = 'track-script';
+      script.src = `${GOOGLE_SCRIPT_URL}?action=trackResponse&callback=${callbackName}&data=${encodeURIComponent(JSON.stringify(responseData))}`;
+      
+      // Set a timeout for the request
+      const timeoutId = setTimeout(() => {
+        trackingStatus.textContent = "Error: Request timed out";
+        setTimeout(() => {
+          trackingStatus.style.display = 'none';
+        }, 3000);
+        
+        // Clean up
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      }, 10000); // 10 second timeout
+      
+      // Set up error handler
+      script.onerror = function() {
+        clearTimeout(timeoutId);
         trackingStatus.textContent = "Error saving response. Please try again.";
-        console.error("Error tracking response:", error);
-      });
+        setTimeout(() => {
+          trackingStatus.style.display = 'none';
+        }, 3000);
+        
+        // Clean up
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      };
+      
+      // Set load handler to clear timeout
+      script.onload = function() {
+        clearTimeout(timeoutId);
+      };
+      
+      // Add the script to initiate the request
+      document.body.appendChild(script);
     }
+    
+    // Test connection function
+    document.getElementById('test-connection').onclick = function() {
+      document.getElementById('error-message').style.display = 'none';
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('loading').textContent = 'Testing connection to Google Apps Script...';
+      
+      // Create a unique callback name
+      const callbackName = 'testCallback_' + new Date().getTime();
+      
+      // Define the callback function
+      window[callbackName] = function(data) {
+        console.log("Test data:", data);
+        
+        if (data && data.error) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error-message').style.display = 'block';
+          document.getElementById('error-message').textContent = 'Error: ' + data.error;
+        } else {
+          document.getElementById('loading').textContent = 'Connection successful! ✅ Found ' + 
+            (data.totalQuestions || 'some') + ' questions.';
+          setTimeout(() => {
+            document.getElementById('loading').style.display = 'none';
+            getRandomQuestion(); // Try loading a question after successful test
+          }, 3000);
+        }
+        
+        // Clean up by removing the script
+        const scriptElement = document.getElementById('test-script');
+        if (scriptElement) {
+          document.body.removeChild(scriptElement);
+        }
+        
+        // Remove the callback after a delay
+        setTimeout(() => {
+          delete window[callbackName];
+        }, 1000);
+      };
+      
+      // Create and add the script element
+      const script = document.createElement('script');
+      script.id = 'test-script';
+      script.src = `${GOOGLE_SCRIPT_URL}?action=getQuestionCount&timestamp=${new Date().getTime()}&callback=${callbackName}`;
+      
+      // Set a timeout for the request
+      const timeoutId = setTimeout(() => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error-message').style.display = 'block';
+        document.getElementById('error-message').textContent = 'Connection timed out. Please check your script URL and try again.';
+        
+        // Clean up
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      }, 10000); // 10 second timeout
+      
+      // Set up error handler
+      script.onerror = function() {
+        clearTimeout(timeoutId);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error-message').style.display = 'block';
+        document.getElementById('error-message').textContent = 'Connection failed. Check your script URL and try again.';
+        
+        // Clean up
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      };
+      
+      // Set load handler to clear timeout
+      script.onload = function() {
+        clearTimeout(timeoutId);
+      };
+      
+      // Add the script to initiate the request
+      document.body.appendChild(script);
+    };
   </script>
 </body>
 </html>
