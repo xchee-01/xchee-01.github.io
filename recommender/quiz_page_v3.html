@@ -1,5 +1,3 @@
-<!-- This code works. Extracts quiz from Question Bank sheet and track responses into the Recommender System sheet. To be used together with question_picker_v3.gs --> 
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -128,21 +126,11 @@
       display: flex;
       margin-bottom: 20px;
     }
-    .tracking-status {
-      font-size: 12px;
-      color: #4285f4;
-      margin-top: 10px;
-      text-align: center;
-      display: none;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Python Data Types Quiz</h1>
-    
-    <!-- Test connection button -->
-    <button id="test-connection" class="btn" style="margin-bottom: 20px;">Test Connection</button>
     
     <div id="loading" class="loading">Loading question...</div>
     <div id="error-message" class="error" style="display:none;"></div>
@@ -163,8 +151,6 @@
         <button id="hint-btn" class="btn">Show Hint</button>
         <button id="next-btn" class="btn" style="display:none;">Next Question</button>
       </div>
-      
-      <div id="tracking-status" class="tracking-status"></div>
       
       <div id="explanation-container" class="explanation-container">
         <h3>Explanation:</h3>
@@ -194,14 +180,14 @@
     let selectedOption = null;
     
     // Configure your Google Apps Script Web App URL here
-    // Make sure to update this with your latest deployment URL
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7jFHUaZwGGfbZA3CRs0T_NL4zxFMGPKYerkGK8q74TqcJ7FCPAOEi_AYl98CKUF8q/exec';
+    // Make sure this matches your latest deployment URL
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwGiLyx3CDMiMEbfb5euRuE3cm998hc7oqiskhls989fq-D-gbW4ytCxX13n_2sxZORAg/exec';
     
     // Initialize the quiz when the page loads
     window.onload = function() {
       getRandomQuestion();
       
-      // Set up the hint button event
+      // Set up the hint button event - Fixed indentation issue
       document.getElementById('hint-btn').onclick = function() {
         document.getElementById('explanation-container').style.display = 'block';
         document.getElementById('hint-container').style.display = 'block';
@@ -209,7 +195,7 @@
       };
     };
     
-    // Get a random question from the server - JSONP version
+    // Get a random question from the server
     function getRandomQuestion() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('question-area').style.display = 'none';
@@ -219,79 +205,29 @@
       document.getElementById('next-btn').style.display = 'none';
       document.getElementById('hint-container').style.display = 'none';
       document.getElementById('error-message').style.display = 'none';
-      document.getElementById('tracking-status').style.display = 'none';
       
       // Reset selected option
       selectedOption = null;
       
-      // Add a cache-busting timestamp
-      const timestamp = new Date().getTime();
-      const sessionId = 'default'; // You can customize this
-      
-      // Create a unique callback name
-      const callbackName = 'questionCallback_' + timestamp;
-      
-      // Define the callback function
-      window[callbackName] = function(data) {
-        console.log("Question data received:", data);
-        
-        if (data && data.error) {
-          showError(data.error);
-        } else {
-          displayQuestion(data);
-        }
-        
-        // Clean up by removing the script
-        const scriptElement = document.getElementById('question-script');
-        if (scriptElement) {
-          document.body.removeChild(scriptElement);
-        }
-        
-        // Remove the callback after a delay
-        setTimeout(() => {
-          delete window[callbackName];
-        }, 1000);
-      };
-      
-      // Create and add the script element
-      const script = document.createElement('script');
-      script.id = 'question-script';
-      script.src = `${GOOGLE_SCRIPT_URL}?action=getNextQuestion&timestamp=${timestamp}&sessionId=${sessionId}&callback=${callbackName}`;
-      
-      // Set a timeout for the request
-      const timeoutId = setTimeout(() => {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('error-message').textContent = 'Request timed out. Please check your connection and try again.';
-        
-        // Clean up
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-        delete window[callbackName];
-      }, 10000); // 10 second timeout
-      
-      // Set up error handler
-      script.onerror = function() {
-        clearTimeout(timeoutId);
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('error-message').textContent = 'Failed to load question data. Check your connection and try again.';
-        
-        // Clean up
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-        delete window[callbackName];
-      };
-      
-      // Set load handler to clear timeout
-      script.onload = function() {
-        clearTimeout(timeoutId);
-      };
-      
-      // Add the script to initiate the request
-      document.body.appendChild(script);
+      // Fetch a random question from the Google Apps Script with improved error handling
+      fetch(`${GOOGLE_SCRIPT_URL}?action=getRandomQuestion`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.error) {
+            showError(data.error);
+          } else {
+            displayQuestion(data);
+          }
+        })
+        .catch(error => {
+          console.error("Fetch error:", error);
+          showError(error.message || 'Failed to fetch question');
+        });
     }
     
     // Display the question and options
@@ -301,53 +237,23 @@
         return;
       }
       
-      // Log data for debugging
-      console.log("Question data for display:", questionData);
-      
       currentQuestion = questionData;
       
       // Set question ID and metadata
-      document.getElementById('question-id').textContent = "ID: " + (questionData.id || questionData["Question ID"] || "N/A");
-      document.getElementById('difficulty-level').textContent = "Difficulty: " + (questionData.difficultyLevel || questionData["Difficulty Level"] || "N/A");
-      document.getElementById('learning-concept').textContent = "Topic: " + (questionData.learningConcepts || questionData["Learning concepts"] || "N/A");
+      document.getElementById('question-id').textContent = "ID: " + questionData.id;
+      document.getElementById('difficulty-level').textContent = "Difficulty: " + (questionData.difficultyLevel || "N/A");
+      document.getElementById('learning-concept').textContent = "Topic: " + (questionData.learningConcepts || "N/A");
       
       // Set question text
-      document.getElementById('question-text').innerHTML = questionData.text || questionData["Question Text"] || "No question text available";
+      document.getElementById('question-text').innerHTML = questionData.text;
       
       // Set options
       const optionsContainer = document.getElementById('options-container');
       optionsContainer.innerHTML = '';
       
-      // Handle options in different formats
-      let optionsArray = [];
-      const optionsField = questionData.options || questionData["Options"];
+      const options = questionData.options.split('\n').filter(opt => opt.trim() !== '');
       
-      if (optionsField) {
-        if (typeof optionsField === 'string') {
-          // Try different delimiters if \n doesn't work
-          if (optionsField.includes('\n')) {
-            optionsArray = optionsField.split('\n');
-          } else if (optionsField.includes(',')) {
-            optionsArray = optionsField.split(',');
-          } else {
-            optionsArray = [optionsField]; // Single option
-          }
-          optionsArray = optionsArray.filter(opt => opt.trim() !== '');
-        } else if (Array.isArray(optionsField)) {
-          optionsArray = optionsField;
-        }
-      }
-      
-      if (optionsArray.length === 0) {
-        const errorMsg = document.createElement('div');
-        errorMsg.innerHTML = '<p style="color: red;">Error: No options available for this question. Please check your spreadsheet.</p>';
-        optionsContainer.appendChild(errorMsg);
-        document.getElementById('submit-btn').disabled = true;
-        return;
-      }
-      
-      // Create option elements
-      optionsArray.forEach((option, index) => {
+      options.forEach((option, index) => {
         const optionElement = document.createElement('label');
         optionElement.className = 'option';
         
@@ -357,7 +263,6 @@
         radioInput.value = option;
         radioInput.onclick = function() {
           selectedOption = option;
-          document.getElementById('submit-btn').disabled = false;
         };
         
         optionElement.appendChild(radioInput);
@@ -365,13 +270,12 @@
         optionsContainer.appendChild(optionElement);
       });
       
-      // Set up hint content
-      document.getElementById('hint-text').innerHTML = questionData.hints || questionData["Hints"] || "No hints available.";
+      // Set up hint content in advance
+      document.getElementById('hint-text').innerHTML = questionData.hints || "No hints available.";
       
-      // Set up code snippet
-      const codeSnippet = questionData.codeSnippets || questionData["Code Snippets"];
-      if (codeSnippet && codeSnippet.trim() !== '') {
-        document.getElementById('code-snippet').innerHTML = codeSnippet;
+      // Set up code snippet in advance
+      if (questionData.codeSnippets && questionData.codeSnippets.trim() !== '') {
+        document.getElementById('code-snippet').innerHTML = questionData.codeSnippets;
         document.getElementById('code-container').style.display = 'block';
       } else {
         document.getElementById('code-container').style.display = 'none';
@@ -381,19 +285,11 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('question-area').style.display = 'block';
       
-      // Set up the submit button
+      // Set up the submit button event
       document.getElementById('submit-btn').onclick = submitAnswer;
-      document.getElementById('submit-btn').disabled = true;
       
-      // Set up the next button
+      // Set up the next button event
       document.getElementById('next-btn').onclick = getRandomQuestion;
-    }
-
-    // Helper function to show error messages
-    function showError(message) {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('error-message').style.display = 'block';
-      document.getElementById('error-message').textContent = message;
     }
     
     // Submit the answer and show explanation
@@ -403,18 +299,15 @@
         return;
       }
       
-      // Get the correct answer, handling both property naming conventions
-      const correctAnswer = currentQuestion.correctAnswer || currentQuestion["Correct Answer"];
-      
       // Show the correct answer and explanation
       const optionElements = document.querySelectorAll('.option');
       optionElements.forEach(optEl => {
         const inputEl = optEl.querySelector('input');
         const optionText = inputEl.value;
         
-        if (optionText === correctAnswer) {
+        if (optionText === currentQuestion.correctAnswer) {
           optEl.classList.add('correct');
-        } else if (optionText === selectedOption && optionText !== correctAnswer) {
+        } else if (optionText === selectedOption && optionText !== currentQuestion.correctAnswer) {
           optEl.classList.add('incorrect');
         }
         
@@ -423,18 +316,17 @@
       });
       
       // Show explanation
-      document.getElementById('explanation-text').innerHTML = currentQuestion.explanation || currentQuestion["Explanation"] || "No explanation available.";
+      document.getElementById('explanation-text').innerHTML = currentQuestion.explanation || "No explanation available.";
       document.getElementById('explanation-container').style.display = 'block';
       
       // Show media links if available
-      const mediaLinks = currentQuestion.mediaLinks || currentQuestion["Media links"];
-      if (mediaLinks && mediaLinks.trim() !== '') {
+      if (currentQuestion.mediaLinks && currentQuestion.mediaLinks.trim() !== '') {
         // Check if it's a URL and create a link, otherwise just display text
-        if (mediaLinks.startsWith('http')) {
+        if (currentQuestion.mediaLinks.startsWith('http')) {
           document.getElementById('media-link').innerHTML = 
-            `<a href="${mediaLinks}" target="_blank">${mediaLinks}</a>`;
+            `<a href="${currentQuestion.mediaLinks}" target="_blank">${currentQuestion.mediaLinks}</a>`;
         } else {
-          document.getElementById('media-link').innerHTML = mediaLinks;
+          document.getElementById('media-link').innerHTML = currentQuestion.mediaLinks;
         }
         document.getElementById('media-container').style.display = 'block';
       } else {
@@ -445,185 +337,15 @@
       document.getElementById('submit-btn').style.display = 'none';
       document.getElementById('hint-btn').style.display = 'none';
       document.getElementById('next-btn').style.display = 'inline-block';
-      
-      // Track the response
-      trackResponse();
     }
     
-    // Track the user's response using JSONP approach
-    function trackResponse() {
-      const isCorrect = selectedOption === (currentQuestion.correctAnswer || currentQuestion["Correct Answer"]);
-      
-      // Prepare the data to send
-      const responseData = {
-        timestamp: new Date().toISOString(),
-        questionId: currentQuestion.id || currentQuestion["Question ID"],
-        questionText: currentQuestion.text || currentQuestion["Question Text"],
-        selectedOption: selectedOption,
-        correctAnswer: currentQuestion.correctAnswer || currentQuestion["Correct Answer"],
-        isCorrect: isCorrect,
-        difficultyLevel: currentQuestion.difficultyLevel || currentQuestion["Difficulty Level"] || "N/A",
-        learningConcepts: currentQuestion.learningConcepts || currentQuestion["Learning concepts"] || "N/A",
-        questionType: currentQuestion.questionType || currentQuestion["Question Type"] || "N/A",
-        bloomsLevel: currentQuestion.bloomsLevel || currentQuestion["Bloom's Level"] || "N/A"
-      };
-      
-      // Display tracking status
-      const trackingStatus = document.getElementById('tracking-status');
-      trackingStatus.textContent = "Saving your response...";
-      trackingStatus.style.display = 'block';
-      
-      // Create a unique callback name
-      const callbackName = 'trackCallback_' + new Date().getTime();
-      
-      // Define the callback function
-      window[callbackName] = function(data) {
-        console.log("Tracking response:", data);
-        
-        if (data && data.success) {
-          trackingStatus.textContent = "Response saved!";
-        } else {
-          trackingStatus.textContent = "Error saving response: " + (data ? data.error : "Unknown error");
-          console.error("Error saving response:", data);
-        }
-        
-        setTimeout(() => {
-          trackingStatus.style.display = 'none';
-        }, 3000);
-        
-        // Clean up by removing the script
-        const scriptElement = document.getElementById('track-script');
-        if (scriptElement) {
-          document.body.removeChild(scriptElement);
-        }
-        
-        // Remove the callback after a delay
-        setTimeout(() => {
-          delete window[callbackName];
-        }, 1000);
-      };
-      
-      // Create and add the script element with URL-encoded data
-      const script = document.createElement('script');
-      script.id = 'track-script';
-      script.src = `${GOOGLE_SCRIPT_URL}?action=trackResponse&callback=${callbackName}&data=${encodeURIComponent(JSON.stringify(responseData))}`;
-      
-      // Set a timeout for the request
-      const timeoutId = setTimeout(() => {
-        trackingStatus.textContent = "Error: Request timed out";
-        setTimeout(() => {
-          trackingStatus.style.display = 'none';
-        }, 3000);
-        
-        // Clean up
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-        delete window[callbackName];
-      }, 10000); // 10 second timeout
-      
-      // Set up error handler
-      script.onerror = function() {
-        clearTimeout(timeoutId);
-        trackingStatus.textContent = "Error saving response. Please try again.";
-        setTimeout(() => {
-          trackingStatus.style.display = 'none';
-        }, 3000);
-        
-        // Clean up
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-        delete window[callbackName];
-      };
-      
-      // Set load handler to clear timeout
-      script.onload = function() {
-        clearTimeout(timeoutId);
-      };
-      
-      // Add the script to initiate the request
-      document.body.appendChild(script);
+    // Show error message
+    function showError(error) {
+      const errorElement = document.getElementById('error-message');
+      errorElement.textContent = "Error: " + error;
+      errorElement.style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
     }
-    
-    // Test connection function
-    document.getElementById('test-connection').onclick = function() {
-      document.getElementById('error-message').style.display = 'none';
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('loading').textContent = 'Testing connection to Google Apps Script...';
-      
-      // Create a unique callback name
-      const callbackName = 'testCallback_' + new Date().getTime();
-      
-      // Define the callback function
-      window[callbackName] = function(data) {
-        console.log("Test data:", data);
-        
-        if (data && data.error) {
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('error-message').style.display = 'block';
-          document.getElementById('error-message').textContent = 'Error: ' + data.error;
-        } else {
-          document.getElementById('loading').textContent = 'Connection successful! ✅ Found ' + 
-            (data.totalQuestions || 'some') + ' questions.';
-          setTimeout(() => {
-            document.getElementById('loading').style.display = 'none';
-            getRandomQuestion(); // Try loading a question after successful test
-          }, 3000);
-        }
-        
-        // Clean up by removing the script
-        const scriptElement = document.getElementById('test-script');
-        if (scriptElement) {
-          document.body.removeChild(scriptElement);
-        }
-        
-        // Remove the callback after a delay
-        setTimeout(() => {
-          delete window[callbackName];
-        }, 1000);
-      };
-      
-      // Create and add the script element
-      const script = document.createElement('script');
-      script.id = 'test-script';
-      script.src = `${GOOGLE_SCRIPT_URL}?action=getQuestionCount&timestamp=${new Date().getTime()}&callback=${callbackName}`;
-      
-      // Set a timeout for the request
-      const timeoutId = setTimeout(() => {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('error-message').textContent = 'Connection timed out. Please check your script URL and try again.';
-        
-        // Clean up
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-        delete window[callbackName];
-      }, 10000); // 10 second timeout
-      
-      // Set up error handler
-      script.onerror = function() {
-        clearTimeout(timeoutId);
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('error-message').textContent = 'Connection failed. Check your script URL and try again.';
-        
-        // Clean up
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-        delete window[callbackName];
-      };
-      
-      // Set load handler to clear timeout
-      script.onload = function() {
-        clearTimeout(timeoutId);
-      };
-      
-      // Add the script to initiate the request
-      document.body.appendChild(script);
-    };
   </script>
 </body>
 </html>
