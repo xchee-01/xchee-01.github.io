@@ -190,6 +190,7 @@
     let selectedOption = null;
     
     // Configure your Google Apps Script Web App URL here
+    // Make sure to update this with your latest deployment URL
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7jFHUaZwGGfbZA3CRs0T_NL4zxFMGPKYerkGK8q74TqcJ7FCPAOEi_AYl98CKUF8q/exec';
     
     // Initialize the quiz when the page loads
@@ -204,7 +205,7 @@
       };
     };
     
-    // Get a random question from the server
+    // Get a random question from the server - IMPROVED VERSION
     function getRandomQuestion() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('question-area').style.display = 'none';
@@ -219,219 +220,232 @@
       // Reset selected option
       selectedOption = null;
       
+      // Add a timestamp to prevent caching issues
+      const timestamp = new Date().getTime();
+      
       // Changed getRandomQuestion to getNextQuestion to match the backend
-      fetch(`${GOOGLE_SCRIPT_URL}?action=getNextQuestion`)
-        .then(response => response.json())
+      fetch(`${GOOGLE_SCRIPT_URL}?action=getNextQuestion&timestamp=${timestamp}`)
+        .then(response => {
+          console.log("Response status:", response.status);
+          if (!response.ok) {
+            throw new Error(`Server responded with status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(data => {
+          console.log("Data received:", data);
           if (data.error) {
             showError(data.error);
           } else {
             displayQuestion(data);
           }
         })
-        .catch(error => showError(error.message || 'Failed to fetch question'));
+        .catch(error => {
+          console.error("Fetch error:", error);
+          showError(error.message || 'Failed to fetch question');
+        });
     }
     
-// Display the question and options
-function displayQuestion(questionData) {
-  if (!questionData) {
-    showError("No questions available");
-    return;
-  }
-  
-  // Log data for debugging
-  console.log("Question data received:", questionData);
-  
-  currentQuestion = questionData;
-  
-  // Set question ID and metadata
-  document.getElementById('question-id').textContent = "ID: " + (questionData.id || questionData["Question ID"] || "N/A");
-  document.getElementById('difficulty-level').textContent = "Difficulty: " + (questionData.difficultyLevel || questionData["Difficulty Level"] || "N/A");
-  document.getElementById('learning-concept').textContent = "Topic: " + (questionData.learningConcepts || questionData["Learning concepts"] || "N/A");
-  
-  // Set question text
-  document.getElementById('question-text').innerHTML = questionData.text || questionData["Question Text"] || "No question text available";
-  
-  // Set options
-  const optionsContainer = document.getElementById('options-container');
-  optionsContainer.innerHTML = '';
-  
-  // Handle options in different formats
-  let optionsArray = [];
-  const optionsField = questionData.options || questionData["Options"];
-  
-  if (optionsField) {
-    if (typeof optionsField === 'string') {
-      // Try different delimiters if \n doesn't work
-      if (optionsField.includes('\n')) {
-        optionsArray = optionsField.split('\n');
-      } else if (optionsField.includes(',')) {
-        optionsArray = optionsField.split(',');
-      } else {
-        optionsArray = [optionsField]; // Single option
+    // Display the question and options - IMPROVED VERSION
+    function displayQuestion(questionData) {
+      if (!questionData) {
+        showError("No questions available");
+        return;
       }
-      optionsArray = optionsArray.filter(opt => opt.trim() !== '');
-    } else if (Array.isArray(optionsField)) {
-      optionsArray = optionsField;
+      
+      // Log data for debugging
+      console.log("Question data received:", questionData);
+      
+      currentQuestion = questionData;
+      
+      // Set question ID and metadata
+      document.getElementById('question-id').textContent = "ID: " + (questionData.id || questionData["Question ID"] || "N/A");
+      document.getElementById('difficulty-level').textContent = "Difficulty: " + (questionData.difficultyLevel || questionData["Difficulty Level"] || "N/A");
+      document.getElementById('learning-concept').textContent = "Topic: " + (questionData.learningConcepts || questionData["Learning concepts"] || "N/A");
+      
+      // Set question text
+      document.getElementById('question-text').innerHTML = questionData.text || questionData["Question Text"] || "No question text available";
+      
+      // Set options
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+      
+      // Handle options in different formats
+      let optionsArray = [];
+      const optionsField = questionData.options || questionData["Options"];
+      
+      if (optionsField) {
+        if (typeof optionsField === 'string') {
+          // Try different delimiters if \n doesn't work
+          if (optionsField.includes('\n')) {
+            optionsArray = optionsField.split('\n');
+          } else if (optionsField.includes(',')) {
+            optionsArray = optionsField.split(',');
+          } else {
+            optionsArray = [optionsField]; // Single option
+          }
+          optionsArray = optionsArray.filter(opt => opt.trim() !== '');
+        } else if (Array.isArray(optionsField)) {
+          optionsArray = optionsField;
+        }
+      }
+      
+      if (optionsArray.length === 0) {
+        const errorMsg = document.createElement('div');
+        errorMsg.innerHTML = '<p style="color: red;">Error: No options available for this question. Please check your spreadsheet.</p>';
+        optionsContainer.appendChild(errorMsg);
+        document.getElementById('submit-btn').disabled = true;
+        return;
+      }
+      
+      // Create option elements
+      optionsArray.forEach((option, index) => {
+        const optionElement = document.createElement('label');
+        optionElement.className = 'option';
+        
+        const radioInput = document.createElement('input');
+        radioInput.type = 'radio';
+        radioInput.name = 'answer';
+        radioInput.value = option;
+        radioInput.onclick = function() {
+          selectedOption = option;
+          document.getElementById('submit-btn').disabled = false;
+        };
+        
+        optionElement.appendChild(radioInput);
+        optionElement.appendChild(document.createTextNode(option));
+        optionsContainer.appendChild(optionElement);
+      });
+      
+      // Set up hint content
+      document.getElementById('hint-text').innerHTML = questionData.hints || questionData["Hints"] || "No hints available.";
+      
+      // Set up code snippet
+      const codeSnippet = questionData.codeSnippets || questionData["Code Snippets"];
+      if (codeSnippet && codeSnippet.trim() !== '') {
+        document.getElementById('code-snippet').innerHTML = codeSnippet;
+        document.getElementById('code-container').style.display = 'block';
+      } else {
+        document.getElementById('code-container').style.display = 'none';
+      }
+      
+      // Show the question area and hide loading
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('question-area').style.display = 'block';
+      
+      // Set up the submit button
+      document.getElementById('submit-btn').onclick = submitAnswer;
+      document.getElementById('submit-btn').disabled = true;
+      
+      // Set up the next button
+      document.getElementById('next-btn').onclick = getRandomQuestion;
     }
-  }
-  
-  if (optionsArray.length === 0) {
-    const errorMsg = document.createElement('div');
-    errorMsg.innerHTML = '<p style="color: red;">Error: No options available for this question. Please check your spreadsheet.</p>';
-    optionsContainer.appendChild(errorMsg);
-    document.getElementById('submit-btn').disabled = true;
-    return;
-  }
-  
-  // Create option elements
-  optionsArray.forEach((option, index) => {
-    const optionElement = document.createElement('label');
-    optionElement.className = 'option';
-    
-    const radioInput = document.createElement('input');
-    radioInput.type = 'radio';
-    radioInput.name = 'answer';
-    radioInput.value = option;
-    radioInput.onclick = function() {
-      selectedOption = option;
-      document.getElementById('submit-btn').disabled = false;
-    };
-    
-    optionElement.appendChild(radioInput);
-    optionElement.appendChild(document.createTextNode(option));
-    optionsContainer.appendChild(optionElement);
-  });
-  
-  // Set up hint content
-  document.getElementById('hint-text').innerHTML = questionData.hints || questionData["Hints"] || "No hints available.";
-  
-  // Set up code snippet
-  const codeSnippet = questionData.codeSnippets || questionData["Code Snippets"];
-  if (codeSnippet && codeSnippet.trim() !== '') {
-    document.getElementById('code-snippet').innerHTML = codeSnippet;
-    document.getElementById('code-container').style.display = 'block';
-  } else {
-    document.getElementById('code-container').style.display = 'none';
-  }
-  
-  // Show the question area and hide loading
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('question-area').style.display = 'block';
-  
-  // Set up the submit button
-  document.getElementById('submit-btn').onclick = submitAnswer;
-  document.getElementById('submit-btn').disabled = true;
-  
-  // Set up the next button
-  document.getElementById('next-btn').onclick = getRandomQuestion;
-}
 
-// Helper function to show error messages
-function showError(message) {
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('error-message').style.display = 'block';
-  document.getElementById('error-message').textContent = message;
-}
-    
-// Submit the answer and show explanation
-function submitAnswer() {
-  if (!selectedOption) {
-    alert("Please select an answer");
-    return;
-  }
-  
-  // Get the correct answer, handling both property naming conventions
-  const correctAnswer = currentQuestion.correctAnswer || currentQuestion["Correct Answer"];
-  
-  // Show the correct answer and explanation
-  const optionElements = document.querySelectorAll('.option');
-  optionElements.forEach(optEl => {
-    const inputEl = optEl.querySelector('input');
-    const optionText = inputEl.value;
-    
-    if (optionText === correctAnswer) {
-      optEl.classList.add('correct');
-    } else if (optionText === selectedOption && optionText !== correctAnswer) {
-      optEl.classList.add('incorrect');
+    // Helper function to show error messages
+    function showError(message) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error-message').style.display = 'block';
+      document.getElementById('error-message').textContent = message;
     }
     
-    // Disable all inputs
-    inputEl.disabled = true;
-  });
-  
-  // Show explanation
-  document.getElementById('explanation-text').innerHTML = currentQuestion.explanation || currentQuestion["Explanation"] || "No explanation available.";
-  document.getElementById('explanation-container').style.display = 'block';
-  
-  // Show media links if available
-  const mediaLinks = currentQuestion.mediaLinks || currentQuestion["Media links"];
-  if (mediaLinks && mediaLinks.trim() !== '') {
-    // Check if it's a URL and create a link, otherwise just display text
-    if (mediaLinks.startsWith('http')) {
-      document.getElementById('media-link').innerHTML = 
-        `<a href="${mediaLinks}" target="_blank">${mediaLinks}</a>`;
-    } else {
-      document.getElementById('media-link').innerHTML = mediaLinks;
+    // Submit the answer and show explanation
+    function submitAnswer() {
+      if (!selectedOption) {
+        alert("Please select an answer");
+        return;
+      }
+      
+      // Get the correct answer, handling both property naming conventions
+      const correctAnswer = currentQuestion.correctAnswer || currentQuestion["Correct Answer"];
+      
+      // Show the correct answer and explanation
+      const optionElements = document.querySelectorAll('.option');
+      optionElements.forEach(optEl => {
+        const inputEl = optEl.querySelector('input');
+        const optionText = inputEl.value;
+        
+        if (optionText === correctAnswer) {
+          optEl.classList.add('correct');
+        } else if (optionText === selectedOption && optionText !== correctAnswer) {
+          optEl.classList.add('incorrect');
+        }
+        
+        // Disable all inputs
+        inputEl.disabled = true;
+      });
+      
+      // Show explanation
+      document.getElementById('explanation-text').innerHTML = currentQuestion.explanation || currentQuestion["Explanation"] || "No explanation available.";
+      document.getElementById('explanation-container').style.display = 'block';
+      
+      // Show media links if available
+      const mediaLinks = currentQuestion.mediaLinks || currentQuestion["Media links"];
+      if (mediaLinks && mediaLinks.trim() !== '') {
+        // Check if it's a URL and create a link, otherwise just display text
+        if (mediaLinks.startsWith('http')) {
+          document.getElementById('media-link').innerHTML = 
+            `<a href="${mediaLinks}" target="_blank">${mediaLinks}</a>`;
+        } else {
+          document.getElementById('media-link').innerHTML = mediaLinks;
+        }
+        document.getElementById('media-container').style.display = 'block';
+      } else {
+        document.getElementById('media-container').style.display = 'none';
+      }
+      
+      // Hide submit and hint buttons, show next button
+      document.getElementById('submit-btn').style.display = 'none';
+      document.getElementById('hint-btn').style.display = 'none';
+      document.getElementById('next-btn').style.display = 'inline-block';
+      
+      // Track the response
+      trackResponse();
     }
-    document.getElementById('media-container').style.display = 'block';
-  } else {
-    document.getElementById('media-container').style.display = 'none';
-  }
-  
-  // Hide submit and hint buttons, show next button
-  document.getElementById('submit-btn').style.display = 'none';
-  document.getElementById('hint-btn').style.display = 'none';
-  document.getElementById('next-btn').style.display = 'inline-block';
-  
-  // Track the response
-  trackResponse();
-}
     
-// Track the user's response in the spreadsheet
-function trackResponse() {
-  const isCorrect = selectedOption === (currentQuestion.correctAnswer || currentQuestion["Correct Answer"]);
-  
-  // Prepare the data to send
-  const responseData = {
-    timestamp: new Date().toISOString(),
-    questionId: currentQuestion.id || currentQuestion["Question ID"],
-    questionText: currentQuestion.text || currentQuestion["Question Text"],
-    selectedOption: selectedOption,
-    correctAnswer: currentQuestion.correctAnswer || currentQuestion["Correct Answer"],
-    isCorrect: isCorrect,
-    difficultyLevel: currentQuestion.difficultyLevel || currentQuestion["Difficulty Level"] || "N/A",
-    learningConcepts: currentQuestion.learningConcepts || currentQuestion["Learning concepts"] || "N/A",
-    questionType: currentQuestion.questionType || currentQuestion["Question Type"] || "N/A",
-    bloomsLevel: currentQuestion.bloomsLevel || currentQuestion["Bloom's Level"] || "N/A"
-  };
-  
-  // Display tracking status
-  const trackingStatus = document.getElementById('tracking-status');
-  trackingStatus.textContent = "Saving your response...";
-  trackingStatus.style.display = 'block';
-  
-  // Send the data to Google Apps Script
-  const formData = new FormData();
-  formData.append('action', 'trackResponse');
-  formData.append('data', JSON.stringify(responseData));
-  
-  fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    body: formData,
-    mode: 'no-cors'
-  })
-  .then(() => {
-    trackingStatus.textContent = "Response saved!";
-    setTimeout(() => {
-      trackingStatus.style.display = 'none';
-    }, 3000);
-  })
-  .catch(error => {
-    trackingStatus.textContent = "Error saving response. Please try again.";
-    console.error("Error tracking response:", error);
-  });
-}
+    // Track the user's response in the spreadsheet
+    function trackResponse() {
+      const isCorrect = selectedOption === (currentQuestion.correctAnswer || currentQuestion["Correct Answer"]);
+      
+      // Prepare the data to send
+      const responseData = {
+        timestamp: new Date().toISOString(),
+        questionId: currentQuestion.id || currentQuestion["Question ID"],
+        questionText: currentQuestion.text || currentQuestion["Question Text"],
+        selectedOption: selectedOption,
+        correctAnswer: currentQuestion.correctAnswer || currentQuestion["Correct Answer"],
+        isCorrect: isCorrect,
+        difficultyLevel: currentQuestion.difficultyLevel || currentQuestion["Difficulty Level"] || "N/A",
+        learningConcepts: currentQuestion.learningConcepts || currentQuestion["Learning concepts"] || "N/A",
+        questionType: currentQuestion.questionType || currentQuestion["Question Type"] || "N/A",
+        bloomsLevel: currentQuestion.bloomsLevel || currentQuestion["Bloom's Level"] || "N/A"
+      };
+      
+      // Display tracking status
+      const trackingStatus = document.getElementById('tracking-status');
+      trackingStatus.textContent = "Saving your response...";
+      trackingStatus.style.display = 'block';
+      
+      // Send the data to Google Apps Script
+      const formData = new FormData();
+      formData.append('action', 'trackResponse');
+      formData.append('data', JSON.stringify(responseData));
+      
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        body: formData,
+        mode: 'no-cors'
+      })
+      .then(() => {
+        trackingStatus.textContent = "Response saved!";
+        setTimeout(() => {
+          trackingStatus.style.display = 'none';
+        }, 3000);
+      })
+      .catch(error => {
+        trackingStatus.textContent = "Error saving response. Please try again.";
+        console.error("Error tracking response:", error);
+      });
+    }
   </script>
 </body>
 </html>
