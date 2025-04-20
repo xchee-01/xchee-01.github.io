@@ -1,5 +1,4 @@
 <!-- This code works. Extracts quiz from Question Bank sheet and track responses into the Recommender System sheet. To be used together with question_picker_v3.gs --> 
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -220,8 +219,8 @@
       // Reset selected option
       selectedOption = null;
       
-      // Fetch a random question from the Google Apps Script
-      fetch(`${GOOGLE_SCRIPT_URL}?action=getRandomQuestion`)
+      // Changed getRandomQuestion to getNextQuestion to match the backend
+      fetch(`${GOOGLE_SCRIPT_URL}?action=getNextQuestion`)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
@@ -245,33 +244,35 @@ function displayQuestion(questionData) {
   
   currentQuestion = questionData;
   
-  // Set question ID and metadata - using the actual property names from the data
-  document.getElementById('question-id').textContent = "ID: " + (questionData["Question ID"] || "N/A");
-  document.getElementById('difficulty-level').textContent = "Difficulty: " + (questionData["Difficulty Level"] || "N/A");
-  document.getElementById('learning-concept').textContent = "Topic: " + (questionData["Learning concepts"] || "N/A");
+  // Set question ID and metadata
+  document.getElementById('question-id').textContent = "ID: " + (questionData.id || questionData["Question ID"] || "N/A");
+  document.getElementById('difficulty-level').textContent = "Difficulty: " + (questionData.difficultyLevel || questionData["Difficulty Level"] || "N/A");
+  document.getElementById('learning-concept').textContent = "Topic: " + (questionData.learningConcepts || questionData["Learning concepts"] || "N/A");
   
   // Set question text
-  document.getElementById('question-text').innerHTML = questionData["Question Text"] || "No question text available";
+  document.getElementById('question-text').innerHTML = questionData.text || questionData["Question Text"] || "No question text available";
   
   // Set options
   const optionsContainer = document.getElementById('options-container');
   optionsContainer.innerHTML = '';
   
-  // Handle options in different formats - using the actual Options property
+  // Handle options in different formats
   let optionsArray = [];
-  if (questionData["Options"]) {
-    if (typeof questionData["Options"] === 'string') {
+  const optionsField = questionData.options || questionData["Options"];
+  
+  if (optionsField) {
+    if (typeof optionsField === 'string') {
       // Try different delimiters if \n doesn't work
-      if (questionData["Options"].includes('\n')) {
-        optionsArray = questionData["Options"].split('\n');
-      } else if (questionData["Options"].includes(',')) {
-        optionsArray = questionData["Options"].split(',');
+      if (optionsField.includes('\n')) {
+        optionsArray = optionsField.split('\n');
+      } else if (optionsField.includes(',')) {
+        optionsArray = optionsField.split(',');
       } else {
-        optionsArray = [questionData["Options"]]; // Single option
+        optionsArray = [optionsField]; // Single option
       }
       optionsArray = optionsArray.filter(opt => opt.trim() !== '');
-    } else if (Array.isArray(questionData["Options"])) {
-      optionsArray = questionData["Options"];
+    } else if (Array.isArray(optionsField)) {
+      optionsArray = optionsField;
     }
   }
   
@@ -303,11 +304,12 @@ function displayQuestion(questionData) {
   });
   
   // Set up hint content
-  document.getElementById('hint-text').innerHTML = questionData["Hints"] || "No hints available.";
+  document.getElementById('hint-text').innerHTML = questionData.hints || questionData["Hints"] || "No hints available.";
   
   // Set up code snippet
-  if (questionData["Code Snippets"] && questionData["Code Snippets"].trim() !== '') {
-    document.getElementById('code-snippet').innerHTML = questionData["Code Snippets"];
+  const codeSnippet = questionData.codeSnippets || questionData["Code Snippets"];
+  if (codeSnippet && codeSnippet.trim() !== '') {
+    document.getElementById('code-snippet').innerHTML = codeSnippet;
     document.getElementById('code-container').style.display = 'block';
   } else {
     document.getElementById('code-container').style.display = 'none';
@@ -324,6 +326,13 @@ function displayQuestion(questionData) {
   // Set up the next button
   document.getElementById('next-btn').onclick = getRandomQuestion;
 }
+
+// Helper function to show error messages
+function showError(message) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error-message').style.display = 'block';
+  document.getElementById('error-message').textContent = message;
+}
     
 // Submit the answer and show explanation
 function submitAnswer() {
@@ -332,15 +341,18 @@ function submitAnswer() {
     return;
   }
   
+  // Get the correct answer, handling both property naming conventions
+  const correctAnswer = currentQuestion.correctAnswer || currentQuestion["Correct Answer"];
+  
   // Show the correct answer and explanation
   const optionElements = document.querySelectorAll('.option');
   optionElements.forEach(optEl => {
     const inputEl = optEl.querySelector('input');
     const optionText = inputEl.value;
     
-    if (optionText === currentQuestion["Correct Answer"]) {
+    if (optionText === correctAnswer) {
       optEl.classList.add('correct');
-    } else if (optionText === selectedOption && optionText !== currentQuestion["Correct Answer"]) {
+    } else if (optionText === selectedOption && optionText !== correctAnswer) {
       optEl.classList.add('incorrect');
     }
     
@@ -349,17 +361,18 @@ function submitAnswer() {
   });
   
   // Show explanation
-  document.getElementById('explanation-text').innerHTML = currentQuestion["Explanation"] || "No explanation available.";
+  document.getElementById('explanation-text').innerHTML = currentQuestion.explanation || currentQuestion["Explanation"] || "No explanation available.";
   document.getElementById('explanation-container').style.display = 'block';
   
   // Show media links if available
-  if (currentQuestion["Media links"] && currentQuestion["Media links"].trim() !== '') {
+  const mediaLinks = currentQuestion.mediaLinks || currentQuestion["Media links"];
+  if (mediaLinks && mediaLinks.trim() !== '') {
     // Check if it's a URL and create a link, otherwise just display text
-    if (currentQuestion["Media links"].startsWith('http')) {
+    if (mediaLinks.startsWith('http')) {
       document.getElementById('media-link').innerHTML = 
-        `<a href="${currentQuestion["Media links"]}" target="_blank">${currentQuestion["Media links"]}</a>`;
+        `<a href="${mediaLinks}" target="_blank">${mediaLinks}</a>`;
     } else {
-      document.getElementById('media-link').innerHTML = currentQuestion["Media links"];
+      document.getElementById('media-link').innerHTML = mediaLinks;
     }
     document.getElementById('media-container').style.display = 'block';
   } else {
@@ -377,20 +390,20 @@ function submitAnswer() {
     
 // Track the user's response in the spreadsheet
 function trackResponse() {
-  const isCorrect = selectedOption === currentQuestion["Correct Answer"];
+  const isCorrect = selectedOption === (currentQuestion.correctAnswer || currentQuestion["Correct Answer"]);
   
   // Prepare the data to send
   const responseData = {
     timestamp: new Date().toISOString(),
-    questionId: currentQuestion["Question ID"],
-    questionText: currentQuestion["Question Text"],
+    questionId: currentQuestion.id || currentQuestion["Question ID"],
+    questionText: currentQuestion.text || currentQuestion["Question Text"],
     selectedOption: selectedOption,
-    correctAnswer: currentQuestion["Correct Answer"],
+    correctAnswer: currentQuestion.correctAnswer || currentQuestion["Correct Answer"],
     isCorrect: isCorrect,
-    difficultyLevel: currentQuestion["Difficulty Level"] || "N/A",
-    learningConcepts: currentQuestion["Learning concepts"] || "N/A",
-    questionType: currentQuestion["Question Type"] || "N/A",
-    bloomsLevel: currentQuestion["Bloom's Level"] || "N/A"
+    difficultyLevel: currentQuestion.difficultyLevel || currentQuestion["Difficulty Level"] || "N/A",
+    learningConcepts: currentQuestion.learningConcepts || currentQuestion["Learning concepts"] || "N/A",
+    questionType: currentQuestion.questionType || currentQuestion["Question Type"] || "N/A",
+    bloomsLevel: currentQuestion.bloomsLevel || currentQuestion["Bloom's Level"] || "N/A"
   };
   
   // Display tracking status
