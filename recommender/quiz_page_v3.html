@@ -270,6 +270,36 @@
       display: none;
     }
     
+    /* Debug panel styles */
+    .debug-panel {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      max-width: 400px;
+      max-height: 300px;
+      overflow: auto;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 2000;
+    }
+    
+    .debug-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 5px 10px;
+      background: var(--nus-orange);
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      z-index: 2001;
+    }
+    
     @media (max-width: 600px) {
       .container {
         padding: 10px;
@@ -285,6 +315,11 @@
       
       .question-card {
         padding: 20px;
+      }
+      
+      .debug-panel {
+        max-width: 90%;
+        bottom: 60px;
       }
     }
   </style>
@@ -316,6 +351,10 @@
     <div class="loading-spinner"></div>
   </div>
   
+  <!-- Debug panel -->
+  <button id="debug-toggle" class="debug-toggle">Debug</button>
+  <div id="debug-panel" class="debug-panel hidden"></div>
+  
   <script>
     // Replace this with your Google Apps Script Web App URL
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7jFHUaZwGGfbZA3CRs0T_NL4zxFMGPKYerkGK8q74TqcJ7FCPAOEi_AYl98CKUF8q/exec';
@@ -324,6 +363,26 @@
     let currentQuestionIndex = 0;
     let userAnswers = [];
     let quizResults = [];
+    let jsonpCallbackCount = 0;
+    
+    // Debug functionality
+    const debugPanel = document.getElementById('debug-panel');
+    const debugToggle = document.getElementById('debug-toggle');
+    
+    debugToggle.addEventListener('click', () => {
+      debugPanel.classList.toggle('hidden');
+    });
+    
+    function debug(message, data = null) {
+      console.log(message, data);
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      if (data) {
+        logEntry.textContent += '\n' + JSON.stringify(data, null, 2);
+      }
+      debugPanel.appendChild(logEntry);
+      debugPanel.scrollTop = debugPanel.scrollHeight;
+    }
     
     // Show loading overlay
     function showLoading() {
@@ -335,19 +394,81 @@
       document.getElementById('loading-overlay').classList.add('hidden');
     }
     
-    // Load questions from Google Apps Script
-    async function loadQuestions() {
+    // Debug the spreadsheet structure
+    function debugSpreadsheet() {
+      debug('Debugging spreadsheet structure...');
+      showLoading();
+      
+      try {
+        const callbackName = 'jsonpDebugCallback_' + jsonpCallbackCount++;
+        
+        window[callbackName] = function(data) {
+          delete window[callbackName];
+          const script = document.getElementById('jsonp-' + callbackName);
+          if (script) {
+            script.parentNode.removeChild(script);
+          }
+          
+          hideLoading();
+          
+          if (data && data.success) {
+            debug('Spreadsheet structure:', data);
+            debug('Headers found:', data.headers);
+            debug('First row example:', data.firstRow);
+            debug('Total rows:', data.totalRows);
+          } else {
+            debug('Error in debug response:', data);
+          }
+        };
+        
+        const script = document.createElement('script');
+        script.id = 'jsonp-' + callbackName;
+        script.src = `${APPS_SCRIPT_URL}?action=debug&callback=${callbackName}`;
+        script.onerror = function() {
+          debug('Failed to debug spreadsheet');
+          hideLoading();
+        };
+        
+        document.body.appendChild(script);
+        
+      } catch (error) {
+        debug('Error in debugSpreadsheet:', error);
+        hideLoading();
+      }
+    }
+    
+    // Load questions from Google Apps Script using JSONP
+    function loadQuestions() {
       showLoading();
       try {
-        const response = await fetch(`${APPS_SCRIPT_URL}?action=getQuestions`, {
-          method: 'GET',
-          mode: 'no-cors'
-        });
+        // First debug the spreadsheet structure
+        // debugSpreadsheet();
         
-        // With no-cors, we can't read the response directly
-        // We'll use a workaround with script injection
+        // Create a unique callback function name
+        const callbackName = 'jsonpCallback_' + jsonpCallbackCount++;
+        
+        // Define the callback function
+        window[callbackName] = function(data) {
+          // Clean up
+          delete window[callbackName];
+          const script = document.getElementById('jsonp-' + callbackName);
+          if (script) {
+            script.parentNode.removeChild(script);
+          }
+          
+          handleQuestionsLoad(data);
+        };
+        
+        // Create script element for JSONP
         const script = document.createElement('script');
-        script.src = `${APPS_SCRIPT_URL}?action=getQuestions&callback=handleQuestionsLoad`;
+        script.id = 'jsonp-' + callbackName;
+        script.src = `${APPS_SCRIPT_URL}?action=getQuestions&callback=${callbackName}`;
+        
+        // Error handling
+        script.onerror = function() {
+          handleError({ message: 'Failed to load questions. Please check your network connection and the web app URL.' });
+        };
+        
         document.body.appendChild(script);
         
       } catch (error) {
@@ -358,20 +479,32 @@
     // Handle questions loaded
     function handleQuestionsLoad(data) {
       hideLoading();
-      if (data.success) {
+      debug('Questions loaded response:', data);
+      
+      if (data && data.success) {
         questions = data.data;
-        userAnswers = new Array(questions.length).fill(null);
-        updateProgressBar();
-        renderQuestion();
+        debug('Number of questions loaded:', questions.length);
+        
+        if (questions.length > 0) {
+          debug('First question structure:', questions[0]);
+          userAnswers = new Array(questions.length).fill(null);
+          updateProgressBar();
+          renderQuestion();
+        } else {
+          handleError('No questions found in the spreadsheet');
+        }
       } else {
-        handleError(data.error);
+        handleError(data && data.error ? data.error : 'Unknown error occurred while loading questions');
       }
     }
     
     // Handle errors
     function handleError(error) {
       hideLoading();
-      alert('Error: ' + (error.message || error));
+      const errorMessage = typeof error === 'string' ? error : (error.message || 'Unknown error occurred');
+      alert('Error: ' + errorMessage);
+      debug('Error:', error);
+      console.error('Quiz error:', error);
     }
     
     // Update progress bar
@@ -386,6 +519,8 @@
     function renderQuestion() {
       const question = questions[currentQuestionIndex];
       const container = document.getElementById('quiz-container');
+      
+      debug('Rendering question:', question);
       
       let html = `
         <div class="question-card">
@@ -405,14 +540,23 @@
       
       // Add options
       html += '<div class="options-container">';
-      question.options.forEach((option, index) => {
-        const selected = userAnswers[currentQuestionIndex] === option ? 'selected' : '';
-        html += `
-          <button class="option-button ${selected}" onclick="selectOption('${option.replace(/'/g, "\\'")}', ${index})">
-            ${option}
-          </button>
-        `;
-      });
+      
+      if (question.options && question.options.length > 0) {
+        question.options.forEach((option, index) => {
+          const selected = userAnswers[currentQuestionIndex] === option ? 'selected' : '';
+          // Escape single quotes in option text
+          const escapedOption = option.replace(/'/g, "\\'");
+          html += `
+            <button class="option-button ${selected}" onclick="selectOption('${escapedOption}', ${index})">
+              ${option}
+            </button>
+          `;
+        });
+      } else {
+        debug('No options found for question:', question);
+        html += '<p>Error: No options available for this question</p>';
+      }
+      
       html += '</div>';
       
       // Add hint button and container
@@ -478,7 +622,7 @@
     }
     
     // Submit quiz
-    async function submitQuiz() {
+    function submitQuiz() {
       showLoading();
       
       // Prepare results
@@ -499,9 +643,10 @@
         };
       });
       
-      // Save results to Google Sheets
+      debug('Submitting results:', quizResults);
+      
+      // Save results to Google Sheets using image tag trick
       try {
-        // For no-cors, we'll use an image tag hack to send data
         const img = new Image();
         const data = encodeURIComponent(JSON.stringify({
           action: 'saveBulkResults',
@@ -509,11 +654,23 @@
         }));
         
         img.src = `${APPS_SCRIPT_URL}?data=${data}`;
-        img.onload = () => showResults();
-        img.onerror = () => showResults(); // Still show results even if save fails
+        
+        // Handle successful submission
+        img.onload = function() {
+          debug('Results saved successfully');
+          showResults();
+        };
+        
+        // Handle errors (still show results locally)
+        img.onerror = function() {
+          debug('Failed to save results to server, but showing local results');
+          showResults();
+        };
         
       } catch (error) {
-        handleError(error);
+        debug('Error submitting results:', error);
+        // Still show results even if saving fails
+        showResults();
       }
     }
     
