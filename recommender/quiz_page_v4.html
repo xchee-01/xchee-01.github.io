@@ -1,634 +1,392 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NUS Pre-Quiz</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --nus-orange: #EF7C00;
-      --nus-blue: #003D7C;
-      --nus-light-orange: #FFE5CC;
-      --nus-light-blue: #E6EEF5;
-      --success-color: #4CAF50; /* Green */
-      --error-color: #F44336;   /* Red */
-      --correct-bg: #E8F5E9;   /* Light green */
-      --incorrect-bg: #FFEBEE; /* Light red */
-      --correct-border: #81C784;
-      --incorrect-border: #E57373;
-      --disabled-bg: #f0f0f0;
-      --disabled-text: #999;
-      --disabled-border: #ccc;
+// Global Variables
+const QUESTION_BANK_SHEET_ID = '10OvQxGnLMkieI3oBQcGrel0gzueoojjObZZQdWbs64o';
+const RESULTS_SHEET_ID = '1IifIAO0odU4JFQHdSKllSkCo9wFgy2qMctqQ2dJQCwg';
+const QUESTION_BANK_TAB = 'Prequiz_questions';
+const RESULTS_TAB = 'prequiz_results';
+
+// Handle GET requests with JSONP support
+function doGet(e) {
+  try {
+    // Log the incoming request for debugging
+    Logger.log('doGet function called');
+    Logger.log('Event object: ' + JSON.stringify(e));
+    
+    const params = e.parameter || {};
+    const action = params.action;
+    const callback = params.callback;
+    
+    let response;
+    
+    // Handle data submission via GET (for no-cors mode)
+    if (params.data) {
+      const data = JSON.parse(decodeURIComponent(params.data));
+      if (data.action === 'saveBulkResults') {
+        response = saveBulkResults(data.results);
+      }
+    } else {
+      switch(action) {
+        case 'getQuestions':
+          response = getQuestions();
+          break;
+        case 'debug':
+          response = debugHeaders();
+          break;
+        default:
+          response = { error: 'Invalid action' };
+      }
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f5f5f5;
-      color: #333;
-      line-height: 1.6;
+    
+    // Return JSONP if callback is provided
+    if (callback) {
+      return ContentService.createTextOutput(callback + '(' + JSON.stringify(response) + ')')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    } else {
+      return ContentService.createTextOutput(JSON.stringify(response))
+        .setMimeType(ContentService.MimeType.JSON);
     }
-
-    .container { max-width: 800px; margin: 20px auto; padding: 20px; }
-
-    .header {
-      background-color: var(--nus-blue); color: white;
-      padding: 40px 20px; text-align: center;
-      border-radius: 8px 8px 0 0; margin-bottom: 20px;
+  } catch (error) {
+    Logger.log('Error in doGet: ' + error.toString());
+    Logger.log('Error stack: ' + error.stack);
+    
+    // Return error response
+    const errorResponse = { success: false, error: error.toString() };
+    
+    if (e && e.parameter && e.parameter.callback) {
+      return ContentService.createTextOutput(e.parameter.callback + '(' + JSON.stringify(errorResponse) + ')')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
-    .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+    
+    return ContentService.createTextOutput(JSON.stringify(errorResponse))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
 
-    .progress-container {
-      background-color: white; padding: 20px; border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
-    }
-    .progress-bar { background-color: var(--nus-light-blue); height: 8px; border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; background-color: var(--nus-orange); width: 0%; transition: width 0.3s ease; }
-    .progress-text { text-align: center; margin-top: 10px; font-weight: 500; }
+// Debug function to see headers and data structure
+function debugHeaders() {
+  try {
+    const questionBankSheet = SpreadsheetApp.openById(QUESTION_BANK_SHEET_ID).getSheetByName(QUESTION_BANK_TAB);
+    const data = questionBankSheet.getDataRange().getValues();
+    const headers = data[0];
+    const firstRow = data[1];
+    
+    return { 
+      success: true, 
+      headers: headers,
+      firstRow: firstRow,
+      totalRows: data.length
+    };
+  } catch (error) {
+    Logger.log('Error in debugHeaders: ' + error.toString());
+    return { success: false, error: error.toString() };
+  }
+}
 
-    .question-card {
-      background-color: white; padding: 30px; border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
-    }
-
-    .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .question-id { background-color: var(--nus-light-orange); color: var(--nus-blue); padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.9em; }
-    .difficulty-badge { padding: 5px 10px; border-radius: 15px; font-size: 0.9em; font-weight: 500; }
-    .difficulty-easy { background-color: #E8F5E9; color: #2E7D32; }
-    .difficulty-medium { background-color: #FFF3E0; color: #EF6C00; }
-    .difficulty-hard { background-color: #FFEBEE; color: #C62828; }
-
-    .question-text { font-size: 1.2em; margin-bottom: 20px; font-weight: 500; }
-    .code-snippet { background-color: #f5f5f5; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; margin-bottom: 20px; white-space: pre-wrap; word-wrap: break-word; }
-
-    .options-container { display: grid; gap: 10px; }
-    .option-button {
-      background-color: white; border: 2px solid var(--nus-blue);
-      padding: 15px; border-radius: 8px; cursor: pointer;
-      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-      text-align: left; font-size: 1em; width: 100%;
-    }
-    .option-button:hover:not(:disabled) { background-color: var(--nus-light-blue); }
-    .option-button.selected:not(.correct):not(.incorrect) { background-color: var(--nus-blue); color: white; border-color: var(--nus-blue); }
-
-    /* Feedback states */
-    .option-button.correct { background-color: var(--correct-bg); border-color: var(--success-color); color: #2E7D32; font-weight: bold; }
-    .option-button.incorrect { background-color: var(--incorrect-bg); border-color: var(--error-color); color: #C62828; font-weight: bold;}
-    .option-button:disabled:not(.correct):not(.incorrect) {
-        background-color: var(--disabled-bg);
-        border-color: var(--disabled-border);
-        color: var(--disabled-text);
-        cursor: not-allowed;
-        opacity: 0.7; /* Make non-selected disabled options less prominent */
-    }
-     .option-button.correct:disabled, .option-button.incorrect:disabled {
-        cursor: not-allowed;
-        opacity: 1; /* Keep correct/incorrect fully visible */
-    }
-
-
-    .hint-container { background-color: var(--nus-light-orange); padding: 15px; border-radius: 8px; margin-top: 20px; display: none; }
-    .hint-button {
-        background-color: transparent; border: 1px solid var(--nus-orange);
-        color: var(--nus-orange); padding: 8px 15px; border-radius: 5px;
-        cursor: pointer; font-size: 0.9em; margin-top: 15px;
-    }
-     .hint-button:disabled {
-        border-color: var(--disabled-border); color: var(--disabled-text); cursor: not-allowed;
-     }
-
-    .feedback-container { margin-top: 20px; padding: 20px; border-radius: 8px; display: none; border: 1px solid transparent; }
-    .feedback-correct { background-color: var(--correct-bg); border-color: var(--correct-border); }
-    .feedback-incorrect { background-color: var(--incorrect-bg); border-color: var(--incorrect-border); }
-    .feedback-title { font-weight: 600; font-size: 1.1em; margin-bottom: 10px; }
-    .feedback-title.correct { color: var(--success-color); }
-    .feedback-title.incorrect { color: var(--error-color); }
-    .feedback-answer { margin-bottom: 10px; }
-    .feedback-explanation { margin-top: 10px; font-size: 0.95em; }
-    .feedback-explanation strong { display: block; margin-bottom: 5px; }
-
-    .navigation-buttons { display: flex; justify-content: flex-end; margin-top: 30px; } /* Changed to flex-end */
-    .nav-button {
-      background-color: var(--nus-orange); color: white; border: none;
-      padding: 12px 25px; border-radius: 5px; cursor: pointer;
-      font-size: 1em; font-weight: 500; transition: background-color 0.2s ease;
-    }
-    .nav-button:hover:not(:disabled) { background-color: #d76d00; }
-    .nav-button:disabled { background-color: var(--disabled-border); color: var(--disabled-text); cursor: not-allowed; }
-
-    .results-container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
-    .score-circle { width: 150px; height: 150px; border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-size: 2.5em; font-weight: bold; color: white; }
-    .score-high { background-color: var(--success-color); }
-    .score-medium { background-color: var(--nus-orange); }
-    .score-low { background-color: var(--error-color); }
-
-    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-    .loading-spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--nus-orange); border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    .hidden { display: none; }
-
-    /* Debug panel styles */
-    .debug-panel { position: fixed; bottom: 10px; right: 10px; background: rgba(0, 0, 0, 0.8); color: white; padding: 10px; border-radius: 5px; max-width: 400px; max-height: 200px; overflow: auto; font-family: monospace; font-size: 11px; z-index: 2000; }
-    .debug-toggle { position: fixed; bottom: 10px; right: 10px; padding: 5px 10px; background: var(--nus-orange); color: white; border: none; border-radius: 3px; cursor: pointer; z-index: 2001; }
-    .debug-panel.hidden { display: none; }
-    .debug-toggle.active { right: 420px; /* Adjust if debug panel width changes */ }
-
-    @media (max-width: 600px) {
-      .container { padding: 10px; margin-top: 10px; }
-      .header { padding: 20px 10px; }
-      .header h1 { font-size: 1.8em; }
-      .question-card { padding: 20px; }
-      .option-button { padding: 12px; font-size: 0.95em;}
-      .debug-panel { max-width: calc(100% - 20px); bottom: 50px; }
-      .debug-toggle.active { right: 10px; bottom: 260px; /* Adjust based on panel height */ }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>NUS Pre-Quiz Assessment</h1>
-      <p>Test your knowledge and prepare for the course</p>
-    </div>
-
-    <div id="progress-container" class="progress-container hidden">
-      <div class="progress-bar">
-        <div id="progress-fill" class="progress-fill"></div>
-      </div>
-      <div id="progress-text" class="progress-text">Question 1 of 0</div>
-    </div>
-
-    <div id="quiz-container">
-      <!-- Quiz content will be dynamically loaded here -->
-      <p>Loading questions...</p>
-    </div>
-
-    <div id="results-container" class="results-container hidden">
-      <!-- Results will be displayed here -->
-    </div>
-  </div>
-
-  <div id="loading-overlay" class="loading-overlay">
-    <div class="loading-spinner"></div>
-  </div>
-
-  <!-- Debug panel -->
-  <button id="debug-toggle" class="debug-toggle">Debug</button>
-  <div id="debug-panel" class="debug-panel hidden"></div>
-
-  <script>
-    // IMPORTANT: Replace with your NEW Google Apps Script Web App URL
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyorZ9nffitM-T6d5Knxr-0b85fsh9OzF2Lz7BGiSh2bwZTut0liMC3u7Zj3GZKgVY0Nw/exec'; // <--- PASTE NEW URL HERE
-
-    const FEEDBACK_DELAY_MS = 1500; // Delay in milliseconds before moving to next question
-
-    let questions = [];
-    let currentQuestionIndex = 0;
-    let userAnswers = []; // Stores the selected answer text for each question
-    let quizResults = []; // Stores the detailed result object for each question locally
-    let jsonpCallbackCount = 0;
-    let isAnswerSubmitted = false; // Tracks if the current question's answer is submitted
-
-    // DOM Elements
-    const loadingOverlay = document.getElementById('loading-overlay');
-    const quizContainer = document.getElementById('quiz-container');
-    const resultsContainer = document.getElementById('results-container');
-    const progressContainer = document.getElementById('progress-container');
-    const progressFill = document.getElementById('progress-fill');
-    const progressText = document.getElementById('progress-text');
-    const debugPanel = document.getElementById('debug-panel');
-    const debugToggle = document.getElementById('debug-toggle');
-
-    // --- Debugging ---
-    debugToggle.addEventListener('click', () => {
-        debugPanel.classList.toggle('hidden');
-        debugToggle.classList.toggle('active');
-        debugToggle.textContent = debugPanel.classList.contains('hidden') ? 'Debug' : 'Hide Debug';
+// Get all questions from the question bank
+function getQuestions() {
+  try {
+    const questionBankSheet = SpreadsheetApp.openById(QUESTION_BANK_SHEET_ID).getSheetByName(QUESTION_BANK_TAB);
+    const data = questionBankSheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    // Map column headers to indices (handle case sensitivity and whitespace)
+    const columnMap = {};
+    headers.forEach((header, index) => {
+      // Normalize header by trimming and making case-insensitive
+      const normalizedHeader = header.toString().trim();
+      columnMap[normalizedHeader] = index;
+      
+      // Also create versions without spaces for flexibility
+      const noSpaceHeader = normalizedHeader.replace(/\s+/g, '');
+      columnMap[noSpaceHeader] = index;
+      
+      // Log for debugging
+      Logger.log(`Header ${index}: "${header}" -> "${normalizedHeader}"`);
     });
-
-    function debug(message, data = null) {
-      console.log(message, data);
-      const logEntry = document.createElement('div');
-      const timestamp = new Date().toLocaleTimeString();
-      logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
-      if (data) {
-        try {
-          logEntry.innerHTML += `<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
-        } catch (e) {
-           logEntry.innerHTML += `<br><em>(Could not stringify data)</em>`;
-        }
-      }
-      // Prepend new logs so latest are at the top
-      debugPanel.insertBefore(logEntry, debugPanel.firstChild);
-    }
-
-    // --- Loading & Initialization ---
-    function showLoading(message = "Loading...") {
-        // Optional: update a message in the loading overlay
-        loadingOverlay.classList.remove('hidden');
-        debug('Loading shown:', message);
-    }
-
-    function hideLoading() {
-        loadingOverlay.classList.add('hidden');
-        debug('Loading hidden');
-    }
-
-    function loadQuestions() {
-        showLoading("Fetching questions...");
-        debug('Attempting to load questions from:', APPS_SCRIPT_URL);
-        makeJsonpRequest({ action: 'getQuestions' }, handleQuestionsLoad);
-    }
-
-    function handleQuestionsLoad(response) {
-      hideLoading();
-      debug('Received response for getQuestions:', response);
-
-      if (response && response.success && response.data && response.data.length > 0) {
-        questions = response.data;
-        debug(`Successfully loaded ${questions.length} questions.`);
-        if (questions.length > 0) {
-             debug('First question data sample:', questions[0]);
-             // Validate first question structure
-             if (!questions[0].questionText || !questions[0].options || !questions[0].correctAnswer) {
-                 handleError("First question seems incomplete. Check spreadsheet data/headers.");
-                 return;
-             }
-        }
-        userAnswers = new Array(questions.length).fill(null);
-        quizResults = new Array(questions.length).fill(null);
-        progressContainer.classList.remove('hidden');
-        updateProgressBar();
-        renderQuestion();
-      } else {
-        const errorMsg = (response && response.error) ? response.error : 'Unknown error loading questions or no questions found.';
-        handleError(errorMsg);
-         quizContainer.innerHTML = `<p style="color: red;">Error loading questions: ${errorMsg}<br>Please check the console and ensure the spreadsheet is configured correctly.</p>`;
-      }
-    }
-
-    // --- Quiz Logic ---
-    function updateProgressBar() {
-        if (questions.length === 0) return;
-        const progress = ((currentQuestionIndex) / questions.length) * 100; // Progress based on completed questions
-        progressFill.style.width = progress + '%';
-        progressText.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
-    }
-
-    function renderQuestion() {
-        if (currentQuestionIndex >= questions.length) {
-            debug("Attempted to render question beyond array bounds.");
-            showFinalResults(); // Should ideally not happen, but safeguard
-            return;
-        }
-        const question = questions[currentQuestionIndex];
-        isAnswerSubmitted = false; // Reset submission state for the new question
-
-        debug(`Rendering question ${currentQuestionIndex + 1}:`, question.questionID);
-
-        if (!question || !question.options || !Array.isArray(question.options)) {
-             handleError(`Invalid question data at index ${currentQuestionIndex}. Skipping.`);
-             // Attempt to move to the next valid question
-             moveToNextQuestionOrFinish();
-             return;
-        }
-
-
-        let html = `
-        <div class="question-card">
-          <div class="question-header">
-            <span class="question-id">${question.questionID || `Q ${currentQuestionIndex + 1}`}</span>
-            ${question.difficultyLevel ? `<span class="difficulty-badge difficulty-${question.difficultyLevel.toLowerCase()}">${question.difficultyLevel}</span>` : ''}
-          </div>
-          <div class="question-text">${question.questionText || 'Missing Question Text'}</div>
-        `;
-
-        if (question.codeSnippets) {
-            html += `<div class="code-snippet"><pre><code>${escapeHtml(question.codeSnippets)}</code></pre></div>`;
-        }
-
-        // Options using data attributes for robustness
-        html += '<div class="options-container">';
-        if (question.options.length > 0) {
-            question.options.forEach((option, index) => {
-                // Store the raw option text in a data attribute
-                html += `
-                <button class="option-button" data-option-value="${escapeHtml(option)}">
-                    ${option}
-                </button>
-                `;
-            });
-        } else {
-            debug('Warning: No options found for question:', question.questionID);
-            html += '<p style="color: orange;">Warning: No options provided for this question.</p>';
-        }
-        html += '</div>';
-
-        // Hint button and container
-        if (question.hints) {
-            html += `<button class="hint-button" id="hint-button">Show Hint</button>
-                     <div id="hint-container" class="hint-container">${question.hints}</div>`;
-        }
-
-        // Feedback container (initially hidden)
-        html += '<div id="feedback-container" class="feedback-container hidden"></div>';
-
-        // Navigation buttons (Only Submit)
-        html += `
-        <div class="navigation-buttons">
-          <button id="submit-button" class="nav-button">Submit Answer</button>
-        </div>
-        `;
-
-        html += '</div>'; // End question-card
-        quizContainer.innerHTML = html;
-
-        // Add event listeners AFTER html is in the DOM
-        addOptionListeners();
-        if (question.hints) {
-           const hintButton = document.getElementById('hint-button');
-           if(hintButton) {
-                hintButton.addEventListener('click', showHint);
-           }
-        }
-        const submitButton = document.getElementById('submit-button');
-        if(submitButton) {
-            submitButton.addEventListener('click', handleSubmitAnswer);
-        } else {
-            debug("Error: Submit button not found after render.");
-        }
-    }
-
-    function escapeHtml(unsafe) {
-        if (typeof unsafe !== 'string') return unsafe;
-        return unsafe
-             .replace(/&/g, "&")
-             .replace(/</g, "<")
-             .replace(/>/g, ">")
-             .replace(/"/g, """)
-             .replace(/'/g, "'");
-    }
-
-    function addOptionListeners() {
-        const optionButtons = quizContainer.querySelectorAll('.option-button');
-        optionButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                if (isAnswerSubmitted) return; // Don't allow selection after submission
-
-                // Get the option value from the data attribute
-                const selectedOption = button.dataset.optionValue;
-                userAnswers[currentQuestionIndex] = selectedOption; // Store the selected answer text
-
-                // Update UI: remove 'selected' from all, add to the clicked one
-                optionButtons.forEach(btn => btn.classList.remove('selected'));
-                button.classList.add('selected');
-                debug(`Option selected: ${selectedOption}`);
-            });
-        });
-    }
-
-    function showHint() {
-        const hintContainer = document.getElementById('hint-container');
-        const hintButton = document.getElementById('hint-button');
-        if (hintContainer) hintContainer.style.display = 'block';
-        if (hintButton) hintButton.disabled = true; // Disable after showing
-    }
-
-    function handleSubmitAnswer() {
-        if (isAnswerSubmitted) {
-            debug("Submit clicked, but answer already submitted. Ignoring.");
-            return; // Already processed
-        }
-
-        const selectedOption = userAnswers[currentQuestionIndex];
-        if (selectedOption === null || selectedOption === undefined) {
-            alert('Please select an answer before submitting.');
-            return;
-        }
-
-        debug(`Submitting answer for question ${currentQuestionIndex + 1}`);
-        isAnswerSubmitted = true; // Mark as submitted
-
-        const question = questions[currentQuestionIndex];
-        const correctAnswer = question.correctAnswer;
-        const isCorrect = selectedOption === correctAnswer;
-
-        // Store result locally immediately
-        const resultData = {
-            questionID: question.questionID,
-            questionType: question.questionType,
-            questionText: question.questionText,
-            userAnswer: selectedOption,
-            correctAnswer: correctAnswer,
-            isCorrect: isCorrect,
-            learningConcepts: question.learningConcepts,
-            difficultyLevel: question.difficultyLevel,
-            bloomsLevel: question.bloomsLevel,
-            timestamp: new Date().toISOString() // Add timestamp locally too
-        };
-        quizResults[currentQuestionIndex] = resultData;
-        debug('Local result stored:', resultData);
-
-        // Send result to Google Sheet
-        sendResultToSheet(resultData);
-
-        // --- Visual Feedback ---
-        const optionButtons = quizContainer.querySelectorAll('.option-button');
-        const feedbackContainer = document.getElementById('feedback-container');
-        const submitButton = document.getElementById('submit-button');
-        const hintButton = document.getElementById('hint-button');
-
-        // Disable all options and hint button
-        optionButtons.forEach(button => {
-             button.disabled = true;
-             const buttonOption = button.dataset.optionValue;
-             // Highlight correct answer
-             if (buttonOption === correctAnswer) {
-                 button.classList.add('correct');
-             }
-             // Highlight incorrect selection (if different from correct)
-             else if (buttonOption === selectedOption) {
-                 button.classList.add('incorrect');
-             }
-        });
-        if (hintButton) hintButton.disabled = true;
-        if (submitButton) submitButton.disabled = true; // Disable submit after clicking
-
-
-        // Show feedback panel
-        if (feedbackContainer) {
-            feedbackContainer.classList.remove('hidden', 'feedback-correct', 'feedback-incorrect');
-            feedbackContainer.classList.add(isCorrect ? 'feedback-correct' : 'feedback-incorrect');
-            feedbackContainer.innerHTML = `
-                <div class="feedback-title ${isCorrect ? 'correct' : 'incorrect'}">${isCorrect ? 'Correct!' : 'Incorrect'}</div>
-                ${!isCorrect ? `<div class="feedback-answer">Correct answer: <strong>${correctAnswer}</strong></div>` : ''}
-                ${question.explanation ? `<div class="feedback-explanation"><strong>Explanation:</strong> ${question.explanation}</div>` : ''}
-            `;
-             feedbackContainer.style.display = 'block'; // Ensure it's visible
-        } else {
-            debug("Error: Feedback container not found.");
-        }
-
-
-        // --- Schedule next step ---
-        debug(`Scheduling next question/finish in ${FEEDBACK_DELAY_MS}ms`);
-        setTimeout(moveToNextQuestionOrFinish, FEEDBACK_DELAY_MS);
-    }
-
-    function moveToNextQuestionOrFinish() {
-        debug(`Moving from question ${currentQuestionIndex + 1}`);
-        if (currentQuestionIndex < questions.length - 1) {
-            currentQuestionIndex++;
-            updateProgressBar(); // Update progress *before* rendering next
-            renderQuestion();
-        } else {
-            debug("Quiz finished. Showing final results.");
-            showFinalResults();
-        }
-    }
-
-    // --- Data Submission ---
-    function sendResultToSheet(resultData) {
-        debug('Attempting to send result to sheet:', resultData);
-        // Prepare data payload for JSONP
-        const payload = {
-            action: 'saveResult',
-            result: resultData // Send the whole result object
-        };
-         makeJsonpRequest(payload, handleSaveResultResponse, 'saveResult');
-    }
-
-    function handleSaveResultResponse(response) {
-        debug('Response from saveResult:', response);
-        if (!response || !response.success) {
-            console.warn('Failed to save result to Google Sheet:', response ? response.error : 'No response');
-            // Optional: Notify user or implement retry logic? For now, just log it.
-            debug('Error saving result:', response ? response.error : 'Unknown save error');
-        } else {
-             debug('Result saved successfully to sheet.');
-        }
-    }
-
-    // --- Generic JSONP Request Function ---
-    function makeJsonpRequest(params, callbackFunction, context = 'request') {
-      const callbackName = `jsonpCallback_${context}_${jsonpCallbackCount++}`;
-      debug(`Making JSONP request with callback: ${callbackName}`, params);
-
-      // Define the global callback function
-      window[callbackName] = function(data) {
-        debug(`JSONP callback ${callbackName} executed.`, data);
-        try {
-            callbackFunction(data);
-        } catch(e) {
-            console.error(`Error executing JSONP callback function for ${context}:`, e);
-            debug(`Error in callback ${callbackName}`, e);
-        } finally {
-            // Cleanup: remove script tag and global function
-            const scriptElement = document.getElementById(`jsonp-script-${callbackName}`);
-            if (scriptElement) {
-                scriptElement.parentNode.removeChild(scriptElement);
-            }
-            delete window[callbackName];
-            debug(`Cleaned up JSONP callback: ${callbackName}`);
-        }
-      };
-
-      // Build URL
-      let url = `${APPS_SCRIPT_URL}?callback=${callbackName}`;
-
-      // Add other parameters, encoding 'data' if it exists
-      if (params.action === 'saveResult' && params.result) {
-          // Encode the entire result object within a 'data' parameter
-          const dataParam = JSON.stringify({ action: 'saveResult', result: params.result });
-          url += `&data=${encodeURIComponent(dataParam)}`;
-          debug(`Encoded data param length: ${dataParam.length}`);
-          if (dataParam.length > 1800) { // Check for potential GET URL length issues
-             console.warn("Data being sent is long, might exceed URL length limits.");
-             debug("Warning: Encoded data parameter is long.");
+    
+    // Log column map for debugging
+    Logger.log('Column map: ' + JSON.stringify(columnMap));
+    
+    // Process questions into JSON format
+    const questions = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      
+      // Skip empty rows
+      if (!row[0]) continue;
+      
+      // Try different header variations to find the right column
+      const getColumn = (variations) => {
+        for (let v of variations) {
+          if (columnMap[v] !== undefined) {
+            return columnMap[v];
           }
-      } else {
-         // For other actions like getQuestions, add params directly
-         for (const key in params) {
-            if (params.hasOwnProperty(key)) {
-                url += `&${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`;
-            }
-         }
-      }
-
-
-      // Create and append script tag
-      const script = document.createElement('script');
-      script.id = `jsonp-script-${callbackName}`;
-      script.src = url;
-      script.async = true;
-
-      script.onerror = function() {
-        console.error(`JSONP request failed for URL: ${url}`);
-        debug(`JSONP script load error for callback: ${callbackName}`);
-        // Call the callback with an error object
-         callbackFunction({ success: false, error: `Failed to load script for ${context}. Check network and script URL.` });
-        // Cleanup might be needed here too if the callback wasn't called
-        if (window[callbackName]) {
-             delete window[callbackName];
         }
-         const scriptElement = document.getElementById(`jsonp-script-${callbackName}`);
-            if (scriptElement) {
-                scriptElement.parentNode.removeChild(scriptElement);
-            }
+        Logger.log('Could not find column for variations: ' + variations.join(', '));
+        return -1;
       };
-
-      document.body.appendChild(script);
+      
+      // Define column variations to try
+      const questionIdCol = getColumn(['Question ID', 'QuestionID', 'question id']);
+      const questionTypeCol = getColumn(['Question Type', 'QuestionType', 'question type']);
+      const questionTextCol = getColumn(['Question Text', 'QuestionText', 'question text']);
+      const optionsCol = getColumn(['Options', 'options']);
+      const correctAnswerCol = getColumn(['Correct Answer', 'CorrectAnswer', 'correct answer']);
+      const explanationCol = getColumn(['Explanation', 'explanation']);
+      const hintsCol = getColumn(['Hints', 'hints']);
+      const codeSnippetsCol = getColumn(['Code Snippets', 'CodeSnippets', 'code snippets']);
+      const mediaLinksCol = getColumn(['Media links', 'MediaLinks', 'media links']);
+      const learningConceptsCol = getColumn(['Learning concepts', 'LearningConcepts', 'learning concepts']);
+      const difficultyLevelCol = getColumn(['Difficulty Level', 'DifficultyLevel', 'difficulty level']);
+      const bloomsLevelCol = getColumn(['Bloom\'s Level', 'Bloom\'sLevel', 'Blooms Level', 'bloom\'s level']);
+      
+      // Log the values being processed for the first few rows for debugging
+      if (i <= 3) {
+        Logger.log(`Processing row ${i}:`);
+        Logger.log(`  Question ID: ${row[questionIdCol]}`);
+        Logger.log(`  Options: ${row[optionsCol]}`);
+        Logger.log(`  Correct Answer: ${row[correctAnswerCol]}`);
+      }
+      
+      // Parse options (semicolon separated)
+      let options = [];
+      if (optionsCol >= 0 && row[optionsCol]) {
+        const optionsString = row[optionsCol].toString();
+        options = optionsString.split(';').map(opt => opt.trim()).filter(opt => opt);
+        
+        // Log parsed options for debugging
+        if (i <= 3) {
+          Logger.log(`  Parsed options: ${JSON.stringify(options)}`);
+        }
+      }
+      
+      // Parse learning concepts (semicolon separated)
+      let concepts = [];
+      if (learningConceptsCol >= 0 && row[learningConceptsCol]) {
+        const conceptsString = row[learningConceptsCol].toString();
+        concepts = conceptsString.split(';').map(concept => concept.trim()).filter(concept => concept);
+      }
+      
+      questions.push({
+        questionID: questionIdCol >= 0 ? row[questionIdCol] : '',
+        questionType: questionTypeCol >= 0 ? row[questionTypeCol] : '',
+        questionText: questionTextCol >= 0 ? row[questionTextCol] : '',
+        options: options,
+        correctAnswer: correctAnswerCol >= 0 ? row[correctAnswerCol] : '',
+        explanation: explanationCol >= 0 ? row[explanationCol] : '',
+        hints: hintsCol >= 0 ? row[hintsCol] : '',
+        codeSnippets: codeSnippetsCol >= 0 ? row[codeSnippetsCol] : '',
+        mediaLinks: mediaLinksCol >= 0 ? row[mediaLinksCol] : '',
+        learningConcepts: concepts,
+        difficultyLevel: difficultyLevelCol >= 0 ? row[difficultyLevelCol] : '',
+        bloomsLevel: bloomsLevelCol >= 0 ? row[bloomsLevelCol] : ''
+      });
     }
+    
+    Logger.log(`Successfully processed ${questions.length} questions`);
+    
+    return { success: true, data: questions };
+    
+  } catch (error) {
+    Logger.log('Error in getQuestions: ' + error.toString());
+    Logger.log('Error stack: ' + error.stack);
+    return { success: false, error: error.toString() };
+  }
+}
 
-
-    // --- Results Display ---
-    function showFinalResults() {
-      hideLoading();
-      quizContainer.classList.add('hidden'); // Hide quiz questions
-      progressContainer.classList.add('hidden'); // Hide progress bar
-
-      // Calculate score from the locally stored results
-      const validResults = quizResults.filter(r => r !== null); // Filter out any potential gaps if errors occurred
-      const correctCount = validResults.filter(result => result.isCorrect).length;
-      const totalAnswered = validResults.length;
-      const percentage = totalAnswered > 0 ? (correctCount / totalAnswered) * 100 : 0;
-
-      debug(`Showing final results. Correct: ${correctCount}, Total Answered: ${totalAnswered}, Percentage: ${percentage.toFixed(1)}%`);
-
-      let scoreClass;
-      if (percentage >= 80) scoreClass = 'score-high';
-      else if (percentage >= 60) scoreClass = 'score-medium';
-      else scoreClass = 'score-low';
-
-      resultsContainer.innerHTML = `
-        <h2>Quiz Completed!</h2>
-        <p>Your results have been recorded.</p>
-        <div class="score-circle ${scoreClass}">
-          ${percentage.toFixed(1)}%
-        </div>
-        <p>You answered ${correctCount} out of ${totalAnswered} questions correctly.</p>
-        <button class="nav-button" onclick="location.reload()" style="margin-top: 20px;">Take Quiz Again</button>
-      `;
-      resultsContainer.classList.remove('hidden');
+// Save all results at once (for bulk submission)
+function saveBulkResults(results) {
+  try {
+    const resultsSheet = SpreadsheetApp.openById(RESULTS_SHEET_ID);
+    let resultsTab = resultsSheet.getSheetByName(RESULTS_TAB);
+    
+    // Create the results tab if it doesn't exist
+    if (!resultsTab) {
+      resultsTab = resultsSheet.insertSheet(RESULTS_TAB);
+      
+      // Set up headers
+      const headers = [
+        'Time Stamp',
+        'Question ID',
+        'Question Type',
+        'Question Text',
+        'User Selected Option',
+        'Correct Answer',
+        'Is Correct? (Yes or No)',
+        'Learning concepts',
+        'Difficulty Level',
+        'Bloom\'s Level'
+      ];
+      
+      resultsTab.getRange(1, 1, 1, headers.length).setValues([headers]);
+      resultsTab.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+      resultsTab.setFrozenRows(1);
     }
-
-    // --- Error Handling ---
-    function handleError(error) {
-        hideLoading();
-        const errorMessage = (typeof error === 'string' ? error : error.message) || 'An unknown error occurred.';
-        console.error('Quiz Error:', error);
-        debug('Error encountered:', errorMessage, error);
-        // Display a user-friendly message (maybe in the quiz container or an alert)
-        // For now, just alerting
-        alert(`An error occurred: ${errorMessage}\nPlease check the debug console (if visible) or reload the page.`);
+    
+    // Get the next available row
+    const lastRow = resultsTab.getLastRow();
+    const nextRow = lastRow + 1;
+    
+    // Prepare data for insertion
+    const rowsData = results.map(result => [
+      new Date(), // Time Stamp
+      result.questionID,
+      result.questionType,
+      result.questionText,
+      result.userAnswer,
+      result.correctAnswer,
+      result.isCorrect ? 'Yes' : 'No',
+      Array.isArray(result.learningConcepts) ? result.learningConcepts.join('; ') : result.learningConcepts,
+      result.difficultyLevel,
+      result.bloomsLevel
+    ]);
+    
+    // Insert the data
+    if (rowsData.length > 0) {
+      resultsTab.getRange(nextRow, 1, rowsData.length, rowsData[0].length).setValues(rowsData);
     }
+    
+    Logger.log(`Successfully saved ${rowsData.length} results`);
+    
+    return { success: true };
+    
+  } catch (error) {
+    Logger.log('Error in saveBulkResults: ' + error.toString());
+    Logger.log('Error stack: ' + error.stack);
+    return { success: false, error: error.toString() };
+  }
+}
 
-    // --- Initialize ---
-    document.addEventListener('DOMContentLoaded', loadQuestions);
+// Save individual result (for question-by-question submission)
+function saveResult(quizResult) {
+  try {
+    const resultsSheet = SpreadsheetApp.openById(RESULTS_SHEET_ID);
+    let resultsTab = resultsSheet.getSheetByName(RESULTS_TAB);
+    
+    // Create the results tab if it doesn't exist
+    if (!resultsTab) {
+      resultsTab = resultsSheet.insertSheet(RESULTS_TAB);
+      
+      // Set up headers
+      const headers = [
+        'Time Stamp',
+        'Question ID',
+        'Question Type',
+        'Question Text',
+        'User Selected Option',
+        'Correct Answer',
+        'Is Correct? (Yes or No)',
+        'Learning concepts',
+        'Difficulty Level',
+        'Bloom\'s Level'
+      ];
+      
+      resultsTab.getRange(1, 1, 1, headers.length).setValues([headers]);
+      resultsTab.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+      resultsTab.setFrozenRows(1);
+    }
+    
+    // Get the next available row
+    const lastRow = resultsTab.getLastRow();
+    const nextRow = lastRow + 1;
+    
+    // Prepare data for insertion
+    const rowData = [
+      new Date(), // Time Stamp
+      quizResult.questionID,
+      quizResult.questionType,
+      quizResult.questionText,
+      quizResult.userAnswer,
+      quizResult.correctAnswer,
+      quizResult.isCorrect ? 'Yes' : 'No',
+      Array.isArray(quizResult.learningConcepts) ? quizResult.learningConcepts.join('; ') : quizResult.learningConcepts,
+      quizResult.difficultyLevel,
+      quizResult.bloomsLevel
+    ];
+    
+    // Insert the data
+    resultsTab.getRange(nextRow, 1, 1, rowData.length).setValues([rowData]);
+    
+    return { success: true };
+    
+  } catch (error) {
+    Logger.log('Error in saveResult: ' + error.toString());
+    return { success: false, error: error.toString() };
+  }
+}
 
-  </script>
-</body>
-</html>
+// Test functions for debugging (you can run these directly from the Google Apps Script editor)
+
+function testGetQuestions() {
+  // Test the getQuestions function directly
+  console.log('Starting testGetQuestions...');
+  const result = getQuestions();
+  console.log('Result:', JSON.stringify(result, null, 2));
+  
+  if (result.success) {
+    console.log('Questions loaded successfully:');
+    console.log(`Number of questions: ${result.data.length}`);
+    if (result.data.length > 0) {
+      console.log('First question:', JSON.stringify(result.data[0], null, 2));
+    }
+  } else {
+    console.log('Error loading questions:', result.error);
+  }
+}
+
+function testDebugHeaders() {
+  // Test the debugHeaders function directly
+  console.log('Starting testDebugHeaders...');
+  const result = debugHeaders();
+  console.log('Result:', JSON.stringify(result, null, 2));
+  
+  if (result.success) {
+    console.log('Headers found:');
+    result.headers.forEach((header, index) => {
+      console.log(`${index}: "${header}"`);
+    });
+    
+    console.log('\nFirst row data:');
+    result.firstRow.forEach((cell, index) => {
+      console.log(`${index}: "${cell}"`);
+    });
+  } else {
+    console.log('Error:', result.error);
+  }
+}
+
+function testDoGetWithParams() {
+  // Simulate a web request with parameters
+  const fakeEvent = {
+    parameter: {
+      action: 'getQuestions',
+      callback: null
+    },
+    queryString: 'action=getQuestions'
+  };
+  
+  console.log('Testing doGet with simulated parameters...');
+  const result = doGet(fakeEvent);
+  console.log('Content type:', result.getMimeType());
+  console.log('Content:', result.getContent());
+}
+
+// Test function to verify spreadsheet access
+function testSpreadsheetAccess() {
+  console.log('Testing spreadsheet access...');
+  try {
+    const questionSheet = SpreadsheetApp.openById(QUESTION_BANK_SHEET_ID);
+    console.log('Question sheet name:', questionSheet.getName());
+    
+    const tab = questionSheet.getSheetByName(QUESTION_BANK_TAB);
+    if (tab) {
+      console.log('Found tab:', QUESTION_BANK_TAB);
+      const range = tab.getDataRange();
+      console.log('Data dimensions:', range.getNumRows(), 'rows x', range.getNumColumns(), 'columns');
+    } else {
+      console.log('ERROR: Could not find tab:', QUESTION_BANK_TAB);
+    }
+  } catch (error) {
+    console.log('ERROR accessing spreadsheet:', error.toString());
+  }
+}
