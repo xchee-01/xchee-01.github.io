@@ -233,6 +233,8 @@
     
     // Display the question and options
     function displayQuestion(questionData) {
+      console.log('Displaying question:', questionData); // Debug log
+      
       if (!questionData) {
         showError("No questions available");
         return;
@@ -254,14 +256,34 @@
       
       // Ensure options exist and is not undefined before splitting
       if (!questionData.options) {
-        showError("Question options are missing");
+        console.error('Options missing from question data:', questionData);
+        showError("Question options are missing from data");
         return;
       }
       
-      const options = questionData.options.split('\n').filter(opt => opt.trim() !== '');
+      // Try different ways to split the options (newline, comma, or other delimiters)
+      let options = [];
+      
+      // First try newline
+      options = questionData.options.split('\n').filter(opt => opt.trim() !== '');
+      
+      // If that doesn't work, try other delimiters
+      if (options.length === 0) {
+        options = questionData.options.split('|').filter(opt => opt.trim() !== '');
+      }
       
       if (options.length === 0) {
-        showError("No valid options found for this question");
+        // As a last resort, if the options look like a single line with specific markers
+        if (questionData.options.includes('A)') || questionData.options.includes('1.')) {
+          options = questionData.options.split(/[A-D]\)|[1-4]\./).filter(opt => opt.trim() !== '');
+        }
+      }
+      
+      console.log('Parsed options:', options); // Debug log
+      
+      if (options.length === 0) {
+        console.error('Could not parse options from:', questionData.options);
+        showError("Could not parse options from question data");
         return;
       }
       
@@ -272,13 +294,13 @@
         const radioInput = document.createElement('input');
         radioInput.type = 'radio';
         radioInput.name = 'answer';
-        radioInput.value = option;
+        radioInput.value = option.trim();
         radioInput.onclick = function() {
-          selectedOption = option;
+          selectedOption = option.trim();
         };
         
         optionElement.appendChild(radioInput);
-        optionElement.appendChild(document.createTextNode(option));
+        optionElement.appendChild(document.createTextNode(option.trim()));
         optionsContainer.appendChild(optionElement);
       });
       
@@ -287,7 +309,8 @@
       
       // Set up code snippet in advance
       if (questionData.codeSnippets && questionData.codeSnippets.trim() !== '') {
-        document.getElementById('code-snippet').innerHTML = questionData.codeSnippets;
+        document.getElementById('code-snippet').innerHTML = questionData.codeSnippets
+          .replace(/</g, '&lt;').replace(/>/g, '&gt;'); // Escape HTML
         document.getElementById('code-container').style.display = 'block';
       } else {
         document.getElementById('code-container').style.display = 'none';
