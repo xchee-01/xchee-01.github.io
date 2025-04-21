@@ -1,392 +1,718 @@
-// Global Variables
-const QUESTION_BANK_SHEET_ID = '10OvQxGnLMkieI3oBQcGrel0gzueoojjObZZQdWbs64o';
-const RESULTS_SHEET_ID = '1IifIAO0odU4JFQHdSKllSkCo9wFgy2qMctqQ2dJQCwg';
-const QUESTION_BANK_TAB = 'Prequiz_questions';
-const RESULTS_TAB = 'prequiz_results';
-
-// Handle GET requests with JSONP support
-function doGet(e) {
-  try {
-    // Log the incoming request for debugging
-    Logger.log('doGet function called');
-    Logger.log('Event object: ' + JSON.stringify(e));
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NUS Pre-Quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --nus-orange: #EF7C00;
+      --nus-blue: #003D7C;
+      --nus-light-orange: #FFE5CC;
+      --nus-light-blue: #E6EEF5;
+      --success-color: #4CAF50;
+      --error-color: #F44336;
+    }
     
-    const params = e.parameter || {};
-    const action = params.action;
-    const callback = params.callback;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     
-    let response;
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
     
-    // Handle data submission via GET (for no-cors mode)
-    if (params.data) {
-      const data = JSON.parse(decodeURIComponent(params.data));
-      if (data.action === 'saveBulkResults') {
-        response = saveBulkResults(data.results);
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      background-color: var(--nus-blue);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    
+    .progress-container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .progress-bar {
+      background-color: var(--nus-light-blue);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background-color: var(--nus-orange);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+    
+    .question-card {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .question-id {
+      background-color: var(--nus-light-orange);
+      color: var(--nus-blue);
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-weight: 600;
+    }
+    
+    .difficulty-badge {
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.9em;
+      font-weight: 500;
+    }
+    
+    .difficulty-easy {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+    }
+    
+    .difficulty-medium {
+      background-color: #FFF3E0;
+      color: #EF6C00;
+    }
+    
+    .difficulty-hard {
+      background-color: #FFEBEE;
+      color: #C62828;
+    }
+    
+    .question-text {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    
+    .code-snippet {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      margin-bottom: 20px;
+      white-space: pre-wrap;
+    }
+    
+    .options-container {
+      display: grid;
+      gap: 10px;
+    }
+    
+    .option-button {
+      background-color: white;
+      border: 2px solid var(--nus-blue);
+      padding: 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      font-size: 1em;
+    }
+    
+    .option-button:hover {
+      background-color: var(--nus-light-blue);
+    }
+    
+    .option-button.selected {
+      background-color: var(--nus-blue);
+      color: white;
+    }
+    
+    .hint-container {
+      background-color: var(--nus-light-orange);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .hint-button {
+      background-color: transparent;
+      border: 1px solid var(--nus-orange);
+      color: var(--nus-orange);
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    
+    .navigation-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    
+    .nav-button {
+      background-color: var(--nus-orange);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+    
+    .nav-button:hover {
+      background-color: #d76d00;
+    }
+    
+    .nav-button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .results-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    .score-circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      margin: 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5em;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .score-high {
+      background-color: var(--success-color);
+    }
+    
+    .score-medium {
+      background-color: var(--nus-orange);
+    }
+    
+    .score-low {
+      background-color: var(--error-color);
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid var(--nus-orange);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    /* Debug panel styles */
+    .debug-panel {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      max-width: 400px;
+      max-height: 300px;
+      overflow: auto;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 2000;
+    }
+    
+    .debug-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 5px 10px;
+      background: var(--nus-orange);
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      z-index: 2001;
+    }
+    
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px;
       }
-    } else {
-      switch(action) {
-        case 'getQuestions':
-          response = getQuestions();
-          break;
-        case 'debug':
-          response = debugHeaders();
-          break;
-        default:
-          response = { error: 'Invalid action' };
+      
+      .header {
+        padding: 20px 10px;
+      }
+      
+      .header h1 {
+        font-size: 2em;
+      }
+      
+      .question-card {
+        padding: 20px;
+      }
+      
+      .debug-panel {
+        max-width: 90%;
+        bottom: 60px;
       }
     }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>NUS Pre-Quiz Assessment</h1>
+      <p>Test your knowledge and prepare for the course</p>
+    </div>
     
-    // Return JSONP if callback is provided
-    if (callback) {
-      return ContentService.createTextOutput(callback + '(' + JSON.stringify(response) + ')')
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
-    } else {
-      return ContentService.createTextOutput(JSON.stringify(response))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-  } catch (error) {
-    Logger.log('Error in doGet: ' + error.toString());
-    Logger.log('Error stack: ' + error.stack);
+    <div id="progress-container" class="progress-container">
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <div id="progress-text" class="progress-text">Question 1 of 0</div>
+    </div>
     
-    // Return error response
-    const errorResponse = { success: false, error: error.toString() };
+    <div id="quiz-container">
+      <!-- Quiz content will be dynamically loaded here -->
+    </div>
     
-    if (e && e.parameter && e.parameter.callback) {
-      return ContentService.createTextOutput(e.parameter.callback + '(' + JSON.stringify(errorResponse) + ')')
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
-    }
+    <div id="results-container" class="results-container hidden">
+      <!-- Results will be displayed here -->
+    </div>
+  </div>
+  
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+  </div>
+  
+  <!-- Debug panel -->
+  <button id="debug-toggle" class="debug-toggle">Debug</button>
+  <div id="debug-panel" class="debug-panel hidden"></div>
+  
+  <script>
+    // Replace this with your Google Apps Script Web App URL
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyorZ9nffitM-T6d5Knxr-0b85fsh9OzF2Lz7BGiSh2bwZTut0liMC3u7Zj3GZKgVY0Nw/exec';
     
-    return ContentService.createTextOutput(JSON.stringify(errorResponse))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-// Debug function to see headers and data structure
-function debugHeaders() {
-  try {
-    const questionBankSheet = SpreadsheetApp.openById(QUESTION_BANK_SHEET_ID).getSheetByName(QUESTION_BANK_TAB);
-    const data = questionBankSheet.getDataRange().getValues();
-    const headers = data[0];
-    const firstRow = data[1];
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = [];
+    let quizResults = [];
+    let jsonpCallbackCount = 0;
     
-    return { 
-      success: true, 
-      headers: headers,
-      firstRow: firstRow,
-      totalRows: data.length
-    };
-  } catch (error) {
-    Logger.log('Error in debugHeaders: ' + error.toString());
-    return { success: false, error: error.toString() };
-  }
-}
-
-// Get all questions from the question bank
-function getQuestions() {
-  try {
-    const questionBankSheet = SpreadsheetApp.openById(QUESTION_BANK_SHEET_ID).getSheetByName(QUESTION_BANK_TAB);
-    const data = questionBankSheet.getDataRange().getValues();
-    const headers = data[0];
+    // Debug functionality
+    const debugPanel = document.getElementById('debug-panel');
+    const debugToggle = document.getElementById('debug-toggle');
     
-    // Map column headers to indices (handle case sensitivity and whitespace)
-    const columnMap = {};
-    headers.forEach((header, index) => {
-      // Normalize header by trimming and making case-insensitive
-      const normalizedHeader = header.toString().trim();
-      columnMap[normalizedHeader] = index;
-      
-      // Also create versions without spaces for flexibility
-      const noSpaceHeader = normalizedHeader.replace(/\s+/g, '');
-      columnMap[noSpaceHeader] = index;
-      
-      // Log for debugging
-      Logger.log(`Header ${index}: "${header}" -> "${normalizedHeader}"`);
+    debugToggle.addEventListener('click', () => {
+      debugPanel.classList.toggle('hidden');
     });
     
-    // Log column map for debugging
-    Logger.log('Column map: ' + JSON.stringify(columnMap));
-    
-    // Process questions into JSON format
-    const questions = [];
-    
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      
-      // Skip empty rows
-      if (!row[0]) continue;
-      
-      // Try different header variations to find the right column
-      const getColumn = (variations) => {
-        for (let v of variations) {
-          if (columnMap[v] !== undefined) {
-            return columnMap[v];
-          }
-        }
-        Logger.log('Could not find column for variations: ' + variations.join(', '));
-        return -1;
-      };
-      
-      // Define column variations to try
-      const questionIdCol = getColumn(['Question ID', 'QuestionID', 'question id']);
-      const questionTypeCol = getColumn(['Question Type', 'QuestionType', 'question type']);
-      const questionTextCol = getColumn(['Question Text', 'QuestionText', 'question text']);
-      const optionsCol = getColumn(['Options', 'options']);
-      const correctAnswerCol = getColumn(['Correct Answer', 'CorrectAnswer', 'correct answer']);
-      const explanationCol = getColumn(['Explanation', 'explanation']);
-      const hintsCol = getColumn(['Hints', 'hints']);
-      const codeSnippetsCol = getColumn(['Code Snippets', 'CodeSnippets', 'code snippets']);
-      const mediaLinksCol = getColumn(['Media links', 'MediaLinks', 'media links']);
-      const learningConceptsCol = getColumn(['Learning concepts', 'LearningConcepts', 'learning concepts']);
-      const difficultyLevelCol = getColumn(['Difficulty Level', 'DifficultyLevel', 'difficulty level']);
-      const bloomsLevelCol = getColumn(['Bloom\'s Level', 'Bloom\'sLevel', 'Blooms Level', 'bloom\'s level']);
-      
-      // Log the values being processed for the first few rows for debugging
-      if (i <= 3) {
-        Logger.log(`Processing row ${i}:`);
-        Logger.log(`  Question ID: ${row[questionIdCol]}`);
-        Logger.log(`  Options: ${row[optionsCol]}`);
-        Logger.log(`  Correct Answer: ${row[correctAnswerCol]}`);
+    function debug(message, data = null) {
+      console.log(message, data);
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      if (data) {
+        logEntry.textContent += '\n' + JSON.stringify(data, null, 2);
       }
+      debugPanel.appendChild(logEntry);
+      debugPanel.scrollTop = debugPanel.scrollHeight;
+    }
+    
+    // Show loading overlay
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+    
+    // Hide loading overlay
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+    
+    // Debug the spreadsheet structure
+    function debugSpreadsheet() {
+      debug('Debugging spreadsheet structure...');
+      showLoading();
       
-      // Parse options (semicolon separated)
-      let options = [];
-      if (optionsCol >= 0 && row[optionsCol]) {
-        const optionsString = row[optionsCol].toString();
-        options = optionsString.split(';').map(opt => opt.trim()).filter(opt => opt);
+      try {
+        const callbackName = 'jsonpDebugCallback_' + jsonpCallbackCount++;
         
-        // Log parsed options for debugging
-        if (i <= 3) {
-          Logger.log(`  Parsed options: ${JSON.stringify(options)}`);
+        window[callbackName] = function(data) {
+          delete window[callbackName];
+          const script = document.getElementById('jsonp-' + callbackName);
+          if (script) {
+            script.parentNode.removeChild(script);
+          }
+          
+          hideLoading();
+          
+          if (data && data.success) {
+            debug('Spreadsheet structure:', data);
+            debug('Headers found:', data.headers);
+            debug('First row example:', data.firstRow);
+            debug('Total rows:', data.totalRows);
+          } else {
+            debug('Error in debug response:', data);
+          }
+        };
+        
+        const script = document.createElement('script');
+        script.id = 'jsonp-' + callbackName;
+        script.src = `${APPS_SCRIPT_URL}?action=debug&callback=${callbackName}`;
+        script.onerror = function() {
+          debug('Failed to debug spreadsheet');
+          hideLoading();
+        };
+        
+        document.body.appendChild(script);
+        
+      } catch (error) {
+        debug('Error in debugSpreadsheet:', error);
+        hideLoading();
+      }
+    }
+    
+    // Load questions from Google Apps Script using JSONP
+    function loadQuestions() {
+      showLoading();
+      try {
+        // First debug the spreadsheet structure
+        // debugSpreadsheet();
+        
+        // Create a unique callback function name
+        const callbackName = 'jsonpCallback_' + jsonpCallbackCount++;
+        
+        // Define the callback function
+        window[callbackName] = function(data) {
+          // Clean up
+          delete window[callbackName];
+          const script = document.getElementById('jsonp-' + callbackName);
+          if (script) {
+            script.parentNode.removeChild(script);
+          }
+          
+          handleQuestionsLoad(data);
+        };
+        
+        // Create script element for JSONP
+        const script = document.createElement('script');
+        script.id = 'jsonp-' + callbackName;
+        script.src = `${APPS_SCRIPT_URL}?action=getQuestions&callback=${callbackName}`;
+        
+        // Error handling
+        script.onerror = function() {
+          handleError({ message: 'Failed to load questions. Please check your network connection and the web app URL.' });
+        };
+        
+        document.body.appendChild(script);
+        
+      } catch (error) {
+        handleError(error);
+      }
+    }
+    
+    // Handle questions loaded
+    function handleQuestionsLoad(data) {
+      hideLoading();
+      debug('Questions loaded response:', data);
+      
+      if (data && data.success) {
+        questions = data.data;
+        debug('Number of questions loaded:', questions.length);
+        
+        if (questions.length > 0) {
+          debug('First question structure:', questions[0]);
+          userAnswers = new Array(questions.length).fill(null);
+          updateProgressBar();
+          renderQuestion();
+        } else {
+          handleError('No questions found in the spreadsheet');
         }
+      } else {
+        handleError(data && data.error ? data.error : 'Unknown error occurred while loading questions');
+      }
+    }
+    
+    // Handle errors
+    function handleError(error) {
+      hideLoading();
+      const errorMessage = typeof error === 'string' ? error : (error.message || 'Unknown error occurred');
+      alert('Error: ' + errorMessage);
+      debug('Error:', error);
+      console.error('Quiz error:', error);
+    }
+    
+    // Update progress bar
+    function updateProgressBar() {
+      const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+      document.getElementById('progress-fill').style.width = progress + '%';
+      document.getElementById('progress-text').textContent = 
+        `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+    }
+    
+    // Render current question
+    function renderQuestion() {
+      const question = questions[currentQuestionIndex];
+      const container = document.getElementById('quiz-container');
+      
+      debug('Rendering question:', question);
+      
+      let html = `
+        <div class="question-card">
+          <div class="question-header">
+            <span class="question-id">${question.questionID}</span>
+            <span class="difficulty-badge difficulty-${question.difficultyLevel.toLowerCase()}">
+              ${question.difficultyLevel}
+            </span>
+          </div>
+          <div class="question-text">${question.questionText}</div>
+      `;
+      
+      // Add code snippet if available
+      if (question.codeSnippets) {
+        html += `<div class="code-snippet">${question.codeSnippets}</div>`;
       }
       
-      // Parse learning concepts (semicolon separated)
-      let concepts = [];
-      if (learningConceptsCol >= 0 && row[learningConceptsCol]) {
-        const conceptsString = row[learningConceptsCol].toString();
-        concepts = conceptsString.split(';').map(concept => concept.trim()).filter(concept => concept);
+      // Add options
+      html += '<div class="options-container">';
+      
+      if (question.options && question.options.length > 0) {
+        question.options.forEach((option, index) => {
+          const selected = userAnswers[currentQuestionIndex] === option ? 'selected' : '';
+          // Escape single quotes in option text
+          const escapedOption = option.replace(/'/g, "\\'");
+          html += `
+            <button class="option-button ${selected}" onclick="selectOption('${escapedOption}', ${index})">
+              ${option}
+            </button>
+          `;
+        });
+      } else {
+        debug('No options found for question:', question);
+        html += '<p>Error: No options available for this question</p>';
       }
       
-      questions.push({
-        questionID: questionIdCol >= 0 ? row[questionIdCol] : '',
-        questionType: questionTypeCol >= 0 ? row[questionTypeCol] : '',
-        questionText: questionTextCol >= 0 ? row[questionTextCol] : '',
-        options: options,
-        correctAnswer: correctAnswerCol >= 0 ? row[correctAnswerCol] : '',
-        explanation: explanationCol >= 0 ? row[explanationCol] : '',
-        hints: hintsCol >= 0 ? row[hintsCol] : '',
-        codeSnippets: codeSnippetsCol >= 0 ? row[codeSnippetsCol] : '',
-        mediaLinks: mediaLinksCol >= 0 ? row[mediaLinksCol] : '',
-        learningConcepts: concepts,
-        difficultyLevel: difficultyLevelCol >= 0 ? row[difficultyLevelCol] : '',
-        bloomsLevel: bloomsLevelCol >= 0 ? row[bloomsLevelCol] : ''
+      html += '</div>';
+      
+      // Add hint button and container
+      if (question.hints) {
+        html += `
+          <button class="hint-button" onclick="showHint()">Show Hint</button>
+          <div id="hint-container" class="hint-container">
+            ${question.hints}
+          </div>
+        `;
+      }
+      
+      // Add navigation buttons
+      html += `
+        <div class="navigation-buttons">
+          <button class="nav-button" onclick="previousQuestion()" 
+            ${currentQuestionIndex === 0 ? 'disabled' : ''}>Previous</button>
+          <button class="nav-button" onclick="nextQuestion()">
+            ${currentQuestionIndex === questions.length - 1 ? 'Submit' : 'Next'}
+          </button>
+        </div>
+      `;
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+    
+    // Select option
+    function selectOption(option, index) {
+      userAnswers[currentQuestionIndex] = option;
+      
+      // Update UI
+      const buttons = document.querySelectorAll('.option-button');
+      buttons.forEach(button => {
+        button.classList.remove('selected');
       });
+      buttons[index].classList.add('selected');
     }
     
-    Logger.log(`Successfully processed ${questions.length} questions`);
+    // Show hint
+    function showHint() {
+      document.getElementById('hint-container').style.display = 'block';
+    }
     
-    return { success: true, data: questions };
+    // Navigate to previous question
+    function previousQuestion() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        updateProgressBar();
+        renderQuestion();
+      }
+    }
     
-  } catch (error) {
-    Logger.log('Error in getQuestions: ' + error.toString());
-    Logger.log('Error stack: ' + error.stack);
-    return { success: false, error: error.toString() };
-  }
-}
-
-// Save all results at once (for bulk submission)
-function saveBulkResults(results) {
-  try {
-    const resultsSheet = SpreadsheetApp.openById(RESULTS_SHEET_ID);
-    let resultsTab = resultsSheet.getSheetByName(RESULTS_TAB);
+    // Navigate to next question or submit
+    function nextQuestion() {
+      if (currentQuestionIndex < questions.length - 1) {
+        currentQuestionIndex++;
+        updateProgressBar();
+        renderQuestion();
+      } else {
+        submitQuiz();
+      }
+    }
     
-    // Create the results tab if it doesn't exist
-    if (!resultsTab) {
-      resultsTab = resultsSheet.insertSheet(RESULTS_TAB);
+    // Submit quiz
+    function submitQuiz() {
+      showLoading();
       
-      // Set up headers
-      const headers = [
-        'Time Stamp',
-        'Question ID',
-        'Question Type',
-        'Question Text',
-        'User Selected Option',
-        'Correct Answer',
-        'Is Correct? (Yes or No)',
-        'Learning concepts',
-        'Difficulty Level',
-        'Bloom\'s Level'
-      ];
+      // Prepare results
+      quizResults = questions.map((question, index) => {
+        const userAnswer = userAnswers[index];
+        const isCorrect = userAnswer === question.correctAnswer;
+        
+        return {
+          questionID: question.questionID,
+          questionType: question.questionType,
+          questionText: question.questionText,
+          userAnswer: userAnswer || 'Not answered',
+          correctAnswer: question.correctAnswer,
+          isCorrect: isCorrect,
+          learningConcepts: question.learningConcepts,
+          difficultyLevel: question.difficultyLevel,
+          bloomsLevel: question.bloomsLevel
+        };
+      });
       
-      resultsTab.getRange(1, 1, 1, headers.length).setValues([headers]);
-      resultsTab.getRange(1, 1, 1, headers.length).setFontWeight('bold');
-      resultsTab.setFrozenRows(1);
-    }
-    
-    // Get the next available row
-    const lastRow = resultsTab.getLastRow();
-    const nextRow = lastRow + 1;
-    
-    // Prepare data for insertion
-    const rowsData = results.map(result => [
-      new Date(), // Time Stamp
-      result.questionID,
-      result.questionType,
-      result.questionText,
-      result.userAnswer,
-      result.correctAnswer,
-      result.isCorrect ? 'Yes' : 'No',
-      Array.isArray(result.learningConcepts) ? result.learningConcepts.join('; ') : result.learningConcepts,
-      result.difficultyLevel,
-      result.bloomsLevel
-    ]);
-    
-    // Insert the data
-    if (rowsData.length > 0) {
-      resultsTab.getRange(nextRow, 1, rowsData.length, rowsData[0].length).setValues(rowsData);
-    }
-    
-    Logger.log(`Successfully saved ${rowsData.length} results`);
-    
-    return { success: true };
-    
-  } catch (error) {
-    Logger.log('Error in saveBulkResults: ' + error.toString());
-    Logger.log('Error stack: ' + error.stack);
-    return { success: false, error: error.toString() };
-  }
-}
-
-// Save individual result (for question-by-question submission)
-function saveResult(quizResult) {
-  try {
-    const resultsSheet = SpreadsheetApp.openById(RESULTS_SHEET_ID);
-    let resultsTab = resultsSheet.getSheetByName(RESULTS_TAB);
-    
-    // Create the results tab if it doesn't exist
-    if (!resultsTab) {
-      resultsTab = resultsSheet.insertSheet(RESULTS_TAB);
+      debug('Submitting results:', quizResults);
       
-      // Set up headers
-      const headers = [
-        'Time Stamp',
-        'Question ID',
-        'Question Type',
-        'Question Text',
-        'User Selected Option',
-        'Correct Answer',
-        'Is Correct? (Yes or No)',
-        'Learning concepts',
-        'Difficulty Level',
-        'Bloom\'s Level'
-      ];
+      // Save results to Google Sheets using image tag trick
+      try {
+        const img = new Image();
+        const data = encodeURIComponent(JSON.stringify({
+          action: 'saveBulkResults',
+          results: quizResults
+        }));
+        
+        img.src = `${APPS_SCRIPT_URL}?data=${data}`;
+        
+        // Handle successful submission
+        img.onload = function() {
+          debug('Results saved successfully');
+          showResults();
+        };
+        
+        // Handle errors (still show results locally)
+        img.onerror = function() {
+          debug('Failed to save results to server, but showing local results');
+          showResults();
+        };
+        
+      } catch (error) {
+        debug('Error submitting results:', error);
+        // Still show results even if saving fails
+        showResults();
+      }
+    }
+    
+    // Show results
+    function showResults() {
+      hideLoading();
       
-      resultsTab.getRange(1, 1, 1, headers.length).setValues([headers]);
-      resultsTab.getRange(1, 1, 1, headers.length).setFontWeight('bold');
-      resultsTab.setFrozenRows(1);
+      // Calculate score
+      const correctCount = quizResults.filter(result => result.isCorrect).length;
+      const percentage = (correctCount / questions.length) * 100;
+      
+      // Hide quiz container
+      document.getElementById('quiz-container').style.display = 'none';
+      document.getElementById('progress-container').style.display = 'none';
+      
+      // Show results container
+      const resultsContainer = document.getElementById('results-container');
+      resultsContainer.classList.remove('hidden');
+      
+      // Determine score category
+      let scoreClass;
+      if (percentage >= 80) {
+        scoreClass = 'score-high';
+      } else if (percentage >= 60) {
+        scoreClass = 'score-medium';
+      } else {
+        scoreClass = 'score-low';
+      }
+      
+      // Render results
+      resultsContainer.innerHTML = `
+        <h2>Quiz Completed!</h2>
+        <div class="score-circle ${scoreClass}">
+          ${percentage.toFixed(1)}%
+        </div>
+        <p>You answered ${correctCount} out of ${questions.length} questions correctly.</p>
+        <button class="nav-button" onclick="location.reload()">Try Again</button>
+      `;
     }
     
-    // Get the next available row
-    const lastRow = resultsTab.getLastRow();
-    const nextRow = lastRow + 1;
-    
-    // Prepare data for insertion
-    const rowData = [
-      new Date(), // Time Stamp
-      quizResult.questionID,
-      quizResult.questionType,
-      quizResult.questionText,
-      quizResult.userAnswer,
-      quizResult.correctAnswer,
-      quizResult.isCorrect ? 'Yes' : 'No',
-      Array.isArray(quizResult.learningConcepts) ? quizResult.learningConcepts.join('; ') : quizResult.learningConcepts,
-      quizResult.difficultyLevel,
-      quizResult.bloomsLevel
-    ];
-    
-    // Insert the data
-    resultsTab.getRange(nextRow, 1, 1, rowData.length).setValues([rowData]);
-    
-    return { success: true };
-    
-  } catch (error) {
-    Logger.log('Error in saveResult: ' + error.toString());
-    return { success: false, error: error.toString() };
-  }
-}
-
-// Test functions for debugging (you can run these directly from the Google Apps Script editor)
-
-function testGetQuestions() {
-  // Test the getQuestions function directly
-  console.log('Starting testGetQuestions...');
-  const result = getQuestions();
-  console.log('Result:', JSON.stringify(result, null, 2));
-  
-  if (result.success) {
-    console.log('Questions loaded successfully:');
-    console.log(`Number of questions: ${result.data.length}`);
-    if (result.data.length > 0) {
-      console.log('First question:', JSON.stringify(result.data[0], null, 2));
-    }
-  } else {
-    console.log('Error loading questions:', result.error);
-  }
-}
-
-function testDebugHeaders() {
-  // Test the debugHeaders function directly
-  console.log('Starting testDebugHeaders...');
-  const result = debugHeaders();
-  console.log('Result:', JSON.stringify(result, null, 2));
-  
-  if (result.success) {
-    console.log('Headers found:');
-    result.headers.forEach((header, index) => {
-      console.log(`${index}: "${header}"`);
-    });
-    
-    console.log('\nFirst row data:');
-    result.firstRow.forEach((cell, index) => {
-      console.log(`${index}: "${cell}"`);
-    });
-  } else {
-    console.log('Error:', result.error);
-  }
-}
-
-function testDoGetWithParams() {
-  // Simulate a web request with parameters
-  const fakeEvent = {
-    parameter: {
-      action: 'getQuestions',
-      callback: null
-    },
-    queryString: 'action=getQuestions'
-  };
-  
-  console.log('Testing doGet with simulated parameters...');
-  const result = doGet(fakeEvent);
-  console.log('Content type:', result.getMimeType());
-  console.log('Content:', result.getContent());
-}
-
-// Test function to verify spreadsheet access
-function testSpreadsheetAccess() {
-  console.log('Testing spreadsheet access...');
-  try {
-    const questionSheet = SpreadsheetApp.openById(QUESTION_BANK_SHEET_ID);
-    console.log('Question sheet name:', questionSheet.getName());
-    
-    const tab = questionSheet.getSheetByName(QUESTION_BANK_TAB);
-    if (tab) {
-      console.log('Found tab:', QUESTION_BANK_TAB);
-      const range = tab.getDataRange();
-      console.log('Data dimensions:', range.getNumRows(), 'rows x', range.getNumColumns(), 'columns');
-    } else {
-      console.log('ERROR: Could not find tab:', QUESTION_BANK_TAB);
-    }
-  } catch (error) {
-    console.log('ERROR accessing spreadsheet:', error.toString());
-  }
-}
+    // Initialize quiz
+    document.addEventListener('DOMContentLoaded', loadQuestions);
+  </script>
+</body>
+</html>
