@@ -490,6 +490,23 @@
         
         if (questions.length > 0) {
           debug('First question structure:', questions[0]);
+          
+          // Validate question data
+          const validQuestions = questions.filter(q => 
+            q && q.questionID && q.questionText && 
+            q.options && Array.isArray(q.options) && q.options.length > 0
+          );
+          
+          if (validQuestions.length !== questions.length) {
+            debug('Warning: Some questions have invalid data structure', {
+              total: questions.length,
+              valid: validQuestions.length
+            });
+            
+            // Continue with valid questions only
+            questions = validQuestions;
+          }
+          
           userAnswers = new Array(questions.length).fill(null);
           updateProgressBar();
           renderQuestion();
@@ -520,80 +537,122 @@
     
     // Render current question
     function renderQuestion() {
-      questionAnswered = false;
-      const question = questions[currentQuestionIndex];
-      const container = document.getElementById('quiz-container');
-      
-      debug('Rendering question:', question);
-      
-      let html = `
-        <div class="question-card">
-          <div class="question-header">
-            <span class="question-id">${question.questionID}</span>
-            <span class="difficulty-badge difficulty-${question.difficultyLevel.toLowerCase()}">
-              ${question.difficultyLevel}
-            </span>
-          </div>
-          <div class="question-text">${question.questionText}</div>
-      `;
-      
-      // Add code snippet if available
-      if (question.codeSnippets) {
-        html += `<div class="code-snippet">${question.codeSnippets}</div>`;
-      }
-      
-      // Add options
-      html += '<div class="options-container">';
-      
-      if (question.options && question.options.length > 0) {
-        question.options.forEach((option, index) => {
-          const selected = userAnswers[currentQuestionIndex] === option ? 'selected' : '';
-          // Escape single quotes in option text
-          const escapedOption = option.replace(/'/g, "\\'");
-          html += `
-            <button class="option-button ${selected}" onclick="selectOption('${escapedOption}', ${index})">
-              ${option}
-            </button>
-          `;
-        });
-      } else {
-        debug('No options found for question:', question);
-        html += '<p>Error: No options available for this question</p>';
-      }
-      
-      html += '</div>';
-      
-      // Add feedback container
-      html += `
-        <div id="feedback-container" class="feedback-container">
-          <div id="feedback-header" class="feedback-header"></div>
-          <div id="explanation" class="explanation"></div>
-        </div>
-      `;
-      
-      // Add hint button and container
-      if (question.hints) {
+      try {
+        questionAnswered = false;
+        
+        // Check if we have valid question data
+        if (currentQuestionIndex >= questions.length) {
+          debug('Error: Trying to access question beyond array length', {
+            currentIndex: currentQuestionIndex,
+            totalQuestions: questions.length
+          });
+          showResults();
+          return;
+        }
+        
+        const question = questions[currentQuestionIndex];
+        if (!question) {
+          debug('Error: Question data is undefined or null', {
+            currentIndex: currentQuestionIndex
+          });
+          showResults();
+          return;
+        }
+        
+        debug('Rendering question:', question);
+        
+        const container = document.getElementById('quiz-container');
+        
+        let html = `
+          <div class="question-card">
+            <div class="question-header">
+              <span class="question-id">${question.questionID || 'Unknown ID'}</span>
+              <span class="difficulty-badge difficulty-${(question.difficultyLevel || 'medium').toLowerCase()}">
+                ${question.difficultyLevel || 'Medium'}
+              </span>
+            </div>
+            <div class="question-text">${question.questionText || 'No question text available'}</div>
+        `;
+        
+        // Add code snippet if available
+        if (question.codeSnippets) {
+          html += `<div class="code-snippet">${question.codeSnippets}</div>`;
+        }
+        
+        // Add options
+        html += '<div class="options-container">';
+        
+        if (question.options && question.options.length > 0) {
+          question.options.forEach((option, index) => {
+            if (option) { // Only add if option exists
+              const selected = userAnswers[currentQuestionIndex] === option ? 'selected' : '';
+              // Escape single quotes in option text
+              const escapedOption = option.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+              html += `
+                <button class="option-button ${selected}" onclick="selectOption('${escapedOption}', ${index})">
+                  ${option}
+                </button>
+              `;
+            }
+          });
+        } else {
+          debug('No options found for question:', question);
+          html += '<p>Error: No options available for this question</p>';
+        }
+        
+        html += '</div>';
+        
+        // Add feedback container
         html += `
-          <button class="hint-button" onclick="showHint()">Show Hint</button>
-          <div id="hint-container" class="hint-container">
-            ${question.hints}
+          <div id="feedback-container" class="feedback-container">
+            <div id="feedback-header" class="feedback-header"></div>
+            <div id="explanation" class="explanation"></div>
+          </div>
+        `;
+        
+        // Add hint button and container
+        if (question.hints) {
+          html += `
+            <button class="hint-button" onclick="showHint()">Show Hint</button>
+            <div id="hint-container" class="hint-container">
+              ${question.hints}
+            </div>
+          `;
+        }
+        
+        // Add navigation buttons
+        html += `
+          <div class="navigation-buttons">
+            <button class="nav-button" onclick="previousQuestion()" 
+              ${currentQuestionIndex === 0 ? 'disabled' : ''}>Previous</button>
+            <button id="next-button" class="nav-button" onclick="nextQuestion()" style="display: none;">
+              ${currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next'}
+            </button>
+          </div>
+        `;
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+        debug('Question rendered successfully', { index: currentQuestionIndex });
+      } catch (error) {
+        debug('Error in renderQuestion:', error);
+        // Show an error message to the user
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = `
+          <div class="question-card">
+            <h3>Error Loading Question</h3>
+            <p>There was a problem loading question #${currentQuestionIndex + 1}.</p>
+            <div class="navigation-buttons">
+              <button class="nav-button" onclick="previousQuestion()" 
+                ${currentQuestionIndex === 0 ? 'disabled' : ''}>Previous</button>
+              <button class="nav-button" onclick="nextQuestion()">
+                ${currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Skip This Question'}
+              </button>
+            </div>
           </div>
         `;
       }
-      
-      // Add navigation buttons
-      html += `
-        <div class="navigation-buttons">
-          <button class="nav-button" onclick="previousQuestion()" 
-            ${currentQuestionIndex === 0 ? 'disabled' : ''}>Previous</button>
-          <button id="next-button" class="nav-button" onclick="nextQuestion()" style="display: none;">
-            ${currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next'}
-          </button>
-        </div>
-      `;
-      
-      html += '</div>';
-      container.innerHTML = html;
     }
     
     // Select option
@@ -603,83 +662,120 @@
       questionAnswered = true;
       userAnswers[currentQuestionIndex] = option;
       
-      // Disable all option buttons
-      const buttons = document.querySelectorAll('.option-button');
-      buttons.forEach(button => {
-        button.classList.add('disabled');
-      });
-      
-      // Mark selected button
-      buttons[index].classList.add('selected');
-      
-      // Check answer and show feedback
-      const question = questions[currentQuestionIndex];
-      const isCorrect = option === question.correctAnswer;
-      
-      // Highlight correct and incorrect answers
-      buttons.forEach((button, idx) => {
-        if (question.options[idx] === question.correctAnswer) {
-          button.classList.add('correct');
-        } else if (idx === index && !isCorrect) {
-          button.classList.add('incorrect');
+      try {
+        // Disable all option buttons
+        const buttons = document.querySelectorAll('.option-button');
+        buttons.forEach(button => {
+          button.classList.add('disabled');
+        });
+        
+        // Mark selected button
+        buttons[index].classList.add('selected');
+        
+        // Check answer and show feedback
+        const question = questions[currentQuestionIndex];
+        const isCorrect = option === question.correctAnswer;
+        
+        // Highlight correct and incorrect answers
+        buttons.forEach((button, idx) => {
+          if (question.options[idx] === question.correctAnswer) {
+            button.classList.add('correct');
+          } else if (idx === index && !isCorrect) {
+            button.classList.add('incorrect');
+          }
+        });
+        
+        // Show feedback
+        const feedbackContainer = document.getElementById('feedback-container');
+        const feedbackHeader = document.getElementById('feedback-header');
+        const explanationDiv = document.getElementById('explanation');
+        
+        feedbackContainer.style.display = 'block';
+        
+        if (isCorrect) {
+          feedbackHeader.className = 'feedback-header feedback-correct';
+          feedbackHeader.innerHTML = '✓ Correct!';
+        } else {
+          feedbackHeader.className = 'feedback-header feedback-incorrect';
+          feedbackHeader.innerHTML = '✗ Incorrect';
         }
-      });
-      
-      // Show feedback
-      const feedbackContainer = document.getElementById('feedback-container');
-      const feedbackHeader = document.getElementById('feedback-header');
-      const explanationDiv = document.getElementById('explanation');
-      
-      feedbackContainer.style.display = 'block';
-      
-      if (isCorrect) {
-        feedbackHeader.className = 'feedback-header feedback-correct';
-        feedbackHeader.innerHTML = '✓ Correct!';
-      } else {
-        feedbackHeader.className = 'feedback-header feedback-incorrect';
-        feedbackHeader.innerHTML = '✗ Incorrect';
+        
+        explanationDiv.innerHTML = `<strong>Explanation:</strong> ${question.explanation || 'No explanation available.'}`;
+        
+        // Show next button
+        const nextButton = document.getElementById('next-button');
+        if (nextButton) {
+          nextButton.style.display = 'block';
+        } else {
+          debug('Error: Next button not found in the DOM');
+        }
+        
+        // Save result immediately
+        saveResultToSheet({
+          questionID: question.questionID,
+          questionType: question.questionType,
+          questionText: question.questionText,
+          userAnswer: option,
+          correctAnswer: question.correctAnswer,
+          isCorrect: isCorrect,
+          learningConcepts: question.learningConcepts,
+          difficultyLevel: question.difficultyLevel,
+          bloomsLevel: question.bloomsLevel
+        });
+      } catch (error) {
+        debug('Error in selectOption:', error);
+        // Ensure next button is displayed even if an error occurs
+        const nextButton = document.getElementById('next-button');
+        if (nextButton) {
+          nextButton.style.display = 'block';
+        }
       }
-      
-      explanationDiv.innerHTML = `<strong>Explanation:</strong> ${question.explanation || 'No explanation available.'}`;
-      
-      // Show next button
-      document.getElementById('next-button').style.display = 'block';
-      
-      // Save result immediately
-      saveResultToSheet({
-        questionID: question.questionID,
-        questionType: question.questionType,
-        questionText: question.questionText,
-        userAnswer: option,
-        correctAnswer: question.correctAnswer,
-        isCorrect: isCorrect,
-        learningConcepts: question.learningConcepts,
-        difficultyLevel: question.difficultyLevel,
-        bloomsLevel: question.bloomsLevel
-      });
     }
     
     // Save individual result to Google Sheets
     function saveResultToSheet(result) {
       try {
+        debug('Attempting to save result', { questionID: result.questionID });
+        
+        // Create a safe copy of the result object to handle circular references
+        const safeResult = {
+          questionID: result.questionID || 'unknown',
+          questionType: result.questionType || '',
+          questionText: result.questionText || '',
+          userAnswer: result.userAnswer || 'Not answered',
+          correctAnswer: result.correctAnswer || '',
+          isCorrect: !!result.isCorrect,
+          learningConcepts: result.learningConcepts || [],
+          difficultyLevel: result.difficultyLevel || 'Medium',
+          bloomsLevel: result.bloomsLevel || ''
+        };
+        
         const img = new Image();
         const data = encodeURIComponent(JSON.stringify({
           action: 'saveResult',
-          result: result
+          result: safeResult
         }));
         
         img.src = `${APPS_SCRIPT_URL}?data=${data}`;
         
         img.onload = function() {
-          debug('Result saved successfully');
+          debug('Result saved successfully', { questionID: result.questionID });
         };
         
         img.onerror = function() {
-          debug('Failed to save result to server');
+          debug('Failed to save result to server', { questionID: result.questionID });
+          // Continue quiz flow even if saving fails
         };
         
+        // Set a timeout to handle cases where the server request hangs
+        setTimeout(function() {
+          // The image's events may not fire if there's a CORS issue
+          debug('Save result request timed out - continuing anyway');
+        }, 3000);
+        
       } catch (error) {
-        debug('Error saving result:', error);
+        debug('Error in saveResultToSheet:', error);
+        // Continue quiz flow even if saving fails
       }
     }
     
@@ -699,11 +795,24 @@
     
     // Navigate to next question or submit
     function nextQuestion() {
-      if (currentQuestionIndex < questions.length - 1) {
-        currentQuestionIndex++;
-        updateProgressBar();
-        renderQuestion();
-      } else {
+      try {
+        if (currentQuestionIndex < questions.length - 1) {
+          currentQuestionIndex++;
+          updateProgressBar();
+          renderQuestion();
+          
+          // Debug information
+          debug('Moving to next question', { 
+            newIndex: currentQuestionIndex, 
+            totalQuestions: questions.length 
+          });
+        } else {
+          debug('Reached the end of questions, showing results');
+          showResults();
+        }
+      } catch (error) {
+        debug('Error in nextQuestion:', error);
+        // Attempt recovery by showing results
         showResults();
       }
     }
