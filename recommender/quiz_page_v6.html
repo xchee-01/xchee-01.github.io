@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NUS Pre-Quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --nus-orange: #EF7C00;
+      --nus-blue: #003D7C;
+      --nus-light-orange: #FFE5CC;
+      --nus-light-blue: #E6EEF5;
+      --success-color: #2E7D32; /* Darker Green for better contrast */
+      --error-color: #C62828;   /* Darker Red */
+      --success-light: #E8F5E9;
+      --error-light: #FFEBEE;
+      --disabled-color: #bdbdbd;
+      --disabled-light: #f5f5f5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 20px auto; /* Add margin top/bottom */
+      padding: 20px;
+    }
+
+    .header {
+      background-color: var(--nus-blue);
+      color: white;
+      padding: 30px 20px; /* Adjusted padding */
+      text-align: center;
+      border-radius: 8px; /* Rounded corners all around */
+      margin-bottom: 20px;
+       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 2.2em; /* Slightly smaller */
+      margin-bottom: 5px;
+    }
+     .header p {
+        font-size: 1.1em;
+        font-weight: 300;
+     }
+
+    .progress-container {
+      background-color: white;
+      padding: 15px 20px; /* Adjusted padding */
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .progress-bar {
+      background-color: var(--nus-light-blue);
+      height: 10px; /* Slightly thicker */
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--nus-orange);
+      width: 0%;
+      transition: width 0.3s ease-in-out; /* Smoother transition */
+    }
+
+    .progress-text {
+      text-align: center;
+      margin-top: 8px; /* Reduced margin */
+      font-weight: 500;
+      color: var(--nus-blue); /* Color match */
+    }
+
+    .question-card {
+      background-color: white;
+      padding: 25px 30px; /* Adjusted padding */
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px; /* Reduced margin */
+      flex-wrap: wrap; /* Allow wrapping on small screens */
+      gap: 10px;
+    }
+
+    .question-id {
+      background-color: var(--nus-light-orange);
+      color: var(--nus-blue);
+      padding: 4px 12px; /* Adjusted padding */
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 0.9em; /* Slightly smaller */
+    }
+
+    .difficulty-badge {
+      padding: 4px 12px; /* Adjusted padding */
+      border-radius: 15px;
+      font-size: 0.85em; /* Slightly smaller */
+      font-weight: 500;
+      text-transform: capitalize; /* Nicer display */
+    }
+
+    .difficulty-easy { background-color: #E8F5E9; color: #2E7D32; }
+    .difficulty-medium { background-color: #FFF3E0; color: #EF6C00; }
+    .difficulty-hard { background-color: #FFEBEE; color: #C62828; }
+
+    .question-text {
+      font-size: 1.15em; /* Adjusted size */
+      margin-bottom: 20px;
+      font-weight: 500;
+      color: #212121; /* Darker text */
+    }
+
+    .code-snippet {
+      background-color: #2d2d2d; /* Darker background */
+      color: #f0f0f0; /* Lighter text */
+      padding: 15px;
+      border-radius: 5px;
+      font-family: 'Consolas', 'Courier New', monospace; /* Better font stack */
+      margin-bottom: 20px;
+      white-space: pre-wrap;
+      word-wrap: break-word; /* Ensure long lines wrap */
+      font-size: 0.95em;
+    }
+
+    .options-container {
+      display: grid;
+      gap: 12px; /* Slightly more gap */
+    }
+
+    .option-button {
+      background-color: white;
+      border: 1px solid #ccc; /* Lighter default border */
+      padding: 14px 18px; /* Adjusted padding */
+      border-radius: 6px; /* Slightly less radius */
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      font-size: 1em;
+      color: #333;
+      line-height: 1.5;
+      word-wrap: break-word; /* Ensure options wrap */
+    }
+
+    .option-button:hover:not(.disabled) {
+      background-color: var(--nus-light-blue);
+      border-color: var(--nus-blue);
+    }
+
+    /* State applied AFTER selection */
+    .option-button.selected {
+      border-color: var(--nus-blue);
+      background-color: var(--nus-light-blue); /* Keep light blue */
+      font-weight: 500;
+       /* Add indicator maybe? box-shadow: 0 0 0 2px var(--nus-blue); */
+    }
+
+    .option-button.correct {
+      background-color: var(--success-light);
+      border-color: var(--success-color);
+      color: var(--success-color);
+      font-weight: bold;
+    }
+     .option-button.correct::before { content: '✔ '; } /* Add checkmark */
+
+    .option-button.incorrect {
+      background-color: var(--error-light);
+      border-color: var(--error-color);
+      color: var(--error-color);
+      font-weight: bold;
+    }
+     .option-button.incorrect::before { content: '✘ '; } /* Add X */
+
+
+    .option-button.disabled {
+      cursor: not-allowed;
+      opacity: 0.7; /* Make it clearer it's disabled */
+      background-color: var(--disabled-light);
+      border-color: var(--disabled-color);
+      color: #666;
+    }
+     /* Ensure hover doesn't apply to disabled */
+     .option-button.disabled:hover {
+         background-color: var(--disabled-light);
+         border-color: var(--disabled-color);
+     }
+
+
+    .feedback-container {
+      background-color: #f8f9fa;
+      padding: 15px 20px; /* Adjusted padding */
+      border-radius: 8px;
+      margin-top: 25px; /* More space */
+      border: 1px solid #e0e0e0;
+      display: none; /* Initially hidden */
+    }
+
+    .feedback-header {
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px; /* Reduced gap */
+      font-size: 1.1em;
+    }
+
+    .feedback-correct { color: var(--success-color); }
+    .feedback-incorrect { color: var(--error-color); }
+
+    .explanation {
+      margin-top: 10px;
+      line-height: 1.7; /* Adjusted line height */
+      font-size: 0.95em;
+      color: #424242;
+    }
+     .explanation strong {
+         color: #000;
+     }
+
+    .hint-container {
+      background-color: var(--nus-light-orange);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px; /* Adjusted margin */
+      display: none; /* Initially hidden */
+       font-size: 0.9em;
+       color: var(--nus-blue);
+       border: 1px dashed var(--nus-orange);
+    }
+
+    .hint-button {
+      background-color: transparent;
+      border: 1px solid var(--nus-orange);
+      color: var(--nus-orange);
+      padding: 6px 12px; /* Adjusted padding */
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.85em; /* Slightly smaller */
+      margin-top: 15px;
+       transition: background-color 0.2s, color 0.2s;
+    }
+     .hint-button:hover {
+         background-color: var(--nus-light-orange);
+     }
+
+    .navigation-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px; /* Adjusted margin */
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+
+    .nav-button {
+      background-color: var(--nus-orange);
+      color: white;
+      border: none;
+      padding: 10px 20px; /* Adjusted padding */
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+
+    .nav-button:hover:not(:disabled) { /* Only apply hover when not disabled */
+      background-color: #d76d00; /* Darker orange */
+    }
+
+    .nav-button:disabled {
+      background-color: var(--disabled-color);
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+
+    .results-container {
+      background-color: white;
+      padding: 30px 40px; /* More padding */
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+     .results-container h2 {
+         color: var(--nus-blue);
+         margin-bottom: 20px;
+     }
+
+    .score-circle {
+      width: 140px; /* Slightly smaller */
+      height: 140px;
+      border-radius: 50%;
+      margin: 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.3em; /* Adjusted size */
+      font-weight: bold;
+      color: white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .score-high { background: linear-gradient(135deg, #4CAF50, #2E7D32); }
+    .score-medium { background: linear-gradient(135deg, #FF9800, #EF6C00); } /* Use orange */
+    .score-low { background: linear-gradient(135deg, #F44336, #C62828); }
+
+     .results-container p {
+         font-size: 1.1em;
+         margin-bottom: 25px;
+     }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8); /* Lighter overlay */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(3px); /* Optional blur */
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid var(--nus-light-blue); /* Use light blue */
+      border-top: 5px solid var(--nus-orange); /* Use orange */
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none !important; /* Use important to ensure override */
+    }
+
+    /* Debug panel styles */
+    .debug-panel {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #f0f0f0;
+      padding: 15px;
+      border-radius: 5px;
+      width: 90%;
+      max-width: 450px;
+      max-height: 250px;
+      overflow: auto;
+      font-family: monospace;
+      font-size: 11px;
+      z-index: 2000;
+      border: 1px solid #444;
+      line-height: 1.4;
+    }
+     .debug-panel div {
+         border-bottom: 1px dashed #555;
+         padding-bottom: 5px;
+         margin-bottom: 5px;
+     }
+     .debug-panel div:last-child {
+         border-bottom: none;
+     }
+
+
+    .debug-toggle {
+      position: fixed;
+      bottom: 10px; /* Match panel */
+      left: 10px;   /* Move to left */
+      padding: 6px 12px;
+      background: var(--nus-orange);
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      z-index: 2001;
+      font-size: 0.9em;
+      opacity: 0.8;
+    }
+     .debug-toggle:hover {
+         opacity: 1;
+     }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px;
+        margin: 10px auto;
+      }
+
+      .header {
+        padding: 20px 15px;
+        border-radius: 8px; /* Keep radius */
+      }
+
+      .header h1 { font-size: 1.8em; }
+       .header p { font-size: 1em; }
+
+      .question-card { padding: 15px 20px; }
+      .question-text { font-size: 1.1em; }
+      .option-button { padding: 12px 15px; font-size: 0.95em;}
+      .navigation-buttons { flex-direction: column; gap: 10px; }
+      .nav-button { width: 100%; }
+      .results-container { padding: 20px; }
+      .score-circle { width: 120px; height: 120px; font-size: 2em; }
+
+      .debug-panel {
+        max-width: calc(100% - 20px); /* Adjust width */
+        bottom: 50px; /* Move up if toggle is below */
+        left: 10px;
+        right: 10px;
+        max-height: 200px;
+      }
+       .debug-toggle {
+           bottom: 10px; /* Ensure it's accessible */
+           left: 10px;
+       }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>NUS Pre-Quiz Assessment</h1>
+      <p>Test your knowledge and prepare for the course</p>
+    </div>
+
+    <!-- Progress Bar -->
+    <div id="progress-container" class="progress-container hidden"> <!-- Initially hidden -->
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <div id="progress-text" class="progress-text">Loading...</div>
+    </div>
+
+    <!-- Quiz Area -->
+    <div id="quiz-container">
+      <!-- Quiz content will be dynamically loaded here -->
+      <!-- Initial message or loading state -->
+      <div class="question-card" style="text-align: center;">Loading questions...</div>
+    </div>
+
+    <!-- Results Area -->
+    <div id="results-container" class="results-container hidden">
+      <!-- Results will be displayed here -->
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay"> <!-- Initially visible -->
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- Debug Controls -->
+  <button id="debug-toggle" class="debug-toggle">Debug</button>
+  <div id="debug-panel" class="debug-panel hidden"></div>
+
+  <script>
+    // --- Configuration ---
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAAWxI32OAmxzM54ca6b33DccWGge6qjr5UhWMXKrTGiQ2LUzDiRgHZhDbCBsCaYxKjA/exec'; // Replace with your URL
+    const USE_JSONP = true; // Set to true if facing CORS issues, false for standard fetch (preferred if CORS is configured)
+    const SUBMIT_METHOD = 'beacon'; // 'beacon' or 'jsonp' for submitting results
+
+    // --- State Variables ---
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = []; // Stores the selected option *text* for each question index
+    let quizResults = []; // Stores detailed result objects for potential bulk submission
+    let jsonpCallbackCount = 0;
+    let questionAnswered = false; // Flag to prevent re-answering the current question
+
+    // --- DOM Elements ---
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const progressContainer = document.getElementById('progress-container');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const quizContainer = document.getElementById('quiz-container');
+    const resultsContainer = document.getElementById('results-container');
+    const debugPanel = document.getElementById('debug-panel');
+    const debugToggle = document.getElementById('debug-toggle');
+
+    // --- Debugging ---
+    debugToggle.addEventListener('click', () => {
+      debugPanel.classList.toggle('hidden');
+    });
+
+    function debug(message, data = null) {
+      console.log(message, data); // Log to browser console
+      const logEntry = document.createElement('div');
+      const timestamp = new Date().toLocaleTimeString();
+      logEntry.innerHTML = `<strong>${timestamp}:</strong> ${message}`; // Use innerHTML for basic formatting
+      if (data !== null) {
+        // Attempt to stringify, handle potential circular structures
+        try {
+          logEntry.innerHTML += `<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+        } catch (e) {
+           logEntry.innerHTML += `<br><i>[Could not stringify data: ${e.message}]</i>`;
+        }
+      }
+      // Prepend new logs so latest is at the top
+      debugPanel.insertBefore(logEntry, debugPanel.firstChild);
+       // Limit log entries? Optional.
+       // const maxLogs = 50;
+       // while (debugPanel.children.length > maxLogs) {
+       //     debugPanel.removeChild(debugPanel.lastChild);
+       // }
+    }
+
+    // --- UI Control ---
+    function showLoading(message = 'Loading...') {
+      debug('Showing loading:', message);
+      loadingOverlay.classList.remove('hidden');
+      // Optionally update a message within the overlay if needed
+    }
+
+    function hideLoading() {
+      debug('Hiding loading');
+      loadingOverlay.classList.add('hidden');
+    }
+
+    // --- Data Fetching ---
+    function loadQuestions() {
+      showLoading('Fetching questions...');
+      const url = `${APPS_SCRIPT_URL}?action=getQuestions`;
+      debug('Requesting questions from:', url);
+
+      if (USE_JSONP) {
+        fetchWithJsonp(url, handleQuestionsLoad);
+      } else {
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(handleQuestionsLoad)
+          .catch(handleError);
+      }
+    }
+
+    function fetchWithJsonp(url, callbackFn) {
+       const callbackName = 'jsonpCallback_' + jsonpCallbackCount++;
+       debug('Using JSONP with callback:', callbackName);
+
+       window[callbackName] = function(data) {
+           try {
+               debug('JSONP callback executed:', callbackName);
+               callbackFn(data); // Call the original handler
+           } catch (error) {
+               handleError(error); // Catch errors within the callback itself
+           } finally {
+               // Clean up: remove the script tag and the global callback function
+               const script = document.getElementById('jsonp-' + callbackName);
+               if (script) {
+                   script.parentNode.removeChild(script);
+                   debug('Removed script tag:', script.id);
+               }
+               try {
+                   delete window[callbackName];
+                   debug('Deleted global callback:', callbackName);
+               } catch (e) {
+                   debug('Error deleting global callback:', { name: callbackName, error: e});
+               }
+           }
+       };
+
+       const script = document.createElement('script');
+       script.id = 'jsonp-' + callbackName;
+       // Add cache-busting parameter to prevent stale responses
+       script.src = `${url}&callback=${callbackName}&t=${Date.now()}`;
+       script.onerror = (event) => {
+           debug('JSONP script onerror event:', event);
+           handleError(new Error(`Failed to load script for JSONP request: ${script.src}. Check network and script URL.`));
+           // Cleanup might be needed here too if onerror fires reliably
+            delete window[callbackName];
+            if(script.parentNode) script.parentNode.removeChild(script);
+
+       };
+
+       document.body.appendChild(script);
+       debug('Appended JSONP script:', script.id);
+
+        // Timeout for JSONP requests
+        setTimeout(() => {
+            if (window[callbackName]) {
+                 debug(`JSONP request timed out for ${callbackName}.`);
+                 // Potentially call error handler or cleanup
+                 handleError(new Error(`JSONP request timed out for ${url}`));
+                 // Manual cleanup if timeout happens before callback executes
+                 if (window[callbackName]) {
+                    delete window[callbackName];
+                 }
+                 const scriptElement = document.getElementById('jsonp-' + callbackName);
+                 if (scriptElement && scriptElement.parentNode) {
+                    scriptElement.parentNode.removeChild(scriptElement);
+                 }
+            }
+        }, 10000); // 10 second timeout
+    }
+
+
+    // --- Data Handling ---
+    function handleQuestionsLoad(data) {
+      hideLoading();
+      debug('Received question data:', data);
+
+      if (data && data.success && Array.isArray(data.data)) {
+        questions = data.data;
+        debug(`Successfully loaded ${questions.length} questions.`);
+
+        // --- Data Validation ---
+        const originalLength = questions.length;
+        questions = questions.filter((q, index) => {
+          const isValid = q && q.questionID && q.questionText &&
+                          Array.isArray(q.options) && q.options.length > 0 &&
+                          q.options.every(opt => typeof opt === 'string' && opt.trim() !== '') && // Ensure options are non-empty strings
+                          typeof q.correctAnswer === 'string'; // Correct answer must exist (even if empty string initially)
+
+          if (!isValid) {
+            debug(`Warning: Filtering out invalid question at index ${index}:`, q);
+          }
+          return isValid;
+        });
+
+        if (questions.length !== originalLength) {
+             debug(`Warning: Removed ${originalLength - questions.length} invalid questions.`);
+        }
+
+
+        if (questions.length > 0) {
+          debug('First valid question structure:', questions[0]);
+          userAnswers = new Array(questions.length).fill(null); // Initialize based on valid questions count
+          quizResults = []; // Reset results array
+          currentQuestionIndex = 0; // Start from the beginning
+          progressContainer.classList.remove('hidden'); // Show progress bar now
+          updateProgressBar();
+          renderQuestion();
+        } else {
+          handleError('No valid questions found after filtering. Please check the data source.');
+          quizContainer.innerHTML = `<div class="question-card">Error: No valid questions available.</div>`;
+        }
+      } else {
+        handleError(data && data.error ? data.error : 'Failed to load questions or data format is incorrect.');
+        quizContainer.innerHTML = `<div class="question-card">Error: Could not load questions. ${data?.error || ''}</div>`;
+      }
+    }
+
+    // --- Error Handling ---
+    function handleError(error) {
+      hideLoading(); // Ensure loading is hidden on error
+      const errorMessage = (error instanceof Error) ? error.message : String(error);
+      debug('ERROR encountered:', { message: errorMessage, errorObj: error });
+      console.error('Quiz error:', error);
+
+      // Display error to user more prominently
+      const errorDisplay = `
+        <div class="question-card" style="border-left: 5px solid var(--error-color);">
+          <h3 style="color: var(--error-color);">An Error Occurred</h3>
+          <p>We encountered a problem. Please try refreshing the page.</p>
+          <p><strong>Details:</strong> ${errorMessage}</p>
+          <button class="nav-button" style="margin-top: 15px;" onclick="location.reload()">Refresh Page</button>
+        </div>`;
+      quizContainer.innerHTML = errorDisplay;
+      progressContainer.classList.add('hidden'); // Hide progress on fatal error
+      resultsContainer.classList.add('hidden'); // Hide results on fatal error
+    }
+
+    // --- Quiz Logic ---
+    function updateProgressBar() {
+       if (questions.length === 0) {
+           progressText.textContent = 'No questions loaded';
+           progressFill.style.width = '0%';
+           return;
+       }
+      const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+      progressFill.style.width = Math.min(progress, 100) + '%'; // Cap at 100%
+      progressText.textContent =
+        `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+    }
+
+    function renderQuestion() {
+        debug(`Rendering question index: ${currentQuestionIndex}`);
+        if (currentQuestionIndex < 0 || currentQuestionIndex >= questions.length || !questions[currentQuestionIndex]) {
+            debug('Error: Invalid currentQuestionIndex or missing question data.', { index: currentQuestionIndex, total: questions.length });
+            // Attempt to recover or show results if possible
+            if(userAnswers.length > 0) {
+                 showResults();
+            } else {
+                 handleError(`Cannot render question ${currentQuestionIndex + 1}. Data might be corrupted.`);
+            }
+            return;
+        }
+
+        const question = questions[currentQuestionIndex];
+        questionAnswered = false; // Reset answered flag for the new question
+
+        try {
+            let html = `
+            <div class="question-card">
+                <div class="question-header">
+                <span class="question-id">${question.questionID}</span>
+                <span class="difficulty-badge difficulty-${(question.difficultyLevel || 'medium').toLowerCase().trim()}">
+                    ${question.difficultyLevel || 'Medium'}
+                </span>
+                </div>
+                <div class="question-text">${question.questionText}</div>
+            `;
+
+            if (question.codeSnippets) {
+                html += `<div class="code-snippet">${escapeHtml(question.codeSnippets)}</div>`; // Escape HTML in snippets
+            }
+
+            html += '<div class="options-container">';
+            if (question.options && question.options.length > 0) {
+                question.options.forEach((option, index) => {
+                // No need for selected class here, handled after answer. Pass only index.
+                // Escape option text for display safety
+                html += `
+                    <button class="option-button" id="option-${index}" onclick="selectOption(${index})">
+                    ${escapeHtml(option)}
+                    </button>
+                `;
+                });
+            } else {
+                debug('CRITICAL: No options rendered for question:', question);
+                html += '<p style="color: var(--error-color);">Error: No options found for this question!</p>';
+            }
+            html += '</div>';
+
+            // Feedback container (hidden initially)
+            html += `
+            <div id="feedback-container" class="feedback-container hidden">
+                <div id="feedback-header" class="feedback-header"></div>
+                <div id="explanation" class="explanation"></div>
+            </div>
+            `;
+
+            // Hint button and container (conditionally rendered)
+            if (question.hints) {
+                 // Only show button if hint text exists and is not just whitespace
+                 const hintText = (question.hints || '').trim();
+                 if (hintText) {
+                      html += `
+                        <button id="hint-button" class="hint-button" onclick="showHint()">Show Hint</button>
+                        <div id="hint-container" class="hint-container hidden">
+                            ${escapeHtml(hintText)}
+                        </div>
+                      `;
+                 }
+            }
+
+
+            // Navigation buttons
+            html += `
+            <div class="navigation-buttons">
+                <button class="nav-button" id="prev-button" onclick="previousQuestion()"
+                ${currentQuestionIndex === 0 ? 'disabled' : ''}>Previous</button>
+                <button class="nav-button" id="next-button" onclick="nextQuestion()" disabled> <!-- Initially disabled -->
+                ${currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+                </button>
+            </div>
+            `;
+
+            html += '</div>'; // End of question-card
+            quizContainer.innerHTML = html;
+            debug('Question rendered successfully');
+
+        } catch (error) {
+            debug('Error during renderQuestion:', error);
+            handleError(`Failed to render question ${currentQuestionIndex + 1}. Error: ${error.message}`);
+        }
+    }
+
+    // Function to escape HTML special characters
+    function escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return unsafe;
+        return unsafe
+             .replace(/&/g, "&")
+             .replace(/</g, "<")
+             .replace(/>/g, ">")
+             .replace(/"/g, """)
+             .replace(/'/g, "'");
+    }
+
+
+    function selectOption(selectedIndex) {
+        if (questionAnswered) {
+            debug('Attempted to select option when question already answered.');
+            return; // Prevent re-selecting/processing
+        }
+        questionAnswered = true; // Mark as answered immediately
+
+        const question = questions[currentQuestionIndex];
+        const selectedOptionButton = document.getElementById(`option-${selectedIndex}`);
+        const nextButton = document.getElementById('next-button');
+
+        if (!question || !selectedOptionButton || !nextButton) {
+             debug('Error in selectOption: Missing critical elements.', { questionExists: !!question, buttonExists: !!selectedOptionButton, nextButtonExists: !!nextButton });
+             handleError('An internal error occurred while processing your answer. Please try the next question.');
+             if(nextButton) nextButton.disabled = false; // Try to enable next button anyway
+             return;
+        }
+
+        const selectedOptionText = question.options[selectedIndex];
+        userAnswers[currentQuestionIndex] = selectedOptionText; // Store the selected text
+
+        debug(`Option selected: Index ${selectedIndex}, Text "${selectedOptionText}"`);
+
+        // --- Answer Evaluation (Case-Insensitive, Trimmed) ---
+        const correctAnswer = (question.correctAnswer || '').trim();
+        const userAnswer = (selectedOptionText || '').trim();
+        const isCorrect = userAnswer.toLowerCase() === correctAnswer.toLowerCase();
+
+        debug(`Comparing: User Answer (trimmed) "${userAnswer}" vs Correct Answer (trimmed) "${correctAnswer}". Case-Insensitive Result: ${isCorrect}`);
+
+
+        // --- Start Feedback Process ---
+        try {
+            // Disable all option buttons first
+            const allOptionButtons = quizContainer.querySelectorAll('.option-button');
+            allOptionButtons.forEach(button => {
+                 button.disabled = true; // Use disabled attribute for clarity
+                 button.classList.add('disabled');
+            });
+
+            // Mark the selected button visually (subtle indication)
+            selectedOptionButton.classList.add('selected');
+
+            // Reveal the correct answer and provide feedback styling
+            allOptionButtons.forEach((button, index) => {
+                const optionTextForButton = (question.options[index] || '').trim();
+                const isCorrectAnswerButton = optionTextForButton.toLowerCase() === correctAnswer.toLowerCase();
+
+                if (isCorrectAnswerButton) {
+                    button.classList.add('correct');
+                } else if (index === selectedIndex) { // If this is the button the user clicked AND it's wrong
+                    button.classList.add('incorrect');
+                }
+            });
+
+            // Show feedback text (Correct/Incorrect + Explanation)
+            const feedbackContainer = document.getElementById('feedback-container');
+            const feedbackHeader = document.getElementById('feedback-header');
+            const explanationDiv = document.getElementById('explanation');
+
+            if (feedbackContainer && feedbackHeader && explanationDiv) {
+                feedbackHeader.innerHTML = isCorrect
+                    ? '<span class="feedback-correct">✔ Correct!</span>'
+                    : '<span class="feedback-incorrect">✘ Incorrect</span>';
+
+                const explanationText = (question.explanation || '').trim();
+                explanationDiv.innerHTML = explanationText
+                    ? `<strong>Explanation:</strong> ${escapeHtml(explanationText)}`
+                    : '<em>No explanation provided.</em>'; // Handle missing explanation
+
+                feedbackContainer.classList.remove('hidden'); // Show the feedback area
+            } else {
+                 debug('Error: Feedback elements not found in DOM.');
+            }
+
+        } catch(feedbackError) {
+             debug('Error occurred during feedback rendering:', feedbackError);
+             // Log the error but continue to enable the next button
+        } finally {
+             // --- Enable Next Button ---
+             // This *must* run regardless of errors in the feedback part
+             nextButton.disabled = false;
+             debug('Next button enabled.');
+
+             // --- Save Result to Sheet ---
+             // Store the result locally first for potential bulk submit later
+             const resultData = {
+                 questionID: question.questionID,
+                 questionType: question.questionType,
+                 questionText: question.questionText, // Keep it short if necessary for sheet limits
+                 userAnswer: userAnswer, // Use the trimmed version
+                 correctAnswer: correctAnswer, // Use the trimmed version
+                 isCorrect: isCorrect,
+                 learningConcepts: question.learningConcepts || [],
+                 difficultyLevel: question.difficultyLevel || 'Medium',
+                 bloomsLevel: question.bloomsLevel || ''
+             };
+             quizResults[currentQuestionIndex] = resultData; // Store result by index
+
+             // Send individual result immediately
+             saveResultToSheet(resultData);
+        }
+    }
+
+    // Function to save a single result using the chosen method
+    function saveResultToSheet(resultData) {
+       debug(`Attempting to save result for QID: ${resultData.questionID} using method: ${SUBMIT_METHOD}`);
+
+       const payload = {
+           action: 'saveResult',
+           result: resultData
+       };
+
+       try {
+           if (SUBMIT_METHOD === 'beacon' && navigator.sendBeacon) {
+               const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+               const didSend = navigator.sendBeacon(`${APPS_SCRIPT_URL}?data=${encodeURIComponent(JSON.stringify(payload))}`); // Send as query param as GAS beacon support is tricky
+               // Note: sendBeacon doesn't easily support complex request bodies/methods for GAS web apps. Query param is simpler.
+               // Alternative: Use standard fetch if beacon doesn't work reliably with GAS setup.
+               debug(`Result submission via sendBeacon initiated for QID ${resultData.questionID}. Status: ${didSend}`);
+                if (!didSend) {
+                    debug('sendBeacon returned false, might indicate data too large or other issue.');
+                    // Fallback? Or just log.
+                }
+           } else {
+               // Fallback to JSONP-style image beacon
+                debug('Using image beacon (JSONP fallback) for result submission.');
+                const img = new Image();
+                const dataParam = encodeURIComponent(JSON.stringify(payload));
+                const requestUrl = `${APPS_SCRIPT_URL}?data=${dataParam}&t=${Date.now()}`; // Add timestamp
+
+                img.onload = () => debug(`Image beacon loaded successfully for QID ${resultData.questionID}.`);
+                img.onerror = () => debug(`Image beacon failed to load for QID ${resultData.questionID}. URL: ${requestUrl}`);
+                img.src = requestUrl;
+           }
+       } catch (error) {
+           debug('Error during saveResultToSheet execution:', error);
+           // Log error, but don't block the user flow
+       }
+    }
+
+
+    function showHint() {
+      const hintContainer = document.getElementById('hint-container');
+      const hintButton = document.getElementById('hint-button');
+      if (hintContainer) {
+        hintContainer.classList.remove('hidden');
+        debug('Hint shown.');
+        if (hintButton) {
+             hintButton.disabled = true; // Disable after showing
+             hintButton.style.opacity = '0.5';
+        }
+      } else {
+          debug('Hint container not found.');
+      }
+    }
+
+    // --- Navigation ---
+    function previousQuestion() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        debug(`Navigating to previous question: ${currentQuestionIndex}`);
+        updateProgressBar();
+        renderQuestion();
+      }
+    }
+
+    function nextQuestion() {
+        debug(`Next button clicked. Current index: ${currentQuestionIndex}`);
+      if (currentQuestionIndex < questions.length - 1) {
+        currentQuestionIndex++;
+        debug(`Navigating to next question: ${currentQuestionIndex}`);
+        updateProgressBar();
+        renderQuestion();
+      } else {
+        debug('Reached end of questions. Showing results.');
+        showResults();
+      }
+    }
+
+    // --- Results Display ---
+    function showResults() {
+        hideLoading(); // Ensure loading is hidden
+        progressContainer.classList.add('hidden'); // Hide progress bar
+        quizContainer.classList.add('hidden'); // Hide the quiz area
+
+        debug('Calculating and displaying results...');
+
+        // Filter out any potential null entries if questions were skipped without answering
+        const validResults = userAnswers.filter(answer => answer !== null);
+        const answeredQuestions = validResults.length;
+
+         if (questions.length === 0) {
+             resultsContainer.innerHTML = `<h2>Quiz Results</h2><p>No questions were loaded to calculate results.</p>`;
+             resultsContainer.classList.remove('hidden');
+             return;
+         }
+
+        let correctCount = 0;
+        quizResults.forEach(result => {
+            if(result && result.isCorrect) { // Check if result exists and is correct
+                correctCount++;
+            }
+        });
+
+        // Use quizResults.length or questions.length for total? Use questions.length for overall percentage.
+        const totalQuestions = questions.length;
+        const percentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
+
+        debug(`Results calculated: ${correctCount} correct out of ${totalQuestions} total questions. Percentage: ${percentage.toFixed(1)}%`);
+
+
+        let scoreClass = 'score-low'; // Default
+        let message = "Keep practicing!";
+        if (percentage >= 80) {
+            scoreClass = 'score-high';
+            message = "Excellent work!";
+        } else if (percentage >= 60) {
+            scoreClass = 'score-medium';
+            message = "Good job! Room for improvement.";
+        }
+
+
+        resultsContainer.innerHTML = `
+            <h2>Quiz Completed!</h2>
+            <div class="score-circle ${scoreClass}">
+            ${percentage.toFixed(0)}%
+            </div>
+            <p>You answered <strong>${correctCount}</strong> out of <strong>${totalQuestions}</strong> questions correctly.</p>
+            <p><em>${message}</em></p>
+            <button class="nav-button" style="margin-top: 15px;" onclick="location.reload()">Try Again</button>
+        `;
+        resultsContainer.classList.remove('hidden'); // Show the results area
+    }
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        debug('DOM loaded. Initializing quiz.');
+        loadQuestions(); // Start loading questions when the DOM is ready
+    });
+
+  </script>
+</body>
+</html>
