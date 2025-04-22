@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Knowledge Map</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #header {
+      background-color: #3f51b5;
+      color: white;
+      padding: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+
+    #title {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    #container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 280px;
+      padding: 15px;
+      background-color: #f8f8f8;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+
+    #visualization {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: #fff;
+    }
+
+    #graph {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .node.parent {
+      stroke-width: 2px;
+      stroke: #333;
+    }
+
+    .node.child {
+      cursor: pointer;
+      stroke-width: 1.5px; 
+      stroke: #fff;
+    }
+
+    .node:hover {
+      stroke: #333;
+      stroke-width: 2px;
+    }
+
+    .link {
+      stroke: #bbb;
+      stroke-opacity: 0.6;
+    }
+
+    .link.parent-child {
+      stroke: #666;
+      stroke-width: 2px;
+      stroke-opacity: 0.7;
+    }
+
+    .tooltip {
+      position: absolute;
+      background-color: rgba(255, 255, 255, 0.95);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      max-width: 280px;
+      z-index: 10;
+    }
+
+    .filter-section, .legend, .summary-section, .recommendations {
+        margin-bottom: 20px;
+        background-color: white;
+        border-radius: 5px;
+        padding: 12px 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    }
+
+    .filter-section h3, .legend h3, .summary-section h3, .recommendations h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: #3f51b5;
+        font-size: 16px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+    }
+
+    .filter-option, .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .filter-option input[type="checkbox"] {
+      margin-right: 10px;
+      cursor: pointer;
+    }
+     .filter-option label {
+         cursor: pointer;
+         flex-grow: 1;
+     }
+
+    .legend-color {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+
+    .summary-section div {
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .progress-bar {
+      background-color: #e0e0e0;
+      height: 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease-in-out;
+    }
+
+    .recommendation-item {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+     .recommendation-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+     .recommendation-item strong {
+         color: #333;
+     }
+     .recommendations p {
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #555;
+     }
+
+    .controls {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 5px;
+      padding: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-button {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.2s ease;
+    }
+
+    .control-button:hover {
+      background-color: #303f9f;
+    }
+    .control-button:active {
+        background-color: #1a237e;
+    }
+
+    .loader {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: #3f51b5;
+      width: 36px;
+      height: 36px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #error-message {
+      color: #D32F2F;
+      background-color: #FFCDD2;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      border: 1px solid #EF9A9A;
+      display: none;
+      font-size: 14px;
+    }
+     #error-message p {
+         margin: 0 0 10px 0;
+     }
+     #error-message button {
+        margin-right: 10px;
+        margin-top: 5px;
+     }
+
+    #retry-button, #test-data-button {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 15px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s ease;
+      display: inline-block;
+      margin-top: 10px;
+    }
+     #retry-button:hover {
+         background-color: #303f9f;
+     }
+
+    #test-data-button {
+      background-color: #FF9800;
+    }
+     #test-data-button:hover {
+        background-color: #F57C00;
+     }
+
+    .node-label {
+        font-size: 10px;
+        fill: #333;
+        pointer-events: none;
+        text-anchor: middle;
+    }
+
+    .node-label.parent {
+        font-size: 12px;
+        font-weight: bold;
+        fill: #222;
+    }
+
+    .legend-item.node-type {
+        margin-top: 5px;
+        padding-top: 5px;
+        border-top: 1px solid #eee;
+    }
+
+    .legend-shape {
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
+        border-radius: 50%;
+        background-color: #ccc;
+    }
+    
+    .legend-shape.parent {
+        border: 2px solid #333;
+        background-color: #4CAF50;
+    }
+    
+    .legend-shape.child {
+        border: 1.5px solid #fff;
+        background-color: #FFC107;
+    }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1 id="title">Student Coding Knowledge Map</h1>
+  </div>
+
+  <div id="container">
+    <div id="sidebar">
+      <!-- Error message area -->
+      <div id="error-message">
+         <p id="error-text"></p>
+        <button id="retry-button">Retry</button>
+        <button id="test-data-button">Use Test Data</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-section">
+        <h3>Mastery Level</h3>
+        <div class="filter-option">
+          <input type="checkbox" id="show-mastered" checked>
+          <label for="show-mastered">Show Mastered Concepts</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-developing" checked>
+          <label for="show-developing">Show Developing Concepts</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-needs-work" checked>
+          <label for="show-needs-work">Show Needs Work Concepts</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-not-attempted" checked>
+          <label for="show-not-attempted">Show Not Attempted Concepts</label>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <h3>Node Type</h3>
+        <div class="filter-option">
+          <input type="checkbox" id="show-parent" checked>
+          <label for="show-parent">Show Main Topics</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-child" checked>
+          <label for="show-child">Show Subtopics</label>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <h3>Difficulty Level (Attempted)</h3>
+        <div class="filter-option">
+          <input type="checkbox" id="show-easy" checked>
+          <label for="show-easy">Show Easy Questions</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-medium" checked>
+          <label for="show-medium">Show Medium Questions</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-hard" checked>
+          <label for="show-hard">Show Hard Questions</label>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend">
+        <h3>Legend</h3>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #4CAF50;"></div>
+          <span>Mastered (≥80% correct)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #FFC107;"></div>
+          <span>Developing (50-79% correct)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #F44336;"></div>
+          <span>Needs Work (<50% correct)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #9E9E9E;"></div>
+          <span>Not Attempted</span>
+        </div>
+        
+        <!-- Add node type legend -->
+        <div class="legend-item node-type">
+          <div class="legend-shape parent"></div>
+          <span>Main Topic (e.g., 1, 2)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-shape child"></div>
+          <span>Subtopic (e.g., 1.1, 2.1)</span>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary-section">
+        <h3>Knowledge Summary</h3>
+        <div id="summary-stats">
+          <!-- Loader for summary -->
+          <div class="loader" id="summary-loader">
+            <div class="spinner"></div>
+            <p>Loading summary...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="recommendations">
+        <h3>Recommendations</h3>
+        <div id="recommendations-container">
+           <!-- Loader for recommendations -->
+          <div class="loader" id="recs-loader">
+            <div class="spinner"></div>
+            <p>Generating recommendations...</p>
+          </div>
+        </div>
+      </div>
+    </div> <!-- End Sidebar -->
+
+    <!-- Visualization Area -->
+    <div id="visualization">
+      <svg id="graph"></svg>
+      <div class="tooltip" id="tooltip"></div>
+      <div class="controls">
+        <button class="control-button" id="zoom-in">Zoom In</button>
+        <button class="control-button" id="zoom-out">Zoom Out</button>
+        <button class="control-button" id="reset-zoom">Reset View</button>
+      </div>
+       <!-- Main loader for the graph -->
+      <div class="loader" id="main-loader">
+        <div class="spinner"></div>
+        <p>Loading knowledge map...</p>
+      </div>
+    </div> <!-- End Visualization -->
+  </div> <!-- End Container -->
+
+  <script>
+    // --- Configuration ---
+    // CRITICAL: Replace with your ACTUAL deployed Google Apps Script Web App URL
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbymk8dahjClciXB72187huIlpR2r_fDd4SAXvEEU05YkwwBAyXLDYGdMdlcL-_GKZg1/exec';
+
+    // --- Global Variables ---
+    let knowledgeData = null; // Store fetched data globally if needed
+    let simulation = null; // D3 simulation instance
+    let svg = null;        // D3 SVG element
+    let zoom = null;       // D3 zoom behavior
+
+    // --- DOM Elements ---
+    const errorMessageDiv = document.getElementById('error-message');
+    const errorTextP = document.getElementById('error-text');
+    const retryButton = document.getElementById('retry-button');
+    const testDataButton = document.getElementById('test-data-button');
+    const mainLoader = document.getElementById('main-loader');
+    const summaryLoader = document.getElementById('summary-loader');
+    const recsLoader = document.getElementById('recs-loader');
+    const summaryStatsDiv = document.getElementById('summary-stats');
+    const recommendationsContainer = document.getElementById('recommendations-container');
+    const graphSvg = document.getElementById('graph');
+    const tooltipDiv = document.getElementById('tooltip');
+
+    // --- Event Listeners ---
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!apiUrl || apiUrl === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
+         showError('Configuration error: Please update the apiUrl variable in the HTML script with your deployed Google Apps Script URL.');
+         mainLoader.style.display = 'none'; // Hide main loader if config error
+         return;
+      }
+
+      // Hide error message initially
+      errorMessageDiv.style.display = 'none';
+
+      // Set up retry button
+      retryButton.addEventListener('click', function() {
+        errorMessageDiv.style.display = 'none';
+        mainLoader.style.display = 'block';
+        summaryLoader.style.display = 'block';
+        recsLoader.style.display = 'block';
+        summaryStatsDiv.innerHTML = ''; // Clear old summary
+        recommendationsContainer.innerHTML = ''; // Clear old recs
+        loadData();
+      });
+
+      // Set up test data button
+      testDataButton.addEventListener('click', function() {
+        errorMessageDiv.style.display = 'none';
+        mainLoader.style.display = 'block';
+        summaryLoader.style.display = 'block';
+        recsLoader.style.display = 'block';
+        summaryStatsDiv.innerHTML = '';
+        recommendationsContainer.innerHTML = '';
+        // Use a timeout to allow the loader to show briefly
+        setTimeout(() => {
+            try {
+               const testData = generateTestData();
+               renderKnowledgeMap(testData);
+            } catch (error) {
+               console.error("Error generating or rendering test data:", error);
+               showError("Failed to render test data: " + error.message);
+            }
+        }, 50);
+      });
+
+      // Load data immediately when page loads
+      loadData();
+    });
+
+    // --- Core Functions ---
+
+    function loadData() {
+      console.log('Attempting to load data from:', apiUrl);
+      mainLoader.style.display = 'block';
+      summaryLoader.style.display = 'block'; // Ensure these are visible
+      recsLoader.style.display = 'block';
+      errorMessageDiv.style.display = 'none'; // Hide previous errors
+
+      // Create a unique callback name for JSONP
+      const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.round(10000 * Math.random());
+
+      // Timeout handler
+      const timeoutId = setTimeout(() => {
+        console.error('Request timed out after 15 seconds.');
+        showError('Request timed out. The server might be busy or unresponsive. Please try again later or use test data.');
+        cleanupJsonp(script, callbackName);
+      }, 15000); // 15 second timeout
+
+      // Define the callback function on the window object
+      window[callbackName] = function(data) {
+        clearTimeout(timeoutId); // Clear the timeout
+        console.log('Received data via JSONP callback:', callbackName);
+        try {
+           if (data && data.error) {
+              console.error('Server returned an error:', data.error);
+              // Check if the error is about permissions or script issues
+              if (data.error.includes("Authorization is required") || data.error.includes("script function not found")) {
+                 showError('Server Error: ' + data.error + '. Please check Google Apps Script deployment permissions (must be "Anyone") and ensure the script is deployed correctly.');
+              } else {
+                 showError('Server Error: ' + data.error);
+              }
+           } else if (data && data.nodes && data.links) {
+               // Process the valid data
+               knowledgeData = data; // Store if needed globally
+               renderKnowledgeMap(data);
+           } else {
+               console.error('Invalid data structure received:', data);
+               showError('Received invalid data structure from server. Check the console and Google Apps Script logs.');
+           }
+        } catch (error) {
+          console.error('Error processing received data:', error);
+          showError('Error processing data: ' + error.message + '. Check the console.');
+        } finally {
+          cleanupJsonp(script, callbackName); // Clean up after processing
+        }
+      };
+
+      // Create the script element for JSONP
+      const script = document.createElement('script');
+      // Add timestamp (`_=` is common) and ensure callback is correctly appended
+      script.src = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'callback=' + callbackName + '&_=' + Date.now();
+
+      // Handle script loading errors (network, 404, CORS if not JSONP, syntax error in response)
+      script.onerror = function(event) {
+        clearTimeout(timeoutId); // Clear the timeout
+        console.error('Failed to load script:', script.src, 'Event:', event);
+        // Check if the direct URL worked before suggesting this
+        showError('Failed to load data script. This can happen due to network issues, incorrect URL, deployment problems (check "Anyone" access), or if the server returned non-executable content (like raw JSON instead of JSONP). Check the browser console (Network tab) and Google Apps Script logs for details.');
+        cleanupJsonp(script, callbackName);
+      };
+
+      // Add the script to the page head to trigger the request
+      document.head.appendChild(script);
+    }
+
+    function cleanupJsonp(scriptElement, callbackName) {
+       // Remove the script tag from the DOM
+       if (scriptElement && scriptElement.parentNode) {
+          scriptElement.parentNode.removeChild(scriptElement);
+          console.log('Removed script tag:', scriptElement.src);
+       }
+       // Remove the callback function from the window object
+       try {
+           delete window[callbackName];
+           console.log('Deleted callback function:', callbackName);
+       } catch (e) {
+           // IE compatibility (though less relevant now)
+           window[callbackName] = undefined;
+           console.warn('Could not delete callback function directly:', callbackName);
+       }
+    }
+
+
+    function showError(message) {
+      mainLoader.style.display = 'none';
+      summaryLoader.style.display = 'none'; // Hide other loaders too
+      recsLoader.style.display = 'none';
+      d3.select('#graph').selectAll('*').remove(); // Clear graph on error
+      summaryStatsDiv.innerHTML = '<p>Unavailable</p>'; // Clear summary/recs
+      recommendationsContainer.innerHTML = '<p>Unavailable</p>';
+
+      // Set the message text
+      errorTextP.textContent = message;
+
+      // Show the error container
+      errorMessageDiv.style.display = 'block';
+    }
+
+    // --- D3 Rendering and Interaction ---
+
+    function renderKnowledgeMap(data) {
+       console.log('Rendering knowledge map with data:', data);
+       mainLoader.style.display = 'none'; // Hide main loader
+
+       if (!data || !data.nodes || !data.links) {
+           showError('Invalid data provided to renderKnowledgeMap.');
+           return;
+       }
+
+       knowledgeData = data; // Store the data used for rendering
+
+       const visContainer = document.getElementById('visualization');
+       const width = visContainer.clientWidth;
+       const height = visContainer.clientHeight;
+
+       if (width <= 0 || height <= 0) {
+           console.error("Visualization container has zero width or height. Cannot render.");
+            showError("Cannot render visualization. Container size is invalid.");
+           return;
+       }
+
+       // Clear previous visualization if any
+       d3.select('#graph').selectAll('*').remove();
+
+       // Set up zoom behavior
+       zoom = d3.zoom()
+         .scaleExtent([0.2, 8]) // Adjusted scale extent
+         .on('zoom', (event) => {
+           g.attr('transform', event.transform);
+         });
+
+       // Set up the SVG container
+       svg = d3.select('#graph')
+         .attr('width', width)
+         .attr('height', height)
+         .call(zoom)
+         .on("dblclick.zoom", null); // Disable double-click zoom
+
+       // Add a group for the zoom transform and central content
+       const g = svg.append('g');
+
+       // Store the main group for later use (e.g., in filters)
+       svg.mainG = g;
+
+       // Calculate dynamic link distance and charge strength based on number of nodes
+       const numNodes = data.nodes.length;
+       const linkDistance = Math.max(100, Math.min(200, 120 + numNodes * 0.5)); // Adjusted for parent-child
+       const chargeStrength = Math.max(-1000, Math.min(-200, -300 - numNodes * 2)); // Stronger repulsion
+
+       console.log(`Simulation Params: Nodes=${numNodes}, LinkDistance=${linkDistance.toFixed(1)}, ChargeStrength=${chargeStrength.toFixed(1)}`);
+
+       // Stop previous simulation if exists
+       if (simulation) {
+            simulation.stop();
+        }
+
+       // Set up the simulation with adjusted forces for parent-child hierarchy
+       simulation = d3.forceSimulation(data.nodes)
+         .force('link', d3.forceLink(data.links).id(d => d.id).distance(d => {
+           // Shorter distance for parent-child links
+           return d.source.isParent !== d.target.isParent ? linkDistance * 0.7 : linkDistance;
+         }).strength(d => {
+           // Stronger connections for parent-child links
+           return d.source.isParent !== d.target.isParent ? 0.8 : 0.6;
+         }))
+         .force('charge', d3.forceManyBody().strength(d => {
+           // Parents have stronger charge to create more space around them
+           return d.isParent ? chargeStrength * 1.5 : chargeStrength;
+         }))
+         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.1))
+         .force('collide', d3.forceCollide().radius(d => getNodeSize(d) + 10).strength(0.8))
+         .force('x', d3.forceX(width / 2).strength(0.05)) 
+         .force('y', d3.forceY(height / 2).strength(0.05));
+
+       // Add links - with special styling for parent-child links
+       const link = g.append('g')
+            .attr('class', 'links')
+            .selectAll('line')
+            .data(data.links)
+            .enter()
+            .append('line')
+            .attr('class', d => {
+              // Add special class for parent-child links
+              return d.source.isParent !== d.target.isParent ? 'link parent-child' : 'link';
+            })
+            .attr('stroke-width', d => Math.max(1, Math.sqrt(d.strength || 0.1) * 2.5));
+
+       // Add nodes group
+        const nodeGroup = g.append('g')
+            .attr('class', 'nodes')
+            .selectAll('g.node-group')
+            .data(data.nodes)
+            .enter()
+            .append('g')
+            .attr('class', 'node-group')
+            .call(d3.drag() 
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended))
+            .on('mouseover', showTooltip)
+            .on('mouseout', hideTooltip);
+
+       // Add circles to the node group with parent/child styling
+        nodeGroup.append('circle')
+            .attr('class', d => `node ${d.isParent ? 'parent' : 'child'}`)
+            .attr('r', d => getNodeSize(d))
+            .attr('fill', d => getNodeColor(d));
+
+       // Add labels to the node group with parent/child styling
+        nodeGroup.append('text')
+             .attr('class', d => `node-label ${d.isParent ? 'parent' : ''}`)
+             .attr('dy', d => getNodeSize(d) + (d.isParent ? 16 : 12)) // Position below node, larger offset for parents
+             .text(d => d.name.length > 25 ? d.name.substring(0, 22) + '...' : d.name)
+             .attr('display', 'none'); // Initially hidden, shown by filter/zoom
+
+       // Update positions in the simulation tick event
+       simulation.on('tick', () => {
+         link
+           .attr('x1', d => d.source.x)
+           .attr('y1', d => d.source.y)
+           .attr('x2', d => d.target.x)
+           .attr('y2', d => d.target.y);
+
+         nodeGroup
+            .attr('transform', d => `translate(${d.x}, ${d.y})`);
+       });
+
+       // Add zoom controls
+       const zoomInButton = document.getElementById('zoom-in');
+       const zoomOutButton = document.getElementById('zoom-out');
+       const resetZoomButton = document.getElementById('reset-zoom');
+
+        // Clone and replace to remove old listeners if any
+        zoomInButton.replaceWith(zoomInButton.cloneNode(true));
+        zoomOutButton.replaceWith(zoomOutButton.cloneNode(true));
+        resetZoomButton.replaceWith(resetZoomButton.cloneNode(true));
+
+        // Add new listeners
+        document.getElementById('zoom-in').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1.3));
+        document.getElementById('zoom-out').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.3));
+        document.getElementById('reset-zoom').addEventListener('click', () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity));
+
+       // Set up filters
+       setupFilters(data, nodeGroup, link);
+
+       // Initial filter application
+       applyFilters();
+
+       // Update summary statistics and recommendations
+       updateSummary(data.nodes);
+       generateRecommendations(data.nodes);
+     }
+
+    // Modified for parent/child nodes
+    function getNodeSize(d) {
+      // Parent nodes are larger than child nodes
+      let size = d.isParent ? 16 : 8;
+      
+      // Further adjust based on mastery 
+      if (d.mastery === 'Mastered') size += 2;
+      else if (d.mastery === 'Developing') size += 1;
+      else if (d.mastery === 'Needs Work') size += 0;
+      
+      // Slightly increase size if there's difficulty data
+      if (d.difficulties && Object.keys(d.difficulties).length > 0) {
+          size += 1;
+      }
+      
+      return size;
+    }
+
+    function getNodeColor(d) {
+      switch (d.mastery) {
+        case 'Mastered': return '#4CAF50'; // Green
+        case 'Developing': return '#FFC107'; // Amber
+        case 'Needs Work': return '#F44336'; // Red
+        case 'Not Attempted':
+        default: return '#9E9E9E'; // Grey
+      }
+    }
+
+    // Updated tooltip to show appropriate information for parent/child nodes
+    function showTooltip(event, d) {
+       const [x, y] = d3.pointer(event, document.body);
+
+      let tooltipContent = `
+        <strong>${d.name || 'Unknown Concept'}</strong><br>
+      `;
+      
+      // If it's a parent node
+      if (d.isParent) {
+          tooltipContent += `
+            <strong>Main Topic</strong> (ID: ${d.conceptId || 'N/A'})<br>
+          `;
+      } else {
+          // If it's a child node, show the full description from the tooltip
+          tooltipContent += `
+            <strong>Subtopic</strong> (ID: ${d.conceptId || 'N/A'})<br>
+            Description: ${d.fullDescription || 'N/A'}<br>
+          `;
+      }
+      
+      // Add mastery information
+      tooltipContent += `
+        Mastery: ${d.mastery || 'N/A'}<br>
+        Performance: ${d.mastery !== 'Not Attempted' ? Math.round((d.performance || 0) * 100) + '%' : 'N/A'}<br>
+      `;
+
+      // Add tags if available
+      if (Array.isArray(d.tags) && d.tags.length > 0) {
+          tooltipContent += `Tags: ${d.tags.join(', ')}<br>`;
+      }
+
+      // Add difficulty information if available
+      if (d.mastery !== 'Not Attempted' && d.difficulties && Object.keys(d.difficulties).length > 0) {
+        tooltipContent += `<br><strong>Performance by Difficulty:</strong><br>`;
+        Object.entries(d.difficulties)
+          .sort() 
+          .forEach(([level, stats]) => {
+            const total = stats.total || 0;
+            const correct = stats.correct || 0;
+            if (total > 0) {
+               const rate = (correct / total) * 100;
+               tooltipContent += `${level}: ${correct}/${total} (${Math.round(rate)}%)<br>`;
+            } else {
+                tooltipContent += `${level}: 0/0 (N/A)<br>`;
+            }
+        });
+      } else if (d.mastery !== 'Not Attempted') {
+          tooltipContent += '<br>No difficulty data available.';
+      }
+
+      tooltipDiv.innerHTML = tooltipContent;
+      tooltipDiv.style.opacity = 1;
+
+      // Position tooltip
+      const tooltipRect = tooltipDiv.getBoundingClientRect();
+      const visRect = document.getElementById('visualization').getBoundingClientRect();
+
+      let left = x + 15;
+      let top = y - 15;
+
+      // Prevent tooltip going off-screen right
+      if (left + tooltipRect.width > visRect.right) {
+          left = x - 15 - tooltipRect.width;
+      }
+      // Prevent tooltip going off-screen top
+      if (top < visRect.top) {
+          top = y + 15;
+      }
+       // Prevent tooltip going off-screen bottom
+      if (top + tooltipRect.height > visRect.bottom) {
+          top = y - 15 - tooltipRect.height;
+      }
+
+      tooltipDiv.style.left = `${left}px`;
+      tooltipDiv.style.top = `${top}px`;
+    }
+
+    function hideTooltip() {
+      tooltipDiv.style.opacity = 0;
+    }
+
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+
+    // --- Updated Filtering Logic ---
+
+    function setupFilters() {
+       // Add change listeners to all checkboxes
+       const checkboxes = document.querySelectorAll('#sidebar input[type="checkbox"]');
+       checkboxes.forEach(cb => {
+           cb.addEventListener('change', applyFilters);
+       });
+    }
+
+    function applyFilters() {
+        if (!knowledgeData || !svg || !svg.mainG) {
+            console.warn("Cannot apply filters: Data or SVG not ready.");
+            return;
+        }
+
+        const showMastered = document.getElementById('show-mastered').checked;
+        const showDeveloping = document.getElementById('show-developing').checked;
+        const showNeedsWork = document.getElementById('show-needs-work').checked;
+        const showNotAttempted = document.getElementById('show-not-attempted').checked;
+
+        const showEasy = document.getElementById('show-easy').checked;
+        const showMedium = document.getElementById('show-medium').checked;
+        const showHard = document.getElementById('show-hard').checked;
+        
+        // Add node type filters
+        const showParent = document.getElementById('show-parent').checked;
+        const showChild = document.getElementById('show-child').checked;
+
+        const nodeGroups = svg.mainG.selectAll('g.node-group');
+        const links = svg.mainG.selectAll('line.link');
+        const labels = svg.mainG.selectAll('text.node-label');
+
+        const visibleNodeIds = new Set();
+
+        // Determine node visibility
+        nodeGroups.each(function(d) {
+            const nodeElement = d3.select(this);
+            let isVisible = false;
+
+            // Check node type filter first
+            if ((d.isParent && !showParent) || (!d.isParent && !showChild)) {
+                isVisible = false;
+            } else {
+                // Filter by mastery if node type is visible
+                if (d.mastery === 'Mastered' && showMastered) isVisible = true;
+                else if (d.mastery === 'Developing' && showDeveloping) isVisible = true;
+                else if (d.mastery === 'Needs Work' && showNeedsWork) isVisible = true;
+                else if (d.mastery === 'Not Attempted' && showNotAttempted) isVisible = true;
+                else if (!d.mastery && showNotAttempted) isVisible = true;
+
+                // Check difficulty filters for attempted nodes
+                if (isVisible && d.mastery !== 'Not Attempted') {
+                    const difficulties = d.difficulties || {};
+                    const attemptedDifficulties = Object.keys(difficulties);
+
+                    if (attemptedDifficulties.length > 0) {
+                        const hasVisibleDifficulty = attemptedDifficulties.some(level =>
+                            (level === 'Easy' && showEasy) ||
+                            (level === 'Medium' && showMedium) ||
+                            (level === 'Hard' && showHard) ||
+                            (!['Easy', 'Medium', 'Hard'].includes(level))
+                        );
+                        if (!hasVisibleDifficulty) {
+                            isVisible = false;
+                        }
+                    }
+                }
+            }
+
+            // Apply visibility with transition
+            nodeElement.transition().duration(300)
+                .style('opacity', isVisible ? 1 : 0.1)
+                .style('pointer-events', isVisible ? 'all' : 'none');
+
+            if (isVisible) {
+                visibleNodeIds.add(d.id);
+            }
+        });
+
+        // Update link visibility
+        links.transition().duration(300)
+            .style('opacity', d => {
+                const sourceVisible = visibleNodeIds.has(d.source.id);
+                const targetVisible = visibleNodeIds.has(d.target.id);
+                return (sourceVisible && targetVisible) ? (d.source.isParent !== d.target.isParent ? 0.7 : 0.6) : 0.05;
+            });
+
+        // Update label visibility
+        labels.transition().duration(300)
+            .attr('display', function(d) {
+                return visibleNodeIds.has(d.id) ? null : 'none';
+            });
+
+        console.log(`Filters applied. Visible nodes: ${visibleNodeIds.size}`);
+    }
+
+    // --- Sidebar Updates ---
+
+    function updateSummary(nodes) {
+       summaryLoader.style.display = 'none';
+
+      const total = nodes.length;
+      const parentNodes = nodes.filter(d => d.isParent).length;
+      const childNodes = nodes.filter(d => !d.isParent).length;
+      
+      if (total === 0) {
+          summaryStatsDiv.innerHTML = '<p>No concept data available.</p>';
+          return;
+      }
+
+      const mastered = nodes.filter(d => d.mastery === 'Mastered').length;
+      const developing = nodes.filter(d => d.mastery === 'Developing').length;
+      const needsWork = nodes.filter(d => d.mastery === 'Needs Work').length;
+      const notAttempted = nodes.filter(d => d.mastery === 'Not Attempted').length;
+
+      const masteredPercent = total > 0 ? (mastered / total) * 100 : 0;
+      const developingPercent = total > 0 ? (developing / total) * 100 : 0;
+      const needsWorkPercent = total > 0 ? (needsWork / total) * 100 : 0;
+      const notAttemptedPercent = total > 0 ? (notAttempted / total) * 100 : 0;
+
+      const summaryHtml = `
+        <div><strong>Total Concepts:</strong> ${total} (${parentNodes} main topics, ${childNodes} subtopics)</div>
+        <div>
+          <strong>Mastered:</strong> ${mastered}/${total} (${Math.round(masteredPercent)}%)
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${masteredPercent}%; background-color: #4CAF50;"></div>
+          </div>
+        </div>
+        <div>
+          <strong>Developing:</strong> ${developing}/${total} (${Math.round(developingPercent)}%)
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${developingPercent}%; background-color: #FFC107;"></div>
+          </div>
+        </div>
+        <div>
+          <strong>Needs Work:</strong> ${needsWork}/${total} (${Math.round(needsWorkPercent)}%)
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${needsWorkPercent}%; background-color: #F44336;"></div>
+          </div>
+        </div>
+        <div>
+          <strong>Not Attempted:</strong> ${notAttempted}/${total} (${Math.round(notAttemptedPercent)}%)
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${notAttemptedPercent}%; background-color: #9E9E9E;"></div>
+          </div>
+        </div>
+      `;
+
+      summaryStatsDiv.innerHTML = summaryHtml;
+    }
+
+    // Updated to prioritize recommendations based on parent/child relationships
+    function generateRecommendations(nodes) {
+       recsLoader.style.display = 'none';
+
+        if (!nodes || nodes.length === 0) {
+            recommendationsContainer.innerHTML = '<p>No recommendation data available.</p>';
+            return;
+        }
+
+      // Separate nodes by parent/child and mastery level
+      const parentNodes = nodes.filter(d => d.isParent);
+      const childNodes = nodes.filter(d => !d.isParent);
+      
+      const needsWorkNodes = childNodes.filter(d => d.mastery === 'Needs Work').sort((a, b) => (a.performance || 0) - (b.performance || 0));
+      const developingNodes = childNodes.filter(d => d.mastery === 'Developing').sort((a, b) => (a.performance || 0) - (b.performance || 0));
+      const notAttemptedNodes = childNodes.filter(d => d.mastery === 'Not Attempted');
+
+      let recommendationsHtml = '';
+      const maxRecsPerCategory = 3;
+
+      // 1. Recommend improving weakest 'Needs Work' concepts
+      if (needsWorkNodes.length > 0) {
+        recommendationsHtml += '<p><strong>Focus on improving:</strong></p>';
+        needsWorkNodes.slice(0, maxRecsPerCategory).forEach(node => {
+          // Find the parent name for more context
+          const parentId = Math.floor(parseFloat(node.conceptId || "0"));
+          const parentNode = parentNodes.find(p => parseFloat(p.conceptId || "0") === parentId);
+          const parentName = parentNode ? parentNode.name : "Main Topic";
+          
+          recommendationsHtml += `
+            <div class="recommendation-item">
+              <strong>${node.name}</strong> (${Math.round((node.performance || 0) * 100)}% mastery) - From ${parentName}
+            </div>
+          `;
+        });
+      }
+
+      // 2. Recommend 'Developing' concepts closest to mastery
+      const almostMastered = developingNodes.filter(d => (d.performance || 0) >= 0.65).reverse();
+      if (almostMastered.length > 0) {
+        recommendationsHtml += '<p><strong>Push these to mastery:</strong></p>';
+        almostMastered.slice(0, maxRecsPerCategory).forEach(node => {
+          const parentId = Math.floor(parseFloat(node.conceptId || "0"));
+          const parentNode = parentNodes.find(p => parseFloat(p.conceptId || "0") === parentId);
+          const parentName = parentNode ? parentNode.name : "Main Topic";
+          
+          recommendationsHtml += `
+            <div class="recommendation-item">
+              <strong>${node.name}</strong> (${Math.round((node.performance || 0) * 100)}% mastery) - From ${parentName}
+            </div>
+          `;
+        });
+      }
+      else if (developingNodes.length > 0 && needsWorkNodes.length < maxRecsPerCategory) {
+          recommendationsHtml += '<p><strong>Continue developing:</strong></p>';
+          developingNodes.slice(0, maxRecsPerCategory).forEach(node => {
+             const parentId = Math.floor(parseFloat(node.conceptId || "0"));
+             const parentNode = parentNodes.find(p => parseFloat(p.conceptId || "0") === parentId);
+             const parentName = parentNode ? parentNode.name : "Main Topic";
+             
+             recommendationsHtml += `
+               <div class="recommendation-item">
+                 <strong>${node.name}</strong> (${Math.round((node.performance || 0) * 100)}% mastery) - From ${parentName}
+               </div>
+             `;
+           });
+      }
+
+      // 3. Recommend 'Not Attempted' concepts, prioritizing those from mastered parent topics
+      if (notAttemptedNodes.length > 0) {
+          // Find parent topics with at least some mastered children
+          const parentWithMasteredChildren = new Set();
+          childNodes.filter(n => n.mastery === 'Mastered').forEach(node => {
+              const parentId = Math.floor(parseFloat(node.conceptId || "0"));
+              parentWithMasteredChildren.add(parentId);
+          });
+          
+          // Prioritize not attempted children from parents with some mastery
+          const prioritizedNotAttempted = notAttemptedNodes.filter(node => {
+              const parentId = Math.floor(parseFloat(node.conceptId || "0"));
+              return parentWithMasteredChildren.has(parentId);
+          });
+          
+          const recommendedNew = prioritizedNotAttempted.length > 0 ? 
+                                  prioritizedNotAttempted.slice(0, maxRecsPerCategory) : 
+                                  notAttemptedNodes.slice(0, maxRecsPerCategory);
+          
+          if (recommendedNew.length > 0) {
+             recommendationsHtml += '<p><strong>Explore new concepts:</strong></p>';
+             recommendedNew.forEach(node => {
+               const parentId = Math.floor(parseFloat(node.conceptId || "0"));
+               const parentNode = parentNodes.find(p => parseFloat(p.conceptId || "0") === parentId);
+               const parentName = parentNode ? parentNode.name : "Main Topic";
+               
+               recommendationsHtml += `
+                 <div class="recommendation-item">
+                   Explore: <strong>${node.name}</strong> - From ${parentName}
+                 </div>
+               `;
+             });
+          }
+      }
+
+      if (recommendationsHtml === '') {
+         if (childNodes.every(d => d.mastery === 'Mastered')) {
+             recommendationsHtml = '<p>Excellent work! All concepts are mastered.</p>';
+         } else if (childNodes.every(d => d.mastery === 'Not Attempted')) {
+             recommendationsHtml = '<p>Start exploring concepts to build your knowledge map!</p>';
+         } else {
+             recommendationsHtml = '<p>Keep up the great work! Continue practicing concepts.</p>';
+         }
+      }
+
+      recommendationsContainer.innerHTML = recommendationsHtml;
+    }
+
+    // --- Test Data Generation (for offline/fallback) ---
+    function generateTestData() {
+        console.log("Generating test data with parent-child structure...");
+        
+        // Create parent nodes (whole numbers)
+        const parentConcepts = [
+          { id: "1", name: "String Data Type" },
+          { id: "2", name: "Numeric Types" }
+        ];
+        
+        // Create child nodes (decimal numbers)
+        const childConcepts = [
+          { id: "1.1", name: "Define string data type", fullDescription: "Define string data type and its role in Python programming", tags: ["String Basics"] },
+          { id: "1.2", name: "Create string variables", fullDescription: "Create string variables using single and double quotes", tags: ["Quote Syntax"] },
+          { id: "1.3", name: "Access characters in strings", fullDescription: "Access characters in strings using indexing", tags: ["String Indexing"] },
+          { id: "1.4", name: "Extract portions of strings", fullDescription: "Extract portions of strings using slicing operations", tags: ["String Slicing"] },
+          { id: "1.5", name: "Combine strings", fullDescription: "Combine strings using concatenation operators and methods", tags: ["String Concatenation"] },
+          { id: "1.6", name: "Apply string methods", fullDescription: "Apply string methods (upper(), lower(), strip(), replace())", tags: ["String Methods"] },
+          { id: "1.7", name: "Format strings", fullDescription: "Format strings using f-strings and .format()", tags: ["String Formatting"] },
+          
+          { id: "2.1", name: "Distinguish between numeric types", fullDescription: "Distinguish between integers and floating-point numbers", tags: ["Type Distinction"] },
+          { id: "2.2", name: "Perform arithmetic operations", fullDescription: "Perform arithmetic operations (+, -, *, /, %) with numeric types", tags: ["Basic Operations"] },
+          { id: "2.3", name: "Understand division operations", fullDescription: "Understand division operations in Python (/ vs //)", tags: ["Division Types"] },
+          { id: "2.4", name: "Identify automatic type conversion", fullDescription: "Identify automatic type conversion between numeric types", tags: ["Type Coercion"] },
+          { id: "2.5", name: "Apply math functions", fullDescription: "Apply math functions to numeric data", tags: ["Math Functions"] },
+          { id: "2.6", name: "Handle precision issues", fullDescription: "Handle precision issues with floating-point arithmetic", tags: ["Precision Handling"] }
+        ];
+        
+        const difficulties = ["Easy", "Medium", "Hard"];
+        const masteryLevels = ["Mastered", "Developing", "Needs Work", "Not Attempted"];
+
+        // Create nodes array
+        const nodes = [];
+        
+        // Add parent nodes
+        parentConcepts.forEach((concept, index) => {
+            const mastery = masteryLevels[Math.floor(Math.random() * masteryLevels.length)];
+            let performance = 0;
+            
+            if (mastery === "Mastered") performance = 0.8 + Math.random() * 0.2;
+            else if (mastery === "Developing") performance = 0.5 + Math.random() * 0.29;
+            else if (mastery === "Needs Work") performance = Math.random() * 0.49;
+            
+            nodes.push({
+                id: index,
+                conceptId: concept.id,
+                name: concept.name,
+                fullDescription: concept.name,
+                isParent: true,
+                parentNum: parseInt(concept.id),
+                performance: performance,
+                mastery: mastery,
+                difficulties: {},
+                tags: []
+            });
+        });
+        
+        // Add child nodes
+        childConcepts.forEach((concept, index) => {
+            const mastery = masteryLevels[Math.floor(Math.random() * masteryLevels.length)];
+            let performance = 0;
+            let difficultiesData = {};
+            
+            if (mastery === "Mastered") performance = 0.8 + Math.random() * 0.2;
+            else if (mastery === "Developing") performance = 0.5 + Math.random() * 0.29;
+            else if (mastery === "Needs Work") performance = Math.random() * 0.49;
+            
+            if (mastery !== "Not Attempted") {
+                const numDiff = 1 + Math.floor(Math.random() * 3);
+                const usedDiffs = new Set();
+                for (let i = 0; i < numDiff; i++) {
+                    const diffLevel = difficulties[Math.floor(Math.random() * difficulties.length)];
+                    if (!usedDiffs.has(diffLevel)) {
+                        const total = 5 + Math.floor(Math.random() * 15);
+                        const diffPerformance = Math.max(0, Math.min(1, performance + (Math.random() - 0.5) * 0.4));
+                        const correct = Math.floor(diffPerformance * total);
+                        difficultiesData[diffLevel] = { correct: correct, total: total };
+                        usedDiffs.add(diffLevel);
+                    }
+                }
+            }
+            
+            nodes.push({
+                id: parentConcepts.length + index,
+                conceptId: concept.id,
+                name: concept.fullDescription,
+                fullDescription: concept.fullDescription,
+                isParent: false,
+                parentNum: parseInt(concept.id),
+                performance: performance,
+                mastery: mastery,
+                difficulties: difficultiesData,
+                tags: concept.tags
+            });
+        });
+        
+        // Create links - connect children to their parents
+        const links = [];
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (!node.isParent) {
+                // Find the parent node
+                const parentNode = nodes.find(n => n.isParent && n.parentNum === Math.floor(node.parentNum));
+                if (parentNode) {
+                    links.push({
+                        source: parentNode.id,
+                        target: node.id,
+                        strength: 0.8
+                    });
+                }
+            }
+        }
+        
+        console.log(`Generated ${nodes.length} test nodes (${parentConcepts.length} parents, ${childConcepts.length} children) and ${links.length} test links.`);
+        return { nodes, links };
+    }
+  </script>
+</body>
+</html>
