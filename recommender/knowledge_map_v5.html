@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Knowledge Map</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    /* ... (keep all existing styles) ... */
+
+    /* --- NEW: Modal Styles --- */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed; /* Stay in place */
+      z-index: 1000; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%; /* Full width */
+      height: 100%; /* Full height */
+      overflow: auto; /* Enable scroll if needed */
+      background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 10% auto; /* 10% from the top and centered */
+      padding: 25px;
+      border: 1px solid #888;
+      width: 80%; /* Could be more specific */
+      max-width: 600px; /* Maximum width */
+      border-radius: 8px;
+      position: relative;
+      box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+    }
+
+    .close-button {
+      color: #aaa;
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    #modal-topic-title {
+        margin-top: 0;
+        color: #3f51b5;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    #modal-steps p {
+        margin-bottom: 12px;
+        font-size: 14px;
+        line-height: 1.5;
+        border-bottom: 1px dashed #eee;
+        padding-bottom: 8px;
+    }
+     #modal-steps p:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+     }
+
+    #modal-steps a {
+        color: #3f51b5;
+        text-decoration: none;
+        word-break: break-all; /* Prevent long URLs from breaking layout */
+    }
+     #modal-steps a:hover {
+         text-decoration: underline;
+     }
+    /* --- End Modal Styles --- */
+
+    /* Optional: Style for the new button if needed */
+    #recommend-topics-button {
+        display: block; /* Make it take full width */
+        width: 100%;
+        margin-top: 20px; /* Add some space above */
+        padding: 10px 15px;
+        font-size: 14px;
+        background-color: #FF9800; /* Orange color */
+        border: none;
+    }
+     #recommend-topics-button:hover {
+         background-color: #F57C00;
+     }
+
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1 id="title">Student Coding Knowledge Map</h1>
+  </div>
+
+  <div id="container">
+    <div id="sidebar">
+      <!-- ... (keep existing sidebar content: error, filters, legend, summary, recommendations) ... -->
+
+       <!-- Recommendations -->
+       <div class="recommendations">
+         <h3>Recommendations</h3>
+         <div id="recommendations-container">
+            <!-- Loader for recommendations -->
+           <div class="loader" id="recs-loader">
+             <div class="spinner"></div>
+             <p>Generating recommendations...</p>
+           </div>
+         </div>
+          <!-- *** NEW: Recommendation Button *** -->
+          <button id="recommend-topics-button">Recommend Learning Path</button>
+       </div>
+
+    </div> <!-- End Sidebar -->
+
+    <!-- Visualization Area -->
+    <div id="visualization">
+       <!-- ... (keep existing visualization content: svg, tooltip, controls, loader) ... -->
+    </div> <!-- End Visualization -->
+  </div> <!-- End Container -->
+
+  <!-- *** NEW: Modal Structure (add before closing </body> tag) *** -->
+  <div id="learning-path-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" id="modal-close-button">×</span>
+      <h3 id="modal-topic-title">Learning Path</h3>
+      <div id="modal-steps">
+        <!-- Steps will be dynamically inserted here -->
+        <p>Loading learning path...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Configuration ---
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbwv8iDMpLh7M_Ct1og2oamvzBddv4QRoK9DuZRfvQsOTHuY2NAv7W8v-kcRmLjk8eFD/exec'; // Replace if needed
+
+    // --- Global Variables ---
+    let knowledgeData = null; // Will store { nodes, links, learningPaths }
+    let simulation = null;
+    let svg = null;
+    let zoom = null;
+
+    // --- DOM Elements ---
+    // ... (keep existing DOM element variables) ...
+    const recommendButton = document.getElementById('recommend-topics-button');
+    const learningPathModal = document.getElementById('learning-path-modal');
+    const modalCloseButton = document.getElementById('modal-close-button');
+    const modalTitle = document.getElementById('modal-topic-title');
+    const modalStepsContainer = document.getElementById('modal-steps');
+
+
+    // --- Event Listeners ---
+    document.addEventListener('DOMContentLoaded', function() {
+      // ... (keep existing DOMContentLoaded logic: API check, retry, test data) ...
+
+      // *** NEW: Add listener for the recommendation button ***
+      recommendButton.addEventListener('click', showLearningPathRecommendation);
+
+      // *** NEW: Add listeners to close the modal ***
+      modalCloseButton.addEventListener('click', () => {
+          learningPathModal.style.display = 'none';
+      });
+
+      // Close modal if user clicks outside the modal content
+      window.addEventListener('click', (event) => {
+          if (event.target === learningPathModal) {
+              learningPathModal.style.display = 'none';
+          }
+      });
+
+      // Load data immediately
+      loadData();
+    });
+
+    // --- Core Functions ---
+
+    function loadData() {
+      console.log('Attempting to load data from:', apiUrl);
+      // ... (keep existing loader display and error reset logic) ...
+      mainLoader.style.display = 'block';
+      summaryLoader.style.display = 'block';
+      recsLoader.style.display = 'block';
+      errorMessageDiv.style.display = 'none';
+
+      const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.round(10000 * Math.random());
+      const timeoutId = setTimeout(() => {
+        console.error('Request timed out after 15 seconds.');
+        showError('Request timed out. The server might be busy or unresponsive. Please try again later or use test data.');
+        cleanupJsonp(script, callbackName);
+      }, 15000);
+
+      window[callbackName] = function(data) {
+        clearTimeout(timeoutId);
+        console.log('Received data via JSONP callback:', callbackName);
+        try {
+           // Check for errors reported by GAS itself
+           if (data && data.error) {
+              console.error('Server returned an error:', data.error);
+              showError('Server Error: ' + data.error);
+           } else if (data && data.nodes && data.links && data.learningPaths !== undefined) { // *** Check for learningPaths ***
+               // Store the entire data object
+               knowledgeData = data;
+               // Pass the whole object to rendering
+               renderKnowledgeMap(knowledgeData);
+           } else {
+               console.error('Invalid data structure received:', data);
+               showError('Received invalid data structure from server. Check the console and Google Apps Script logs. Expected nodes, links, and learningPaths.');
+           }
+        } catch (error) {
+          console.error('Error processing received data:', error);
+          showError('Error processing data: ' + error.message + '. Check the console.');
+        } finally {
+          cleanupJsonp(script, callbackName);
+        }
+      };
+
+      const script = document.createElement('script');
+      script.src = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'callback=' + callbackName + '&_=' + Date.now();
+      script.onerror = function(event) {
+        clearTimeout(timeoutId);
+        console.error('Failed to load script:', script.src, 'Event:', event);
+        showError('Failed to load data script. Check network, URL, deployment permissions ("Anyone"), and server response type (should be JSONP).');
+        cleanupJsonp(script, callbackName);
+      };
+      document.head.appendChild(script);
+    }
+
+    // ... (keep cleanupJsonp and showError functions) ...
+     function cleanupJsonp(scriptElement, callbackName) {
+       // Remove the script tag from the DOM
+       if (scriptElement && scriptElement.parentNode) {
+          scriptElement.parentNode.removeChild(scriptElement);
+          // console.log('Removed script tag:', scriptElement.src);
+       }
+       // Remove the callback function from the window object
+       try {
+           delete window[callbackName];
+           // console.log('Deleted callback function:', callbackName);
+       } catch (e) {
+           window[callbackName] = undefined; // IE compatibility
+           console.warn('Could not delete callback function directly:', callbackName);
+       }
+    }
+
+    function showError(message) {
+      mainLoader.style.display = 'none';
+      summaryLoader.style.display = 'none';
+      recsLoader.style.display = 'none';
+      d3.select('#graph').selectAll('*').remove();
+      summaryStatsDiv.innerHTML = '<p>Unavailable</p>';
+      recommendationsContainer.innerHTML = '<p>Unavailable</p>';
+      errorTextP.textContent = message;
+      errorMessageDiv.style.display = 'block';
+      // Disable recommendation button on error
+      recommendButton.disabled = true;
+      recommendButton.style.opacity = 0.6;
+      recommendButton.style.cursor = 'not-allowed';
+    }
+
+
+    // --- D3 Rendering and Interaction ---
+
+    // *** Modify renderKnowledgeMap signature (though we don't use paths directly here) ***
+    function renderKnowledgeMap(data) {
+       console.log('Rendering knowledge map with data:', data); // Data now includes learningPaths
+       mainLoader.style.display = 'none';
+
+       if (!data || !data.nodes || !data.links) {
+           showError('Invalid data provided to renderKnowledgeMap (missing nodes or links).');
+           return;
+       }
+
+       // Enable recommendation button now that data is loaded
+        recommendButton.disabled = false;
+        recommendButton.style.opacity = 1;
+        recommendButton.style.cursor = 'pointer';
+
+       // *** Store the complete data globally (already done in loadData, but good practice) ***
+       knowledgeData = data;
+
+       // ... (keep existing rendering logic for SVG, zoom, simulation, nodes, links, labels) ...
+       const visContainer = document.getElementById('visualization');
+       const width = visContainer.clientWidth;
+       const height = visContainer.clientHeight;
+
+       if (width <= 0 || height <= 0) {
+           console.error("Visualization container has zero width or height. Cannot render.");
+            showError("Cannot render visualization. Container size is invalid.");
+           return;
+       }
+       d3.select('#graph').selectAll('*').remove();
+       zoom = d3.zoom().scaleExtent([0.2, 8]).on('zoom', (event) => g.attr('transform', event.transform));
+       svg = d3.select('#graph').attr('width', width).attr('height', height).call(zoom).on("dblclick.zoom", null);
+       const g = svg.append('g');
+       svg.mainG = g;
+
+       const numNodes = data.nodes.length;
+       const linkDistance = Math.max(100, Math.min(200, 120 + numNodes * 0.5));
+       const chargeStrength = Math.max(-1000, Math.min(-200, -300 - numNodes * 2));
+
+       if (simulation) simulation.stop();
+       simulation = d3.forceSimulation(data.nodes)
+         .force('link', d3.forceLink(data.links).id(d => d.id).distance(d => d.source.isParent !== d.target.isParent ? linkDistance * 0.7 : linkDistance).strength(d => d.source.isParent !== d.target.isParent ? 0.8 : 0.6))
+         .force('charge', d3.forceManyBody().strength(d => d.isParent ? chargeStrength * 1.5 : chargeStrength))
+         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.1))
+         .force('collide', d3.forceCollide().radius(d => getNodeSize(d) + 10).strength(0.8))
+         .force('x', d3.forceX(width / 2).strength(0.05))
+         .force('y', d3.forceY(height / 2).strength(0.05));
+
+       const link = g.append('g').attr('class', 'links').selectAll('line')
+            .data(data.links).enter().append('line')
+            .attr('class', d => d.source.isParent !== d.target.isParent ? 'link parent-child' : 'link')
+            .attr('stroke-width', d => Math.max(1, Math.sqrt(d.strength || 0.1) * 2.5));
+
+        const nodeGroup = g.append('g').attr('class', 'nodes').selectAll('g.node-group')
+            .data(data.nodes).enter().append('g')
+            .attr('class', 'node-group')
+            .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended))
+            .on('mouseover', showTooltip)
+            .on('mouseout', hideTooltip);
+
+        nodeGroup.append('circle')
+            .attr('class', d => `node ${d.isParent ? 'parent' : 'child'}`)
+            .attr('r', d => getNodeSize(d))
+            .attr('fill', d => getNodeColor(d));
+
+        nodeGroup.append('text')
+             .attr('class', d => `node-label ${d.isParent ? 'parent' : ''}`)
+             .attr('dy', d => getNodeSize(d) + (d.isParent ? 16 : 12))
+             .text(d => d.name.length > 25 ? d.name.substring(0, 22) + '...' : d.name)
+             .attr('display', 'none');
+
+       simulation.on('tick', () => {
+         link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+         nodeGroup.attr('transform', d => `translate(${d.x}, ${d.y})`);
+       });
+
+       // Zoom controls setup (ensure listeners are re-attached)
+       const zoomInButton = document.getElementById('zoom-in');
+       const zoomOutButton = document.getElementById('zoom-out');
+       const resetZoomButton = document.getElementById('reset-zoom');
+       zoomInButton.replaceWith(zoomInButton.cloneNode(true));
+       zoomOutButton.replaceWith(zoomOutButton.cloneNode(true));
+       resetZoomButton.replaceWith(resetZoomButton.cloneNode(true));
+       document.getElementById('zoom-in').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1.3));
+       document.getElementById('zoom-out').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.3));
+       document.getElementById('reset-zoom').addEventListener('click', () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity));
+
+       // Filters setup
+       setupFilters();
+       applyFilters(); // Apply initial filters
+
+       // Update summary and basic recommendations (using only node data)
+       updateSummary(data.nodes);
+       generateRecommendations(data.nodes); // This is the text-based one
+     }
+
+    // ... (keep getNodeSize, getNodeColor, showTooltip, hideTooltip, drag functions) ...
+     function getNodeSize(d) {
+      let size = d.isParent ? 16 : 8;
+      if (d.mastery === 'Mastered') size += 2;
+      else if (d.mastery === 'Developing') size += 1;
+      if (d.difficulties && Object.keys(d.difficulties).length > 0) size += 1;
+      return size;
+    }
+    function getNodeColor(d) { /* ... same as before ... */
+        switch (d.mastery) {
+            case 'Mastered': return '#4CAF50';
+            case 'Developing': return '#FFC107';
+            case 'Needs Work': return '#F44336';
+            default: return '#9E9E9E';
+        }
+    }
+    function showTooltip(event, d) { /* ... same as before ... */
+        const [x, y] = d3.pointer(event, document.body);
+        let tooltipContent = `<strong>${d.name || 'Unknown Concept'}</strong><br>`;
+        if (d.isParent) { tooltipContent += `<strong>Main Topic</strong> (ID: ${d.conceptId || 'N/A'})<br>`; }
+        else { tooltipContent += `<strong>Subtopic</strong> (ID: ${d.conceptId || 'N/A'})<br>Description: ${d.fullDescription || 'N/A'}<br>`; }
+        tooltipContent += `Mastery: ${d.mastery || 'N/A'}<br>Performance: ${d.mastery !== 'Not Attempted' ? Math.round((d.performance || 0) * 100) + '%' : 'N/A'}<br>`;
+        if (Array.isArray(d.tags) && d.tags.length > 0) tooltipContent += `Tags: ${d.tags.join(', ')}<br>`;
+        if (d.mastery !== 'Not Attempted' && d.difficulties && Object.keys(d.difficulties).length > 0) {
+            tooltipContent += `<br><strong>Performance by Difficulty:</strong><br>`;
+            Object.entries(d.difficulties).sort().forEach(([level, stats]) => {
+                const total = stats.total || 0; const correct = stats.correct || 0;
+                if (total > 0) { const rate = (correct / total) * 100; tooltipContent += `${level}: ${correct}/${total} (${Math.round(rate)}%)<br>`; }
+                else { tooltipContent += `${level}: 0/0 (N/A)<br>`; } });
+        } else if (d.mastery !== 'Not Attempted') { tooltipContent += '<br>No difficulty data available.'; }
+        tooltipDiv.innerHTML = tooltipContent; tooltipDiv.style.opacity = 1;
+        const tooltipRect = tooltipDiv.getBoundingClientRect(); const visRect = document.getElementById('visualization').getBoundingClientRect();
+        let left = x + 15; let top = y - 15;
+        if (left + tooltipRect.width > visRect.right) left = x - 15 - tooltipRect.width;
+        if (top < visRect.top) top = y + 15;
+        if (top + tooltipRect.height > visRect.bottom) top = y - 15 - tooltipRect.height;
+        tooltipDiv.style.left = `${left}px`; tooltipDiv.style.top = `${top}px`;
+    }
+    function hideTooltip() { /* ... same as before ... */ tooltipDiv.style.opacity = 0; }
+    function dragstarted(event, d) { /* ... same as before ... */ if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+    function dragged(event, d) { /* ... same as before ... */ d.fx = event.x; d.fy = event.y; }
+    function dragended(event, d) { /* ... same as before ... */ if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }
+
+    // --- Filtering Logic ---
+    // ... (keep setupFilters and applyFilters functions) ...
+     function setupFilters() {
+         const checkboxes = document.querySelectorAll('#sidebar input[type="checkbox"]');
+         checkboxes.forEach(cb => cb.addEventListener('change', applyFilters));
+     }
+     function applyFilters() {
+         if (!knowledgeData || !svg || !svg.mainG) return;
+         const showMastered = document.getElementById('show-mastered').checked;
+         const showDeveloping = document.getElementById('show-developing').checked;
+         const showNeedsWork = document.getElementById('show-needs-work').checked;
+         const showNotAttempted = document.getElementById('show-not-attempted').checked;
+         const showEasy = document.getElementById('show-easy').checked;
+         const showMedium = document.getElementById('show-medium').checked;
+         const showHard = document.getElementById('show-hard').checked;
+         const showParent = document.getElementById('show-parent').checked;
+         const showChild = document.getElementById('show-child').checked;
+         const nodeGroups = svg.mainG.selectAll('g.node-group');
+         const links = svg.mainG.selectAll('line.link');
+         const labels = svg.mainG.selectAll('text.node-label');
+         const visibleNodeIds = new Set();
+         nodeGroups.each(function(d) {
+             const nodeElement = d3.select(this); let isVisible = false;
+             if ((d.isParent && !showParent) || (!d.isParent && !showChild)) { isVisible = false; }
+             else {
+                 if (d.mastery === 'Mastered' && showMastered) isVisible = true;
+                 else if (d.mastery === 'Developing' && showDeveloping) isVisible = true;
+                 else if (d.mastery === 'Needs Work' && showNeedsWork) isVisible = true;
+                 else if (d.mastery === 'Not Attempted' && showNotAttempted) isVisible = true;
+                 else if (!d.mastery && showNotAttempted) isVisible = true;
+                 if (isVisible && d.mastery !== 'Not Attempted') {
+                     const difficulties = d.difficulties || {}; const attemptedDifficulties = Object.keys(difficulties);
+                     if (attemptedDifficulties.length > 0) {
+                         const hasVisibleDifficulty = attemptedDifficulties.some(level => (level === 'Easy' && showEasy) || (level === 'Medium' && showMedium) || (level === 'Hard' && showHard) || (!['Easy', 'Medium', 'Hard'].includes(level)));
+                         if (!hasVisibleDifficulty) isVisible = false;
+                     } } }
+             nodeElement.transition().duration(300).style('opacity', isVisible ? 1 : 0.1).style('pointer-events', isVisible ? 'all' : 'none');
+             if (isVisible) visibleNodeIds.add(d.id); });
+         links.transition().duration(300).style('opacity', d => { const sourceVisible = visibleNodeIds.has(d.source.id); const targetVisible = visibleNodeIds.has(d.target.id); return (sourceVisible && targetVisible) ? (d.source.isParent !== d.target.isParent ? 0.7 : 0.6) : 0.05; });
+         labels.transition().duration(300).attr('display', function(d) { return visibleNodeIds.has(d.id) ? null : 'none'; });
+     }
+
+
+    // --- Sidebar Updates ---
+    // ... (keep updateSummary and generateRecommendations functions) ...
+     function updateSummary(nodes) { /* ... same as before ... */
+        summaryLoader.style.display = 'none';
+        const total = nodes.length; const parentNodes = nodes.filter(d => d.isParent).length; const childNodes = nodes.filter(d => !d.isParent).length;
+        if (total === 0) { summaryStatsDiv.innerHTML = '<p>No concept data available.</p>'; return; }
+        const mastered = nodes.filter(d => d.mastery === 'Mastered').length; const developing = nodes.filter(d => d.mastery === 'Developing').length;
+        const needsWork = nodes.filter(d => d.mastery === 'Needs Work').length; const notAttempted = nodes.filter(d => d.mastery === 'Not Attempted').length;
+        const masteredPercent = total > 0 ? (mastered / total) * 100 : 0; const developingPercent = total > 0 ? (developing / total) * 100 : 0;
+        const needsWorkPercent = total > 0 ? (needsWork / total) * 100 : 0; const notAttemptedPercent = total > 0 ? (notAttempted / total) * 100 : 0;
+        const summaryHtml = `<div><strong>Total Concepts:</strong> ${total} (${parentNodes} main topics, ${childNodes} subtopics)</div> <div><strong>Mastered:</strong> ${mastered}/${total} (${Math.round(masteredPercent)}%) <div class="progress-bar"><div class="progress-fill" style="width: ${masteredPercent}%; background-color: #4CAF50;"></div></div></div> <div><strong>Developing:</strong> ${developing}/${total} (${Math.round(developingPercent)}%) <div class="progress-bar"><div class="progress-fill" style="width: ${developingPercent}%; background-color: #FFC107;"></div></div></div> <div><strong>Needs Work:</strong> ${needsWork}/${total} (${Math.round(needsWorkPercent)}%) <div class="progress-bar"><div class="progress-fill" style="width: ${needsWorkPercent}%; background-color: #F44336;"></div></div></div> <div><strong>Not Attempted:</strong> ${notAttempted}/${total} (${Math.round(notAttemptedPercent)}%) <div class="progress-bar"><div class="progress-fill" style="width: ${notAttemptedPercent}%; background-color: #9E9E9E;"></div></div></div>`;
+        summaryStatsDiv.innerHTML = summaryHtml;
+    }
+    function generateRecommendations(nodes) { /* ... same as before ... */
+        recsLoader.style.display = 'none';
+        if (!nodes || nodes.length === 0) { recommendationsContainer.innerHTML = '<p>No recommendation data available.</p>'; return; }
+        const parentNodes = nodes.filter(d => d.isParent); const childNodes = nodes.filter(d => !d.isParent);
+        const needsWorkNodes = childNodes.filter(d => d.mastery === 'Needs Work').sort((a, b) => (a.performance || 0) - (b.performance || 0));
+        const developingNodes = childNodes.filter(d => d.mastery === 'Developing').sort((a, b) => (a.performance || 0) - (b.performance || 0));
+        const notAttemptedNodes = childNodes.filter(d => d.mastery === 'Not Attempted');
+        let recommendationsHtml = ''; const maxRecsPerCategory = 3;
+        if (needsWorkNodes.length > 0) {
+            recommendationsHtml += '<p><strong>Focus on improving:</strong></p>';
+            needsWorkNodes.slice(0, maxRecsPerCategory).forEach(node => { const parentId = Math.floor(parseFloat(node.conceptId || "0")); const parentNode = parentNodes.find(p => parseFloat(p.conceptId || "0") === parentId); const parentName = parentNode ? parentNode.name : "Main Topic"; recommendationsHtml += `<div class="recommendation-item"><strong>${node.name}</strong> (${Math.round((node.performance || 0) * 100)}% mastery) - From ${parentName}</div>`; });
+        }
+        const almostMastered = developingNodes.filter(d => (d.performance || 0) >= 0.65).reverse();
+        if (almostMastered.length > 0) {
+            recommendationsHtml += '<p><strong>Push these to mastery:</strong></p>';
+            almostMastered.slice(0, maxRecsPerCategory).forEach(node => { const parentId = Math.floor(parseFloat(node.conceptId || "0")); const parentNode = parentNodes.find(p => parseFloat(p.conceptId || "0") === parentId); const parentName = parentNode ? parentNode.name : "Main Topic"; recommendationsHtml += `<div class="recommendation-item"><strong>${node.name}</strong> (${Math.round((node.performance || 0) * 100)}% mastery) - From ${parentName}</div>`; });
+        } else if (developingNodes.length > 0 && needsWorkNodes.length < maxRecsPerCategory) {
+            recommendationsHtml += '<p><strong>Continue developing:</strong></p>';
+            developingNodes.slice(0, maxRecsPerCategory).forEach(node => { const parentId = Math.floor(parseFloat(node.conceptId || "0")); const parentNode = parentNodes.find(p => parseFloat(p.conceptId || "0") === parentId); const parentName = parentNode ? parentNode.name : "Main Topic"; recommendationsHtml += `<div class="recommendation-item"><strong>${node.name}</strong> (${Math.round((node.performance || 0) * 100)}% mastery) - From ${parentName}</div>`; });
+        }
+        if (notAttemptedNodes.length > 0) {
+            const parentWithMasteredChildren = new Set(); childNodes.filter(n => n.mastery === 'Mastered').forEach(node => { const parentId = Math.floor(parseFloat(node.conceptId || "0")); parentWithMasteredChildren.add(parentId); });
+            const prioritizedNotAttempted = notAttemptedNodes.filter(node => { const parentId = Math.floor(parseFloat(node.conceptId || "0")); return parentWithMasteredChildren.has(parentId); });
+            const recommendedNew = prioritizedNotAttempted.length > 0 ? prioritizedNotAttempted.slice(0, maxRecsPerCategory) : notAttemptedNodes.slice(0, maxRecsPerCategory);
+            if (recommendedNew.length > 0) {
+                recommendationsHtml += '<p><strong>Explore new concepts:</strong></p>';
+                recommendedNew.forEach(node => { const parentId = Math.floor(parseFloat(node.conceptId || "0")); const parentNode = parentNodes.find(p => parseFloat(p.conceptId || "0") === parentId); const parentName = parentNode ? parentNode.name : "Main Topic"; recommendationsHtml += `<div class="recommendation-item">Explore: <strong>${node.name}</strong> - From ${parentName}</div>`; });
+            }
+        }
+        if (recommendationsHtml === '') {
+            if (childNodes.every(d => d.mastery === 'Mastered')) { recommendationsHtml = '<p>Excellent work! All concepts are mastered.</p>'; }
+            else if (childNodes.every(d => d.mastery === 'Not Attempted')) { recommendationsHtml = '<p>Start exploring concepts to build your knowledge map!</p>'; }
+            else { recommendationsHtml = '<p>Keep up the great work! Continue practicing concepts.</p>'; } }
+        recommendationsContainer.innerHTML = recommendationsHtml; // Ensure container is correctly targeted
+    }
+
+    // --- *** NEW: Learning Path Recommendation Logic *** ---
+    function showLearningPathRecommendation() {
+        console.log("Recommend button clicked");
+        modalStepsContainer.innerHTML = '<p>Calculating recommendation...</p>'; // Show loading state
+        learningPathModal.style.display = 'block'; // Show modal immediately
+
+        if (!knowledgeData || !knowledgeData.nodes || !knowledgeData.learningPaths) {
+            modalTitle.textContent = "Error";
+            modalStepsContainer.innerHTML = "<p>Recommendation data is not available. Please try reloading.</p>";
+            console.error("Missing knowledgeData or required properties for recommendations.");
+            return;
+        }
+
+        // 1. Find Parent Topics that Need Improvement
+        const parentNodes = knowledgeData.nodes.filter(d => d.isParent);
+        const weakParentNodes = parentNodes.filter(d =>
+            d.mastery === 'Needs Work' || d.mastery === 'Developing'
+        );
+
+        if (weakParentNodes.length === 0) {
+             modalTitle.textContent = "Recommendation";
+             modalStepsContainer.innerHTML = "<p>Great job! No specific main topics require urgent attention based on current performance.</p>";
+             return;
+        }
+
+        // 2. Sort Weak Topics (Needs Work first, then lowest performance)
+        weakParentNodes.sort((a, b) => {
+            // Prioritize 'Needs Work' over 'Developing'
+            if (a.mastery === 'Needs Work' && b.mastery !== 'Needs Work') return -1;
+            if (a.mastery !== 'Needs Work' && b.mastery === 'Needs Work') return 1;
+            // If same mastery level, sort by performance (lower is worse)
+            return (a.performance || 0) - (b.performance || 0);
+        });
+
+        const worstTopicNode = weakParentNodes[0];
+        const worstTopicId = worstTopicNode.conceptId; // This is the ID like "1", "2"
+
+        console.log(`Worst performing topic identified: ID=${worstTopicId}, Name=${worstTopicNode.name}, Mastery=${worstTopicNode.mastery}, Perf=${worstTopicNode.performance}`);
+
+        // 3. Get the Learning Path for this Topic ID
+        const pathUrls = knowledgeData.learningPaths[worstTopicId];
+
+        // 4. Display the Path in the Modal
+        modalTitle.textContent = `Recommended Learning Path for: ${worstTopicNode.name}`;
+
+        if (pathUrls && pathUrls.length > 0) {
+            let stepsHtml = '';
+            pathUrls.forEach((url, index) => {
+                // Attempt to extract a more readable name from the URL, default to full URL
+                let displayName = url;
+                try {
+                    const urlParts = url.split('/');
+                    const lastPart = urlParts[urlParts.length - 1];
+                    // Simple cleaning: remove .html, replace underscores/hyphens
+                    displayName = lastPart.replace(/\.html?$/i, '').replace(/[_-]/g, ' ');
+                    // Capitalize words (simple version)
+                    displayName = displayName.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                } catch (e) { /* Ignore errors, use full URL */ }
+
+                stepsHtml += `<p><strong>Step ${index + 1}:</strong> <a href="${url}" target="_blank" title="${url}">${displayName}</a></p>`;
+            });
+            modalStepsContainer.innerHTML = stepsHtml;
+        } else {
+            modalStepsContainer.innerHTML = `<p>No specific learning path steps found for the topic "${worstTopicNode.name}" (ID: ${worstTopicId}) in the configuration sheet.</p><p>Consider reviewing the subtopics marked as 'Needs Work' or 'Developing' for this area.</p>`;
+            console.warn(`No learning path found for topic ID: ${worstTopicId}`);
+        }
+    }
+
+
+    // --- Test Data Generation ---
+    function generateTestData() {
+        console.log("Generating test data with parent-child structure...");
+        // ... (keep existing parent/child concept definitions) ...
+        const parentConcepts = [{ id: "1", name: "String Data Type" }, { id: "2", name: "Numeric Types" }];
+        const childConcepts = [
+          { id: "1.1", name: "Define string data type", fullDescription: "Define string data type...", tags: ["String Basics"] },
+          { id: "1.2", name: "Create string variables", fullDescription: "Create string variables...", tags: ["Quote Syntax"] }, /* ... more child concepts ... */
+          { id: "2.1", name: "Distinguish between numeric types", fullDescription: "Distinguish between integers...", tags: ["Type Distinction"] },
+          { id: "2.2", name: "Perform arithmetic operations", fullDescription: "Perform arithmetic...", tags: ["Basic Operations"] }, /* ... more child concepts ... */
+        ];
+        const difficulties = ["Easy", "Medium", "Hard"]; const masteryLevels = ["Mastered", "Developing", "Needs Work", "Not Attempted"];
+        const nodes = [];
+        parentConcepts.forEach((concept, index) => { /* ... create parent nodes ... */
+            const mastery = masteryLevels[Math.floor(Math.random() * masteryLevels.length)]; let performance = 0;
+            if (mastery === "Mastered") performance = 0.8 + Math.random() * 0.2; else if (mastery === "Developing") performance = 0.5 + Math.random() * 0.29; else if (mastery === "Needs Work") performance = Math.random() * 0.49;
+            nodes.push({ id: index, conceptId: concept.id, name: concept.name, fullDescription: concept.name, isParent: true, parentNum: parseInt(concept.id), performance: performance, mastery: mastery, difficulties: {}, tags: [] }); });
+        childConcepts.forEach((concept, index) => { /* ... create child nodes with random mastery/difficulty ... */
+            const mastery = masteryLevels[Math.floor(Math.random() * masteryLevels.length)]; let performance = 0; let difficultiesData = {};
+            if (mastery === "Mastered") performance = 0.8 + Math.random() * 0.2; else if (mastery === "Developing") performance = 0.5 + Math.random() * 0.29; else if (mastery === "Needs Work") performance = Math.random() * 0.49;
+            if (mastery !== "Not Attempted") { const numDiff = 1 + Math.floor(Math.random() * 3); const usedDiffs = new Set(); for (let i = 0; i < numDiff; i++) { const diffLevel = difficulties[Math.floor(Math.random() * difficulties.length)]; if (!usedDiffs.has(diffLevel)) { const total = 5 + Math.floor(Math.random() * 15); const diffPerformance = Math.max(0, Math.min(1, performance + (Math.random() - 0.5) * 0.4)); const correct = Math.floor(diffPerformance * total); difficultiesData[diffLevel] = { correct: correct, total: total }; usedDiffs.add(diffLevel); } } }
+            nodes.push({ id: parentConcepts.length + index, conceptId: concept.id, name: concept.fullDescription, fullDescription: concept.fullDescription, isParent: false, parentNum: parseInt(concept.id), performance: performance, mastery: mastery, difficulties: difficultiesData, tags: concept.tags || [] }); });
+        const links = [];
+        for (let i = 0; i < nodes.length; i++) { const node = nodes[i]; if (!node.isParent) { const parentNode = nodes.find(n => n.isParent && n.parentNum === Math.floor(node.parentNum)); if (parentNode) { links.push({ source: parentNode.id, target: node.id, strength: 0.8 }); } } }
+
+        // *** NEW: Add mock learningPaths data ***
+        const mockLearningPaths = {
+            "1": [ // For String Data Type
+                "https://example.com/python/strings/intro.html",
+                "https://example.com/python/strings/indexing_slicing.html",
+                "https://example.com/python/strings/methods.html",
+                "https://example.com/python/strings/quiz.html"
+            ],
+            "2": [ // For Numeric Types
+                "https://example.com/python/numbers/types.html",
+                "https://example.com/python/numbers/operations.html",
+                "https://example.com/python/numbers/quiz.html"
+            ]
+            // Add more paths as needed for other test parent topics
+        };
+
+        console.log(`Generated ${nodes.length} test nodes and ${links.length} test links.`);
+        // *** Return the updated structure including learningPaths ***
+        return { nodes, links, learningPaths: mockLearningPaths };
+    }
+  </script>
+</body>
+</html>
