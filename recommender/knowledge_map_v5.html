@@ -1,3 +1,5 @@
+<!-- to be used together with knowledge_ma_v3.gs (UPDATED VERSION) -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,34 +8,319 @@
   <title>Student Knowledge Map</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <style>
-    /* --- Keep ALL your ORIGINAL CSS --- */
-    body { /* ... */ }
-    #header { /* ... */ }
-    #title { /* ... */ }
-    #container { /* ... */ }
-    #sidebar { /* ... */ }
-    #visualization { /* ... */ }
-    #graph { /* ... */ }
-    .node.parent { /* ... */ }
-    .node.child { /* ... */ }
-    .node:hover { /* ... */ }
-    .link { /* ... */ }
-    .link.parent-child { /* ... */ }
-    .tooltip { /* ... */ }
-    .filter-section, .legend, .summary-section, .recommendations { /* ... */ }
-    /* ... etc ... */
-    .node-label { /* ... */ }
-    .node-label.parent { /* ... */ }
-    .legend-item.node-type { /* ... */ }
-    .legend-shape { /* ... */ }
-    .legend-shape.parent { /* ... */ }
-    .legend-shape.child { /* ... */ }
-    #retry-button, #test-data-button { /* ... */ }
-    .loader { /* ... */ }
-    .spinner { /* ... */ }
-    /* ... keep all other original styles ... */
+    /* --- YOUR ORIGINAL CSS (KEEP ALL OF IT) --- */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
 
-    /* --- ADD NEW CSS FOR MODAL --- */
+    #header {
+      background-color: #3f51b5;
+      color: white;
+      padding: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+
+    #title {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    #container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 280px;
+      padding: 15px;
+      background-color: #f8f8f8;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+
+    #visualization {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: #fff;
+    }
+
+    #graph {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .node.parent {
+      stroke-width: 2px;
+      stroke: #333;
+    }
+
+    .node.child {
+      cursor: pointer;
+      stroke-width: 1.5px;
+      stroke: #fff;
+    }
+
+    .node:hover {
+      stroke: #333;
+      stroke-width: 2px;
+    }
+
+    .link {
+      stroke: #bbb;
+      stroke-opacity: 0.6;
+    }
+
+    .link.parent-child {
+      stroke: #666;
+      stroke-width: 2px;
+      stroke-opacity: 0.7;
+    }
+
+    .tooltip {
+      position: absolute;
+      background-color: rgba(255, 255, 255, 0.95);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      max-width: 280px;
+      z-index: 10;
+    }
+
+    .filter-section, .legend, .summary-section, .recommendations {
+        margin-bottom: 20px;
+        background-color: white;
+        border-radius: 5px;
+        padding: 12px 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    }
+
+    .filter-section h3, .legend h3, .summary-section h3, .recommendations h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: #3f51b5;
+        font-size: 16px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+    }
+
+    .filter-option, .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .filter-option input[type="checkbox"] {
+      margin-right: 10px;
+      cursor: pointer;
+    }
+     .filter-option label {
+         cursor: pointer;
+         flex-grow: 1;
+     }
+
+    .legend-color {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+
+    .summary-section div {
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .progress-bar {
+      background-color: #e0e0e0;
+      height: 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease-in-out;
+    }
+
+    .recommendation-item {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+     .recommendation-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+     .recommendation-item strong {
+         color: #333;
+     }
+     .recommendations p {
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #555;
+     }
+
+    .controls {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 5px;
+      padding: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-button {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.2s ease;
+    }
+
+    .control-button:hover {
+      background-color: #303f9f;
+    }
+    .control-button:active {
+        background-color: #1a237e;
+    }
+
+    .loader {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: #3f51b5;
+      width: 36px;
+      height: 36px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #error-message {
+      color: #D32F2F;
+      background-color: #FFCDD2;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      border: 1px solid #EF9A9A;
+      display: none;
+      font-size: 14px;
+    }
+     #error-message p {
+         margin: 0 0 10px 0;
+     }
+     #error-message button {
+        margin-right: 10px;
+        margin-top: 5px;
+     }
+
+    #retry-button, #test-data-button {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 15px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s ease;
+      display: inline-block;
+      margin-top: 10px;
+    }
+     #retry-button:hover {
+         background-color: #303f9f;
+     }
+
+    #test-data-button {
+      background-color: #FF9800;
+    }
+     #test-data-button:hover {
+        background-color: #F57C00;
+     }
+
+    .node-label {
+        font-size: 10px;
+        fill: #333;
+        pointer-events: none;
+        text-anchor: middle;
+    }
+
+    .node-label.parent {
+        font-size: 12px;
+        font-weight: bold;
+        fill: #222;
+    }
+
+    .legend-item.node-type {
+        margin-top: 5px;
+        padding-top: 5px;
+        border-top: 1px solid #eee;
+    }
+
+    .legend-shape {
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
+        border-radius: 50%;
+        background-color: #ccc;
+    }
+
+    .legend-shape.parent {
+        border: 2px solid #333;
+        background-color: #4CAF50; /* Changed color to match legend text */
+    }
+
+    .legend-shape.child {
+        border: 1.5px solid #fff;
+        background-color: #FFC107; /* Changed color to match legend text */
+    }
+    /* --- END YOUR ORIGINAL CSS --- */
+
+
+    /* --- ADD NEW CSS FOR MODAL AND BUTTON--- */
     .modal {
       display: none; /* Hidden by default */
       position: fixed; /* Stay in place */
@@ -63,12 +350,12 @@
       right: 20px;
       font-size: 28px;
       font-weight: bold;
+      cursor: pointer;
     }
     .close-button:hover,
     .close-button:focus {
       color: black;
       text-decoration: none;
-      cursor: pointer;
     }
     #modal-topic-title {
         margin-top: 0;
@@ -91,22 +378,22 @@
         word-break: break-all;
     }
      #modal-steps a:hover { text-decoration: underline; }
-    /* Optional: Style the new button */
-    #recommend-topics-button {
+    /* Style the new button */
+    #recommend-materials-button {
         display: block;
         width: 100%;
-        margin-top: 15px;
+        margin-top: 15px; /* Space above button */
         padding: 10px 15px;
         font-size: 14px;
-        background-color: #FF9800; /* Orange color like test button */
+        background-color: #4CAF50; /* Green like Mastered */
         color: white;
         border: none;
         border-radius: 4px;
         cursor: pointer;
         transition: background-color 0.2s ease;
     }
-     #recommend-topics-button:hover { background-color: #F57C00; }
-     #recommend-topics-button:disabled { background-color: #bdbdbd; cursor: not-allowed; }
+     #recommend-materials-button:hover { background-color: #388E3C; }
+     #recommend-materials-button:disabled { background-color: #bdbdbd; cursor: not-allowed; opacity: 0.7; }
     /* --- END NEW CSS --- */
 
   </style>
@@ -118,98 +405,85 @@
 
   <div id="container">
     <div id="sidebar">
-      <!-- Keep ORIGINAL error message div -->
-      <div id="error-message" style="display: none;">
+      <!-- Error message area (Your original structure) -->
+      <div id="error-message">
          <p id="error-text"></p>
         <button id="retry-button">Retry</button>
         <button id="test-data-button">Use Test Data</button>
       </div>
 
-      <!-- Keep ORIGINAL Filters -->
+      <!-- Filters (Your original structure) -->
       <div class="filter-section">
-        <h3>Mastery Level</h3>
-        <!-- ... keep all filter options ... -->
+          <!-- ... your filter options ... -->
       </div>
       <div class="filter-section">
-          <h3>Node Type</h3>
-          <!-- ... keep node type filter options ... -->
+          <!-- ... your filter options ... -->
       </div>
       <div class="filter-section">
-          <h3>Difficulty Level (Attempted)</h3>
-          <!-- ... keep difficulty filter options ... -->
+          <!-- ... your filter options ... -->
       </div>
 
-      <!-- Keep ORIGINAL Legend -->
+      <!-- Legend (Your original structure) -->
       <div class="legend">
-        <h3>Legend</h3>
-        <!-- ... keep all legend items ... -->
+          <!-- ... your legend items ... -->
       </div>
 
-      <!-- Keep ORIGINAL Summary -->
+      <!-- Summary (Your original structure) -->
       <div class="summary-section">
-        <h3>Knowledge Summary</h3>
-        <div id="summary-stats">
-          <div class="loader" id="summary-loader">
-            <div class="spinner"></div>
-            <p>Loading summary...</p>
-          </div>
-        </div>
+          <!-- ... your summary structure ... -->
       </div>
 
-      <!-- Keep ORIGINAL Recommendations section -->
+      <!-- Recommendations (Your original structure) -->
       <div class="recommendations">
         <h3>Recommendations</h3>
         <div id="recommendations-container">
-           <div class="loader" id="recs-loader">
-             <div class="spinner"></div>
-             <p>Generating recommendations...</p>
-           </div>
+           <!-- Loader for recommendations -->
+          <div class="loader" id="recs-loader">
+            <div class="spinner"></div>
+            <p>Generating recommendations...</p>
+          </div>
         </div>
         <!-- *** ADD THE NEW BUTTON HERE *** -->
-        <button id="recommend-topics-button" disabled>Recommend Learning Path</button>
+        <button id="recommend-materials-button" disabled>Recommend Learning Materials</button>
+        <!-- *** END ADDING NEW BUTTON *** -->
       </div>
     </div> <!-- End Sidebar -->
 
-    <!-- Keep ORIGINAL Visualization Area -->
+    <!-- Visualization Area (Your original structure) -->
     <div id="visualization">
-      <svg id="graph"></svg>
-      <div class="tooltip" id="tooltip"></div>
-      <div class="controls">
-        <button class="control-button" id="zoom-in">Zoom In</button>
-        <button class="control-button" id="zoom-out">Zoom Out</button>
-        <button class="control-button" id="reset-zoom">Reset View</button>
-      </div>
-      <div class="loader" id="main-loader">
-        <div class="spinner"></div>
-        <p>Loading knowledge map...</p>
-      </div>
+        <!-- ... your svg, tooltip, controls, loader ... -->
     </div> <!-- End Visualization -->
   </div> <!-- End Container -->
 
-  <!-- *** ADD NEW MODAL STRUCTURE (just before closing </body>) *** -->
+
+  <!-- *** ADD NEW MODAL HTML (Place Before Closing </body>) *** -->
   <div id="learning-path-modal" class="modal">
     <div class="modal-content">
       <span class="close-button" id="modal-close-button">×</span>
-      <h3 id="modal-topic-title">Learning Path</h3>
+      <h3 id="modal-topic-title">Recommended Learning Path</h3>
       <div id="modal-steps">
-        <p>Loading learning path...</p>
+        <!-- Content will be added by JavaScript -->
+        <p>Loading recommendation...</p>
       </div>
     </div>
   </div>
+  <!-- *** END ADDING NEW MODAL HTML *** -->
+
 
   <script>
     // --- Configuration ---
-    const apiUrl = 'https://script.google.com/macros/s/AKfycbwv8iDMpLh7M_Ct1og2oamvzBddv4QRoK9DuZRfvQsOTHuY2NAv7W8v-kcRmLjk8eFD/exec'; // UPDATE IF NEEDED
+    // Use the URL you provided, ensure it points to the *UPDATED* script
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbwv8iDMpLh7M_Ct1og2oamvzBddv4QRoK9DuZRfvQsOTHuY2NAv7W8v-kcRmLjk8eFD/exec';
 
     // --- Global Variables ---
-    // Keep original globals
-    let knowledgeData = null; // *** This will now hold { nodes, links, learningPaths } ***
+    // Your original variables
+    let knowledgeData = null; // *** IMPORTANT: This will now hold { nodes, links, learningPaths } ***
     let simulation = null;
     let svg = null;
     let zoom = null;
 
     // --- DOM Elements ---
-    // Keep original DOM element variables
+    // Your original elements
     const errorMessageDiv = document.getElementById('error-message');
     const errorTextP = document.getElementById('error-text');
     const retryButton = document.getElementById('retry-button');
@@ -221,8 +495,8 @@
     const recommendationsContainer = document.getElementById('recommendations-container');
     const graphSvg = document.getElementById('graph');
     const tooltipDiv = document.getElementById('tooltip');
-    // *** ADD NEW DOM Elements for Modal and Button ***
-    const recommendButton = document.getElementById('recommend-topics-button');
+    // *** ADD NEW DOM Elements ***
+    const recommendMaterialsButton = document.getElementById('recommend-materials-button');
     const learningPathModal = document.getElementById('learning-path-modal');
     const modalCloseButton = document.getElementById('modal-close-button');
     const modalTitle = document.getElementById('modal-topic-title');
@@ -231,96 +505,111 @@
 
     // --- Event Listeners ---
     document.addEventListener('DOMContentLoaded', function() {
-      if (!apiUrl || apiUrl === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') { /* ... keep original config check ... */ }
+        // Your original check
+        if (!apiUrl || apiUrl.includes('YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE')) {
+             showError('Configuration error: Please update the apiUrl variable in the HTML script with your deployed Google Apps Script URL.');
+             mainLoader.style.display = 'none';
+             return;
+        }
 
-      errorMessageDiv.style.display = 'none';
-      recommendButton.disabled = true; // Disable button initially
+        // Your original setup
+        errorMessageDiv.style.display = 'none';
+        recommendMaterialsButton.disabled = true; // Start disabled
 
-      retryButton.addEventListener('click', function() { /* ... keep original retry logic ... */
-          errorMessageDiv.style.display = 'none';
-          mainLoader.style.display = 'block';
-          summaryLoader.style.display = 'block';
-          recsLoader.style.display = 'block';
-          summaryStatsDiv.innerHTML = '<div class="loader" id="summary-loader"><div class="spinner"></div><p>Loading summary...</p></div>'; // Reset loaders
-          recommendationsContainer.innerHTML = '<div class="loader" id="recs-loader"><div class="spinner"></div><p>Generating recommendations...</p></div>';
-          recommendButton.disabled = true; // Disable button on retry
-          loadData();
-       });
+        retryButton.addEventListener('click', function() {
+            // Your original retry logic
+            errorMessageDiv.style.display = 'none';
+            mainLoader.style.display = 'block';
+            summaryLoader.style.display = 'block'; // Ensure loaders are reset
+            recsLoader.style.display = 'block';
+            summaryStatsDiv.innerHTML = '<div class="loader" id="summary-loader"><div class="spinner"></div><p>Loading summary...</p></div>';
+            recommendationsContainer.innerHTML = '<div class="loader" id="recs-loader"><div class="spinner"></div><p>Generating recommendations...</p></div>';
+            recommendMaterialsButton.disabled = true; // Disable on retry
+            loadData();
+        });
 
-      testDataButton.addEventListener('click', function() { /* ... keep original test data logic ... */
-          errorMessageDiv.style.display = 'none';
-          mainLoader.style.display = 'block';
-          summaryLoader.style.display = 'block';
-          recsLoader.style.display = 'block';
-          summaryStatsDiv.innerHTML = '<div class="loader" id="summary-loader"><div class="spinner"></div><p>Loading summary...</p></div>'; // Reset loaders
-          recommendationsContainer.innerHTML = '<div class="loader" id="recs-loader"><div class="spinner"></div><p>Generating recommendations...</p></div>';
-          recommendButton.disabled = true; // Disable button
-          setTimeout(() => {
-              try {
-                 // *** Ensure test data includes learningPaths ***
-                 const testData = generateTestData();
-                 // Store globally like real data
-                 knowledgeData = testData;
-                 renderKnowledgeMap(testData); // Pass nodes/links part if preferred, but render needs global knowledgeData later
-              } catch (error) { /* ... error handling ... */ }
-          }, 50);
-      });
+        testDataButton.addEventListener('click', function() {
+            // Your original test data logic
+            errorMessageDiv.style.display = 'none';
+            mainLoader.style.display = 'block';
+            summaryLoader.style.display = 'block'; // Ensure loaders are reset
+            recsLoader.style.display = 'block';
+            summaryStatsDiv.innerHTML = '<div class="loader" id="summary-loader"><div class="spinner"></div><p>Loading summary...</p></div>';
+            recommendationsContainer.innerHTML = '<div class="loader" id="recs-loader"><div class="spinner"></div><p>Generating recommendations...</p></div>';
+            recommendMaterialsButton.disabled = true; // Disable
+            setTimeout(() => {
+                try {
+                    const testData = generateTestData(); // This now returns learningPaths too
+                    knowledgeData = testData; // Store globally
+                    renderKnowledgeMap(testData); // Render
+                } catch (error) {
+                   console.error("Error generating or rendering test data:", error);
+                   showError("Failed to render test data: " + error.message);
+                }
+            }, 50);
+        });
 
-      // *** ADD NEW Event Listeners for Modal and Button ***
-      recommendButton.addEventListener('click', showLearningPathRecommendation);
-      modalCloseButton.addEventListener('click', () => { learningPathModal.style.display = 'none'; });
-      window.addEventListener('click', (event) => {
-          if (event.target === learningPathModal) { learningPathModal.style.display = 'none'; }
-      });
+        // *** ADD NEW Event Listeners for Modal/Button ***
+        recommendMaterialsButton.addEventListener('click', showLearningPathRecommendation);
+        modalCloseButton.addEventListener('click', () => { learningPathModal.style.display = 'none'; });
+        // Close modal if clicked outside the content area
+        window.addEventListener('click', (event) => {
+            if (event.target === learningPathModal) {
+                learningPathModal.style.display = 'none';
+            }
+        });
+        // *** END NEW Listeners ***
 
-      // Load data immediately
-      loadData();
+        // Your original call to load data
+        loadData();
     });
 
     // --- Core Functions ---
 
     function loadData() {
-      console.log('Attempting to load data from:', apiUrl);
-      mainLoader.style.display = 'block';
-      summaryLoader.style.display = 'block';
-      recsLoader.style.display = 'block';
-      errorMessageDiv.style.display = 'none';
-      recommendButton.disabled = true; // Ensure button is disabled while loading
+        // Your original loadData function structure
+        console.log('Attempting to load data from:', apiUrl);
+        mainLoader.style.display = 'block';
+        summaryLoader.style.display = 'block';
+        recsLoader.style.display = 'block';
+        errorMessageDiv.style.display = 'none';
+        recommendMaterialsButton.disabled = true; // Disable button during load
 
-      const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.round(10000 * Math.random());
-      const timeoutId = setTimeout(() => { /* ... keep original timeout logic ... */ }, 15000);
+        const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.round(10000 * Math.random());
+        const timeoutId = setTimeout(() => { /* ... timeout logic ... */ }, 15000);
 
-      window[callbackName] = function(data) {
-        clearTimeout(timeoutId);
-        console.log('Received data via JSONP callback:', callbackName);
-        try {
-           if (data && data.error) { /* ... keep original error handling ... */ }
-           // *** SLIGHT MODIFICATION: Check for all parts and store globally ***
-           else if (data && data.nodes && data.links && data.learningPaths !== undefined) {
-               knowledgeData = data; // Store the whole structure globally
-               renderKnowledgeMap(knowledgeData); // Pass data to render
-               recommendButton.disabled = false; // *** Enable button on successful load ***
-           } else {
-               console.error('Invalid data structure received:', data);
-               showError('Received invalid data structure from server. Expected nodes, links, and learningPaths.');
-           }
-        } catch (error) { /* ... keep original catch block ... */
-        } finally {
-          cleanupJsonp(script, callbackName);
-        }
-      };
+        window[callbackName] = function(data) {
+            clearTimeout(timeoutId);
+            console.log('Received data via JSONP callback:', callbackName);
+            try {
+               if (data && data.error) { /* ... error handling ... */ }
+               // *** MODIFY Check: Ensure learningPaths exists ***
+               else if (data && data.nodes && data.links && data.learningPaths !== undefined) {
+                   knowledgeData = data; // Store the *entire* response globally
+                   renderKnowledgeMap(knowledgeData); // Call render (uses nodes/links)
+                   recommendMaterialsButton.disabled = false; // *** Enable button on success ***
+               } else {
+                   // Handle case where learningPaths is missing from response
+                   console.error('Invalid data structure received (missing learningPaths?):', data);
+                   showError('Received invalid data structure from server. Expected nodes, links, and learningPaths.');
+               }
+            } catch (error) { /* ... error handling ... */
+            } finally {
+              cleanupJsonp(script, callbackName);
+            }
+        };
 
-      const script = document.createElement('script');
-      script.src = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'callback=' + callbackName + '&_=' + Date.now();
-      script.onerror = function(event) { /* ... keep original script error handling ... */ };
-      document.head.appendChild(script);
+        const script = document.createElement('script');
+        script.src = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'callback=' + callbackName + '&_=' + Date.now();
+        script.onerror = function(event) { /* ... error handling ... */ };
+        document.head.appendChild(script);
     }
 
-    // Keep original cleanupJsonp function
+    // Your original cleanupJsonp function
     function cleanupJsonp(scriptElement, callbackName) { /* ... */ }
 
-    // Keep original showError function, add button disabling
-     function showError(message) {
+    // Your original showError function (modified to disable button)
+    function showError(message) {
       mainLoader.style.display = 'none';
       summaryLoader.style.display = 'none';
       recsLoader.style.display = 'none';
@@ -329,177 +618,152 @@
       recommendationsContainer.innerHTML = '<p>Unavailable</p>';
       errorTextP.textContent = message;
       errorMessageDiv.style.display = 'block';
-      recommendButton.disabled = true; // *** Disable button on error ***
+      recommendMaterialsButton.disabled = true; // *** Disable button on error ***
     }
 
     // --- D3 Rendering and Interaction ---
 
-    // Keep ORIGINAL renderKnowledgeMap function (it implicitly uses global knowledgeData for node/link properties)
-    // No need to pass learningPaths specifically here, it's used later by the button click
-    function renderKnowledgeMap(data) { // `data` here is the full {nodes, links, learningPaths}
-       console.log('Rendering knowledge map...'); // Removed data log, it's large
-       mainLoader.style.display = 'none';
+    // Your original renderKnowledgeMap function (no changes needed inside)
+    // It uses the `nodes` and `links` from the `data` object passed to it.
+    function renderKnowledgeMap(data) { /* ... keep your original code ... */ }
 
-       // Use data.nodes and data.links for rendering
-       if (!data || !data.nodes || !data.links) {
-           showError('Invalid data for rendering (missing nodes or links).');
-           return;
-       }
+    // Your original getNodeSize function
+    function getNodeSize(d) { /* ... keep your original code ... */ }
 
-       const visContainer = document.getElementById('visualization');
-       const width = visContainer.clientWidth;
-       const height = visContainer.clientHeight;
+    // Your original getNodeColor function
+    function getNodeColor(d) { /* ... keep your original code ... */ }
 
-       if (width <= 0 || height <= 0) { /* ... error handling ... */ }
+    // Your original showTooltip function
+    function showTooltip(event, d) { /* ... keep your original code ... */ }
 
-       d3.select('#graph').selectAll('*').remove();
-       zoom = d3.zoom().scaleExtent([0.2, 8]).on('zoom', (event) => g.attr('transform', event.transform));
-       svg = d3.select('#graph').attr('width', width).attr('height', height).call(zoom).on("dblclick.zoom", null);
-       const g = svg.append('g');
-       svg.mainG = g;
+    // Your original hideTooltip function
+    function hideTooltip() { /* ... keep your original code ... */ }
 
-       const numNodes = data.nodes.length;
-       const linkDistance = Math.max(100, Math.min(200, 120 + numNodes * 0.5));
-       const chargeStrength = Math.max(-1000, Math.min(-200, -300 - numNodes * 2));
+    // Your original dragstarted, dragged, dragended functions
+    function dragstarted(event, d) { /* ... keep your original code ... */ }
+    function dragged(event, d) { /* ... keep your original code ... */ }
+    function dragended(event, d) { /* ... keep your original code ... */ }
 
-       if (simulation) simulation.stop();
-       simulation = d3.forceSimulation(data.nodes) // Use data.nodes
-         .force('link', d3.forceLink(data.links).id(d => d.id).distance(d => d.source.isParent !== d.target.isParent ? linkDistance * 0.7 : linkDistance).strength(d => d.source.isParent !== d.target.isParent ? 0.8 : 0.6)) // Use data.links
-         // ... other forces ...
-         .force('charge', d3.forceManyBody().strength(d => d.isParent ? chargeStrength * 1.5 : chargeStrength))
-         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.1))
-         .force('collide', d3.forceCollide().radius(d => getNodeSize(d) + 10).strength(0.8))
-         .force('x', d3.forceX(width / 2).strength(0.05))
-         .force('y', d3.forceY(height / 2).strength(0.05));
+    // --- Filtering Logic ---
 
-       const link = g.append('g').attr('class', 'links').selectAll('line')
-            .data(data.links).enter().append('line') // Use data.links
-            .attr('class', d => d.source.isParent !== d.target.isParent ? 'link parent-child' : 'link')
-            .attr('stroke-width', d => Math.max(1, Math.sqrt(d.strength || 0.1) * 2.5));
+    // Your original setupFilters function
+    function setupFilters() { /* ... keep your original code ... */ }
 
-       const nodeGroup = g.append('g').attr('class', 'nodes').selectAll('g.node-group')
-            .data(data.nodes).enter().append('g') // Use data.nodes
-            .attr('class', 'node-group')
-            .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended))
-            .on('mouseover', showTooltip).on('mouseout', hideTooltip);
+    // Your original applyFilters function
+    // It works by selecting elements from the SVG (`svg.mainG`), which have data bound
+    // No direct dependency on how `knowledgeData` is structured here.
+    function applyFilters() { /* ... keep your original code ... */ }
 
-       nodeGroup.append('circle') /* ... */
-            .attr('class', d => `node ${d.isParent ? 'parent' : 'child'}`)
-            .attr('r', d => getNodeSize(d))
-            .attr('fill', d => getNodeColor(d));
-       nodeGroup.append('text') /* ... */
-             .attr('class', d => `node-label ${d.isParent ? 'parent' : ''}`)
-             .attr('dy', d => getNodeSize(d) + (d.isParent ? 16 : 12))
-             .text(d => d.name.length > 25 ? d.name.substring(0, 22) + '...' : d.name)
-             .attr('display', 'none'); // Initially hidden
+    // --- Sidebar Updates ---
 
-       simulation.on('tick', () => { /* ... update positions ... */ });
+    // Your original updateSummary function
+    function updateSummary(nodes) { /* ... keep your original code ... */ }
 
-       // Keep original zoom controls setup
-       const zoomInButton = document.getElementById('zoom-in'); /* ... clone and re-attach listeners ... */
-       const zoomOutButton = document.getElementById('zoom-out');
-       const resetZoomButton = document.getElementById('reset-zoom');
-        zoomInButton.replaceWith(zoomInButton.cloneNode(true));
-        zoomOutButton.replaceWith(zoomOutButton.cloneNode(true));
-        resetZoomButton.replaceWith(resetZoomButton.cloneNode(true));
-        document.getElementById('zoom-in').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1.3));
-        document.getElementById('zoom-out').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.3));
-        document.getElementById('reset-zoom').addEventListener('click', () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity));
+    // Your original generateRecommendations function
+    function generateRecommendations(nodes) { /* ... keep your original code ... */ }
 
 
-       // Keep original filters setup
-       setupFilters(); // Uses global knowledgeData implicitly via SVG elements
-       applyFilters();
-
-       // Keep original summary and recommendations update
-       updateSummary(data.nodes);       // Use data.nodes
-       generateRecommendations(data.nodes); // Use data.nodes
-     }
-
-    // Keep ORIGINAL getNodeSize, getNodeColor, showTooltip, hideTooltip, drag functions
-    function getNodeSize(d) { /* ... */ }
-    function getNodeColor(d) { /* ... */ }
-    function showTooltip(event, d) { /* ... */ }
-    function hideTooltip() { /* ... */ }
-    function dragstarted(event, d) { /* ... */ }
-    function dragged(event, d) { /* ... */ }
-    function dragended(event, d) { /* ... */ }
-
-    // Keep ORIGINAL Filtering Logic (setupFilters, applyFilters)
-    function setupFilters() { /* ... */ }
-    function applyFilters() { /* ... uses svg.mainG which has data bound */ }
-
-    // Keep ORIGINAL Sidebar Updates (updateSummary, generateRecommendations)
-    function updateSummary(nodes) { /* ... */ }
-    function generateRecommendations(nodes) { /* ... */ }
-
-
-    // --- *** ADD NEW Learning Path Recommendation Logic *** ---
+    // --- *** ADD NEW Recommendation Function *** ---
     function showLearningPathRecommendation() {
         console.log("Recommend button clicked");
-        // Use the globally stored knowledgeData
+
+        // Use the globally stored knowledgeData which includes learningPaths
         if (!knowledgeData || !knowledgeData.nodes || !knowledgeData.learningPaths) {
-            alert("Recommendation data is not available. Please wait for the map to load or try reloading.");
-            console.error("Missing knowledgeData or required properties for recommendations.");
+            alert("Recommendation data is not yet available. Please wait or try reloading.");
+            console.error("Cannot generate recommendation: knowledgeData is missing or incomplete.");
             return;
         }
 
-        modalStepsContainer.innerHTML = '<p>Calculating recommendation...</p>';
+        // Show modal with loading message
+        modalTitle.textContent = "Recommended Learning Path";
+        modalStepsContainer.innerHTML = '<p>Analyzing performance...</p>';
         learningPathModal.style.display = 'block';
 
+        // 1. Find Parent Topics needing improvement
         const parentNodes = knowledgeData.nodes.filter(d => d.isParent);
-        const weakParentNodes = parentNodes.filter(d => d.mastery === 'Needs Work' || d.mastery === 'Developing');
+        const weakParentNodes = parentNodes.filter(d =>
+            d.mastery === 'Needs Work' || d.mastery === 'Developing'
+        );
 
+        // 2. Handle cases: All mastered or no weak topics
         if (weakParentNodes.length === 0) {
-             modalTitle.textContent = "Recommendation";
-             modalStepsContainer.innerHTML = "<p>Great job! No specific main topics require urgent attention based on current performance.</p>";
+            if (parentNodes.length > 0 && parentNodes.every(d => d.mastery === 'Mastered')) {
+                 modalStepsContainer.innerHTML = "<p>Excellent! All main topics are currently marked as Mastered.</p>";
+            } else if (parentNodes.length > 0) {
+                 modalStepsContainer.innerHTML = "<p>Great work! No main topics are currently marked as 'Needs Work' or 'Developing'.</p>";
+            } else {
+                 modalStepsContainer.innerHTML = "<p>No main topic performance data available to generate a recommendation.</p>";
+            }
              return;
         }
 
-        weakParentNodes.sort((a, b) => { /* ... sort logic ... */
+        // 3. Sort Weak Topics (Needs Work first, then lowest performance)
+        weakParentNodes.sort((a, b) => {
             if (a.mastery === 'Needs Work' && b.mastery !== 'Needs Work') return -1;
             if (a.mastery !== 'Needs Work' && b.mastery === 'Needs Work') return 1;
             return (a.performance || 0) - (b.performance || 0);
         });
 
         const worstTopicNode = weakParentNodes[0];
-        const worstTopicId = worstTopicNode.conceptId;
+        const worstTopicId = worstTopicNode.conceptId; // e.g., "1", "2"
 
-        // Use knowledgeData.learningPaths
+        console.log(`Worst performing topic: ID=${worstTopicId}, Name=${worstTopicNode.name}, Mastery=${worstTopicNode.mastery}`);
+
+        // 4. Get Learning Path from the globally stored data
         const pathUrls = knowledgeData.learningPaths[worstTopicId];
 
-        modalTitle.textContent = `Recommended Learning Path for: ${worstTopicNode.name}`;
+        // 5. Display Path in Modal
+        modalTitle.textContent = `Learning Path for: ${worstTopicNode.name}`; // Update title
 
         if (pathUrls && pathUrls.length > 0) {
             let stepsHtml = '';
-            pathUrls.forEach((url, index) => { /* ... format steps ... */
-                let displayName = url; try { const urlParts = url.split('/'); const lastPart = urlParts[urlParts.length - 1]; displayName = lastPart.replace(/\.html?$/i, '').replace(/[_-]/g, ' '); displayName = displayName.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '); } catch (e) {}
-                stepsHtml += `<p><strong>Step ${index + 1}:</strong> <a href="${url}" target="_blank" title="${url}">${displayName}</a></p>`;
+            pathUrls.forEach((url, index) => {
+                // Basic URL formatting for display
+                let displayName = url;
+                try {
+                    const urlObj = new URL(url); // Use URL object for robustness if needed
+                    displayName = urlObj.pathname.split('/').pop().replace(/\.html?$/i, '').replace(/[_-]/g, ' ');
+                    // Simple title case
+                    displayName = displayName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                    if (!displayName) displayName = url; // Fallback if empty
+                } catch (e) { /* Use original URL if parsing fails */ }
+
+                stepsHtml += `<p><strong>Step ${index + 1}:</strong> <a href="${url}" target="_blank" title="Open ${url}">${displayName}</a></p>`;
             });
             modalStepsContainer.innerHTML = stepsHtml;
         } else {
-            modalStepsContainer.innerHTML = `<p>No specific learning path steps found for "${worstTopicNode.name}" (ID: ${worstTopicId}).</p>`;
+            modalStepsContainer.innerHTML = `<p>No specific learning steps were found for the topic "${worstTopicNode.name}" (ID: ${worstTopicId}) in the learning paths sheet.</p><p>Suggestion: Review the subtopics marked as 'Needs Work' or 'Developing' under this main topic in the graph.</p>`;
+            console.warn(`No learning path found in knowledgeData.learningPaths for topic ID: ${worstTopicId}`);
         }
     }
+    // --- *** END NEW Recommendation Function *** ---
 
 
-    // --- Test Data Generation ---
-    // Keep ORIGINAL generateTestData, but ensure it returns the correct structure
+    // --- Test Data Generation (for offline/fallback) ---
+    // Your original generateTestData function structure
     function generateTestData() {
         console.log("Generating test data...");
-        // ... (keep original node/link generation) ...
-        const parentConcepts = [{ id: "1", name: "String Data Type" }, { id: "2", name: "Numeric Types" }];
-        const childConcepts = [ { id: "1.1", /*...*/ }, { id: "1.2", /*...*/ }, { id: "2.1", /*...*/ }, { id: "2.2", /*...*/ }];
+        const parentConcepts = [ /* ... */ ];
+        const childConcepts = [ /* ... */ ];
         const nodes = []; /* ... generate nodes ... */
         const links = []; /* ... generate links ... */
 
-        // *** ADD mock learningPaths data ***
+        // *** ADD MOCK learningPaths property ***
         const mockLearningPaths = {
-            "1": [ "https://example.com/python/strings/intro.html", "https://example.com/python/strings/quiz.html" ],
-            "2": [ "https://example.com/python/numbers/types.html", "https://example.com/python/numbers/operations.html", "https://example.com/python/numbers/quiz.html" ]
+            "1": [
+                "https://xchee-01.github.io/recommender/python_string_page_1.html",
+                "https://xchee-01.github.io/recommender/python_string_quiz.html"
+            ],
+            "2": [
+                "https://xchee-01.github.io/recommender/python_numeric_page_1.html",
+                "https://xchee-01.github.io/recommender/python_numeric_page_2.html",
+                "https://xchee-01.github.io/recommender/python_numeric_quiz.html"
+            ]
+            // Add paths for other test topics if needed
         };
 
-        // *** Return the COMPLETE structure ***
+        console.log(`Generated ${nodes.length} test nodes and ${links.length} test links.`);
+        // *** RETURN object including learningPaths ***
         return { nodes, links, learningPaths: mockLearningPaths };
     }
   </script>
