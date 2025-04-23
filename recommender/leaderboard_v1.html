@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUS Performance Leaderboard</title>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Basic Setup & NUS Theme --- */
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --background-light: #f8f9fa; /* Lighter background */
+            --card-bg: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --prof-high: #28a745; /* Green */
+            --prof-mid: #ffc107;  /* Yellow/Amber */
+            --prof-low: #dc3545;   /* Red */
+            --border-color: #dee2e6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-light);
+            color: var(--text-primary);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px; /* Wider container for multiple boards */
+            margin: 20px auto;
+        }
+
+        /* --- Header --- */
+        .main-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .main-header h1 {
+            font-weight: 700;
+            font-size: 2.2rem;
+            color: var(--nus-blue);
+            margin-bottom: 8px;
+        }
+        .main-header h1 i { margin-right: 10px; color: var(--nus-orange);}
+
+        .main-header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        /* --- Controls --- */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .control-group label {
+            margin-right: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .control-group select,
+        .control-group input[type="number"] {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .control-group input[type="number"] { width: 70px; }
+
+        /* --- Leaderboard Grid --- */
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Responsive columns */
+            gap: 25px;
+        }
+
+        /* --- Individual Leaderboard Card --- */
+        .leaderboard-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .leaderboard-card-header {
+            background: linear-gradient(135deg, var(--nus-blue), #0056b3);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .leaderboard-card-header i { font-size: 1.2em; opacity: 0.9; }
+        .leaderboard-card-header h3 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+
+        .leaderboard-list {
+            padding: 15px;
+            flex-grow: 1; /* Allows list to fill space */
+        }
+
+        .list-header-row {
+            display: flex;
+            justify-content: space-between;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .list-header-row .student-name-header { flex-grow: 1; margin-left: 45px; }
+        .list-header-row .score-header { text-align: right; min-width: 70px; } /* Min width for score */
+
+        .student-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s ease;
+        }
+        .student-row:last-child { border-bottom: none; }
+        .student-row:hover { background-color: #f8f9fa; }
+
+        .student-row.highlight { /* For selected student */
+             background-color: #e7f3ff;
+             border-left: 3px solid var(--nus-blue);
+             padding-left: 7px; /* Adjust padding to account for border */
+             margin-left: -10px; /* Adjust margin */
+        }
+
+
+        .rank {
+            font-weight: 600;
+            color: var(--nus-blue);
+            width: 30px;
+            text-align: center;
+            flex-shrink: 0;
+            margin-right: 15px;
+        }
+        .rank .fas { /* Medal icons */
+            color: var(--nus-orange);
+            font-size: 1.1em;
+        }
+
+        .student-name {
+            flex-grow: 1;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 10px;
+        }
+
+        .score {
+            font-weight: 600;
+            text-align: right;
+            min-width: 70px; /* Consistent width */
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end; /* Align items to the right */
+            gap: 6px;
+        }
+
+        /* Proficiency Indicator Dot */
+        .proficiency-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .prof-high { background-color: var(--prof-high); }
+        .prof-mid { background-color: var(--prof-mid); }
+        .prof-low { background-color: var(--prof-low); }
+        .prof-none { background-color: #adb5bd; } /* Grey for N/A or 0 */
+
+
+        /* --- Loading & Error States --- */
+        .loading, .error-message {
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 30px;
+            border-radius: 8px;
+        }
+
+        .loading { color: var(--text-secondary); }
+        .error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .error-message button { margin-top: 15px; }
+
+        .spinner { /* Simple spinner */
+            display: inline-block;
+            width: 40px; height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--nus-blue);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .retry-button { /* Basic button style */
+            background: var(--nus-blue); color: white; border: none;
+            padding: 8px 16px; border-radius: 4px; cursor: pointer;
+            font-weight: 500; transition: background-color 0.2s ease;
+        }
+        .retry-button:hover { background: #002a5c; }
+
+
+        /* --- Footer --- */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .controls { flex-direction: column; gap: 15px; align-items: stretch; }
+            .control-group { display: flex; justify-content: space-between; }
+            .control-group input[type="number"] { width: 60px;}
+            .leaderboard-grid { grid-template-columns: 1fr; } /* Stack cards */
+        }
+        @media (max-width: 480px) {
+            .main-header h1 { font-size: 1.8rem; }
+            .leaderboard-card-header h3 { font-size: 1rem; }
+            .student-row { font-size: 0.9rem; }
+            .rank { width: 25px; margin-right: 10px; }
+            .score { min-width: 60px; font-size: 0.9rem; }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <h1><i class="fas fa-chart-line"></i> NUS Performance Leaderboard</h1>
+            <p>Overview of student progress and mastery across learning concepts.</p>
+            <!-- Controls Section -->
+            <div class="controls">
+                <div class="control-group">
+                    <label for="student-selector"><i class="fas fa-user"></i> Highlight Student:</label>
+                    <select id="student-selector" disabled>
+                        <option value="">All Students</option>
+                        <!-- Options added by JS -->
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="top-n-selector"><i class="fas fa-list-ol"></i> Show Top:</label>
+                    <input type="number" id="top-n-selector" value="3" min="1">
+                </div>
+            </div>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading leaderboard data...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-message" class="error-message" style="display: none;">
+            <p id="error-text">An error occurred.</p>
+            <button id="retry-button" class="retry-button"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- Leaderboard Grid -->
+        <div id="leaderboard-grid" class="leaderboard-grid" style="display: none;">
+            <!-- Cards will be inserted here by JavaScript -->
+        </div>
+
+        <footer class="footer">
+            <p id="last-updated">Last updated: N/A</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz_ZUSBiRptZEBSgHHoCeRm8GkWlcvHKNmDjsUs9zEkx49I_Em2fosVykt-T9UMnlbc/exec'; // <-- Replace this!
+        const DEFAULT_TOP_N = 3;
+
+        // --- Global Variables ---
+        let leaderboardData = null; // To store fetched data { lastUpdated: '...', students: { studentId: {...} }, totalConcepts: X }
+        let currentTopN = DEFAULT_TOP_N;
+        let highlightedStudent = ""; // Store the ID of the student to highlight
+
+        // --- DOM Elements ---
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const retryBtn = document.getElementById('retry-button');
+        const gridContainer = document.getElementById('leaderboard-grid');
+        const studentSelector = document.getElementById('student-selector');
+        const topNSelector = document.getElementById('top-n-selector');
+        const lastUpdatedP = document.getElementById('last-updated');
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', fetchData);
+        retryBtn.addEventListener('click', fetchData);
+        topNSelector.addEventListener('change', () => {
+            currentTopN = parseInt(topNSelector.value, 10) || DEFAULT_TOP_N;
+            if (leaderboardData) {
+                renderAllLeaderboards(leaderboardData); // Re-render with new N
+            }
+        });
+        studentSelector.addEventListener('change', () => {
+            highlightedStudent = studentSelector.value;
+             if (leaderboardData) {
+                renderAllLeaderboards(leaderboardData); // Re-render with highlighting
+            }
+        });
+
+        // --- Data Fetching ---
+        function fetchData() {
+            console.log("Fetching leaderboard data...");
+            showLoading();
+
+            const callbackName = 'jsonpCallback_' + Date.now();
+            const script = document.createElement('script');
+            const timeoutId = setTimeout(() => {
+                console.error("Request timed out.");
+                showError("Request timed out. The server might be busy.");
+                cleanupJsonp(script, callbackName);
+            }, 25000); // 25 second timeout
+
+            window[callbackName] = function(data) {
+                clearTimeout(timeoutId);
+                console.log("Data received:", data);
+                try {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    if (!data || !data.students) {
+                        throw new Error("Invalid data structure received from server.");
+                    }
+                    leaderboardData = data; // Store globally
+                    populateStudentSelector(Object.keys(data.students)); // Populate dropdown
+                    renderAllLeaderboards(data); // Initial render
+                    showContent();
+                } catch (error) {
+                    console.error("Error processing data:", error);
+                    showError(`Error processing data: ${error.message}`);
+                } finally {
+                    cleanupJsonp(script, callbackName);
+                }
+            };
+
+            script.src = `${API_URL}?callback=${callbackName}&t=${Date.now()}`; // Add timestamp for cache busting
+            script.onerror = () => {
+                clearTimeout(timeoutId);
+                console.error("Failed to load script.");
+                showError("Failed to connect to the server. Please check the API URL and script deployment.");
+                cleanupJsonp(script, callbackName);
+            };
+
+            document.body.appendChild(script);
+        }
+
+        function cleanupJsonp(scriptElement, callbackName) {
+            try {
+                if (scriptElement && scriptElement.parentNode) {
+                    scriptElement.parentNode.removeChild(scriptElement);
+                }
+                delete window[callbackName];
+            } catch (e) {
+                console.warn("Error during cleanup:", e);
+                window[callbackName] = undefined; // Fallback for older browsers
+            }
+        }
+
+        // --- UI Update Functions ---
+        function showLoading() {
+            loadingDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+            gridContainer.style.display = 'none';
+        }
+
+        function showError(message) {
+            errorText.textContent = message;
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'block';
+            gridContainer.style.display = 'none';
+        }
+
+        function showContent() {
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            gridContainer.style.display = 'grid'; // Use grid display
+        }
+
+        function populateStudentSelector(studentIds) {
+             studentSelector.innerHTML = '<option value="">All Students</option>'; // Reset but keep 'All'
+             studentIds.sort().forEach(id => {
+                 const option = document.createElement('option');
+                 option.value = id;
+                 option.textContent = id;
+                 studentSelector.appendChild(option);
+             });
+             studentSelector.disabled = false;
+        }
+
+
+        // --- Leaderboard Rendering ---
+        function renderAllLeaderboards(data) {
+            if (!data || !data.students) {
+                console.error("Cannot render: Invalid data.");
+                return;
+            }
+
+            gridContainer.innerHTML = ''; // Clear previous cards
+            lastUpdatedP.textContent = `Last updated: ${data.lastUpdated || 'N/A'}`;
+
+            const studentArray = Object.values(data.students); // Convert student object to array
+
+            // 1. Overall Mastery
+            renderLeaderboardCard({
+                title: "Overall Mastery",
+                icon: "fas fa-star",
+                data: studentArray,
+                sortKey: 'overallMastery',
+                valueFormatter: (val) => `${val.toFixed(1)}%`,
+                showProficiency: true
+            });
+
+            // 2. STR Mastery
+            renderLeaderboardCard({
+                title: "String Concepts Mastery",
+                icon: "fas fa-quote-right",
+                data: studentArray.filter(s => s.strAttempted > 0), // Only students who attempted STR
+                sortKey: 'strMastery',
+                valueFormatter: (val) => `${val.toFixed(1)}%`,
+                showProficiency: true
+            });
+
+            // 3. NUM Mastery
+            renderLeaderboardCard({
+                title: "Numeric Concepts Mastery",
+                icon: "fas fa-calculator",
+                data: studentArray.filter(s => s.numAttempted > 0), // Only students who attempted NUM
+                sortKey: 'numMastery',
+                valueFormatter: (val) => `${val.toFixed(1)}%`,
+                showProficiency: true
+            });
+
+            // 4. Concept Coverage
+            renderLeaderboardCard({
+                title: "Concept Coverage",
+                icon: "fas fa-book-open",
+                data: studentArray,
+                sortKey: 'coverage',
+                valueFormatter: (val) => `${val.toFixed(1)}%`,
+                 tooltipFormatter: (student) => `Attempted ${student.attemptedConcepts} / ${data.totalConcepts || '?'} concepts`
+            });
+
+             // 5. Mastery Count (100% scores)
+            renderLeaderboardCard({
+                title: "Concepts Mastered (100%)",
+                icon: "fas fa-check-double",
+                data: studentArray,
+                sortKey: 'masteryCount',
+                valueFormatter: (val) => `${val} concepts`,
+                tooltipFormatter: (student) => `${student.masteryCount} concepts with 100% score`
+            });
+
+            // --- Difficulty-Based Leaderboards ---
+             const difficulties = ['Easy', 'Medium', 'Hard'];
+             difficulties.forEach(level => {
+                 renderLeaderboardCard({
+                     title: `${level} Difficulty Performance`,
+                     icon: level === 'Easy' ? 'fas fa-child' : level === 'Medium' ? 'fas fa-balance-scale' : 'fas fa-brain',
+                     data: studentArray.filter(s => s.performanceByDifficulty[level]?.total > 0),
+                     sortFn: (a, b) => (b.performanceByDifficulty[level]?.percentage || 0) - (a.performanceByDifficulty[level]?.percentage || 0),
+                     valueFn: (student) => student.performanceByDifficulty[level]?.percentage || 0,
+                     valueFormatter: (val) => `${val.toFixed(1)}%`,
+                     tooltipFormatter: (student) => `${student.performanceByDifficulty[level]?.correct || 0} / ${student.performanceByDifficulty[level]?.total || 0} correct`,
+                     showProficiency: true
+                 });
+             });
+
+            // --- Bloom's Taxonomy Leaderboards ---
+            // Find all unique Bloom's levels encountered
+            const bloomsLevels = new Set();
+            studentArray.forEach(s => Object.keys(s.performanceByBlooms).forEach(level => bloomsLevels.add(level)));
+            const sortedBloomsLevels = Array.from(bloomsLevels).sort(); // Sort alphabetically or define custom order if needed
+
+            sortedBloomsLevels.forEach(level => {
+                renderLeaderboardCard({
+                    title: `${level} Level Performance`, // e.g., Remember, Apply
+                    icon: "fas fa-layer-group", // Generic icon for Bloom's
+                    data: studentArray.filter(s => s.performanceByBlooms[level]?.total > 0),
+                    sortFn: (a, b) => (b.performanceByBlooms[level]?.percentage || 0) - (a.performanceByBlooms[level]?.percentage || 0),
+                    valueFn: (student) => student.performanceByBlooms[level]?.percentage || 0,
+                    valueFormatter: (val) => `${val.toFixed(1)}%`,
+                    tooltipFormatter: (student) => `${student.performanceByBlooms[level]?.correct || 0} / ${student.performanceByBlooms[level]?.total || 0} correct`,
+                    showProficiency: true
+                });
+            });
+
+        }
+
+        // --- Individual Card Rendering ---
+        function renderLeaderboardCard(options) {
+            const { title, icon, data, sortKey, sortFn, valueFn, valueFormatter, tooltipFormatter, showProficiency = false } = options;
+
+            // Create card elements
+            const card = document.createElement('div');
+            card.className = 'leaderboard-card';
+
+            const header = document.createElement('div');
+            header.className = 'leaderboard-card-header';
+            header.innerHTML = `<i class="${icon}"></i><h3>${title}</h3>`;
+
+            const list = document.createElement('div');
+            list.className = 'leaderboard-list';
+
+            // Header Row for the list
+            const listHeader = document.createElement('div');
+            listHeader.className = 'list-header-row';
+            listHeader.innerHTML = `
+                <div style="width: 45px;">Rank</div>
+                <div class="student-name-header">Student</div>
+                <div class="score-header">Score</div>
+            `;
+            list.appendChild(listHeader);
+
+            // Sort data
+            let sortedData;
+            if (sortFn) {
+                 sortedData = [...data].sort(sortFn);
+            } else if (sortKey) {
+                sortedData = [...data].sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0)); // Default descending
+            } else {
+                sortedData = data; // Use original order if no sort specified
+            }
+
+
+            // Filter top N
+            const topNData = sortedData.slice(0, currentTopN);
+
+            // Render student rows
+            if (topNData.length === 0) {
+                 list.innerHTML += '<p style="text-align: center; color: var(--text-secondary); padding: 20px 0;">No data available for this category.</p>';
+            } else {
+                topNData.forEach((student, index) => {
+                    const rank = index + 1;
+                    const scoreValue = valueFn ? valueFn(student) : (student[sortKey] || 0);
+                    const displayValue = valueFormatter(scoreValue);
+                    const tooltipText = tooltipFormatter ? tooltipFormatter(student) : displayValue;
+
+                    const row = document.createElement('div');
+                    row.className = 'student-row';
+                     if (student.name === highlightedStudent) { // Apply highlight class
+                         row.classList.add('highlight');
+                     }
+
+
+                    let rankHtml = rank;
+                    if (rank === 1) rankHtml = '<i class="fas fa-medal"></i>';
+                    else if (rank === 2) rankHtml = '<i class="fas fa-medal" style="color: #silver;"></i>';
+                    else if (rank === 3) rankHtml = '<i class="fas fa-medal" style="color: #cd7f32;"></i>';
+
+
+                    let proficiencyDotHtml = '';
+                    if (showProficiency) {
+                         const proficiencyClass = getProficiencyClass(scoreValue); // Use percentage score
+                         proficiencyDotHtml = `<span class="proficiency-dot ${proficiencyClass}"></span>`;
+                    }
+
+
+                    row.innerHTML = `
+                        <div class="rank">${rankHtml}</div>
+                        <div class="student-name">${student.name}</div>
+                        <div class="score" title="${tooltipText}">
+                           ${proficiencyDotHtml}
+                           <span>${displayValue}</span>
+                        </div>
+                    `;
+                    list.appendChild(row);
+                });
+            }
+
+
+            card.appendChild(header);
+            card.appendChild(list);
+            gridContainer.appendChild(card);
+        }
+
+        // --- Helper Function ---
+        function getProficiencyClass(percentage) {
+            if (percentage >= 67) return 'prof-high';
+            if (percentage >= 34) return 'prof-mid';
+            if (percentage > 0) return 'prof-low'; // Only show red if > 0%
+            return 'prof-none'; // Default for 0% or N/A
+        }
+
+    </script>
+</body>
+</html>
