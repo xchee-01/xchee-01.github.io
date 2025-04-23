@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Knowledge Map</title>
+  <!-- D3 Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    /* --- ORIGINAL CSS --- */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #header {
+      background-color: #3f51b5;
+      color: white;
+      padding: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+
+    #title {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    #container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 280px; /* Adjusted width slightly */
+      padding: 15px;
+      background-color: #f8f8f8;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+
+    #visualization {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: #fff;
+    }
+
+    #graph {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .node.parent {
+      stroke-width: 2px;
+      stroke: #333;
+    }
+
+    .node.child {
+      cursor: pointer;
+      stroke-width: 1.5px;
+      stroke: #fff;
+    }
+
+    .node:hover {
+      stroke: #333;
+      stroke-width: 2px;
+    }
+
+    .link {
+      stroke: #bbb;
+      stroke-opacity: 0.6;
+    }
+
+    .link.parent-child {
+      stroke: #666;
+      stroke-width: 2px;
+      stroke-opacity: 0.7;
+    }
+
+    .tooltip {
+      position: absolute;
+      background-color: rgba(255, 255, 255, 0.95);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      max-width: 280px;
+      z-index: 10;
+    }
+
+    .filter-section, .legend, .summary-section, .recommendations {
+        margin-bottom: 20px;
+        background-color: white;
+        border-radius: 5px;
+        padding: 12px 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    }
+
+    .filter-section h3, .legend h3, .summary-section h3, .recommendations h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: #3f51b5;
+        font-size: 16px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+    }
+
+    .filter-option, .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .filter-option input[type="checkbox"] {
+      margin-right: 10px;
+      cursor: pointer;
+    }
+     .filter-option label {
+         cursor: pointer;
+         flex-grow: 1;
+     }
+
+    .legend-color {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+
+    .summary-section div {
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .progress-bar {
+      background-color: #e0e0e0;
+      height: 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease-in-out;
+    }
+
+    .recommendation-item {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+     .recommendation-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+     .recommendation-item strong {
+         color: #333;
+     }
+     .recommendations p {
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #555;
+     }
+
+    .controls {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 5px;
+      padding: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-button {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.2s ease;
+    }
+
+    .control-button:hover {
+      background-color: #303f9f;
+    }
+    .control-button:active {
+        background-color: #1a237e;
+    }
+
+    .loader {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+    /* Specific loader positioning for sidebar */
+    #sidebar .loader {
+        position: relative; /* Position relative to container */
+        top: auto;
+        left: auto;
+        transform: none;
+        margin: 20px auto; /* Add some margin */
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: #3f51b5;
+      width: 36px;
+      height: 36px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #error-message {
+      color: #D32F2F;
+      background-color: #FFCDD2;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      border: 1px solid #EF9A9A;
+      display: none;
+      font-size: 14px;
+    }
+     #error-message p { margin: 0 0 10px 0; }
+     #error-message button { margin-right: 10px; margin-top: 5px; }
+
+    #retry-button {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 15px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s ease;
+      display: inline-block;
+      margin-top: 10px;
+    }
+     #retry-button:hover { background-color: #303f9f; }
+
+    /* Optional Test Data Button Styling
+    #test-data-button {
+      background-color: #FF9800;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 15px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s ease;
+      display: inline-block;
+      margin-top: 10px;
+    }
+     #test-data-button:hover { background-color: #F57C00; } */
+
+    .node-label {
+        font-size: 10px;
+        fill: #333;
+        pointer-events: none;
+        text-anchor: middle;
+    }
+    .node-label.parent {
+        font-size: 12px;
+        font-weight: bold;
+        fill: #222;
+    }
+
+    .legend-item.node-type {
+        margin-top: 15px; /* Increased spacing */
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+    }
+    .legend-shape {
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
+        border-radius: 50%;
+        background-color: #ccc;
+        flex-shrink: 0;
+    }
+    .legend-shape.parent {
+        border: 2px solid #333;
+        background-color: #fff; /* White fill for parent */
+    }
+    .legend-shape.child {
+        border: 1.5px solid #fff; /* Keep child background tied to mastery color */
+        background-color: transparent; /* Background color determined by node */
+    }
+    /* --- END ORIGINAL CSS --- */
+
+    /* --- NEW CSS FOR MODAL AND BUTTON --- */
+    .modal {
+      display: none; position: fixed; z-index: 1000;
+      left: 0; top: 0; width: 100%; height: 100%;
+      overflow: auto; background-color: rgba(0,0,0,0.6);
+    }
+    .modal-content {
+      background-color: #fefefe; margin: 10% auto; padding: 25px;
+      border: 1px solid #888; width: 80%; max-width: 600px;
+      border-radius: 8px; position: relative;
+      box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+    }
+    .close-button {
+      color: #aaa; position: absolute; top: 10px; right: 20px;
+      font-size: 28px; font-weight: bold; cursor: pointer;
+    }
+    .close-button:hover, .close-button:focus { color: black; text-decoration: none; }
+    #modal-topic-title {
+        margin-top: 0; color: #3f51b5; border-bottom: 1px solid #eee;
+        padding-bottom: 10px; margin-bottom: 15px;
+    }
+    #modal-steps p {
+        margin-bottom: 12px; font-size: 14px; line-height: 1.5;
+        border-bottom: 1px dashed #eee; padding-bottom: 8px;
+    }
+     #modal-steps p:last-child { border-bottom: none; padding-bottom: 0; }
+    #modal-steps a { color: #3f51b5; text-decoration: none; word-break: break-all; }
+     #modal-steps a:hover { text-decoration: underline; }
+
+    #recommend-materials-button {
+        display: block; width: 100%; margin-top: 15px; padding: 10px 15px;
+        font-size: 14px; background-color: #4CAF50; color: white;
+        border: none; border-radius: 4px; cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+     #recommend-materials-button:hover { background-color: #388E3C; }
+     #recommend-materials-button:disabled { background-color: #bdbdbd; cursor: not-allowed; opacity: 0.7; }
+    /* --- END NEW CSS --- */
+
+    /* Minor adjustments for better layout */
+    #student-selector { margin-bottom: 15px; }
+
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1 id="title">Student Coding Knowledge Map</h1>
+  </div>
+
+  <div id="container">
+    <div id="sidebar">
+      <!-- Error message area -->
+      <div id="error-message">
+         <p id="error-text"></p>
+        <button id="retry-button">Retry</button>
+        <!-- <button id="test-data-button">Use Test Data</button> -->
+      </div>
+
+      <!-- *** STUDENT SELECTOR *** -->
+      <div class="filter-section">
+        <h3>Select Student</h3>
+        <select id="student-selector" style="width: 100%; padding: 8px; font-size: 14px;" disabled>
+          <option>Loading students...</option>
+        </select>
+      </div>
+      <!-- *** END STUDENT SELECTOR *** -->
+
+
+      <!-- Filters -->
+      <div class="filter-section">
+        <h3>Mastery Level Filter</h3>
+        <div class="filter-option">
+          <input type="checkbox" id="show-mastered" checked>
+          <label for="show-mastered">Show Mastered</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-developing" checked>
+          <label for="show-developing">Show Developing</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-needs-work" checked>
+          <label for="show-needs-work">Show Needs Work</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-not-attempted" checked>
+          <label for="show-not-attempted">Show Not Attempted</label>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <h3>Node Type Filter</h3>
+        <div class="filter-option">
+          <input type="checkbox" id="show-parent" checked>
+          <label for="show-parent">Show Main Topics</label>
+        </div>
+        <div class="filter-option">
+          <input type="checkbox" id="show-child" checked>
+          <label for="show-child">Show Subtopics</label>
+        </div>
+      </div>
+
+       <!-- Removed Difficulty Filter Section - data not available from progress sheet -->
+       <!--
+       <div class="filter-section">
+        <h3>Difficulty Level (Attempted)</h3>
+        <div class="filter-option"> <input type="checkbox" id="show-easy" checked> <label for="show-easy">Show Easy</label> </div>
+        <div class="filter-option"> <input type="checkbox" id="show-medium" checked> <label for="show-medium">Show Medium</label> </div>
+        <div class="filter-option"> <input type="checkbox" id="show-hard" checked> <label for="show-hard">Show Hard</label> </div>
+       </div>
+       -->
+
+      <!-- Legend -->
+      <div class="legend">
+        <h3>Legend</h3>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #4CAF50;"></div>
+          <span>Mastered (≥80%)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #FFC107;"></div>
+          <span>Developing (50-79%)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #F44336;"></div>
+          <span>Needs Work (<50%)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #9E9E9E;"></div>
+          <span>Not Attempted</span>
+        </div>
+        <div class="legend-item node-type">
+          <div class="legend-shape parent"></div>
+          <span>Main Topic</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-shape child" style="background-color: #ccc;"></div> <!-- Example child shape -->
+          <span>Subtopic</span>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary-section">
+        <h3>Knowledge Summary</h3>
+        <div id="summary-stats">
+          <!-- Loader for summary -->
+          <div class="loader" id="summary-loader" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading summary...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="recommendations">
+        <h3>Recommendations</h3>
+        <div id="recommendations-container">
+           <!-- Loader for recommendations -->
+          <div class="loader" id="recs-loader" style="display: none;">
+            <div class="spinner"></div>
+            <p>Generating recommendations...</p>
+          </div>
+        </div>
+        <!-- Recommend Materials Button -->
+        <button id="recommend-materials-button" disabled>Recommend Learning Materials</button>
+      </div>
+    </div> <!-- End Sidebar -->
+
+    <!-- Visualization Area -->
+    <div id="visualization">
+      <svg id="graph"></svg>
+      <div class="tooltip" id="tooltip"></div>
+      <div class="controls">
+        <button class="control-button" id="zoom-in">Zoom In</button>
+        <button class="control-button" id="zoom-out">Zoom Out</button>
+        <button class="control-button" id="reset-zoom">Reset View</button>
+      </div>
+       <!-- Main loader for the graph -->
+      <div class="loader" id="main-loader" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading knowledge map...</p>
+      </div>
+    </div> <!-- End Visualization -->
+  </div> <!-- End Container -->
+
+
+  <!-- Learning Path Recommendation Modal -->
+  <div id="learning-path-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" id="modal-close-button">×</span>
+      <h3 id="modal-topic-title">Recommended Learning Path</h3>
+      <div id="modal-steps">
+        <!-- Content will be added by JavaScript -->
+        <p>Loading recommendation...</p>
+      </div>
+    </div>
+  </div>
+  <!-- End Modal -->
+
+
+  <script>
+    // --- Configuration ---
+    // *** PASTE YOUR NEW WEB APP URL HERE ***
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbzYhaSN5ytetkc7cXTrxpgMCRL-YW5E5mJDkpEpne_Tp3q5gIx3kXDO3uuDcXfBgmn7/exec';
+
+    // --- Global Variables ---
+    let knowledgeData = null; // Holds { nodes, links, learningPaths } for the selected student
+    let allStudents = []; // Holds the list of student names
+    let currentStudent = null; // Holds the currently selected student ID
+    let simulation = null;
+    let svg = null;
+    let zoom = null;
+
+    // --- DOM Elements ---
+    const errorMessageDiv = document.getElementById('error-message');
+    const errorTextP = document.getElementById('error-text');
+    const retryButton = document.getElementById('retry-button');
+    // const testDataButton = document.getElementById('test-data-button'); // Removed for student version
+    const mainLoader = document.getElementById('main-loader');
+    const summaryLoader = document.getElementById('summary-loader');
+    const recsLoader = document.getElementById('recs-loader');
+    const summaryStatsDiv = document.getElementById('summary-stats');
+    const recommendationsContainer = document.getElementById('recommendations-container');
+    const graphSvg = document.getElementById('graph');
+    const tooltipDiv = document.getElementById('tooltip');
+    const recommendMaterialsButton = document.getElementById('recommend-materials-button');
+    const learningPathModal = document.getElementById('learning-path-modal');
+    const modalCloseButton = document.getElementById('modal-close-button');
+    const modalTitle = document.getElementById('modal-topic-title');
+    const modalStepsContainer = document.getElementById('modal-steps');
+    const studentSelector = document.getElementById('student-selector'); // Student Selector Element
+
+
+    // --- Event Listeners ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuration Check
+        if (!apiUrl || apiUrl.includes('PASTE_YOUR_NEW_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE')) {
+             showError('Configuration error: Please update the apiUrl variable in the HTML script with your deployed Google Apps Script URL.');
+             if(mainLoader) mainLoader.style.display = 'none';
+             return;
+        }
+
+        // Initial UI State
+        if (errorMessageDiv) errorMessageDiv.style.display = 'none';
+        if (recommendMaterialsButton) recommendMaterialsButton.disabled = true;
+        if (studentSelector) studentSelector.disabled = true;
+
+        // Button Listeners
+        if(retryButton) retryButton.addEventListener('click', function() {
+            if (errorMessageDiv) errorMessageDiv.style.display = 'none';
+            loadStudentList(); // Retry loading student list first
+        });
+
+        // Student Selector Listener
+        if (studentSelector) {
+            studentSelector.addEventListener('change', handleStudentSelection);
+        }
+
+        // Modal/Button Listeners
+        if(recommendMaterialsButton) recommendMaterialsButton.addEventListener('click', showLearningPathRecommendation);
+        if(modalCloseButton) modalCloseButton.addEventListener('click', () => { if(learningPathModal) learningPathModal.style.display = 'none'; });
+        window.addEventListener('click', (event) => {
+            if (event.target === learningPathModal) {
+                if(learningPathModal) learningPathModal.style.display = 'none';
+            }
+        });
+
+        // Start loading process
+        loadStudentList();
+    });
+
+    // --- Core Functions ---
+
+    // Load the list of available students
+    function loadStudentList() {
+        console.log('Attempting to load student list...');
+        if (studentSelector) {
+            studentSelector.disabled = true;
+            studentSelector.innerHTML = '<option>Loading students...</option>';
+        }
+        // Show general loading indicators
+        if (mainLoader) mainLoader.style.display = 'block';
+        if (summaryLoader) summaryLoader.style.display = 'block';
+        if (recsLoader) recsLoader.style.display = 'block';
+        if (summaryStatsDiv) summaryStatsDiv.innerHTML = ''; // Clear old summary
+        if (recommendationsContainer) recommendationsContainer.innerHTML = ''; // Clear old recs
+        if (recommendMaterialsButton) recommendMaterialsButton.disabled = true;
+        d3.select('#graph').selectAll('*').remove(); // Clear graph
+
+        let script = null;
+        const callbackName = 'jsonp_callback_students_' + Date.now();
+        const timeoutId = setTimeout(() => {
+             console.error('Student list request timed out.');
+             showError('Request timed out fetching student list. Server might be busy.');
+             if (studentSelector) studentSelector.innerHTML = '<option>Error loading</option>';
+             cleanupJsonp(script, callbackName);
+        }, 15000);
+
+        window[callbackName] = function(data) {
+            clearTimeout(timeoutId);
+            console.log('Received student list data via JSONP:', callbackName);
+            try {
+               if (data && data.error) {
+                  console.error('Server error getting students:', data.error);
+                  showError('Server Error getting students: ' + data.error);
+                  if (studentSelector) studentSelector.innerHTML = '<option>Error</option>';
+               } else if (data && Array.isArray(data) && data.length > 0) {
+                   allStudents = data;
+                   populateStudentSelector(allStudents);
+                   if (allStudents[0]) {
+                       // Automatically select and load data for the first student
+                       studentSelector.value = allStudents[0]; // Set dropdown value
+                       handleStudentSelection({ target: { value: allStudents[0] }});
+                   } else {
+                       showError("No students found in the list.");
+                   }
+               } else if (data && Array.isArray(data) && data.length === 0) {
+                   console.log('No students returned from server.');
+                   showError('No students found in the progress sheet header.');
+                   if (studentSelector) studentSelector.innerHTML = '<option>No students</option>';
+               } else {
+                   console.error('Invalid student list data structure:', data);
+                   showError('Received invalid student list data.');
+                   if (studentSelector) studentSelector.innerHTML = '<option>Invalid data</option>';
+               }
+            } catch (error) {
+              console.error('Error processing student list:', error);
+              showError('Error processing student list: ' + error.message);
+              if (studentSelector) studentSelector.innerHTML = '<option>Processing Error</option>';
+            } finally {
+              cleanupJsonp(script, callbackName);
+              // Keep selector disabled until data for the first student loads (or fails)
+            }
+        };
+
+        script = document.createElement('script');
+        script.src = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=getStudents' + '&callback=' + callbackName + '&_=' + Date.now();
+        script.onerror = function() {
+            clearTimeout(timeoutId);
+            console.error('Failed to load student list script.');
+            showError('Failed to load student list. Network issue or script error.');
+            if (studentSelector) studentSelector.innerHTML = '<option>Load Failed</option>';
+            cleanupJsonp(script, callbackName);
+        };
+        document.head.appendChild(script);
+    }
+
+    // Populate the dropdown with student names
+    function populateStudentSelector(students) {
+        if (!studentSelector) return;
+        studentSelector.innerHTML = ''; // Clear existing
+        if (students && students.length > 0) {
+            students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student;
+                option.textContent = student;
+                studentSelector.appendChild(option);
+            });
+            // Do NOT enable here; enable AFTER first student's data loads
+        } else {
+            studentSelector.innerHTML = '<option>No students available</option>';
+            studentSelector.disabled = true;
+        }
+    }
+
+    // Handle a change in the student selector
+    function handleStudentSelection(event) {
+        const selectedStudent = event.target.value;
+        if (!selectedStudent || selectedStudent === currentStudent) return; // Don't reload if same student
+
+        console.log(`Student selected: ${selectedStudent}`);
+        currentStudent = selectedStudent; // Update global current student
+
+        // Clear previous data visualization and show loaders
+        if (mainLoader) mainLoader.style.display = 'block';
+        if (summaryLoader) summaryLoader.style.display = 'block';
+        if (recsLoader) recsLoader.style.display = 'block';
+        if (summaryStatsDiv) summaryStatsDiv.innerHTML = ''; // Clear summary
+        if (recommendationsContainer) recommendationsContainer.innerHTML = ''; // Clear recs
+        if (recommendMaterialsButton) recommendMaterialsButton.disabled = true;
+        d3.select('#graph').selectAll('*').remove(); // Clear old graph
+        if (errorMessageDiv) errorMessageDiv.style.display = 'none'; // Hide previous errors
+        if (studentSelector) studentSelector.disabled = true; // Disable selector during load
+
+
+        // Load data for the selected student
+        loadData(selectedStudent);
+    }
+
+    // Load knowledge map data for a specific student
+    function loadData(studentId) {
+        if (!studentId) {
+             console.error("loadData called without studentId");
+             showError("Cannot load data: No student selected.");
+             if (studentSelector) studentSelector.disabled = false; // Re-enable if error before fetch
+             return;
+        }
+        console.log(`Attempting to load data for student: ${studentId}`);
+
+        // Ensure loaders are visible
+        if (mainLoader) mainLoader.style.display = 'block';
+        if (summaryLoader) summaryLoader.style.display = 'block';
+        if (recsLoader) recsLoader.style.display = 'block';
+        if (errorMessageDiv) errorMessageDiv.style.display = 'none';
+        if (recommendMaterialsButton) recommendMaterialsButton.disabled = true;
+        // Keep selector disabled during load
+
+        let script = null;
+        const callbackName = 'jsonp_callback_data_' + Date.now() + '_' + Math.round(10000 * Math.random());
+        const timeoutId = setTimeout(() => {
+             console.error(`Request timed out for student ${studentId}.`);
+             showError(`Request timed out loading data for ${studentId}. Server might be busy.`);
+             cleanupJsonp(script, callbackName);
+             if (studentSelector) studentSelector.disabled = false; // Re-enable selector on timeout
+        }, 20000);
+
+        window[callbackName] = function(data) {
+            clearTimeout(timeoutId);
+            console.log(`Received data for ${studentId} via JSONP callback:`, callbackName);
+            try {
+               if (data && data.error) {
+                  console.error(`Server error loading data for ${studentId}:`, data.error);
+                  showError(`Server Error for ${studentId}: ${data.error}`);
+               } else if (data && data.nodes && data.links && data.learningPaths !== undefined) {
+                   knowledgeData = data; // Store globally
+                   renderKnowledgeMap(knowledgeData); // Render map
+                   if (recommendMaterialsButton) recommendMaterialsButton.disabled = false; // Enable button
+               } else {
+                   console.error(`Invalid data structure received for ${studentId}:`, data);
+                   showError(`Received invalid data structure for ${studentId}.`);
+               }
+            } catch (error) {
+              console.error(`Error processing data for ${studentId}:`, error);
+              showError(`Error processing data for ${studentId}: ${error.message}`);
+            } finally {
+              cleanupJsonp(script, callbackName);
+              if (studentSelector) studentSelector.disabled = false; // Re-enable selector when done (success or error)
+            }
+        };
+
+        script = document.createElement('script');
+        script.src = apiUrl + (apiUrl.includes('?') ? '&' : '?') +
+                     'action=getData' +
+                     '&studentId=' + encodeURIComponent(studentId) +
+                     '&callback=' + callbackName +
+                     '&_=' + Date.now();
+        script.onerror = function() {
+            clearTimeout(timeoutId);
+            console.error(`Failed to load data script for ${studentId}.`);
+            showError(`Failed to load data for ${studentId}. Network issue, script error, or deployment problem.`);
+            cleanupJsonp(script, callbackName);
+            if (studentSelector) studentSelector.disabled = false; // Re-enable selector on error
+        };
+        document.head.appendChild(script);
+    }
+
+    // Remove JSONP script tag and callback function
+    function cleanupJsonp(scriptElement, callbackName) {
+       if (scriptElement && scriptElement.parentNode) {
+          scriptElement.parentNode.removeChild(scriptElement);
+       }
+       try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+    }
+
+    // Display error messages
+    function showError(message) {
+      console.error("Error Displayed:", message); // Log errors for debugging
+      if (mainLoader) mainLoader.style.display = 'none';
+      if (summaryLoader) summaryLoader.style.display = 'none';
+      if (recsLoader) recsLoader.style.display = 'none';
+      d3.select('#graph').selectAll('*').remove();
+      if (summaryStatsDiv) summaryStatsDiv.innerHTML = '<p>Unavailable</p>';
+      if (recommendationsContainer) recommendationsContainer.innerHTML = '<p>Unavailable</p>';
+      if (errorTextP) errorTextP.textContent = message;
+      if (errorMessageDiv) errorMessageDiv.style.display = 'block';
+      else { alert("Error: " + message); }
+      if (recommendMaterialsButton) recommendMaterialsButton.disabled = true;
+      if (studentSelector) studentSelector.disabled = false; // Re-enable selector on error generally
+    }
+
+    // --- D3 Rendering and Interaction ---
+    // (Keep renderKnowledgeMap, getNodeSize, getNodeColor, showTooltip, hideTooltip, drag functions as before)
+    function renderKnowledgeMap(data) {
+       console.log(`Rendering map for student: ${currentStudent}`);
+       if(mainLoader) mainLoader.style.display = 'none';
+       if (!data || !data.nodes || !data.links) { showError('Invalid data for render.'); return; }
+       const visContainer = document.getElementById('visualization');
+       if (!visContainer) { showError("Viz container not found."); return; }
+       const width = visContainer.clientWidth; const height = visContainer.clientHeight;
+       if (width <= 0 || height <= 0) { showError("Viz container size invalid."); return; }
+       d3.select('#graph').selectAll('*').remove();
+       zoom = d3.zoom().scaleExtent([0.2, 8]).on('zoom', (event) => { if(g) g.attr('transform', event.transform); });
+       svg = d3.select('#graph').attr('width', width).attr('height', height).call(zoom).on("dblclick.zoom", null);
+       const g = svg.append('g'); svg.mainG = g;
+       const numNodes = data.nodes.length;
+       const linkDistance = Math.max(80, Math.min(150, 100 + numNodes * 0.3)); // Adjust distances
+       const chargeStrength = Math.max(-800, Math.min(-150, -250 - numNodes * 1.5)); // Adjust charge
+       console.log(`Sim Params: Nodes=${numNodes}, LinkDist=${linkDistance.toFixed(1)}, Charge=${chargeStrength.toFixed(1)}`);
+       if (simulation) { simulation.stop(); }
+       simulation = d3.forceSimulation(data.nodes)
+         .force('link', d3.forceLink(data.links).id(d => d.id).distance(d => d.source.isParent !== d.target.isParent ? linkDistance * 0.7 : linkDistance).strength(d => d.source.isParent !== d.target.isParent ? 0.8 : 0.6))
+         .force('charge', d3.forceManyBody().strength(d => d.isParent ? chargeStrength * 1.5 : chargeStrength))
+         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.08)) // Slightly stronger center
+         .force('collide', d3.forceCollide().radius(d => getNodeSize(d) + 8).strength(0.7)) // Adjust collision
+         .force('x', d3.forceX(width / 2).strength(0.04))
+         .force('y', d3.forceY(height / 2).strength(0.04));
+       const link = g.append('g').attr('class', 'links').selectAll('line').data(data.links).enter().append('line').attr('class', d => { const sn = data.nodes.find(n => n.id === d.source.id); const tn = data.nodes.find(n => n.id === d.target.id); return (sn && tn && sn.isParent !== tn.isParent) ? 'link parent-child' : 'link'; }).attr('stroke-width', 1.5); // Simpler link width
+       const nodeGroup = g.append('g').attr('class', 'nodes').selectAll('g.node-group').data(data.nodes).enter().append('g').attr('class', 'node-group').call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended)).on('mouseover', showTooltip).on('mouseout', hideTooltip);
+       nodeGroup.append('circle').attr('class', d => `node ${d.isParent ? 'parent' : 'child'}`).attr('r', d => getNodeSize(d)).attr('fill', d => getNodeColor(d));
+       nodeGroup.append('text').attr('class', d => `node-label ${d.isParent ? 'parent' : ''}`).attr('dy', d => getNodeSize(d) + (d.isParent ? 14 : 10)).text(d => d.name && d.name.length > 20 ? d.name.substring(0, 18) + '...' : d.name).attr('display', 'none'); // Shorter labels
+       simulation.on('tick', () => { link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y); nodeGroup.attr('transform', d => `translate(${d.x}, ${d.y})`); });
+       const finalZoomIn = document.getElementById('zoom-in'); const finalZoomOut = document.getElementById('zoom-out'); const finalReset = document.getElementById('reset-zoom');
+       // Use anonymous functions for listeners to ensure correct context
+       if (finalZoomIn && svg && zoom) finalZoomIn.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1.3);
+       if (finalZoomOut && svg && zoom) finalZoomOut.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.3);
+       if (finalReset && svg && zoom) finalReset.onclick = () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+       setupFilters(); applyFilters(); updateSummary(data.nodes); generateRecommendations(data.nodes);
+    }
+    function getNodeSize(d) { let size = d.isParent ? 14 : 7; if (d.mastery === 'Mastered') size += 2; else if (d.mastery === 'Developing') size += 1; return size; } // Simplified size
+    function getNodeColor(d) { switch (d.mastery) { case 'Mastered': return '#4CAF50'; case 'Developing': return '#FFC107'; case 'Needs Work': return '#F44336'; case 'Not Attempted': default: return '#9E9E9E'; } }
+    function showTooltip(event, d) { if (!tooltipDiv) return; const [x, y] = d3.pointer(event, document.body); let tt = `<strong>${d.name || 'Unknown'}</strong> (${d.isParent ? 'Topic' : 'Subtopic'} ID: ${d.conceptId || 'N/A'})<br>Mastery: ${d.mastery || 'N/A'}<br>Performance: ${d.mastery !== 'Not Attempted' ? Math.round((d.performance || 0) * 100) + '%' : 'N/A'}<br>`; if (Array.isArray(d.tags) && d.tags.length > 0) tt += `Tags: ${d.tags.join(', ')}<br>`; tooltipDiv.innerHTML = tt; tooltipDiv.style.opacity = 1; const ttr = tooltipDiv.getBoundingClientRect(); const vr = document.getElementById('visualization')?.getBoundingClientRect(); if (!vr) return; let l = x + 15; let t = y - 15; if (l + ttr.width > window.innerWidth) l = x - 15 - ttr.width; if (t < 0) t = y + 15; if (t + ttr.height > window.innerHeight) t = y - 15 - ttr.height; tooltipDiv.style.left = `${l}px`; tooltipDiv.style.top = `${t}px`; }
+    function hideTooltip() { if (tooltipDiv) tooltipDiv.style.opacity = 0; }
+    function dragstarted(event, d) { if (!event.active && simulation) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+    function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+    function dragended(event, d) { if (!event.active && simulation) simulation.alphaTarget(0); d.fx = null; d.fy = null; }
+
+
+    // --- Filtering Logic ---
+    // (Keep setupFilters and applyFilters as before)
+    function setupFilters() { const cbs = document.querySelectorAll('#sidebar input[type="checkbox"]'); cbs.forEach(cb => { cb.removeEventListener('change', applyFilters); cb.addEventListener('change', applyFilters); }); }
+    function applyFilters() {
+        if (!knowledgeData || !svg || !svg.mainG) { return; }
+        const showM = document.getElementById('show-mastered')?.checked ?? true;
+        const showD = document.getElementById('show-developing')?.checked ?? true;
+        const showN = document.getElementById('show-needs-work')?.checked ?? true;
+        const showNA = document.getElementById('show-not-attempted')?.checked ?? true;
+        const showP = document.getElementById('show-parent')?.checked ?? true;
+        const showC = document.getElementById('show-child')?.checked ?? true;
+        const nodes = svg.mainG.selectAll('g.node-group');
+        const links = svg.mainG.selectAll('line.link');
+        const labels = svg.mainG.selectAll('text.node-label');
+        if (nodes.empty()) { return; }
+        const visibleIds = new Set();
+        nodes.each(function(d) {
+            const nodeEl = d3.select(this); let vis = false;
+            if ((d.isParent && !showP) || (!d.isParent && !showC)) { vis = false; }
+            else {
+                if (d.mastery === 'Mastered' && showM) vis = true;
+                else if (d.mastery === 'Developing' && showD) vis = true;
+                else if (d.mastery === 'Needs Work' && showN) vis = true;
+                else if ((d.mastery === 'Not Attempted' || !d.mastery) && showNA) vis = true;
+            }
+            nodeEl.transition().duration(300).style('opacity', vis ? 1 : 0.1).style('pointer-events', vis ? 'all' : 'none');
+            if (vis) visibleIds.add(d.id);
+        });
+        links.transition().duration(300).style('opacity', ld => {
+            const srcVis = visibleIds.has(ld.source.id); const tgtVis = visibleIds.has(ld.target.id);
+            let baseOp = 0.6; const sn = knowledgeData.nodes.find(n => n.id === ld.source.id); const tn = knowledgeData.nodes.find(n => n.id === ld.target.id);
+            if (sn && tn && sn.isParent !== tn.isParent) baseOp = 0.7;
+            return (srcVis && tgtVis) ? baseOp : 0.05;
+        });
+        labels.transition().duration(300).attr('display', d => visibleIds.has(d.id) ? null : 'none');
+    }
+
+    // --- Sidebar Updates ---
+    // (Keep updateSummary and generateRecommendations as before)
+    function updateSummary(nodes) { /* ... same as previous ... */
+       if(summaryLoader) summaryLoader.style.display = 'none'; if (!summaryStatsDiv) return;
+       if (!nodes || nodes.length === 0) { summaryStatsDiv.innerHTML = '<p>No concept data.</p>'; return; }
+       const t = nodes.length; const p = nodes.filter(d=>d.isParent).length; const c = nodes.filter(d=>!d.isParent).length;
+       const m = nodes.filter(d => d.mastery === 'Mastered').length; const d = nodes.filter(d => d.mastery === 'Developing').length;
+       const n = nodes.filter(d => d.mastery === 'Needs Work').length; const na = nodes.filter(d => d.mastery === 'Not Attempted' || !d.mastery).length;
+       const mp=t>0?(m/t)*100:0; const dp=t>0?(d/t)*100:0; const np=t>0?(n/t)*100:0; const nap=t>0?(na/t)*100:0;
+       summaryStatsDiv.innerHTML = `<div><strong>Total:</strong> ${t} (${p} topics, ${c} subtopics)</div> <div><strong>Mastered:</strong> ${m}/${t} (${Math.round(mp)}%)<div class="progress-bar"><div class="progress-fill" style="width:${mp}%;background-color:#4CAF50;"></div></div></div> <div><strong>Developing:</strong> ${d}/${t} (${Math.round(dp)}%)<div class="progress-bar"><div class="progress-fill" style="width:${dp}%;background-color:#FFC107;"></div></div></div> <div><strong>Needs Work:</strong> ${n}/${t} (${Math.round(np)}%)<div class="progress-bar"><div class="progress-fill" style="width:${np}%;background-color:#F44336;"></div></div></div> <div><strong>Not Attempted:</strong> ${na}/${t} (${Math.round(nap)}%)<div class="progress-bar"><div class="progress-fill" style="width:${nap}%;background-color:#9E9E9E;"></div></div></div>`;
+    }
+    function generateRecommendations(nodes) { /* ... same as previous ... */
+       if(recsLoader) recsLoader.style.display = 'none'; if(!recommendationsContainer) return;
+       if (!nodes || nodes.length === 0) { recommendationsContainer.innerHTML = '<p>No recommendation data.</p>'; return; }
+       const pn=nodes.filter(d=>d.isParent); const cn=nodes.filter(d=>!d.isParent);
+       const nw=cn.filter(d=>d.mastery==='Needs Work').sort((a,b)=>(a.performance||0)-(b.performance||0));
+       const dv=cn.filter(d=>d.mastery==='Developing').sort((a,b)=>(a.performance||0)-(b.performance||0));
+       const na=cn.filter(d=>d.mastery==='Not Attempted'||!d.mastery);
+       let rh=''; const maxR=3;
+       if(nw.length>0){rh+='<p><strong>Focus on improving:</strong></p>'; nw.slice(0,maxR).forEach(n=>{const p=pn.find(p=>p.parentNum===n.parentNum); const pN=p?p.name:`Topic ${n.parentNum}`; rh+=`<div class="recommendation-item"><strong>${n.name||`Sub ${n.conceptId}`}</strong> (${Math.round((n.performance||0)*100)}% mastery) - From ${pN}</div>`;});}
+       const am=dv.filter(d=>(d.performance||0)>=0.65).sort((a,b)=>b.performance-a.performance); let dd=0;
+       if(am.length>0){rh+='<p><strong>Push these to mastery:</strong></p>'; am.slice(0,maxR).forEach(n=>{const p=pn.find(p=>p.parentNum===n.parentNum); const pN=p?p.name:`Topic ${n.parentNum}`; rh+=`<div class="recommendation-item"><strong>${n.name||`Sub ${n.conceptId}`}</strong> (${Math.round((n.performance||0)*100)}% mastery) - From ${pN}</div>`; dd++;});}
+       if(dv.length>0&&dd<maxR){if(dd===0)rh+='<p><strong>Continue developing:</strong></p>'; dv.filter(n=>!am.includes(n)).slice(0,maxR-dd).forEach(n=>{const p=pn.find(p=>p.parentNum===n.parentNum); const pN=p?p.name:`Topic ${n.parentNum}`; rh+=`<div class="recommendation-item"><strong>${n.name||`Sub ${n.conceptId}`}</strong> (${Math.round((n.performance||0)*100)}% mastery) - From ${pN}</div>`;});}
+       if(na.length>0){const pMc=new Set(); cn.filter(n=>n.mastery==='Mastered').forEach(n=>{pMc.add(n.parentNum);}); const prioNa=na.filter(n=>pMc.has(n.parentNum)); const recNew=prioNa.length>0?prioNa.slice(0,maxR):na.slice(0,maxR); if(recNew.length>0){rh+='<p><strong>Explore new concepts:</strong></p>'; recNew.forEach(n=>{const p=pn.find(p=>p.parentNum===n.parentNum); const pN=p?p.name:`Topic ${n.parentNum}`; rh+=`<div class="recommendation-item">Explore: <strong>${n.name||`Sub ${n.conceptId}`}</strong> - From ${pN}</div>`;});}}
+       if(rh===''){if(cn.every(d=>d.mastery==='Mastered')){rh='<p>Excellent work! All subtopics mastered.</p>';}else{rh='<p>Keep practicing concepts!</p>';}}
+       recommendationsContainer.innerHTML=rh;
+    }
+
+    // --- Learning Path Recommendation Modal ---
+    // (Keep showLearningPathRecommendation as before)
+    function showLearningPathRecommendation() { /* ... same as previous ... */
+        console.log("Recommend button clicked");
+        if (!knowledgeData || !knowledgeData.nodes || !knowledgeData.learningPaths) { alert("Recommendation data unavailable."); return; }
+        if (!learningPathModal || !modalTitle || !modalStepsContainer) { alert("Error: Cannot display modal."); return; }
+        modalTitle.textContent="Recommended Learning Path"; modalStepsContainer.innerHTML='<p>Analyzing...</p>'; learningPathModal.style.display='block';
+        const parents=knowledgeData.nodes.filter(d=>d.isParent);
+        const weakParents=parents.filter(d=>d.mastery==='Needs Work'||d.mastery==='Developing');
+        if(weakParents.length===0){modalStepsContainer.innerHTML="<p>Great work! No main topics need focused improvement.</p>"; return;}
+        weakParents.sort((a,b)=>{if(a.mastery==='Needs Work'&&b.mastery!=='Needs Work')return -1; if(a.mastery!=='Needs Work'&&b.mastery==='Needs Work')return 1; return (a.performance||0)-(b.performance||0);});
+        const worstNode=weakParents[0]; const worstId=worstNode.conceptId;
+        console.log(`Worst topic: ID=${worstId}, Name=${worstNode.name}`);
+        const pathUrls=knowledgeData.learningPaths[worstId];
+        modalTitle.textContent=`Learning Path for: ${worstNode.name}`;
+        if(pathUrls&&Array.isArray(pathUrls)&&pathUrls.length>0){let stepsHtml=''; pathUrls.forEach((url,i)=>{let dn=`Step ${i+1} Link`; if(url&&typeof url==='string'){try{let np=url.substring(url.lastIndexOf('/')+1); dn=np.replace(/\.html?$/i,'').replace(/[_-]/g,' '); dn=dn.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' '); if(!dn.trim())dn=`Step ${i+1} Link`;}catch(e){dn=`Step ${i+1} Link`;}}else{url='#';} stepsHtml+=`<p><strong>Step ${i+1}:</strong> <a href="${url}" target="_blank" title="Open ${url}">${dn}</a></p>`;}); modalStepsContainer.innerHTML=stepsHtml;}else{modalStepsContainer.innerHTML=`<p>No specific learning steps found for "${worstNode.name}". Review subtopics.</p>`; console.warn(`No path found for topic ID: ${worstId}`);}
+    }
+
+  </script>
+</body>
+</html>
