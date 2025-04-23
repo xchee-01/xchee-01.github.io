@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUS Performance Leaderboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --background-light: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --progress-bg: #e9ecef;
+            --mastery-color: #28a745; /* Green */
+            --coverage-color: #17a2b8; /* Teal */
+            --mastered-count-color: var(--nus-orange);
+            --hard-perf-color: #dc3545; /* Red */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-light);
+            color: var(--text-primary);
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 950px; /* Adjusted width */
+            margin: 20px auto;
+        }
+
+        /* --- Header & Controls --- */
+        .main-header {
+            text-align: center;
+            margin-bottom: 30px; /* Reduced margin */
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        .main-header h1 { font-weight: 700; font-size: 2rem; color: var(--nus-blue); margin-bottom: 8px; }
+        .main-header h1 i { margin-right: 10px; color: var(--nus-orange); }
+        .main-header p { color: var(--text-secondary); font-size: 1rem; margin-bottom: 15px; }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px; /* Added margin top */
+            padding: 10px 0; /* Simplified padding */
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            gap: 15px;
+        }
+        .control-group label { margin-right: 8px; font-weight: 500; color: var(--text-secondary); font-size: 0.9rem; }
+        .control-group select, .control-group input[type="number"] {
+            padding: 7px 10px; border: 1px solid var(--border-color);
+            border-radius: 4px; font-size: 0.9rem;
+        }
+        .control-group input[type="number"] { width: 65px; }
+
+         /* --- Leaderboard Container --- */
+        .leaderboard-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+            overflow: hidden; /* Ensures consistency */
+        }
+
+        /* --- List Headers --- */
+        .list-header-row {
+            display: grid;
+            /* Define columns: Rank, Name, Mastery, Coverage, Count, Hard Perf */
+            grid-template-columns: 50px 1fr repeat(4, 110px); /* Adjust widths as needed */
+            gap: 15px;
+            padding: 12px 20px;
+            background-color: #f1f3f5; /* Light header background */
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 0.8rem; /* Smaller header font */
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            align-items: center;
+        }
+        .list-header-row > div:not(:first-child):not(:nth-child(2)) { text-align: center; } /* Center metric headers */
+        .list-header-row .metric-header i { margin-right: 4px; }
+
+        /* --- Student Rows --- */
+        .student-list {
+            padding: 0 5px; /* Padding for the list container */
+        }
+
+        .student-row {
+            display: grid;
+            grid-template-columns: 50px 1fr repeat(4, 110px);
+            gap: 15px;
+            align-items: center;
+            padding: 15px 15px; /* Adjusted padding */
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s ease;
+            font-size: 0.9rem;
+        }
+        .student-row:last-child { border-bottom: none; }
+        .student-row:hover { background-color: #f8f9fa; }
+
+        .student-row.highlight {
+             background-color: #e7f3ff;
+             border-left: 4px solid var(--nus-blue);
+             margin: 0 -5px; /* Counteract list padding */
+             padding-left: 11px; /* Adjust padding */
+             border-bottom-color: var(--nus-blue) !important; /* Ensure highlight border shows */
+             border-radius: 0 4px 4px 0; /* Optional rounded edge */
+        }
+
+
+        .rank { font-weight: 700; color: var(--nus-blue); text-align: center; }
+        .rank .fas { color: var(--nus-orange); }
+
+        .student-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .metric-cell { text-align: center; }
+
+        /* --- Progress Bars --- */
+        .progress-bar-container {
+            height: 18px; /* Slightly taller bar */
+            background-color: var(--progress-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+            position: relative; /* For text overlay */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 4px 0 0 4px; /* Rounded left edge */
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end; /* Text at the end */
+            padding-right: 5px; /* Space for text */
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Color variations for progress bars */
+        .progress-mastery .progress-bar-fill { background: linear-gradient(90deg, #67d582, var(--mastery-color)); }
+        .progress-coverage .progress-bar-fill { background: linear-gradient(90deg, #5bc0de, var(--coverage-color)); }
+        .progress-hard-perf .progress-bar-fill { background: linear-gradient(90deg, #f79496, var(--hard-perf-color)); }
+
+        /* --- Mastered Count Display --- */
+        .mastered-count {
+            font-weight: 600;
+            color: var(--mastered-count-color);
+        }
+        .mastered-count .total {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-left: 2px;
+        }
+
+        /* --- Loading & Error States --- */
+        .loading, .error-message { text-align: center; padding: 40px 20px; margin-top: 30px; border-radius: 8px; }
+        .loading { color: var(--text-secondary); }
+        .error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .error-message button { margin-top: 15px; background: #721c24; color: white; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: var(--nus-blue); animation: spin 1s ease infinite; margin-bottom: 10px; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .retry-button { background: var(--nus-blue); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease; }
+        .retry-button:hover { background: #002a5c; }
+
+        /* --- Footer --- */
+        .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-secondary); }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+             .list-header-row, .student-row {
+                 grid-template-columns: 40px 1fr repeat(4, 90px); /* Adjust column widths */
+                 gap: 10px;
+                 font-size: 0.85rem;
+             }
+             .progress-bar-fill { font-size: 0.65rem; padding-right: 3px;}
+             .mastered-count { font-size: 0.9em; }
+        }
+         @media (max-width: 768px) {
+            .controls { flex-direction: column; gap: 10px; align-items: stretch; }
+            .list-header-row, .student-row {
+                 grid-template-columns: 35px 1fr repeat(2, 80px); /* Show fewer metrics on small screens */
+                 padding: 12px 10px;
+             }
+             /* Hide less critical columns on small screens */
+             .list-header-row > div:nth-child(5), /* Count Header */
+             .list-header-row > div:nth-child(6), /* Hard Perf Header */
+             .student-row > div:nth-child(5),    /* Count Cell */
+             .student-row > div:nth-child(6) {   /* Hard Perf Cell */
+                 display: none;
+             }
+         }
+        @media (max-width: 480px) {
+            .main-header h1 { font-size: 1.6rem; }
+             .list-header-row, .student-row {
+                 grid-template-columns: 30px 1fr 75px 75px; /* Rank, Name, Overall, Coverage */
+                 gap: 5px;
+                 padding: 10px 8px;
+                 font-size: 0.8rem;
+             }
+             .progress-bar-fill { font-size: 0.6rem;}
+             .rank { font-size: 0.9em;}
+             .mastered-count { font-size: 0.8em; }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <h1><i class="fas fa-chart-line"></i> NUS Performance Leaderboard</h1>
+            <p>Student progress across key metrics</p>
+            <!-- Controls Section -->
+            <div class="controls">
+                <div class="control-group">
+                    <label for="student-selector"><i class="fas fa-user"></i> Highlight Student:</label>
+                    <select id="student-selector" disabled>
+                        <option value="">All Students</option>
+                        <!-- Options added by JS -->
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="top-n-selector"><i class="fas fa-list-ol"></i> Show Top:</label>
+                    <input type="number" id="top-n-selector" value="3" min="1">
+                </div>
+            </div>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading leaderboard data...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-message" class="error-message" style="display: none;">
+            <p id="error-text">An error occurred.</p>
+            <button id="retry-button" class="retry-button"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- Leaderboard Container -->
+        <div id="leaderboard-container" class="leaderboard-container" style="display: none;">
+             <div class="list-header-row">
+                <div>Rank</div>
+                <div class="student-name-header">Student</div>
+                <div class="metric-header"><i class="fas fa-star"></i> Mastery</div>
+                <div class="metric-header"><i class="fas fa-book-open"></i> Coverage</div>
+                <div class="metric-header"><i class="fas fa-check-double"></i> Mastered</div>
+                <div class="metric-header"><i class="fas fa-brain"></i> Hard Perf.</div>
+            </div>
+            <div id="student-list" class="student-list">
+                 <!-- Student rows will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+
+        <footer class="footer">
+            <p id="last-updated">Last updated: N/A</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwfoh2dtjEUA_aOW9Q5z-rogTmjFfWgFLAwFGmJfMnVdjOZNnq56STlD1qKjQiOTwNq/exec'; // <-- Replace this!
+        const DEFAULT_TOP_N = 3;
+
+        // --- Global Variables ---
+        let leaderboardData = null;
+        let currentTopN = DEFAULT_TOP_N;
+        let highlightedStudent = "";
+
+        // --- DOM Elements ---
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const retryBtn = document.getElementById('retry-button');
+        const leaderboardContainer = document.getElementById('leaderboard-container');
+        const studentListContainer = document.getElementById('student-list');
+        const studentSelector = document.getElementById('student-selector');
+        const topNSelector = document.getElementById('top-n-selector');
+        const lastUpdatedP = document.getElementById('last-updated');
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', fetchData);
+        retryBtn.addEventListener('click', fetchData);
+        topNSelector.addEventListener('change', () => {
+            currentTopN = parseInt(topNSelector.value, 10) || DEFAULT_TOP_N;
+            if (currentTopN < 1) currentTopN = 1; // Ensure minimum 1
+            topNSelector.value = currentTopN; // Update input if corrected
+            if (leaderboardData) {
+                renderLeaderboard(leaderboardData); // Re-render with new N
+            }
+        });
+        studentSelector.addEventListener('change', () => {
+            highlightedStudent = studentSelector.value;
+             if (leaderboardData) {
+                renderLeaderboard(leaderboardData); // Re-render with highlighting
+            }
+        });
+
+        // --- Data Fetching ---
+        function fetchData() {
+            console.log("Fetching leaderboard data...");
+            showLoading();
+
+            const callbackName = 'jsonpCallback_' + Date.now();
+            const script = document.createElement('script');
+            const timeoutId = setTimeout(() => {
+                console.error("Request timed out.");
+                showError("Request timed out. Server might be busy.");
+                cleanupJsonp(script, callbackName);
+            }, 25000);
+
+            window[callbackName] = function(data) {
+                clearTimeout(timeoutId);
+                console.log("Data received:", data);
+                try {
+                    if (data.error) { throw new Error(data.error); }
+                    if (!data || !data.students) { throw new Error("Invalid data structure."); }
+                    leaderboardData = data;
+                    populateStudentSelector(Object.keys(data.students));
+                    renderLeaderboard(data); // Initial render
+                    showContent();
+                } catch (error) {
+                    console.error("Error processing data:", error);
+                    showError(`Error processing data: ${error.message}`);
+                } finally {
+                    cleanupJsonp(script, callbackName);
+                }
+            };
+
+            script.src = `${API_URL}?callback=${callbackName}&t=${Date.now()}`;
+            script.onerror = () => {
+                clearTimeout(timeoutId);
+                console.error("Failed to load script.");
+                showError("Failed to connect. Check API URL & deployment.");
+                cleanupJsonp(script, callbackName);
+            };
+            document.body.appendChild(script);
+        }
+
+        function cleanupJsonp(scriptElement, callbackName) { /* ... same as before ... */
+            try { if (scriptElement && scriptElement.parentNode) { scriptElement.parentNode.removeChild(scriptElement); } delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+        }
+
+        // --- UI Update Functions ---
+        function showLoading() { /* ... same as before ... */
+            loadingDiv.style.display = 'block'; errorDiv.style.display = 'none'; leaderboardContainer.style.display = 'none';
+        }
+        function showError(message) { /* ... same as before ... */
+             errorText.textContent = message; loadingDiv.style.display = 'none'; errorDiv.style.display = 'block'; leaderboardContainer.style.display = 'none';
+        }
+        function showContent() { /* ... same as before ... */
+            loadingDiv.style.display = 'none'; errorDiv.style.display = 'none'; leaderboardContainer.style.display = 'block'; // Show the main container
+        }
+        function populateStudentSelector(studentIds) { /* ... same as before ... */
+            studentSelector.innerHTML = '<option value="">All Students</option>'; studentIds.sort().forEach(id => { const option = document.createElement('option'); option.value = id; option.textContent = id; studentSelector.appendChild(option); }); studentSelector.disabled = false;
+        }
+
+
+        // --- Leaderboard Rendering ---
+        function renderLeaderboard(data) {
+            if (!data || !data.students) {
+                console.error("Cannot render: Invalid data.");
+                studentListContainer.innerHTML = '<p style="text-align:center; padding: 20px;">Error loading data.</p>';
+                return;
+            }
+
+            studentListContainer.innerHTML = ''; // Clear previous rows
+            lastUpdatedP.textContent = `Last updated: ${data.lastUpdated || 'N/A'}`;
+
+            const studentArray = Object.values(data.students);
+
+            // Sort by Overall Mastery (descending)
+            studentArray.sort((a, b) => (b.overallMastery || 0) - (a.overallMastery || 0));
+
+            // Filter top N
+            const topNData = studentArray.slice(0, currentTopN);
+
+            // Render student rows
+            if (topNData.length === 0) {
+                 studentListContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px 0;">No student data available.</p>';
+            } else {
+                topNData.forEach((student, index) => {
+                    const rank = index + 1;
+                    const hardStats = student.performanceByDifficulty?.Hard || { percentage: 0, correct: 0, total: 0 };
+
+                    const row = document.createElement('div');
+                    row.className = 'student-row';
+                    if (student.name === highlightedStudent) {
+                         row.classList.add('highlight');
+                    }
+
+                    // 1. Rank
+                    let rankHtml = rank;
+                    if (rank === 1) rankHtml = '<i class="fas fa-medal" title="1st Place"></i>';
+                    else if (rank === 2) rankHtml = '<i class="fas fa-medal" style="color: #adb5bd;" title="2nd Place"></i>'; // Silverish grey
+                    else if (rank === 3) rankHtml = '<i class="fas fa-medal" style="color: #e0ac69;" title="3rd Place"></i>'; // Bronzeish
+
+                    // 2. Name
+                    const nameHtml = `<div class="student-name" title="${student.name}">${student.name}</div>`;
+
+                    // 3. Overall Mastery Progress Bar
+                    const masteryHtml = `
+                        <div class="metric-cell progress-mastery" title="Overall Mastery: ${student.overallMastery.toFixed(1)}%">
+                            ${createProgressBar(student.overallMastery)}
+                        </div>`;
+
+                    // 4. Coverage Progress Bar
+                    const coverageHtml = `
+                        <div class="metric-cell progress-coverage" title="Concept Coverage: ${student.coverage.toFixed(1)}% (${student.attemptedConcepts}/${data.totalConcepts || '?'})">
+                            ${createProgressBar(student.coverage)}
+                        </div>`;
+
+                    // 5. Mastered Count
+                    const masteredHtml = `
+                        <div class="metric-cell" title="${student.masteryCount} concepts scored 100%">
+                           <span class="mastered-count">${student.masteryCount} <span class="total">/ ${data.totalConcepts || '?'}</span></span>
+                        </div>`;
+
+                     // 6. Hard Difficulty Performance Progress Bar
+                    const hardPerfHtml = `
+                        <div class="metric-cell progress-hard-perf" title="Hard Difficulty: ${hardStats.percentage.toFixed(1)}% (${hardStats.correct}/${hardStats.total})">
+                             ${createProgressBar(hardStats.percentage, hardStats.total > 0 ? null : 'N/A')}
+                        </div>`;
+
+
+                    row.innerHTML = `
+                        <div class="rank">${rankHtml}</div>
+                        ${nameHtml}
+                        ${masteryHtml}
+                        ${coverageHtml}
+                        ${masteredHtml}
+                        ${hardPerfHtml}
+                    `;
+                    studentListContainer.appendChild(row);
+                });
+            }
+        }
+
+        // --- Helper Function ---
+        function createProgressBar(percentage, textOverride = null) {
+             const percent = Math.max(0, Math.min(100, percentage || 0)); // Clamp between 0 and 100
+             const displayPercent = percent.toFixed(1);
+             // Display N/A if textOverride is provided (e.g., for 0 attempts)
+             const barText = textOverride !== null ? textOverride : `${displayPercent}%`;
+             // Only show text if there's enough space or it's N/A
+             const showTextClass = (percent >= 15 || textOverride) ? 'show-text' : '';
+
+            // Determine color class based on percentage for fill background
+            let colorClass = 'low';
+            if (percent >= 67) colorClass = 'high';
+            else if (percent >= 34) colorClass = 'mid';
+            else if (percent > 0 ) colorClass = 'low';
+            else colorClass = 'none'; // For 0%
+
+            return `
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill prof-${colorClass} ${showTextClass}" style="width: ${percent}%;">
+                         ${barText}
+                    </div>
+                </div>`;
+        }
+
+         // Add corresponding CSS for the progress bar text colors and proficiency backgrounds
+        const styleSheet = document.styleSheets[0];
+         styleSheet.insertRule(`
+            .progress-bar-fill.prof-high { background-color: var(--mastery-color); }
+         `, styleSheet.cssRules.length);
+         styleSheet.insertRule(`
+            .progress-bar-fill.prof-mid { background-color: var(--nus-orange); color: var(--text-primary); } /* Orange for mid, dark text */
+         `, styleSheet.cssRules.length);
+         styleSheet.insertRule(`
+            .progress-bar-fill.prof-low { background-color: var(--hard-perf-color); } /* Red for low */
+         `, styleSheet.cssRules.length);
+         styleSheet.insertRule(`
+             .progress-bar-fill.prof-none { background-color: var(--progress-bg); color: var(--text-secondary); justify-content: center; } /* Grey for none, centered text */
+         `, styleSheet.cssRules.length);
+         styleSheet.insertRule(`
+             .progress-bar-fill:not(.show-text) { color: transparent; } /* Hide text if class not present */
+         `, styleSheet.cssRules.length);
+
+
+    </script>
+</body>
+</html>
