@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NUS Pre-Quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* --- Paste the CSS from your original HTML file here --- */
+    :root {
+      --nus-orange: #EF7C00;
+      --nus-blue: #003D7C;
+      --nus-light-orange: #FFE5CC;
+      --nus-light-blue: #E6EEF5;
+      --success-color: #4CAF50;
+      --error-color: #F44336;
+      --success-light: #E8F5E9;
+      --error-light: #FFEBEE;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background-color: #f5f5f5; color: #333; line-height: 1.6; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    .header { background-color: var(--nus-blue); color: white; padding: 40px 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px; }
+    .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+    .progress-container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .progress-bar { background-color: var(--nus-light-blue); height: 8px; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background-color: var(--nus-orange); width: 0%; transition: width 0.3s ease; }
+    .progress-text { text-align: center; margin-top: 10px; font-weight: 500; }
+    .question-card { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .question-id { background-color: var(--nus-light-orange); color: var(--nus-blue); padding: 5px 10px; border-radius: 15px; font-weight: 600; }
+    .difficulty-badge { padding: 5px 10px; border-radius: 15px; font-size: 0.9em; font-weight: 500; }
+    .difficulty-easy { background-color: #E8F5E9; color: #2E7D32; }
+    .difficulty-medium { background-color: #FFF3E0; color: #EF6C00; }
+    .difficulty-hard { background-color: #FFEBEE; color: #C62828; }
+    .question-text { font-size: 1.2em; margin-bottom: 20px; font-weight: 500; }
+    .code-snippet { background-color: #f5f5f5; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; margin-bottom: 20px; white-space: pre-wrap; }
+    .options-container { display: grid; gap: 10px; }
+    .option-button { background-color: white; border: 2px solid var(--nus-blue); padding: 15px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; text-align: left; font-size: 1em; }
+    .option-button:hover:not(.disabled) { background-color: var(--nus-light-blue); }
+    .option-button.selected { background-color: var(--nus-blue); color: white; }
+    .option-button.correct { background-color: var(--success-light); border-color: var(--success-color); color: var(--success-color); }
+    .option-button.incorrect { background-color: var(--error-light); border-color: var(--error-color); color: var(--error-color); }
+    .option-button.disabled { cursor: not-allowed; opacity: 0.8; }
+    .feedback-container { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; display: none; }
+    .feedback-header { font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+    .feedback-correct { color: var(--success-color); }
+    .feedback-incorrect { color: var(--error-color); }
+    .explanation { margin-top: 10px; line-height: 1.8; }
+    .hint-container { background-color: var(--nus-light-orange); padding: 15px; border-radius: 8px; margin-top: 20px; display: none; }
+    .hint-button { background-color: transparent; border: 1px solid var(--nus-orange); color: var(--nus-orange); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em; }
+    .navigation-buttons { display: flex; justify-content: space-between; margin-top: 30px; }
+    .nav-button { background-color: var(--nus-orange); color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight: 500; transition: background-color 0.2s ease; }
+    .nav-button:hover { background-color: #d76d00; }
+    .nav-button:disabled { background-color: #ccc; cursor: not-allowed; }
+    .results-container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+    .score-circle { width: 150px; height: 150px; border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-size: 2.5em; font-weight: bold; color: white; }
+    .score-high { background-color: var(--success-color); }
+    .score-medium { background-color: var(--nus-orange); }
+    .score-low { background-color: var(--error-color); }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .loading-spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--nus-orange); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .hidden { display: none; }
+    .debug-panel { position: fixed; bottom: 20px; right: 20px; background: rgba(0, 0, 0, 0.8); color: white; padding: 10px; border-radius: 5px; max-width: 400px; max-height: 300px; overflow: auto; font-family: monospace; font-size: 12px; z-index: 2000; }
+    .debug-toggle { position: fixed; bottom: 20px; right: 20px; padding: 5px 10px; background: var(--nus-orange); color: white; border: none; border-radius: 3px; cursor: pointer; z-index: 2001; }
+    .user-info { background-color: var(--nus-light-blue); padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .user-name { font-weight: 500; color: var(--nus-blue); }
+    .logout-btn { background-color: var(--nus-orange); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+    @media (max-width: 600px) { .container { padding: 10px; } .header { padding: 20px 10px; } .header h1 { font-size: 2em; } .question-card { padding: 20px; } .debug-panel { max-width: 90%; bottom: 60px; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>NUS Pre-Quiz Assessment</h1>
+      <p>Test your knowledge and prepare for the course</p>
+    </div>
+
+    <div id="user-info" class="user-info hidden"> <!-- Initially hidden -->
+      <span class="user-name">Welcome, <span id="username-display">User</span></span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="progress-container" class="progress-container hidden"> <!-- Initially hidden -->
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <div id="progress-text" class="progress-text">Question 1 of 0</div>
+    </div>
+
+    <div id="quiz-container">
+      <!-- Quiz content will be dynamically loaded here -->
+       <p>Loading Quiz...</p>
+    </div>
+
+    <div id="results-container" class="results-container hidden">
+      <!-- Results will be displayed here -->
+    </div>
+  </div>
+
+  <div id="loading-overlay" class="loading-overlay"> <!-- Start visible -->
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- Debug panel -->
+  <button id="debug-toggle" class="debug-toggle">Debug</button>
+  <div id="debug-panel" class="debug-panel hidden"></div>
+
+  <script>
+    // *** IMPORTANT: Replace with your deployed Web App URL ***
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz08HiYqUF5d2mtfTIjOH0V3sTKMBYa91ONNEDbjvSbnAkm610eOF7VMSGWFjLOtXgr/exec';
+    // Example: const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycb.../exec';
+
+    // *** Optional: Replace with your actual sign-in page URL ***
+    const SIGN_IN_URL = 'https://xchee-01.github.io/EBPHM/1_signin.html'; // Or your sign-in mechanism
+
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = []; // Stores the selected option string for each question index
+    // quizResults is used for storing detailed results per question before saving
+    let quizResults = [];
+    let questionAnswered = false; // Tracks if the *current* question has been answered
+    let currentUser = null;
+    let sessionID = ''; // Unique ID for this quiz attempt
+
+    // DOM Elements (cache for performance)
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const userInfoDiv = document.getElementById('user-info');
+    const usernameDisplay = document.getElementById('username-display');
+    const progressContainer = document.getElementById('progress-container');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const quizContainer = document.getElementById('quiz-container');
+    const resultsContainer = document.getElementById('results-container');
+    const debugPanel = document.getElementById('debug-panel');
+    const debugToggle = document.getElementById('debug-toggle');
+
+    // --- Debugging ---
+    debugToggle.addEventListener('click', () => {
+      debugPanel.classList.toggle('hidden');
+    });
+
+    function debug(message, data = null) {
+      console.log(message, data); // Log to browser console
+      const logEntry = document.createElement('div');
+      const timestamp = new Date().toLocaleTimeString();
+      logEntry.textContent = `${timestamp}: ${message}`;
+      if (data) {
+        try {
+          // Use JSON.stringify with a replacer to handle potential circular structures
+          logEntry.textContent += '\n' + JSON.stringify(data, getCircularReplacer(), 2);
+        } catch (e) {
+          logEntry.textContent += '\n[Could not stringify data: ' + e.message + ']';
+        }
+      }
+      debugPanel.appendChild(logEntry);
+      // Auto-scroll
+      debugPanel.scrollTop = debugPanel.scrollHeight;
+    }
+    // Helper for JSON.stringify to avoid circular reference errors
+    const getCircularReplacer = () => {
+        const seen = new WeakSet();
+        return (key, value) => {
+            if (typeof value === "object" && value !== null) {
+            if (seen.has(value)) {
+                return "[Circular Reference]";
+            }
+            seen.add(value);
+            }
+            return value;
+        };
+    };
+
+
+    // --- Loading State ---
+    function showLoading(message = "Loading...") {
+      debug(message);
+      loadingOverlay.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+       debug("Loading complete.");
+      loadingOverlay.classList.add('hidden');
+    }
+
+    // --- Authentication ---
+    function getUsername() {
+      // Example using localStorage (adapt if using a different auth method)
+      try {
+        const accountsData = localStorage.getItem('accounts'); // Adjust key if needed
+        if (accountsData) {
+          const accounts = JSON.parse(accountsData);
+          // Assuming the first account is the logged-in user
+          return (accounts && accounts.length > 0 && accounts[0].username) ? accounts[0].username : null;
+        }
+        return null;
+      } catch (error) {
+        debug('Error retrieving username from localStorage', error);
+        return null;
+      }
+    }
+
+    function storeCurrentUrl() {
+      try {
+        localStorage.setItem('lastVisitedUrl', window.location.href);
+      } catch (error) {
+        debug('Error storing current URL', error);
+      }
+    }
+
+    function checkAuthentication() {
+      currentUser = getUsername();
+      if (!currentUser) {
+        debug('User not authenticated. Redirecting to sign-in.');
+        storeCurrentUrl();
+        window.location.href = SIGN_IN_URL;
+        return false; // Stop further execution
+      }
+      debug(`User authenticated: ${currentUser}`);
+      usernameDisplay.textContent = currentUser;
+      userInfoDiv.classList.remove('hidden');
+      return true;
+    }
+
+    function redirectToSignIn() {
+      storeCurrentUrl();
+      window.location.href = SIGN_IN_URL;
+    }
+
+    function logout() {
+      try {
+        // Clear authentication state (adapt as needed)
+        localStorage.removeItem('accounts'); // Adjust key if needed
+        debug('User logged out.');
+        redirectToSignIn();
+      } catch (error) {
+        debug('Error during logout', error);
+      }
+    }
+
+    // --- Quiz Logic ---
+    function generateSessionID() {
+      return 'sid-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
+
+    function loadQuestions() {
+        showLoading("Fetching questions...");
+        // !! IMPORTANT !!
+        // The original HTML used JSONP. The provided GAS code doesn't explicitly
+        // implement getQuestions via JSONP anymore in the combined script.
+        // You need to either:
+        // 1. Re-implement getQuestions in GAS and call it via JSONP/Fetch.
+        // 2. Pre-load questions differently (e.g., embed JSON in HTML, fetch from a static file).
+        //
+        // Assuming you'll fetch using a standard mechanism (add getQuestions back to GAS doGet)
+        // For this example, let's *simulate* loading with a placeholder.
+        // Replace this simulation with your actual fetch/JSONP call.
+
+        // *** SIMULATION START ***
+        debug("Simulating question load (replace with actual fetch/JSONP)");
+        setTimeout(() => {
+             // Replace with actual data fetched from your getQuestions endpoint
+             const simulatedData = {
+                 success: true,
+                 data: [
+                     // Add 1-2 sample questions here matching the expected structure
+                    { questionID: 'STR-001', questionType: 'MCQ', questionText: 'What is a string?', options: ['A number', 'A sequence of characters', 'A boolean'], correctAnswer: 'A sequence of characters', difficultyLevel: 'Easy', learningConcepts: ['1.1 Define string data type...'], explanation: 'Strings store text.' },
+                    { questionID: 'STR-003', questionType: 'MCQ', questionText: 'Output of "Python"[1]?', options: ['P', 'y', 't'], correctAnswer: 'y', difficultyLevel: 'Easy', learningConcepts: ['1.3 Access characters...'], explanation: 'Indexing starts at 0.' }
+                 ]
+             };
+             handleQuestionsLoad(simulatedData);
+        }, 500); // Simulate network delay
+        // *** SIMULATION END ***
+
+        /* --- Example using Fetch (requires getQuestions in GAS doGet) ---
+        fetch(APPS_SCRIPT_URL + '?action=getQuestions')
+           .then(response => {
+               if (!response.ok) {
+                   throw new Error(`HTTP error! status: ${response.status}`);
+               }
+               return response.json();
+           })
+           .then(data => {
+                handleQuestionsLoad(data);
+           })
+           .catch(error => {
+               handleError('Failed to load questions: ' + error.message);
+           });
+        */
+    }
+
+
+    function handleQuestionsLoad(data) {
+      hideLoading();
+      debug('Raw questions response received:', data);
+
+      if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
+        questions = data.data.filter(q => q && q.questionID && q.questionText && Array.isArray(q.options)); // Basic validation
+        debug(`Processed ${questions.length} valid questions.`);
+
+        if (questions.length === 0) {
+             handleError("No valid questions were loaded. Please check the question source.");
+             return;
+        }
+
+        userAnswers = new Array(questions.length).fill(null);
+        quizResults = new Array(questions.length).fill(null); // Initialize results array
+        sessionID = generateSessionID(); // Generate ID when questions are loaded
+        debug(`Quiz initialized with Session ID: ${sessionID}`);
+        currentQuestionIndex = 0;
+        progressContainer.classList.remove('hidden'); // Show progress bar
+        updateProgressBar();
+        renderQuestion();
+      } else {
+        handleError(`Failed to load or parse questions. Response: ${JSON.stringify(data)}`);
+      }
+    }
+
+    function handleError(errorMessage) {
+      hideLoading();
+      debug('ERROR:', errorMessage);
+      quizContainer.innerHTML = `<div class="question-card error-message">
+                                    <h2>Error</h2>
+                                    <p>Could not load the quiz.</p>
+                                    <p>Details: ${typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage)}</p>
+                                    <p>Please try refreshing the page or contact support.</p>
+                                 </div>`;
+    }
+
+    function updateProgressBar() {
+      if (questions.length === 0) return;
+      const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+      progressFill.style.width = progress + '%';
+      progressText.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+    }
+
+    function renderQuestion() {
+        if (currentQuestionIndex >= questions.length) {
+            debug("Attempting to render question beyond index, showing results instead.");
+            showResults();
+            return;
+        }
+
+        questionAnswered = false; // Reset answered flag for the new question
+        const question = questions[currentQuestionIndex];
+        debug(`Rendering question index ${currentQuestionIndex}`, question);
+
+        let html = `
+          <div class="question-card">
+            <div class="question-header">
+              <span class="question-id">${question.questionID || 'N/A'}</span>
+              <span class="difficulty-badge difficulty-${(question.difficultyLevel || 'medium').toLowerCase()}">
+                ${question.difficultyLevel || 'Medium'}
+              </span>
+            </div>
+            <div class="question-text">${question.questionText || 'Missing question text'}</div>
+        `;
+
+        if (question.codeSnippets) {
+          html += `<div class="code-snippet"><pre><code>${escapeHtml(question.codeSnippets)}</code></pre></div>`;
+        }
+
+        html += '<div class="options-container">';
+        if (question.options && question.options.length > 0) {
+          // Shuffle options? Optional enhancement.
+          question.options.forEach((option, index) => {
+            // Escape option text for use in onclick attribute
+            const escapedOption = escapeHtml(option).replace(/'/g, "'").replace(/"/g, """);
+            html += `
+              <button class="option-button" id="option-${index}" onclick="selectOption('${escapedOption}', this)">
+                ${escapeHtml(option)}
+              </button>
+            `;
+          });
+        } else {
+             html += '<p>No options available for this question.</p>';
+        }
+        html += '</div>'; // End options-container
+
+        // Feedback area
+        html += `
+          <div id="feedback-container" class="feedback-container" style="display: none;">
+            <div id="feedback-header" class="feedback-header"></div>
+            <div id="explanation" class="explanation"></div>
+          </div>
+        `;
+
+         // Hint button and container
+        if (question.hints) {
+          html += `
+            <button class="hint-button" onclick="showHint()">Show Hint</button>
+            <div id="hint-container" class="hint-container" style="display: none;">
+              ${escapeHtml(question.hints)}
+            </div>
+          `;
+        }
+
+        // Navigation
+        html += `
+          <div class="navigation-buttons">
+            <button class="nav-button" id="prev-button" onclick="previousQuestion()" ${currentQuestionIndex === 0 ? 'disabled' : ''}>Previous</button>
+            <button class="nav-button" id="next-button" onclick="nextQuestion()" style="display: none;">
+              ${currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next'}
+            </button>
+          </div>
+        `;
+
+        html += '</div>'; // End question-card
+        quizContainer.innerHTML = html;
+    }
+
+     function escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return String(unsafe)
+             .replace(/&/g, "&")
+             .replace(/</g, "<")
+             .replace(/>/g, ">")
+             .replace(/"/g, """)
+             .replace(/'/g, "'");
+     }
+
+
+    function selectOption(option, buttonElement) {
+        if (questionAnswered) return; // Allow answering only once
+        questionAnswered = true;
+
+        const question = questions[currentQuestionIndex];
+        const isCorrect = option === escapeHtml(question.correctAnswer); // Compare escaped versions
+        userAnswers[currentQuestionIndex] = option; // Store the *selected* (potentially escaped) option
+
+        debug(`Question ${currentQuestionIndex}: Selected='${option}', Correct='${escapeHtml(question.correctAnswer)}', IsCorrect=${isCorrect}`);
+
+
+        // --- Visual Feedback ---
+        const buttons = quizContainer.querySelectorAll('.option-button');
+        buttons.forEach((btn, index) => {
+            btn.classList.add('disabled'); // Disable all buttons
+            const btnOptionText = btn.textContent.trim(); // Get text rendered in button
+            const correctOptionText = question.correctAnswer ? question.correctAnswer.trim() : '';
+
+            if (escapeHtml(btnOptionText) === escapeHtml(correctOptionText)) {
+                 btn.classList.add('correct');
+            } else if (btn === buttonElement && !isCorrect) { // If this is the button clicked and it's wrong
+                 btn.classList.add('incorrect');
+            }
+             // Ensure the actually selected button gets the 'selected' class visually
+            if (btn === buttonElement) {
+                 btn.classList.add('selected');
+            }
+        });
+
+
+        // --- Show Explanation ---
+        const feedbackContainer = document.getElementById('feedback-container');
+        const feedbackHeader = document.getElementById('feedback-header');
+        const explanationDiv = document.getElementById('explanation');
+
+        if (isCorrect) {
+            feedbackHeader.className = 'feedback-header feedback-correct';
+            feedbackHeader.innerHTML = '✓ Correct!';
+        } else {
+            feedbackHeader.className = 'feedback-header feedback-incorrect';
+            feedbackHeader.innerHTML = `✗ Incorrect. The correct answer is: ${escapeHtml(question.correctAnswer)}`;
+        }
+        explanationDiv.innerHTML = `<strong>Explanation:</strong> ${escapeHtml(question.explanation) || 'No explanation provided.'}`;
+        feedbackContainer.style.display = 'block';
+
+        // --- Show Next/Finish Button ---
+        document.getElementById('next-button').style.display = 'inline-block';
+
+        // --- Prepare and Save Individual Result ---
+        const resultData = {
+          questionID: question.questionID,
+          questionType: question.questionType,
+          questionText: question.questionText,
+          userAnswer: option, // The actual selected option
+          correctAnswer: question.correctAnswer, // The defined correct answer
+          isCorrect: isCorrect,
+          learningConcepts: question.learningConcepts, // Pass as array or string
+          difficultyLevel: question.difficultyLevel,
+          bloomsLevel: question.bloomsLevel,
+          user_ID: currentUser, // Add username
+          sessionID: sessionID  // Add session ID
+        };
+        quizResults[currentQuestionIndex] = resultData; // Store locally
+        saveResultToSheet(resultData); // Send to backend
+    }
+
+    function saveResultToSheet(result) {
+        debug('Saving individual result:', { q: result.questionID, user: result.user_ID, session: result.sessionID });
+        try {
+            const dataPayload = {
+                action: 'saveResult',
+                result: result
+            };
+            // Use Image Beacon for simple fire-and-forget (no reliable success/error feedback)
+            const img = new Image();
+            const encodedData = encodeURIComponent(JSON.stringify(dataPayload));
+            const fullUrl = `${APPS_SCRIPT_URL}?data=${encodedData}`;
+
+             // Check URL length (GET requests have limits, typically ~2000 chars)
+            if (fullUrl.length > 2000) {
+                console.error("Data URL is too long for GET request. Consider POST or splitting data.");
+                debug("ERROR: Data URL too long", { urlLength: fullUrl.length });
+                // Fallback or error handling needed here
+                return;
+            }
+
+            img.src = fullUrl;
+             // We don't get reliable feedback from the image beacon method
+             img.onload = () => debug(`Beacon potentially loaded for Q: ${result.questionID}`);
+             img.onerror = () => debug(`Beacon error likely occurred for Q: ${result.questionID}`);
+
+        } catch (error) {
+             debug('Error constructing saveResult request', error);
+             console.error("Error saving result:", error);
+             // Optionally, implement retry logic or store locally for later sync
+        }
+    }
+
+    function showHint() {
+       const hintContainer = document.getElementById('hint-container');
+       if (hintContainer) {
+           hintContainer.style.display = 'block';
+       }
+    }
+
+
+    function previousQuestion() {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            updateProgressBar();
+            renderQuestion(); // Rerender the previous question
+            // If answers should persist visually, add logic here to re-apply 'selected', 'correct'/'incorrect' classes
+        }
+    }
+
+
+    function nextQuestion() {
+        // Ensure current question was answered before proceeding (optional enforcement)
+        // if (!questionAnswered && currentQuestionIndex < questions.length) {
+        //    alert("Please select an answer before proceeding.");
+        //    return;
+        // }
+
+        if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            updateProgressBar();
+            renderQuestion();
+        } else {
+            // This was the last question
+            debug("Quiz finished. Showing results.");
+            showResults();
+        }
+    }
+
+    function showResults() {
+        showLoading("Calculating results and finalizing...");
+
+        // Ensure all results have been attempted to be saved
+        // (Due to async nature, some saves might still be in flight, but we proceed)
+
+        // Calculate final score from *local* answers array for display
+        let correctCount = 0;
+        for(let i=0; i < questions.length; i++){
+            // Compare user's selected answer (stored in userAnswers) with correct answer
+            if (userAnswers[i] !== null && questions[i] && userAnswers[i] === escapeHtml(questions[i].correctAnswer)) {
+                 correctCount++;
+            }
+        }
+
+        const percentage = (questions.length > 0) ? (correctCount / questions.length) * 100 : 0;
+
+        debug(`Final Score Calculation: Correct=${correctCount}, Total=${questions.length}, Percentage=${percentage.toFixed(1)}%`);
+
+
+        // Hide quiz elements
+        quizContainer.style.display = 'none';
+        progressContainer.style.display = 'none';
+
+        // Prepare results display
+        let scoreClass = 'score-low';
+        if (percentage >= 80) scoreClass = 'score-high';
+        else if (percentage >= 60) scoreClass = 'score-medium';
+
+        resultsContainer.innerHTML = `
+            <h2>Quiz Completed!</h2>
+            <p>User: ${escapeHtml(currentUser)}</p>
+            <p>Session ID: ${escapeHtml(sessionID)}</p>
+            <div class="score-circle ${scoreClass}">
+              ${percentage.toFixed(1)}%
+            </div>
+            <p>You answered ${correctCount} out of ${questions.length} questions correctly.</p>
+            <p style="margin-top: 15px; font-style: italic;">Your detailed progress is being updated.</p>
+            <button class="nav-button" onclick="location.reload()" style="margin-top: 20px;">Try Again</button>
+        `;
+        resultsContainer.classList.remove('hidden'); // Show results
+
+        // *** Trigger the backend processing ***
+        triggerBackendProcessing(sessionID, currentUser);
+
+        hideLoading(); // Hide loading overlay after triggering backend
+    }
+
+    function triggerBackendProcessing(sessionIdToProcess, userToProcess) {
+        debug(`Triggering backend processing for session: ${sessionIdToProcess}, user: ${userToProcess}`);
+        try {
+            const dataPayload = {
+                action: 'triggerProcessing',
+                sessionId: sessionIdToProcess,
+                userId: userToProcess
+            };
+            // Use Image Beacon again for simplicity
+            const img = new Image();
+            const encodedData = encodeURIComponent(JSON.stringify(dataPayload));
+            const fullUrl = `${APPS_SCRIPT_URL}?data=${encodedData}`;
+
+            if (fullUrl.length > 2000) {
+                console.error("Trigger URL too long for GET request.");
+                debug("ERROR: Trigger URL too long", { urlLength: fullUrl.length });
+                // Consider alternative method (POST) if this occurs
+                return;
+            }
+            img.src = fullUrl;
+            debug("Backend processing trigger request sent.");
+             // No reliable feedback with beacon
+             img.onload = () => debug(`Beacon potentially loaded for trigger.`);
+             img.onerror = () => debug(`Beacon error likely occurred for trigger.`);
+
+        } catch (error) {
+             debug('Error constructing triggerProcessing request', error);
+             console.error("Error triggering backend processing:", error);
+        }
+    }
+
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+      debug("DOM Loaded. Starting initialization.");
+      // Check URL - CRITICAL for Apps Script URL
+       if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_DEPLOYED_WEB_APP_URL_HERE') {
+           handleError("APPS_SCRIPT_URL is not set in the HTML. Please replace 'YOUR_DEPLOYED_WEB_APP_URL_HERE' with your actual deployed Web App URL.");
+           return; // Stop execution
+       }
+       if (!APPS_SCRIPT_URL.startsWith('https://script.google.com/macros/s/')) {
+            debug("Warning: APPS_SCRIPT_URL might not be a valid Apps Script URL.", APPS_SCRIPT_URL);
+       }
+
+
+      if (checkAuthentication()) {
+          // If authenticated, proceed to load questions
+          loadQuestions();
+      } else {
+          // Redirect will happen in checkAuthentication
+          hideLoading(); // Hide loading if redirecting
+      }
+    });
+
+  </script>
+</body>
+</html>
