@@ -871,6 +871,22 @@
         font-size: 0.8em;
       }
     }
+
+    /* Debug styles */
+    .debug-info {
+      background-color: #fff8dc;
+      border: 1px solid #e6d9a8;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      display: none;
+    }
+
+    .debug-info.show {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -900,6 +916,12 @@
       </div>
     </div>
   </nav>
+
+  <!-- Debug panel (hidden by default) -->
+  <div id="debug-panel" class="debug-info">
+    <div>Debug Panel</div>
+    <div id="debug-log"></div>
+  </div>
 
   <!-- Main Content Area -->
   <main id="main-content">
@@ -1127,6 +1149,9 @@
     // API URLs - Replace these with your actual Google Apps Script Web App URLs
     const knowledgeMapApiUrl = 'https://script.google.com/macros/s/AKfycbxXNo-NwDbfhsX7Uj80UrMMG2aKXXmKc2atJsJTTbolb-_QqlItlCpKSHI2f-fAB0Sq/exec';
     const leaderboardApiUrl = 'https://script.google.com/macros/s/AKfycbxXNo-NwDbfhsX7Uj80UrMMG2aKXXmKc2atJsJTTbolb-_QqlItlCpKSHI2f-fAB0Sq/exec';
+    
+    // Debug mode (set to true when troubleshooting)
+    const DEBUG_MODE = true;
 
     // --- Global Variables ---
     // Knowledge Map Variables
@@ -1146,6 +1171,10 @@
     // Tab navigation elements
     const tabs = document.querySelectorAll('.tab');
     const contentViews = document.querySelectorAll('.content-view');
+    
+    // Debug elements
+    const debugPanel = document.getElementById('debug-panel');
+    const debugLog = document.getElementById('debug-log');
     
     // Knowledge Map elements
     const kmErrorMessageDiv = document.getElementById('km-error-message');
@@ -1176,8 +1205,66 @@
     const topNSelector = document.getElementById('top-n-selector');
     const lastUpdatedP = document.getElementById('last-updated');
 
+    // --- Debug Functions ---
+    function debugLog(message, obj = null) {
+      if (!DEBUG_MODE) return;
+      
+      const timestamp = new Date().toLocaleTimeString();
+      let logMessage = `[${timestamp}] ${message}`;
+      
+      if (obj !== null) {
+        try {
+          // Try to pretty-print the object, but fallback to regular JSON if it fails
+          if (typeof obj === 'object') {
+            const objStr = JSON.stringify(obj, null, 2).substring(0, 1000); // Limit string length
+            logMessage += `\n${objStr}${objStr.length >= 1000 ? '...' : ''}`;
+          } else {
+            logMessage += `\n${obj}`;
+          }
+        } catch (e) {
+          logMessage += `\n[Cannot stringify object: ${e.message}]`;
+        }
+      }
+      
+      console.log(logMessage);
+      
+      if (debugLog) {
+        const newEntry = document.createElement('div');
+        newEntry.style.borderBottom = '1px dashed #ccc';
+        newEntry.style.marginBottom = '8px';
+        newEntry.style.paddingBottom = '8px';
+        newEntry.innerHTML = logMessage.replace(/\n/g, '<br>');
+        debugLog.appendChild(newEntry);
+        
+        // Keep only the latest 10 entries
+        while (debugLog.children.length > 10) {
+          debugLog.removeChild(debugLog.firstChild);
+        }
+      }
+      
+      if (debugPanel) {
+        debugPanel.classList.add('show');
+      }
+    }
+
     // --- Event Listeners ---
     document.addEventListener('DOMContentLoaded', function() {
+      // Initialize Debug Mode
+      if (DEBUG_MODE) {
+        debugLog('Debug mode is enabled');
+        debugPanel.classList.add('show');
+        
+        // Add keyboard shortcut to toggle debug panel (Ctrl+D)
+        document.addEventListener('keydown', function(e) {
+          if (e.ctrlKey && e.key === 'd') {
+            e.preventDefault();
+            debugPanel.classList.toggle('show');
+          }
+        });
+      } else {
+        debugPanel.classList.remove('show');
+      }
+      
       // Configuration Check
       if (!knowledgeMapApiUrl || knowledgeMapApiUrl.includes('REPLACE_THIS')) {
         showKMError('Configuration error: Please update the knowledgeMapApiUrl variable with your deployed Google Apps Script URL.');
@@ -1271,6 +1358,9 @@
         });
       }
 
+      // Make sure visualization container is properly sized
+      ensureVizContainerSize();
+      
       // Start loading data for the active view
       const activeView = document.querySelector('.content-view.active');
       if (activeView) {
@@ -1282,9 +1372,33 @@
       }
     });
 
+    /**
+     * Ensure visualization container has proper size before rendering
+     */
+    function ensureVizContainerSize() {
+      const vizContainer = document.getElementById('visualization');
+      if (!vizContainer) return;
+      
+      // Ensure the container has dimensions
+      if (vizContainer.clientWidth <= 0 || vizContainer.clientHeight <= 0) {
+        debugLog('Visualization container has zero dimensions, setting default size');
+        vizContainer.style.width = '100%';
+        vizContainer.style.height = '600px';
+      }
+      
+      // Also make sure the SVG has dimensions
+      const graphSvg = document.getElementById('graph');
+      if (graphSvg) {
+        graphSvg.setAttribute('width', '100%');
+        graphSvg.setAttribute('height', '100%');
+      }
+      
+      debugLog(`Visualization container size: ${vizContainer.clientWidth}x${vizContainer.clientHeight}px`);
+    }
+
     // --- Knowledge Map Functions ---
     function loadStudentList() {
-      console.log('Attempting to load student list...');
+      debugLog('Attempting to load student list...');
       if (kmStudentSelector) {
         kmStudentSelector.disabled = true;
         kmStudentSelector.innerHTML = '<option>Loading students...</option>';
@@ -1302,18 +1416,18 @@
       let script = null;
       const callbackName = 'jsonp_callback_students_' + Date.now();
       const timeoutId = setTimeout(() => {
-        console.error('Student list request timed out.');
+        debugLog('Student list request timed out.');
         showKMError('Request timed out fetching student list. Server might be busy.');
         if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Error loading</option>';
         cleanupJsonp(script, callbackName);
-      }, 15000);
+      }, 30000); // Increased timeout to 30 seconds for slow connections
 
       window[callbackName] = function(data) {
         clearTimeout(timeoutId);
-        console.log('Received student list data via JSONP:', callbackName);
+        debugLog('Received student list data via JSONP:', data);
         try {
           if (data && data.error) {
-            console.error('Server error getting students:', data.error);
+            debugLog('Server error getting students:', data.error);
             showKMError('Server Error getting students: ' + data.error);
             if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Error</option>';
           } else if (data && Array.isArray(data) && data.length > 0) {
@@ -1327,16 +1441,16 @@
               showKMError("No students found in the list.");
             }
           } else if (data && Array.isArray(data) && data.length === 0) {
-            console.log('No students returned from server.');
+            debugLog('No students returned from server.');
             showKMError('No students found in the progress sheet header.');
             if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>No students</option>';
           } else {
-            console.error('Invalid student list data structure:', data);
+            debugLog('Invalid student list data structure:', data);
             showKMError('Received invalid student list data.');
             if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Invalid data</option>';
           }
         } catch (error) {
-          console.error('Error processing student list:', error);
+          debugLog('Error processing student list:', error);
           showKMError('Error processing student list: ' + error.message);
           if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Processing Error</option>';
         } finally {
@@ -1348,7 +1462,7 @@
       script.src = knowledgeMapApiUrl + (knowledgeMapApiUrl.includes('?') ? '&' : '?') + 'action=getStudents' + '&callback=' + callbackName + '&_=' + Date.now();
       script.onerror = function() {
         clearTimeout(timeoutId);
-        console.error('Failed to load student list script.');
+        debugLog('Failed to load student list script.');
         showKMError('Failed to load student list. Network issue or script error.');
         if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Load Failed</option>';
         cleanupJsonp(script, callbackName);
@@ -1366,8 +1480,13 @@
           option.textContent = student;
           kmStudentSelector.appendChild(option);
         });
+        kmStudentSelector.disabled = false; // Enable the selector
       } else {
-        kmStudentSelector.innerHTML = '<option>No students available</option>';
+        // Create a default "No students" option
+        const option = document.createElement('option');
+        option.value = "";
+        option.textContent = "No students available";
+        kmStudentSelector.appendChild(option);
         kmStudentSelector.disabled = true;
       }
     }
@@ -1376,7 +1495,7 @@
       const selectedStudent = event.target.value;
       if (!selectedStudent || selectedStudent === currentStudent) return;
 
-      console.log(`Student selected: ${selectedStudent}`);
+      debugLog(`Student selected: ${selectedStudent}`);
       currentStudent = selectedStudent;
 
       // Clear previous data visualization and show loaders
@@ -1390,18 +1509,21 @@
       if (kmErrorMessageDiv) kmErrorMessageDiv.style.display = 'none';
       if (kmStudentSelector) kmStudentSelector.disabled = true;
 
+      // Make sure visualization container is properly sized
+      ensureVizContainerSize();
+
       // Load data for the selected student
       loadData(selectedStudent);
     }
 
     function loadData(studentId) {
       if (!studentId) {
-        console.error("loadData called without studentId");
+        debugLog("loadData called without studentId");
         showKMError("Cannot load data: No student selected.");
         if (kmStudentSelector) kmStudentSelector.disabled = false;
         return;
       }
-      console.log(`Attempting to load data for student: ${studentId}`);
+      debugLog(`Attempting to load data for student: ${studentId}`);
 
       // Ensure loaders are visible
       if (mainLoader) mainLoader.style.display = 'block';
@@ -1413,29 +1535,35 @@
       let script = null;
       const callbackName = 'jsonp_callback_data_' + Date.now() + '_' + Math.round(10000 * Math.random());
       const timeoutId = setTimeout(() => {
-        console.error(`Request timed out for student ${studentId}.`);
+        debugLog(`Request timed out for student ${studentId}.`);
         showKMError(`Request timed out loading data for ${studentId}. Server might be busy.`);
         cleanupJsonp(script, callbackName);
         if (kmStudentSelector) kmStudentSelector.disabled = false;
-      }, 20000);
+      }, 30000); // Increased timeout to 30 seconds
 
       window[callbackName] = function(data) {
         clearTimeout(timeoutId);
-        console.log(`Received data for ${studentId} via JSONP callback:`, callbackName);
+        debugLog(`Received data for ${studentId} via JSONP callback:`);
+        
+        // Safe logging of potentially large data
+        if (data) {
+          debugLog(`Data structure: nodes=${data.nodes?.length || 'null'}, links=${data.links?.length || 'null'}, paths=${Object.keys(data.learningPaths || {}).length || 0}`);
+        }
+        
         try {
           if (data && data.error) {
-            console.error(`Server error loading data for ${studentId}:`, data.error);
+            debugLog(`Server error loading data for ${studentId}:`, data.error);
             showKMError(`Server Error for ${studentId}: ${data.error}`);
           } else if (data && data.nodes && data.links && data.learningPaths !== undefined) {
             knowledgeData = data;
             renderKnowledgeMap(knowledgeData);
             if (recommendMaterialsButton) recommendMaterialsButton.disabled = false;
           } else {
-            console.error(`Invalid data structure received for ${studentId}:`, data);
+            debugLog(`Invalid data structure received for ${studentId}:`, data);
             showKMError(`Received invalid data structure for ${studentId}.`);
           }
         } catch (error) {
-          console.error(`Error processing data for ${studentId}:`, error);
+          debugLog(`Error processing data for ${studentId}:`, error);
           showKMError(`Error processing data for ${studentId}: ${error.message}`);
         } finally {
           cleanupJsonp(script, callbackName);
@@ -1451,7 +1579,7 @@
                   '&_=' + Date.now();
       script.onerror = function() {
         clearTimeout(timeoutId);
-        console.error(`Failed to load data script for ${studentId}.`);
+        debugLog(`Failed to load data script for ${studentId}.`);
         showKMError(`Failed to load data for ${studentId}. Network issue, script error, or deployment problem.`);
         cleanupJsonp(script, callbackName);
         if (kmStudentSelector) kmStudentSelector.disabled = false;
@@ -1460,7 +1588,7 @@
     }
 
     function renderKnowledgeMap(data) {
-      console.log(`Rendering map for student: ${currentStudent}`);
+      debugLog(`Rendering map for student: ${currentStudent}`);
       if (mainLoader) mainLoader.style.display = 'none';
       if (!data || !data.nodes || !data.links) {
         showKMError('Invalid data for render.');
@@ -1473,40 +1601,57 @@
         return;
       }
       
+      // Double check container has actual size
       const width = visContainer.clientWidth;
       const height = visContainer.clientHeight;
+      debugLog(`Visualization container dimensions: ${width}x${height}`);
+      
       if (width <= 0 || height <= 0) {
-        showKMError("Viz container size invalid.");
+        // Set default dimensions if container size is invalid
+        visContainer.style.width = '100%';
+        visContainer.style.height = '600px';
+        debugLog("Fixed visualization container size to default dimensions");
+        setTimeout(() => {
+          // Try rendering again after a brief delay to let the DOM update
+          renderKnowledgeMap(data);
+        }, 100);
         return;
       }
       
+      // Clear any existing visualization
       d3.select('#graph').selectAll('*').remove();
       
+      // Setup zoom behavior
       zoom = d3.zoom()
         .scaleExtent([0.2, 8])
         .on('zoom', (event) => {
-          if (g) g.attr('transform', event.transform);
+          svg.mainG.attr('transform', event.transform);
         });
       
+      // Create SVG element with appropriate dimensions
       svg = d3.select('#graph')
         .attr('width', width)
         .attr('height', height)
         .call(zoom)
         .on("dblclick.zoom", null);
       
+      // Create main group element to contain all visualization elements
       const g = svg.append('g');
-      svg.mainG = g;
+      svg.mainG = g; // Store reference to main group
       
+      // Calculate appropriate parameters based on number of nodes
       const numNodes = data.nodes.length;
       const linkDistance = Math.max(80, Math.min(150, 100 + numNodes * 0.3));
       const chargeStrength = Math.max(-800, Math.min(-150, -250 - numNodes * 1.5));
       
-      console.log(`Sim Params: Nodes=${numNodes}, LinkDist=${linkDistance.toFixed(1)}, Charge=${chargeStrength.toFixed(1)}`);
+      debugLog(`Simulation Parameters: Nodes=${numNodes}, LinkDistance=${linkDistance.toFixed(1)}, Charge=${chargeStrength.toFixed(1)}`);
       
+      // Stop any existing simulation
       if (simulation) {
         simulation.stop();
       }
       
+      // Create D3 force simulation
       simulation = d3.forceSimulation(data.nodes)
         .force('link', d3.forceLink(data.links).id(d => d.id).distance(d => d.source.isParent !== d.target.isParent ? linkDistance * 0.7 : linkDistance).strength(d => d.source.isParent !== d.target.isParent ? 0.8 : 0.6))
         .force('charge', d3.forceManyBody().strength(d => d.isParent ? chargeStrength * 1.5 : chargeStrength))
@@ -1515,6 +1660,7 @@
         .force('x', d3.forceX(width / 2).strength(0.04))
         .force('y', d3.forceY(height / 2).strength(0.04));
       
+      // Create links
       const link = g.append('g')
         .attr('class', 'links')
         .selectAll('line')
@@ -1528,6 +1674,7 @@
         })
         .attr('stroke-width', 1.5);
       
+      // Create node groups
       const nodeGroup = g.append('g')
         .attr('class', 'nodes')
         .selectAll('g.node-group')
@@ -1542,17 +1689,19 @@
         .on('mouseover', showTooltip)
         .on('mouseout', hideTooltip);
       
+      // Add circle to each node group
       nodeGroup.append('circle')
         .attr('class', d => `node ${d.isParent ? 'parent' : 'child'}`)
         .attr('r', d => getNodeSize(d))
         .attr('fill', d => getNodeColor(d));
       
+      // Add text label to each node group
       nodeGroup.append('text')
         .attr('class', d => `node-label ${d.isParent ? 'parent' : ''}`)
         .attr('dy', d => getNodeSize(d) + (d.isParent ? 14 : 10))
-        .text(d => d.name && d.name.length > 20 ? d.name.substring(0, 18) + '...' : d.name)
-        .attr('display', 'none');
+        .text(d => d.name && d.name.length > 20 ? d.name.substring(0, 18) + '...' : d.name);
       
+      // Update positions on each tick of the simulation
       simulation.on('tick', () => {
         link
           .attr('x1', d => d.source.x)
@@ -1563,18 +1712,22 @@
         nodeGroup.attr('transform', d => `translate(${d.x}, ${d.y})`);
       });
       
-      const finalZoomIn = document.getElementById('zoom-in');
-      const finalZoomOut = document.getElementById('zoom-out');
-      const finalReset = document.getElementById('reset-zoom');
+      // Setup zoom controls
+      const zoomInButton = document.getElementById('zoom-in');
+      const zoomOutButton = document.getElementById('zoom-out');
+      const resetZoomButton = document.getElementById('reset-zoom');
       
-      if (finalZoomIn && svg && zoom) finalZoomIn.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1.3);
-      if (finalZoomOut && svg && zoom) finalZoomOut.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.3);
-      if (finalReset && svg && zoom) finalReset.onclick = () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+      if (zoomInButton && svg && zoom) zoomInButton.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1.3);
+      if (zoomOutButton && svg && zoom) zoomOutButton.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.3);
+      if (resetZoomButton && svg && zoom) resetZoomButton.onclick = () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
       
+      // Setup filters and update summary/recommendations
       setupFilters();
       applyFilters();
       updateSummary(data.nodes);
       generateRecommendations(data.nodes);
+      
+      debugLog('Knowledge map rendering complete');
     }
 
     function getNodeSize(d) {
@@ -1844,7 +1997,7 @@
     }
 
     function showLearningPathRecommendation() {
-      console.log("Recommend button clicked");
+      debugLog("Recommend button clicked");
       if (!knowledgeData || !knowledgeData.nodes || !knowledgeData.learningPaths) {
         alert("Recommendation data unavailable.");
         return;
@@ -1876,7 +2029,7 @@
       const worstNode = weakParents[0];
       const worstId = worstNode.conceptId;
       
-      console.log(`Worst topic: ID=${worstId}, Name=${worstNode.name}`);
+      debugLog(`Worst topic: ID=${worstId}, Name=${worstNode.name}`);
       
       const pathUrls = knowledgeData.learningPaths[worstId];
       modalTitle.textContent = `Learning Path for: ${worstNode.name}`;
@@ -1902,12 +2055,12 @@
         modalStepsContainer.innerHTML = stepsHtml;
       } else {
         modalStepsContainer.innerHTML = `<p>No specific learning steps found for "${worstNode.name}". Review subtopics.</p>`;
-        console.warn(`No path found for topic ID: ${worstId}`);
+        debugLog(`No path found for topic ID: ${worstId}`);
       }
     }
 
     function showKMError(message) {
-      console.error("Knowledge Map Error:", message);
+      debugLog("Knowledge Map Error:", message);
       if (mainLoader) mainLoader.style.display = 'none';
       if (summaryLoader) summaryLoader.style.display = 'none';
       if (recsLoader) recsLoader.style.display = 'none';
@@ -1928,47 +2081,50 @@
 
     // --- Leaderboard Functions ---
     function fetchLeaderboardData() {
-      console.log("Fetching leaderboard data...");
+      debugLog("Fetching leaderboard data...");
       showLeaderboardLoading();
 
       const callbackName = 'jsonpCallback_' + Date.now();
       const script = document.createElement('script');
       const timeoutId = setTimeout(() => {
-        console.error("Leaderboard request timed out.");
+        debugLog("Leaderboard request timed out.");
         showLBError("Request timed out. Server might be busy.");
         cleanupJsonp(script, callbackName);
-      }, 25000);
+      }, 30000); // Increased timeout to 30 seconds
 
       window[callbackName] = function(data) {
         clearTimeout(timeoutId);
-        console.log("Leaderboard data received:", data);
+        debugLog("Leaderboard data received:", data ? `${Object.keys(data).length} keys` : 'null');
+        
         try {
-          if (data.error) {
+          if (data && data.error) {
             throw new Error(data.error);
           }
           if (!data || !data.students) {
             throw new Error("Invalid data structure.");
           }
+          
           leaderboardData = data;
           populateLBStudentSelector(Object.keys(data.students));
           renderLeaderboard(data);
           showLeaderboardContent();
+          
         } catch (error) {
-          console.error("Error processing leaderboard data:", error);
+          debugLog("Error processing leaderboard data:", error);
           showLBError(`Error processing data: ${error.message}`);
         } finally {
           cleanupJsonp(script, callbackName);
         }
       };
 
-      script.src = `${leaderboardApiUrl}?callback=${callbackName}&t=${Date.now()}`;
+      script.src = `${leaderboardApiUrl}?action=getLeaderboard&callback=${callbackName}&_=${Date.now()}`;
       script.onerror = () => {
         clearTimeout(timeoutId);
-        console.error("Failed to load leaderboard script.");
+        debugLog("Failed to load leaderboard script.");
         showLBError("Failed to connect. Check API URL & deployment.");
         cleanupJsonp(script, callbackName);
       };
-      document.body.appendChild(script);
+      document.head.appendChild(script);
     }
 
     function showLeaderboardLoading() {
@@ -2003,7 +2159,7 @@
 
     function renderLeaderboard(data) {
       if (!data || !data.students) {
-        console.error("Cannot render leaderboard: Invalid data.");
+        debugLog("Cannot render leaderboard: Invalid data.");
         studentListContainer.innerHTML = '<p style="text-align:center; padding: 20px;">Error loading data.</p>';
         return;
       }
@@ -2106,6 +2262,15 @@
         window[callbackName] = undefined;
       }
     }
+
+    // Initialize the app once everything is loaded
+    window.addEventListener('load', function() {
+      // Make sure the visualization container has proper dimensions
+      ensureVizContainerSize();
+      
+      // Set a fallback timeout to check again after 1 second
+      setTimeout(ensureVizContainerSize, 1000);
+    });
   </script>
 </body>
 </html>
