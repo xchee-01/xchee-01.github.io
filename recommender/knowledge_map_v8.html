@@ -1,0 +1,2458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NUS Student Learning Dashboard</title>
+
+  <!-- Preconnect to required origins for faster connection setup -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Google Fonts - Roboto (Use display=swap for non-blocking font rendering) -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome CSS (Faster than JS version for basic icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <style>
+    /* --- CSS Variables (Theme Colors) --- */
+    :root {
+      --nus-blue: #003D7C;
+      --nus-orange: #EF7C00;
+      --background-light: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-primary: #212529;
+      --text-secondary: #6c757d;
+      --border-color: #dee2e6;
+      --progress-bg: #e9ecef;
+      --mastery-color: #28a745; /* Green */
+      --developing-color: #FFC107; /* Yellow */
+      --needs-work-color: #F44336; /* Red */
+      --not-attempted-color: #9E9E9E; /* Grey */
+      --coverage-color: #17a2b8; /* Teal */
+      --mastered-count-color: var(--nus-orange);
+      --hard-perf-color: #dc3545; /* Red */
+      --error-bg: #FFCDD2;
+      --error-border: #EF9A9A;
+      --error-text: #D32F2F;
+      --highlight-bg: #e7f3ff;
+    }
+
+    /* --- Base Styles --- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; } /* Smooth scrolling */
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--background-light);
+      color: var(--text-primary);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden; /* Prevent horizontal scrollbars */
+      line-height: 1.5; /* Improve readability */
+    }
+
+    /* --- Header Styles --- */
+    #main-header {
+      background-color: var(--nus-blue);
+      color: white;
+      padding: 15px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: relative; /* For potential absolute elements inside */
+      z-index: 10; /* Ensure header is above content */
+    }
+
+    #header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap; /* Allow wrapping on smaller screens */
+      gap: 15px;
+    }
+
+    #title-area {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    #title-area .logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0; /* Prevent logo shrinking */
+    }
+
+    #title-area .logo i {
+      font-size: 28px;
+      color: var(--nus-blue);
+    }
+
+    #title-area h1 {
+      margin: 0;
+      font-size: 1.5rem; /* Responsive font size */
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    #title-area .subtitle {
+      font-size: 1rem;
+      font-weight: 300;
+      opacity: 0.9;
+      margin-top: 4px;
+      display: block; /* Ensure it takes its own line if needed */
+    }
+
+    /* --- Navigation Tabs --- */
+    #nav-tabs {
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      position: sticky; /* Keep tabs visible while scrolling */
+      top: 0;
+      z-index: 5; /* Below header, above content */
+      width: 100%;
+    }
+
+    .tabs-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      overflow-x: auto; /* Enable horizontal scrolling for many tabs */
+      scrollbar-width: none; /* Hide scrollbar (Firefox) */
+      -ms-overflow-style: none;  /* Hide scrollbar (IE/Edge) */
+    }
+
+    .tabs-container::-webkit-scrollbar {
+      display: none; /* Hide scrollbar (Chrome/Safari/Opera) */
+    }
+
+    .tab {
+      padding: 15px 25px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap; /* Prevent tabs from wrapping text */
+      display: flex;
+      align-items: center;
+      gap: 8px; /* Space between icon and text */
+    }
+    .tab i.fa-fw { /* Ensure fixed width icons align nicely */
+        width: 1.2em;
+        text-align: center;
+    }
+
+    .tab:hover {
+      background-color: #f1f3f5;
+      color: var(--nus-blue);
+    }
+
+    .tab.active {
+      color: var(--nus-blue);
+      border-bottom-color: var(--nus-orange);
+      font-weight: 700;
+    }
+
+    /* --- Main Content Area --- */
+    #main-content {
+      flex: 1; /* Allow content to fill remaining vertical space */
+      position: relative; /* Needed for absolute positioned elements like loaders */
+      width: 100%;
+      padding: 0; /* Remove padding here, add to views */
+    }
+
+    .content-view {
+      display: none; /* Hide inactive views */
+      width: 100%;
+      /* min-height: calc(100vh - 180px); Adjust if header/tab height changes */
+      padding: 20px; /* Padding for content inside the view */
+    }
+
+    .content-view.active {
+      display: block; /* Show active view */
+    }
+
+    /* --- Footer --- */
+    footer {
+      background-color: var(--nus-blue);
+      color: rgba(255, 255, 255, 0.8);
+      padding: 15px;
+      text-align: center;
+      font-size: 0.85rem;
+      margin-top: auto; /* Push footer to bottom if content is short */
+    }
+
+    /* --- Common UI Components --- */
+
+    /* Error Message Styling */
+    .error-message {
+      color: var(--error-text);
+      background-color: var(--error-bg);
+      padding: 12px 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+      border: 1px solid var(--error-border);
+      display: none; /* Hidden by default */
+      align-items: center; /* Align items vertically */
+      justify-content: space-between; /* Space out text and button */
+      gap: 15px;
+    }
+    .error-message.show { display: flex; } /* Use flex to show */
+    .error-message p { margin: 0; flex-grow: 1; } /* Allow text to take space */
+
+    .retry-button {
+      background-color: var(--nus-blue);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 15px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+      flex-shrink: 0; /* Prevent button from shrinking */
+    }
+    .retry-button:hover { background-color: #002554; }
+
+    /* Consistent Loader Styling */
+    .loader-container {
+      display: none; /* Hidden by default */
+      text-align: center;
+      padding: 30px 15px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .loader-container.show { display: block; }
+
+    .loader-container .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--nus-blue); /* Use theme color */
+      width: 36px;
+      height: 36px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Loader designed to overlay existing content */
+    .loader-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.85); /* Slightly more opaque */
+      z-index: 20; /* Above content, below modals */
+      display: none; /* Hidden by default */
+      justify-content: center;
+      align-items: center;
+      flex-direction: column; /* Stack spinner and text */
+      color: var(--text-secondary);
+      font-size: 14px;
+      border-radius: inherit; /* Inherit parent's border radius */
+    }
+    .loader-overlay.show { display: flex; }
+    .loader-overlay .spinner { margin-bottom: 15px; }
+
+
+    /* --- Student Controls (Dropdowns, Inputs) --- */
+    .student-controls {
+      display: flex;
+      flex-wrap: wrap; /* Allow controls to wrap */
+      align-items: center;
+      gap: 15px 25px; /* Vertical and horizontal gap */
+      margin-bottom: 20px;
+      background-color: var(--card-bg);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .student-controls label {
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0; /* Remove default label margin */
+    }
+    .student-controls label i { color: var(--nus-blue); }
+
+    .student-controls select,
+    .student-controls input[type="number"] {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      background-color: #fff;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      min-width: 180px; /* Minimum width for selects */
+    }
+    .student-controls select:focus,
+    .student-controls input[type="number"]:focus {
+      border-color: var(--nus-blue);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 61, 124, 0.15); /* Focus indicator */
+    }
+
+    .student-controls input[type="number"] {
+      width: 90px; /* Specific width for number input */
+      min-width: unset;
+    }
+    .student-controls select:disabled {
+      background-color: #e9ecef; /* Grey out disabled select */
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    /* --- Card Component --- */
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      margin-bottom: 20px;
+      overflow: hidden; /* Contain child elements */
+      border: 1px solid var(--border-color);
+    }
+
+    .card-header {
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #f8f9fa; /* Light header background */
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--nus-blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title i { font-size: 1em; } /* Match icon size to text */
+
+    .card-body {
+      padding: 15px;
+      position: relative; /* For overlay loaders inside card body */
+    }
+
+    /* --- Knowledge Map View Specific Styles --- */
+    #knowledge-map-view {
+      max-width: 1200px; /* Limit max width */
+      margin: 0 auto; /* Center the view */
+    }
+
+    #knowledge-map-content { /* Initially hidden content wrapper */
+        display: none;
+    }
+    #knowledge-map-content.show {
+        display: block;
+    }
+
+    #knowledge-map-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap; /* Sidebar stacks below on small screens */
+    }
+
+    #knowledge-map-sidebar {
+      width: 100%; /* Full width on small screens */
+      flex-shrink: 0;
+    }
+
+    #knowledge-map-main {
+      flex: 1; /* Takes remaining space */
+      min-width: 0; /* Prevents overflow issues in flex layouts */
+    }
+
+    /* Sidebar takes fixed width on larger screens */
+    @media (min-width: 992px) {
+      #knowledge-map-sidebar {
+        width: 300px;
+      }
+      #knowledge-map-main {
+         /* No need for calc, flex: 1 handles it */
+      }
+    }
+
+    #visualization {
+      position: relative; /* For tooltip, controls, overlay loader */
+      min-height: 500px; /* Ensure minimum space */
+      height: 60vh; /* Responsive height based on viewport */
+      max-height: 700px; /* Limit maximum height */
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow: hidden; /* Clip SVG and controls */
+      display: flex; /* Used to center the SVG */
+      justify-content: center;
+      align-items: center;
+    }
+
+    #graph { /* The SVG element */
+      width: 100%;
+      height: 100%;
+      display: block; /* Remove extra space below SVG */
+      cursor: grab; /* Indicate interactivity */
+    }
+    #graph:active { cursor: grabbing; } /* Indicate dragging */
+
+    /* D3 Graph Element Styles */
+    .node circle { /* Style the circle within the node group */
+      stroke-width: 1.5px;
+      stroke: #fff; /* Default white stroke */
+      transition: stroke 0.2s ease, stroke-width 0.2s ease, r 0.2s ease; /* Smooth transitions */
+    }
+    .node.parent circle {
+        stroke: #555; /* Darker stroke for parent nodes */
+    }
+    .node circle:hover { /* Hover effect on the circle */
+        stroke: #333;
+        stroke-width: 2.5px;
+        /* r: currentRadius + 2px; Requires JS or more complex CSS */
+    }
+    .node.child circle { cursor: pointer; } /* Indicate clickable children */
+
+    .link {
+      stroke: #bbb;
+      stroke-opacity: 0.6;
+      stroke-width: 1.5px;
+    }
+    .link.parent-child { /* Style links connecting parent to child */
+      stroke: #777;
+      stroke-width: 2px;
+      stroke-opacity: 0.7;
+    }
+
+    /* Node Labels */
+    .node-label {
+      font-size: 10px;
+      fill: #444;
+      pointer-events: none; /* Labels should not interfere with mouse events */
+      text-anchor: middle; /* Center text */
+      paint-order: stroke; /* Draw stroke behind fill for readability */
+      stroke: white; /* White outline */
+      stroke-width: 2.5px; /* Outline thickness */
+      stroke-linecap: butt;
+      stroke-linejoin: miter;
+      /* Optional: Selectively hide labels at low zoom levels via JS */
+    }
+    .node-label.parent {
+      font-size: 12px;
+      font-weight: 500;
+      fill: #222; /* Darker text for parents */
+    }
+
+    /* Tooltip Styling */
+    .tooltip {
+      position: absolute;
+      background-color: rgba(40, 40, 40, 0.95); /* Dark, slightly transparent */
+      color: white;
+      border: none; /* Remove border */
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 12px;
+      line-height: 1.4;
+      pointer-events: none; /* Tooltip should not capture mouse events */
+      opacity: 0; /* Hidden by default */
+      transition: opacity 0.2s ease-in-out;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25); /* Softer shadow */
+      max-width: 280px; /* Limit width */
+      z-index: 100; /* Ensure tooltip is above graph elements */
+      white-space: normal; /* Allow text wrapping */
+    }
+    .tooltip strong { color: var(--nus-orange); } /* Highlight key info */
+
+    /* KM Sidebar Components */
+    .filter-section, .legend, .summary-section, .recommendations {
+      margin-bottom: 20px;
+    }
+    .filter-section h4, .legend h4, .summary-section h4 { /* Shared heading style */
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--nus-blue);
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    /* Specific heading for recommendations section */
+     .recommendations > p:first-of-type {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--nus-blue);
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #eee;
+     }
+
+
+    .filter-option, .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 14px;
+      cursor: pointer; /* Make whole item clickable */
+    }
+    .filter-option input[type="checkbox"] {
+      margin-right: 10px;
+      cursor: pointer;
+      accent-color: var(--nus-blue); /* Style the check color */
+      width: 16px; height: 16px; /* Consistent size */
+      flex-shrink: 0;
+    }
+    .filter-option label {
+      cursor: pointer;
+      flex-grow: 1;
+      user-select: none; /* Prevent text selection on click */
+    }
+
+    .legend-color, .legend-shape {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+    .legend-item span { flex-grow: 1; }
+
+    /* Legend shapes specific styles */
+    .legend-item.node-type { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; }
+    .legend-shape.parent { border: 2px solid #555; background-color: #fff; }
+    .legend-shape.child { background-color: var(--not-attempted-color); /* Default child color */ }
+    /* Use inline style background for other child states if needed, e.g., based on mastery */
+    /* .legend-item .legend-shape.child[style*="background-color"] { border: none; } */
+
+
+    /* Summary & Progress Bars */
+    .summary-section div {
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .summary-section strong { font-weight: 500; }
+
+    .progress-bar {
+      background-color: var(--progress-bg);
+      height: 10px;
+      border-radius: 5px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 5px 0 0 5px; /* Keep left radius */
+      transition: width 0.4s ease-in-out;
+      /* Optional subtle gradient/stripes */
+      background-image: linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+      background-size: 1rem 1rem;
+    }
+
+    /* Recommendations List */
+    .recommendation-item {
+      margin-bottom: 12px; /* Spacing between items */
+      padding-bottom: 12px;
+      border-bottom: 1px dashed #eee; /* Separator */
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .recommendation-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .recommendation-item strong { color: #333; font-weight: 500; }
+    .recommendation-item em { color: var(--text-secondary); font-style: normal; } /* Parent topic name */
+
+    #recommend-materials-button {
+      display: block;
+      width: 100%;
+      margin-top: 15px;
+      padding: 10px 15px;
+      font-size: 14px;
+      background-color: var(--nus-orange);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease, opacity 0.2s ease;
+      font-weight: 500;
+      text-align: center;
+    }
+    #recommend-materials-button:hover:not(:disabled) { background-color: #d66e00; } /* Darker orange */
+    #recommend-materials-button:disabled { background-color: #bdbdbd; cursor: not-allowed; opacity: 0.7; }
+
+    /* Visualization Zoom/Pan Controls */
+    .controls {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      background-color: rgba(255, 255, 255, 0.95); /* More opaque */
+      border-radius: 5px;
+      padding: 5px; /* Tighter padding */
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      display: flex;
+      gap: 5px; /* Tighter gap */
+      z-index: 30; /* Above graph elements */
+    }
+    .control-button {
+      background-color: var(--nus-blue);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0; /* Remove padding, use width/height */
+      width: 30px; height: 30px; /* Square buttons */
+      cursor: pointer;
+      font-size: 14px; /* Icon size */
+      line-height: 30px; /* Center icon vertically */
+      text-align: center;
+      transition: background-color 0.2s ease;
+    }
+    .control-button:hover { background-color: #002554; }
+
+    /* --- Learning Path Modal --- */
+    .modal {
+      display: none;
+      position: fixed; /* Fixed position */
+      z-index: 1000; /* High z-index to be on top */
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      overflow: auto; /* Enable scroll if content exceeds viewport */
+      background-color: rgba(0,0,0,0.6); /* Semi-transparent black backdrop */
+    }
+    .modal.show { display: block; } /* Class to show the modal */
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 10% auto; /* ~10% from top, centered horizontally */
+      padding: 25px 30px;
+      border: none;
+      width: 90%; /* Responsive width */
+      max-width: 600px; /* Limit max width */
+      border-radius: 8px;
+      position: relative;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      animation: modalOpen 0.3s ease-out; /* Simple opening animation */
+    }
+    @keyframes modalOpen {
+      from { opacity: 0; transform: translateY(-30px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .close-button {
+      color: #aaa;
+      position: absolute;
+      top: 10px; right: 15px;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 1;
+      padding: 5px; /* Increase clickable area */
+      transition: color 0.2s ease;
+    }
+    .close-button:hover, .close-button:focus { color: #333; text-decoration: none; }
+
+    #modal-topic-title {
+      margin-top: 0;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      color: var(--nus-blue);
+      border-bottom: 1px solid #eee;
+      font-size: 1.3rem;
+      font-weight: 500;
+    }
+
+    #modal-steps p {
+      margin-bottom: 15px;
+      font-size: 14px;
+      line-height: 1.6;
+      padding-bottom: 15px;
+      border-bottom: 1px dashed #eee;
+    }
+    #modal-steps p:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    #modal-steps strong { font-weight: 500; color: var(--text-primary); }
+    #modal-steps a {
+      color: var(--nus-blue);
+      text-decoration: none;
+      font-weight: 500;
+      word-break: break-all; /* Prevent long URLs from breaking layout */
+      transition: color 0.2s ease;
+    }
+    #modal-steps a:hover { color: var(--nus-orange); text-decoration: underline; }
+    /* Loader inside modal steps */
+    #modal-steps .loader-container { padding: 20px 0; }
+
+
+    /* --- Leaderboard View Specific Styles --- */
+    #leaderboard-view {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+     #leaderboard-content { /* Initially hidden content wrapper */
+        display: none;
+    }
+    #leaderboard-content.show {
+        display: block;
+    }
+
+    .leaderboard-container {
+      background: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+      overflow: hidden; /* Needed for border-radius */
+      border: 1px solid var(--border-color);
+    }
+
+    /* Grid layout for header and rows */
+    .list-header-row, .student-row {
+      display: grid;
+      /* Columns: Rank, Name (flexible), Mastery, Coverage, Mastered#, Hard% */
+      grid-template-columns: 50px minmax(150px, 1fr) repeat(4, 100px);
+      gap: 15px;
+      align-items: center; /* Vertically align content */
+    }
+
+    .list-header-row {
+      padding: 12px 20px;
+      background-color: #f1f3f5;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .list-header-row > div:not(:first-child):not(:nth-child(2)) { text-align: center; } /* Center metric headers */
+    .list-header-row .metric-header i { margin-right: 4px; vertical-align: middle; }
+
+    .student-list { padding: 0; /* No padding on list itself */ }
+
+    .student-row {
+      padding: 15px 20px;
+      border-bottom: 1px solid #f0f0f0; /* Lighter row separator */
+      transition: background-color 0.2s ease;
+      font-size: 0.9rem;
+    }
+    .student-row:last-child { border-bottom: none; } /* Remove border on last row */
+    .student-row:hover { background-color: #f8f9fa; } /* Subtle hover */
+
+    .student-row.highlight {
+      background-color: var(--highlight-bg);
+      /* border-left: 4px solid var(--nus-blue); */
+      /* padding-left: 16px; Adjusted padding */
+      position: relative;
+      font-weight: 500; /* Slightly bolder highlighted row */
+    }
+     /* Optional: Add a border element for highlight instead of padding */
+     .student-row.highlight::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 4px;
+        background-color: var(--nus-blue);
+    }
+
+
+    .rank {
+      font-weight: 700;
+      color: var(--nus-blue);
+      text-align: center;
+      font-size: 1rem;
+    }
+    .rank i.fas.fa-medal { /* Style medal icons */
+      color: var(--nus-orange); /* Default gold */
+      font-size: 1.2em;
+      vertical-align: -0.1em; /* Align medals better */
+    }
+    .rank.medal-silver i.fas.fa-medal { color: #adb5bd; } /* Silver */
+    .rank.medal-bronze i.fas.fa-medal { color: #cd7f32; } /* Bronze */
+
+    .student-name {
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis; /* Add '...' for long names */
+      white-space: nowrap; /* Prevent name wrapping */
+    }
+
+    .metric-cell { text-align: center; } /* Center content in metric cells */
+
+    /* Leaderboard Progress Bars */
+    .progress-bar-container {
+      height: 20px; /* Consistent height */
+      background-color: var(--progress-bg);
+      border-radius: 4px;
+      overflow: hidden;
+      width: 100%;
+      position: relative; /* For text overlay */
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.07);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px 0 0 4px; /* Match container radius */
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Center text */
+      padding: 0 5px;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap; /* Prevent text wrapping */
+      overflow: hidden;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.2); /* Improve text readability */
+      /* Optional stripes */
+      background-image: linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+      background-size: 1rem 1rem;
+    }
+    /* Class added by JS if text should be visible */
+    .progress-bar-fill.show-text { /* No specific style needed if default is visible */ }
+    .progress-bar-fill:not(.show-text) {
+        color: transparent; /* Hide text */
+        text-shadow: none;
+    }
+
+    /* Colors applied via inline style in JS for dynamic background */
+    /* Example class-based colors (if needed elsewhere) */
+    /* .progress-mastery .progress-bar-fill { background-color: var(--mastery-color); } */
+    /* .progress-coverage .progress-bar-fill { background-color: var(--coverage-color); } */
+    /* .progress-hard-perf .progress-bar-fill { background-color: var(--hard-perf-color); } */
+
+    .mastered-count {
+      font-weight: 600;
+      color: var(--mastered-count-color);
+      font-size: 0.95rem;
+    }
+    .mastered-count .total { /* Style the '/ total' part */
+      font-size: 0.8em;
+      color: var(--text-secondary);
+      margin-left: 3px;
+    }
+
+
+    #last-updated {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-align: right;
+      margin-top: 10px;
+      padding-right: 10px; /* Align with leaderboard padding */
+    }
+
+    /* --- Responsive Design Adjustments --- */
+
+    /* Medium screens (tablets) */
+    @media (max-width: 991px) {
+      /* KM sidebar already stacks due to flex-wrap */
+      #visualization { height: 55vh; } /* Adjust height */
+    }
+
+    /* Small screens (large phones, small tablets) */
+    @media (max-width: 767px) {
+       /* Header stacks */
+      #header-content { flex-direction: column; align-items: center; text-align: center; }
+
+       /* Tabs smaller padding */
+      .tab { padding: 12px 15px; font-size: 0.9rem; }
+
+      /* Student controls stack vertically */
+      .student-controls { flex-direction: column; align-items: stretch; }
+      .student-controls select, .student-controls input[type="number"] { width: 100%; min-width: unset; }
+
+      /* Leaderboard: Hide less critical columns */
+      .list-header-row, .student-row {
+          /* Rank, Name, Mastery %, Coverage % */
+          grid-template-columns: 35px minmax(100px, 1fr) repeat(2, 80px);
+          padding: 12px 10px; /* Reduce padding */
+          gap: 10px; /* Reduce gap */
+          font-size: 0.85rem; /* Smaller font */
+      }
+      /* Hide Mastered Count and Hard Perf columns */
+      .list-header-row > div:nth-child(5), .list-header-row > div:nth-child(6),
+      .student-row > div:nth-child(5), .student-row > div:nth-child(6) {
+          display: none;
+      }
+      .progress-bar-container { height: 18px; } /* Slightly smaller bars */
+      .progress-bar-fill { font-size: 0.7rem; }
+    }
+
+    /* Extra small screens (phones) */
+    @media (max-width: 480px) {
+      #title-area h1 { font-size: 1.3rem; }
+      #title-area .subtitle { font-size: 0.9rem; }
+      .tab { padding: 10px 12px; font-size: 0.85rem; gap: 5px; }
+      .tab i { font-size: 1em; }
+
+      /* Leaderboard: Hide Coverage too */
+       .list-header-row, .student-row {
+          /* Rank, Name, Mastery % */
+          grid-template-columns: 30px minmax(80px, 1fr) 75px;
+          gap: 8px;
+          padding: 10px 8px;
+          font-size: 0.8rem;
+      }
+      /* Hide Coverage column (index 4) */
+      .list-header-row > div:nth-child(4),
+      .student-row > div:nth-child(4) {
+          display: none;
+      }
+       .rank { font-size: 0.9em; }
+       .progress-bar-container { height: 16px; }
+       .progress-bar-fill { font-size: 0.65rem; }
+    }
+
+    /* --- Debug Panel Styles --- */
+    .debug-info {
+      background-color: #fff8dc; /* Cornsilk */
+      border: 1px solid #e6d9a8;
+      padding: 10px;
+      margin: 10px; /* Add some margin */
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px; /* Smaller font */
+      display: none; /* Hidden by default */
+      max-height: 250px; /* Limit height */
+      overflow-y: auto; /* Add scrollbar if needed */
+      z-index: 1001; /* Above everything */
+      position: relative; /* Ensure z-index works */
+    }
+    .debug-info.show { display: block; }
+    .debug-info strong { display: block; margin-bottom: 5px; font-weight: bold; }
+    #debug-log div { margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px dotted #ccc; word-break: break-all; }
+    #debug-log div:last-child { border-bottom: none; }
+    #debug-log pre { background-color: #f0f0f0; padding: 3px; margin-top: 3px; border-radius: 3px; }
+
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header id="main-header">
+    <div id="header-content">
+      <div id="title-area">
+        <div class="logo"><i class="fas fa-graduation-cap"></i></div>
+        <div>
+          <h1>NUS Student Learning Dashboard</h1>
+          <div class="subtitle">Track progress and performance</div>
+        </div>
+      </div>
+      <!-- Optional: Add user info/logout here -->
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav id="nav-tabs">
+    <div class="tabs-container">
+      <div class="tab active" data-view="knowledge-map-view">
+        <i class="fas fa-project-diagram fa-fw"></i> Knowledge Map
+      </div>
+      <div class="tab" data-view="leaderboard-view">
+        <i class="fas fa-chart-line fa-fw"></i> Leaderboard
+      </div>
+      <!-- Add more tabs as needed -->
+    </div>
+  </nav>
+
+  <!-- Debug Panel (Initially Hidden) -->
+  <div id="debug-panel" class="debug-info">
+    <strong>Debug Log (Ctrl+D to toggle)</strong>
+    <div id="debug-log"></div>
+  </div>
+
+  <!-- Main Content Area -->
+  <main id="main-content">
+
+    <!-- Knowledge Map View -->
+    <section id="knowledge-map-view" class="content-view active">
+      <div class="student-controls">
+        <label for="km-student-selector"><i class="fas fa-user"></i> Select Student:</label>
+        <select id="km-student-selector" disabled><option>Loading...</option></select>
+      </div>
+
+      <div id="km-error-message" class="error-message">
+        <p id="km-error-text">An error occurred.</p>
+        <button id="km-retry-button" class="retry-button">Retry</button>
+      </div>
+
+      <!-- KM Loader (Covers entire KM section initially) -->
+      <div id="km-loader" class="loader-container show">
+        <div class="spinner"></div>
+        <p>Loading Knowledge Map data...</p>
+      </div>
+
+      <!-- KM Content Wrapper (Shown after loading) -->
+      <div id="knowledge-map-content">
+        <div id="knowledge-map-container">
+          <!-- Sidebar -->
+          <aside id="knowledge-map-sidebar">
+            <!-- Filters Card -->
+            <div class="card">
+              <div class="card-header"><h3 class="card-title"><i class="fas fa-filter"></i> Filters</h3></div>
+              <div class="card-body">
+                <div class="filter-section">
+                  <h4>Mastery Level</h4>
+                  <div class="filter-option"><input type="checkbox" id="show-mastered" checked><label for="show-mastered">Mastered</label></div>
+                  <div class="filter-option"><input type="checkbox" id="show-developing" checked><label for="show-developing">Developing</label></div>
+                  <div class="filter-option"><input type="checkbox" id="show-needs-work" checked><label for="show-needs-work">Needs Work</label></div>
+                  <div class="filter-option"><input type="checkbox" id="show-not-attempted" checked><label for="show-not-attempted">Not Attempted</label></div>
+                </div>
+                <div class="filter-section">
+                  <h4>Node Type</h4>
+                  <div class="filter-option"><input type="checkbox" id="show-parent" checked><label for="show-parent">Main Topics</label></div>
+                  <div class="filter-option"><input type="checkbox" id="show-child" checked><label for="show-child">Subtopics</label></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Legend Card -->
+            <div class="card">
+              <div class="card-header"><h3 class="card-title"><i class="fas fa-info-circle"></i> Legend</h3></div>
+              <div class="card-body">
+                <div class="legend">
+                  <div class="legend-item"><div class="legend-color" style="background-color: var(--mastery-color);"></div><span>Mastered (&ge;80%)</span></div>
+                  <div class="legend-item"><div class="legend-color" style="background-color: var(--developing-color);"></div><span>Developing (50-79%)</span></div>
+                  <div class="legend-item"><div class="legend-color" style="background-color: var(--needs-work-color);"></div><span>Needs Work (&lt;50%)</span></div>
+                  <div class="legend-item"><div class="legend-color" style="background-color: var(--not-attempted-color);"></div><span>Not Attempted</span></div>
+                  <div class="legend-item node-type"><div class="legend-shape parent"></div><span>Main Topic</span></div>
+                  <div class="legend-item"><div class="legend-shape child"></div><span>Subtopic</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="card">
+              <div class="card-header"><h3 class="card-title"><i class="fas fa-chart-pie"></i> Summary</h3></div>
+              <div class="card-body">
+                <div class="loader-container" id="summary-loader"><div class="spinner"></div>Loading summary...</div>
+                <div class="summary-section" id="summary-stats" style="display: none;"></div>
+              </div>
+            </div>
+
+            <!-- Recommendations Card -->
+            <div class="card">
+              <div class="card-header"><h3 class="card-title"><i class="fas fa-lightbulb"></i> Recommendations</h3></div>
+              <div class="card-body">
+                <div class="loader-container" id="recs-loader"><div class="spinner"></div>Generating...</div>
+                <div class="recommendations" id="recommendations-container" style="display: none;"></div>
+                <button id="recommend-materials-button" disabled>Recommend Learning Materials</button>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Main Graph Area -->
+          <div id="knowledge-map-main">
+            <div id="visualization">
+              <!-- Overlay loader specifically for the graph -->
+              <div class="loader-overlay" id="graph-loader">
+                <div class="spinner"></div><p>Loading knowledge map...</p>
+              </div>
+              <svg id="graph"></svg> <!-- D3 graph goes here -->
+              <div class="tooltip" id="tooltip"></div> <!-- Tooltip element -->
+              <div class="controls"> <!-- Zoom controls -->
+                <button class="control-button" id="zoom-in" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+                <button class="control-button" id="zoom-out" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+                <button class="control-button" id="reset-zoom" title="Reset View"><i class="fas fa-expand-arrows-alt"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Leaderboard View -->
+    <section id="leaderboard-view" class="content-view">
+      <div class="student-controls">
+        <label for="lb-student-selector"><i class="fas fa-user-check"></i> Highlight:</label>
+        <select id="lb-student-selector" disabled><option value="">All Students</option></select>
+        <label for="top-n-selector"><i class="fas fa-list-ol"></i> Show Top:</label>
+        <input type="number" id="top-n-selector" value="10" min="1" max="100">
+      </div>
+
+      <div id="lb-error-message" class="error-message">
+        <p id="lb-error-text">An error occurred.</p>
+        <button id="lb-retry-button" class="retry-button">Retry</button>
+      </div>
+
+      <!-- LB Loader (Covers entire LB section initially) -->
+      <div id="lb-loader" class="loader-container show">
+        <div class="spinner"></div>
+        <p>Loading leaderboard data...</p>
+      </div>
+
+       <!-- LB Content Wrapper (Shown after loading) -->
+      <div id="leaderboard-content">
+        <div id="leaderboard-container" class="leaderboard-container">
+          <div class="list-header-row">
+            <div>Rank</div>
+            <div class="student-name-header">Student</div>
+            <div class="metric-header" title="Overall Mastery %"><i class="fas fa-star"></i> Mastery</div>
+            <div class="metric-header" title="Concept Coverage %"><i class="fas fa-book-open"></i> Coverage</div>
+            <div class="metric-header" title="Mastered Concepts (>=80%)"><i class="fas fa-check-double"></i> Mastered</div>
+            <div class="metric-header" title="Hard Question Perf. %"><i class="fas fa-brain"></i> Hard Perf.</div>
+          </div>
+          <div id="student-list" class="student-list">
+            <!-- Student rows added by JS -->
+          </div>
+        </div>
+        <div id="last-updated">Last updated: N/A</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Learning Path Recommendation Modal -->
+  <div id="learning-path-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" id="modal-close-button" title="Close">×</span>
+      <h3 id="modal-topic-title">Recommended Learning Path</h3>
+      <div id="modal-steps">
+         <div class="loader-container show"> <!-- Loader inside modal -->
+             <div class="spinner"></div> Loading recommendation...
+         </div>
+        <!-- Steps added by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; National University of Singapore - Student Learning Dashboard</p>
+  </footer>
+
+  <!-- Load D3.js DEFERRED (does not block initial page rendering) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" defer></script>
+
+  <!-- Main Application JavaScript -->
+  <script>
+    // --- Configuration ---
+    // <<< IMPORTANT: Replace with YOUR deployed Google Apps Script Web App URL >>>
+    const backendApiUrl = 'https://script.google.com/macros/s/AKfycbz10IGP7by7C6o3AfZOUS4ycxsSjB35m4o199dXna5jAH0i7Ysv84Wxh98Dz-e9GT5z/exec'; // Single URL for both actions
+
+    const DEBUG_MODE = true; // Set to false for production deployment
+    const API_TIMEOUT_MS = 30000; // 30 seconds timeout for API calls
+
+    // --- Global State Variables ---
+    let knowledgeData = null;       // Holds data for the currently selected student's KM
+    let allStudents = [];           // Cached list of all student IDs
+    let currentStudent = null;      // Currently selected student for KM
+    let simulation = null;          // D3 force simulation instance
+    let svg = null;                 // D3 SVG element reference
+    let zoom = null;                // D3 zoom behavior instance
+    let leaderboardData = null;     // Cached leaderboard data
+    let currentTopN = 10;           // Default number of students for leaderboard
+    let highlightedStudent = "";    // Student ID highlighted in the leaderboard
+    let currentView = 'knowledge-map-view'; // Tracks the currently active tab/view
+
+    // --- DOM Element Cache ---
+    // Populated by cacheDomElements() on DOMContentLoaded
+    let domElements = {};
+
+    // --- DOM Ready Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+      cacheDomElements(); // Find and store references to DOM elements
+      setupEventListeners(); // Attach event listeners to controls
+
+      // Initialize Debug Mode UI
+      if (DEBUG_MODE) {
+        debugLog('Debug mode enabled.');
+        domElements.debugPanel?.classList.add('show');
+      } else {
+        domElements.debugPanel?.classList.remove('show');
+      }
+
+      // Set initial Top N value from input default
+      currentTopN = parseInt(domElements.topNSelector?.value, 10) || 10;
+
+      // Initial Data Load based on the default active tab
+      const activeTab = document.querySelector('.tab.active');
+      currentView = activeTab ? activeTab.getAttribute('data-view') : 'knowledge-map-view'; // Default to KM if none active
+
+      if (currentView === 'knowledge-map-view') {
+        loadInitialKMData();
+      } else if (currentView === 'leaderboard-view') {
+        loadInitialLBData();
+      } else {
+          // Fallback if no view is active (shouldn't happen with default HTML)
+          loadInitialKMData();
+      }
+    });
+
+    /**
+     * Caches references to frequently used DOM elements.
+     */
+    function cacheDomElements() {
+      domElements = {
+        // General UI
+        tabs: document.querySelectorAll('.tab'),
+        contentViews: document.querySelectorAll('.content-view'),
+        debugPanel: document.getElementById('debug-panel'),
+        debugLogContainer: document.getElementById('debug-log'),
+
+        // Knowledge Map (KM) Elements
+        kmView: document.getElementById('knowledge-map-view'),
+        kmLoader: document.getElementById('km-loader'),
+        kmContent: document.getElementById('knowledge-map-content'),
+        kmErrorMessageDiv: document.getElementById('km-error-message'),
+        kmErrorTextP: document.getElementById('km-error-text'),
+        kmRetryButton: document.getElementById('km-retry-button'),
+        kmStudentSelector: document.getElementById('km-student-selector'),
+        vizContainer: document.getElementById('visualization'),
+        graphSvg: document.getElementById('graph'),
+        graphLoader: document.getElementById('graph-loader'), // Specific loader for graph
+        tooltipDiv: document.getElementById('tooltip'),
+        zoomInButton: document.getElementById('zoom-in'),
+        zoomOutButton: document.getElementById('zoom-out'),
+        resetZoomButton: document.getElementById('reset-zoom'),
+        filterCheckboxes: document.querySelectorAll('#knowledge-map-sidebar input[type="checkbox"]'),
+        // KM Sidebar Cards
+        summaryLoader: document.getElementById('summary-loader'),
+        summaryStatsDiv: document.getElementById('summary-stats'),
+        recsLoader: document.getElementById('recs-loader'),
+        recommendationsContainer: document.getElementById('recommendations-container'),
+        recommendMaterialsButton: document.getElementById('recommend-materials-button'),
+
+        // Leaderboard (LB) Elements
+        lbView: document.getElementById('leaderboard-view'),
+        lbLoader: document.getElementById('lb-loader'),
+        lbContent: document.getElementById('leaderboard-content'),
+        lbErrorDiv: document.getElementById('lb-error-message'),
+        lbErrorText: document.getElementById('lb-error-text'),
+        lbRetryBtn: document.getElementById('lb-retry-button'),
+        leaderboardContainer: document.getElementById('leaderboard-container'),
+        studentListContainer: document.getElementById('student-list'),
+        lbStudentSelector: document.getElementById('lb-student-selector'),
+        topNSelector: document.getElementById('top-n-selector'),
+        lastUpdatedP: document.getElementById('last-updated'),
+
+        // Modal Elements
+        learningPathModal: document.getElementById('learning-path-modal'),
+        modalCloseButton: document.getElementById('modal-close-button'),
+        modalTitle: document.getElementById('modal-topic-title'),
+        modalStepsContainer: document.getElementById('modal-steps'),
+      };
+      debugLog("DOM elements cached.");
+    }
+
+    /**
+     * Attaches event listeners to interactive elements.
+     */
+    function setupEventListeners() {
+      // Tab Navigation
+      domElements.tabs.forEach(tab => {
+        tab.addEventListener('click', handleTabClick);
+      });
+
+      // KM Listeners
+      domElements.kmRetryButton?.addEventListener('click', retryKM);
+      domElements.kmStudentSelector?.addEventListener('change', handleStudentSelection);
+      domElements.recommendMaterialsButton?.addEventListener('click', showLearningPathRecommendation);
+      domElements.zoomInButton?.addEventListener('click', () => svg?.transition().duration(300).call(zoom.scaleBy, 1.3));
+      domElements.zoomOutButton?.addEventListener('click', () => svg?.transition().duration(300).call(zoom.scaleBy, 1 / 1.3));
+      domElements.resetZoomButton?.addEventListener('click', () => svg?.transition().duration(300).call(zoom.transform, d3.zoomIdentity));
+      domElements.filterCheckboxes?.forEach(cb => cb.addEventListener('change', applyFilters));
+
+      // LB Listeners
+      domElements.lbRetryBtn?.addEventListener('click', retryLB);
+      domElements.topNSelector?.addEventListener('change', handleTopNChange);
+      // Use 'input' event for more responsive update on number change
+      domElements.topNSelector?.addEventListener('input', handleTopNChange);
+      domElements.lbStudentSelector?.addEventListener('change', handleLBHighlightChange);
+
+      // Modal Listeners
+      domElements.modalCloseButton?.addEventListener('click', closeModal);
+      domElements.learningPathModal?.addEventListener('click', (event) => {
+        // Close modal if backdrop (the modal element itself) is clicked
+        if (event.target === domElements.learningPathModal) closeModal();
+      });
+
+      // Debug Toggle Hotkey (Ctrl+D)
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'd') {
+          e.preventDefault(); // Prevent browser's default bookmark action
+          domElements.debugPanel?.classList.toggle('show');
+        }
+      });
+      debugLog("Event listeners attached.");
+    }
+
+    // --- Debug & Utility Functions ---
+
+    /**
+     * Logs messages to the console and the debug panel if DEBUG_MODE is true.
+     * @param {string} message - The message to log.
+     * @param {*} [obj=null] - Optional object to log along with the message.
+     */
+    function debugLog(message, obj = null) {
+      if (!DEBUG_MODE) return;
+      const timestamp = new Date().toLocaleTimeString();
+      const logMessage = `[${timestamp}] ${message}`;
+
+      console.log(logMessage, obj !== null ? obj : ''); // Log object separately for better console inspection
+
+      if (domElements.debugLogContainer) {
+        const newEntry = document.createElement('div');
+        newEntry.textContent = logMessage;
+        // Optionally pretty-print object in debug panel (limited length)
+        if (obj !== null) {
+          try {
+            const objStr = JSON.stringify(obj, null, 2);
+            const limitedStr = objStr.length > 500 ? objStr.substring(0, 500) + '...' : objStr;
+            const pre = document.createElement('pre');
+            pre.style.cssText = 'font-size: 10px; margin: 0; white-space: pre-wrap; word-break: break-all; background-color: #eee; padding: 2px 4px; border-radius: 3px;';
+            pre.textContent = limitedStr;
+            newEntry.appendChild(pre);
+          } catch (e) {
+            newEntry.textContent += `\n[Cannot stringify object: ${e.message}]`;
+          }
+        }
+        // Prepend new logs so latest are at the top
+        domElements.debugLogContainer.insertBefore(newEntry, domElements.debugLogContainer.firstChild);
+        // Limit number of log entries to prevent panel becoming too large
+        while (domElements.debugLogContainer.children.length > 30) {
+          domElements.debugLogContainer.removeChild(domElements.debugLogContainer.lastChild);
+        }
+      }
+       // Ensure panel is visible when logging
+       if (domElements.debugPanel) domElements.debugPanel.classList.add('show');
+    }
+
+    /** Shows a specific loader element */
+    function showLoader(loaderElement) {
+      loaderElement?.classList.add('show');
+    }
+    /** Hides a specific loader element */
+    function hideLoader(loaderElement) {
+      loaderElement?.classList.remove('show');
+    }
+    /** Shows a content container element */
+    function showContent(contentElement) {
+      if (contentElement) contentElement.style.display = ''; // Use default display (block, flex etc.)
+    }
+    /** Hides a content container element */
+    function hideContent(contentElement) {
+      if (contentElement) contentElement.style.display = 'none';
+    }
+     /** Shows an error message container */
+    function showError(errorContainer, errorTextElem, message) {
+      debugLog("Error Displayed:", message); // Log errors even if debug panel hidden
+      if (errorTextElem) errorTextElem.textContent = message;
+      errorContainer?.classList.add('show');
+    }
+    /** Hides an error message container */
+    function hideError(errorContainer) {
+      errorContainer?.classList.remove('show');
+    }
+
+    /**
+     * Makes a JSONP request to the Google Apps Script backend.
+     * Handles success, error, and timeout scenarios.
+     * @param {string} apiUrl - The base URL of the GAS web app.
+     * @param {object} params - An object containing query parameters (e.g., { action: 'getData', studentId: '...' }).
+     * @param {function} onSuccess - Callback function executed on success, receiving the data object.
+     * @param {function} onError - Callback function executed on error or timeout, receiving an error message string.
+     */
+    function makeJsonpRequest(apiUrl, params, onSuccess, onError) {
+      // Generate a unique callback function name for this request
+      const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+      let script = null;
+      let timer = null;
+
+      // Cleanup function to remove the script tag and timeout
+      const cleanup = () => {
+        if (timer) clearTimeout(timer);
+        script?.parentNode?.removeChild(script); // Remove script tag if it exists
+        try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; } // Clean up global callback
+      };
+
+      // Set a timeout for the request
+      timer = setTimeout(() => {
+        cleanup();
+        const errorMsg = "Request timed out. The server might be busy or unreachable.";
+        debugLog(`JSONP request timed out for ${apiUrl} with params:`, params);
+        onError(errorMsg);
+      }, API_TIMEOUT_MS);
+
+      // Define the global callback function that GAS will invoke
+      window[callbackName] = (data) => {
+        cleanup(); // Clear timer and remove script tag immediately
+        debugLog(`JSONP data received for ${apiUrl} with params:`, params);
+        // Check if the response data itself contains an error message from GAS
+        if (data && typeof data === 'object' && data.error) {
+          debugLog("Server returned an error:", data.error);
+          onError(`Server Error: ${data.error}`);
+        } else {
+          // Data seems valid, call the success callback
+          onSuccess(data);
+        }
+      };
+
+      // Build the full URL with parameters and the callback function name
+      const urlParams = new URLSearchParams(params);
+      urlParams.append('callback', callbackName);
+      urlParams.append('_', Date.now()); // Prevent browser caching of the script URL
+
+      const fullUrl = `${apiUrl}?${urlParams.toString()}`;
+      debugLog(`Making JSONP request to: ${fullUrl}`);
+
+      // Create and append the script tag to the document head to initiate the request
+      script = document.createElement('script');
+      script.src = fullUrl;
+      script.async = true;
+      script.onerror = () => { // Handle script loading errors (network issue, CORS, 404)
+        cleanup();
+        const errorMsg = "Failed to load data script. Check network connection, API URL, and deployment status.";
+        debugLog(`JSONP script load error for ${fullUrl}`);
+        onError(errorMsg);
+      };
+      document.head.appendChild(script);
+    }
+
+    // --- Tab Switching Logic ---
+
+    /**
+     * Handles clicks on navigation tabs. Switches the active view and loads data if necessary.
+     */
+    function handleTabClick() {
+      const targetViewId = this.getAttribute('data-view');
+      if (!targetViewId || targetViewId === currentView) {
+         debugLog(`Tab click ignored: Target view '${targetViewId}' is same as current or invalid.`);
+         return; // Do nothing if clicking the active tab or invalid tab
+      }
+
+      debugLog(`Switching view from '${currentView}' to '${targetViewId}'`);
+      currentView = targetViewId;
+
+      // Update tab visual state
+      domElements.tabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+
+      // Show the target content view and hide others
+      domElements.contentViews.forEach(view => {
+        view.classList.toggle('active', view.id === targetViewId);
+      });
+
+      // Load data for the newly activated view only if it hasn't been loaded before
+      if (targetViewId === 'knowledge-map-view' && allStudents.length === 0) { // Load students if list is empty
+        loadInitialKMData();
+      } else if (targetViewId === 'leaderboard-view' && !leaderboardData) { // Load LB if data is null
+        loadInitialLBData();
+      } else {
+          debugLog(`Data for view '${targetViewId}' already loaded or managed elsewhere.`);
+           // Ensure correct content is shown/hidden if data already exists
+           if(targetViewId === 'knowledge-map-view') {
+               hideError(domElements.kmErrorMessageDiv); // Hide any previous errors
+               if(knowledgeData) { // If data exists, ensure content is visible
+                   hideLoader(domElements.kmLoader);
+                   showContent(domElements.kmContent);
+               } else if(allStudents.length > 0) { // If only students loaded, show loader until selection
+                   showLoader(domElements.kmLoader);
+                   hideContent(domElements.kmContent);
+               }
+           } else if (targetViewId === 'leaderboard-view') {
+               hideError(domElements.lbErrorDiv);
+               if(leaderboardData) {
+                   hideLoader(domElements.lbLoader);
+                   showContent(domElements.lbContent);
+               }
+           }
+      }
+    }
+
+
+    // --- Knowledge Map (KM) Functions ---
+
+    /**
+     * Initializes the Knowledge Map view: shows loader, hides content/errors, fetches student list.
+     */
+    function loadInitialKMData() {
+      debugLog("KM: Initializing view...");
+      showLoader(domElements.kmLoader); // Show main KM section loader
+      hideContent(domElements.kmContent); // Hide the main content wrapper
+      hideError(domElements.kmErrorMessageDiv); // Hide any previous error messages
+      domElements.kmStudentSelector?.setAttribute('disabled', 'true'); // Disable selector during load
+      domElements.recommendMaterialsButton?.setAttribute('disabled', 'true'); // Disable button
+
+      // Reset specific KM loaders/content areas within the wrapper
+      hideLoader(domElements.graphLoader);
+      hideLoader(domElements.summaryLoader);
+      hideLoader(domElements.recsLoader);
+      domElements.summaryStatsDiv && (domElements.summaryStatsDiv.innerHTML = '');
+      domElements.recommendationsContainer && (domElements.recommendationsContainer.innerHTML = '');
+      d3.select(domElements.graphSvg).selectAll('*').remove(); // Clear graph
+
+      loadStudentList(); // Start the data loading process by fetching the student list
+    }
+
+    /**
+     * Handles the click on the KM Retry button.
+     */
+    function retryKM() {
+      debugLog("KM: Retry button clicked.");
+      loadInitialKMData(); // Restart the entire KM loading sequence
+    }
+
+    /**
+     * Fetches the list of student IDs from the backend.
+     */
+    function loadStudentList() {
+      debugLog("KM: Fetching student list...");
+      // Ensure the main KM loader remains visible while fetching students
+      showLoader(domElements.kmLoader);
+      // Update selector text
+      if (domElements.kmStudentSelector) {
+        domElements.kmStudentSelector.innerHTML = '<option>Loading students...</option>';
+        domElements.kmStudentSelector.disabled = true;
+      }
+      if (domElements.lbStudentSelector) { // Also update LB selector state
+        domElements.lbStudentSelector.innerHTML = '<option value="">Loading...</option>';
+        domElements.lbStudentSelector.disabled = true;
+      }
+
+      makeJsonpRequest(
+        backendApiUrl, // Use the single backend URL
+        { action: 'getStudents' },
+        (students) => { // onSuccess callback
+          debugLog("KM: Student list received", students);
+          if (Array.isArray(students) && students.length > 0) {
+            allStudents = students; // Cache the list locally
+            populateStudentSelectors(students); // Update both KM and LB dropdowns
+            // Automatically select the first student and trigger data load for KM
+            if (domElements.kmStudentSelector) {
+              domElements.kmStudentSelector.value = students[0];
+              // Trigger the change handler to load data for the first student
+              handleStudentSelection({ target: domElements.kmStudentSelector });
+            }
+          } else if (Array.isArray(students) && students.length === 0) {
+             // Handle case where backend returns an empty list
+             showKMError("No students found in the data source.");
+             populateStudentSelectors([]); // Populate selectors with "No students" state
+             hideLoader(domElements.kmLoader); // Hide loader as there's nothing more to load
+          } else {
+            // Handle unexpected data format
+            throw new Error("Invalid student list data format received from server.");
+          }
+        },
+        (errorMsg) => { // onError callback
+          showKMError(`Failed to load student list: ${errorMsg}`);
+          hideLoader(domElements.kmLoader); // Hide loader on error
+          populateStudentSelectors(null); // Update selectors to show error state
+        }
+      );
+    }
+
+    /**
+     * Populates both the KM and LB student select dropdowns.
+     * @param {Array<string>|null} students - Array of student names, empty array, or null for error state.
+     */
+    function populateStudentSelectors(students) {
+      const selectors = [domElements.kmStudentSelector, domElements.lbStudentSelector];
+      selectors.forEach(selector => {
+        if (!selector) return; // Skip if selector element not found
+        selector.innerHTML = ''; // Clear existing options
+
+        if (students === null) { // Error state
+          const option = document.createElement('option');
+          option.textContent = "Error loading";
+          selector.appendChild(option);
+          selector.disabled = true;
+        } else if (students.length === 0) { // No students found
+          const option = document.createElement('option');
+          // Different message for LB selector vs KM selector
+          option.textContent = (selector.id === 'lb-student-selector') ? "No students" : "No students available";
+          option.value = ""; // Ensure value is empty
+          selector.appendChild(option);
+          selector.disabled = true;
+        } else { // Populate with student names
+          // Add "All Students" option only to the Leaderboard selector
+          if (selector.id === 'lb-student-selector') {
+            const allOption = document.createElement('option');
+            allOption.value = ""; // Empty value represents "All"
+            allOption.textContent = "All Students";
+            selector.appendChild(allOption);
+          }
+          // Add each student name as an option
+          students.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student;
+            option.textContent = student;
+            selector.appendChild(option);
+          });
+          selector.disabled = false; // Enable the selector
+        }
+      });
+       debugLog(`Populated student selectors. State: ${students === null ? 'Error' : students.length + ' students'}`);
+    }
+
+    /**
+     * Handles the change event when a student is selected in the KM dropdown.
+     * @param {Event} event - The change event object.
+     */
+    function handleStudentSelection(event) {
+      const selectedStudent = event.target.value;
+      // Prevent reloading if the same student is selected or if the selection is invalid
+      if (!selectedStudent || selectedStudent === currentStudent) {
+        debugLog(`KM: Student selection ignored (unchanged or invalid): '${selectedStudent}'`);
+        return;
+      }
+      debugLog(`KM: Student selected: '${selectedStudent}'`);
+      currentStudent = selectedStudent; // Update global state
+
+      // Reset UI for loading new student data
+      showLoader(domElements.kmLoader); // Show main KM loader again
+      hideContent(domElements.knowledgeMapContent); // Hide the content wrapper
+      hideError(domElements.kmErrorMessageDiv);
+      // Show specific loaders within the content area
+      showLoader(domElements.graphLoader);
+      showLoader(domElements.summaryLoader);
+      showLoader(domElements.recsLoader);
+      // Disable recommendation button until data loads
+      domElements.recommendMaterialsButton?.setAttribute('disabled', 'true');
+      // Clear previous graph explicitly
+      d3.select(domElements.graphSvg).selectAll('*').remove();
+
+      // Fetch and render data for the newly selected student
+      loadKnowledgeMapData(selectedStudent);
+    }
+
+    /**
+     * Fetches knowledge map data (nodes, links, paths) for a specific student.
+     * @param {string} studentId - The ID of the student to fetch data for.
+     */
+    function loadKnowledgeMapData(studentId) {
+      if (!studentId) {
+        showKMError("Cannot load data: No student selected.");
+        hideLoader(domElements.kmLoader); // Hide loader if no student ID
+        return;
+      }
+      debugLog(`KM: Loading data for student: ${studentId}`);
+      // Ensure loaders are visible while fetching
+      showLoader(domElements.kmLoader); // Main loader
+      showLoader(domElements.graphLoader); // Graph overlay loader
+      showLoader(domElements.summaryLoader);
+      showLoader(domElements.recsLoader);
+
+      makeJsonpRequest(
+        backendApiUrl, // Use the single backend URL
+        { action: 'getData', studentId: studentId },
+        (data) => { // onSuccess
+          debugLog("KM: Data received for student " + studentId, data ? `Nodes: ${data.nodes?.length}, Links: ${data.links?.length}` : 'null');
+          // Validate the structure of the received data
+          if (data && Array.isArray(data.nodes) && Array.isArray(data.links) && typeof data.learningPaths === 'object') {
+            knowledgeData = data; // Store the valid data globally
+            hideLoader(domElements.kmLoader); // Hide the main section loader
+            showContent(domElements.knowledgeMapContent); // Show the content wrapper
+            renderKnowledgeMap(knowledgeData); // Render the graph and update sidebar components
+            domElements.recommendMaterialsButton?.removeAttribute('disabled'); // Enable button
+          } else {
+            // Throw error if data structure is invalid
+            throw new Error("Invalid knowledge map data structure received from server.");
+          }
+        },
+        (errorMsg) => { // onError
+          showKMError(`Failed to load data for ${studentId}: ${errorMsg}`);
+          // Ensure all loaders are hidden on error
+          hideLoader(domElements.kmLoader);
+          hideLoader(domElements.graphLoader);
+          hideLoader(domElements.summaryLoader);
+          hideLoader(domElements.recsLoader);
+          // Reset KM data state
+          knowledgeData = null;
+      }
+      );
+    }
+
+    /**
+     * Renders the D3 force-directed graph and updates sidebar components (summary, recommendations).
+     * @param {object} data - The knowledge map data object containing nodes, links.
+     */
+    function renderKnowledgeMap(data) {
+      debugLog("KM: Rendering knowledge map...");
+      hideLoader(domElements.graphLoader); // Hide graph-specific overlay loader first
+
+      const container = domElements.vizContainer;
+      if (!container) {
+        showKMError("Visualization container element not found.");
+        return;
+      }
+
+      // Get container dimensions, retry if not ready
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width <= 0 || height <= 0) {
+        debugLog("KM: Visualization container not ready (zero dimensions), retrying render shortly...");
+        setTimeout(() => renderKnowledgeMap(data), 150); // Retry after a short delay
+        return;
+      }
+      debugLog(`KM: Viz container dimensions: ${width}x${height}`);
+
+      // --- D3 Setup ---
+      const svgElement = d3.select(domElements.graphSvg);
+      svgElement.selectAll('*').remove(); // Clear previous graph elements
+
+      // Create the main 'g' element to hold graph elements and apply zoom/pan
+      const g = svgElement.append('g').attr('class', 'main-group');
+
+      // Handle case of no nodes
+       if (!data || !data.nodes || data.nodes.length === 0) {
+           debugLog("KM: No nodes available to render.");
+           g.append("text")
+            .attr("x", width / 2)
+            .attr("y", height / 2)
+            .attr("text-anchor", "middle")
+            .style("fill", "var(--text-secondary)")
+            .text("No knowledge data available.");
+           // Update sidebar components to reflect no data
+           updateSummary(null);
+           generateRecommendations(null);
+           return; // Stop rendering
+       }
+
+      // Setup D3 zoom behavior
+      zoom = d3.zoom()
+        .scaleExtent([0.1, 8]) // Min/max zoom levels
+        .on('zoom', (event) => {
+          g.attr('transform', event.transform); // Apply zoom transform to the main group
+        });
+
+      // Apply zoom behavior to the SVG element
+      svgElement.call(zoom)
+         // Optional: Reset view on double-click
+         // .on("dblclick.zoom", () => svgElement.transition().duration(300).call(zoom.transform, d3.zoomIdentity))
+         .on("dblclick.zoom", null); // Disable default double-click zoom behavior
+
+
+      // --- Simulation Setup ---
+      const numNodes = data.nodes.length;
+      // Adjust simulation parameters based on graph size (example heuristic)
+      const linkDistance = Math.max(60, Math.min(120, 80 + numNodes * 0.2));
+      const chargeStrength = Math.max(-1000, Math.min(-100, -200 - numNodes * 1.5));
+      const collideRadius = d => getNodeSize(d) + 6; // Collision radius based on node size + padding
+
+       // Stop previous simulation if running
+      if (simulation) simulation.stop();
+
+      simulation = d3.forceSimulation(data.nodes)
+        // Link force pulls nodes together based on links
+        .force('link', d3.forceLink(data.links)
+            .id(d => d.id) // Use the numerical 'id' for linking
+            .distance(linkDistance) // Dynamic distance
+            .strength(0.6)) // Link strength
+        // Charge force (repulsion) keeps nodes apart
+        .force('charge', d3.forceManyBody().strength(chargeStrength))
+        // Centering force gently pulls the graph towards the center
+        .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
+        // Collision force prevents nodes from overlapping
+        .force('collide', d3.forceCollide().radius(collideRadius).strength(0.8))
+        // Optional X/Y positioning forces can help stabilize layout
+        .force('x', d3.forceX(width / 2).strength(0.02))
+        .force('y', d3.forceY(height / 2).strength(0.02));
+
+      // --- Draw Elements ---
+
+      // Links (drawn first, appear below nodes)
+      const link = g.append('g')
+        .attr('class', 'links')
+        .selectAll('line')
+        .data(data.links)
+        .join('line')
+        // Add class to distinguish parent-child links if needed for styling
+        .attr('class', d => {
+           const sourceNode = data.nodes.find(n => n.id === d.source.id); // Find full node object
+           const targetNode = data.nodes.find(n => n.id === d.target.id);
+           return (sourceNode?.isParent !== targetNode?.isParent) ? 'link parent-child' : 'link';
+         })
+        .attr('stroke-width', d => (d.source.isParent !== d.target.isParent ? 1.8 : 1.2)); // Thicker parent-child links
+
+      // Node groups (each containing a circle and a text label)
+      const nodeGroup = g.append('g')
+        .attr('class', 'nodes')
+        .selectAll('g.node-group')
+        .data(data.nodes)
+        .join('g')
+        .attr('class', 'node-group')
+        // --- Drag Behavior ---
+        .call(d3.drag()
+          .on('start', dragstarted)
+          .on('drag', dragged)
+          .on('end', dragended))
+        // --- Tooltip Events ---
+        .on('mouseover', showTooltip)
+        .on('mouseout', hideTooltip)
+        // --- Click Event ---
+        .on('click', handleNodeClick);
+
+      // Circles within node groups
+      nodeGroup.append('circle')
+        .attr('class', d => `node ${d.isParent ? 'parent' : 'child'}`)
+        .attr('r', d => getNodeSize(d)) // Node radius based on type/state
+        .attr('fill', d => getNodeColor(d)); // Node color based on mastery
+
+      // Text labels within node groups
+      nodeGroup.append('text')
+        .attr('class', d => `node-label ${d.isParent ? 'parent' : ''}`)
+         // Position label: above parent, below child
+        .attr('dy', d => (d.isParent ? -getNodeSize(d) - 6 : getNodeSize(d) + 11))
+        .text(d => d.name) // Display node name
+         // Basic text truncation for long names
+         .each(function(d) {
+             const maxChars = d.isParent ? 25 : 18;
+             if (d.name && d.name.length > maxChars) {
+                 d3.select(this).text(d.name.substring(0, maxChars - 1) + '…')
+                    .append("title").text(d.name); // Add full name in SVG title tooltip
+             }
+         });
+
+
+      // --- Simulation Tick Update ---
+      // This function runs repeatedly to update node/link positions
+      simulation.on('tick', () => {
+        link
+          .attr('x1', d => d.source.x)
+          .attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x)
+          .attr('y2', d => d.target.y);
+
+        // Update the position of the entire node group (circle + text)
+        nodeGroup.attr('transform', d => `translate(${d.x},${d.y})`);
+      });
+
+      // --- Final Steps ---
+      // Apply initial filters based on checkbox states
+      applyFilters();
+      // Update sidebar components with data from the rendered nodes
+      updateSummary(data.nodes);
+      generateRecommendations(data.nodes);
+
+      debugLog("KM: Map rendering complete.");
+    }
+
+    // --- KM Helper Functions (Nodes, Tooltip, Drag, Filters, Summary, Recs) ---
+
+    /** Calculates the radius for a node based on its type. */
+    function getNodeSize(d) {
+      return d.isParent ? 12 : 6; // Parent nodes larger than children
+    }
+
+    /** Determines the fill color for a node based on mastery level. */
+    function getNodeColor(d) {
+      switch (d.mastery) {
+        case 'Mastered': return 'var(--mastery-color)';
+        case 'Developing': return 'var(--developing-color)';
+        case 'Needs Work': return 'var(--needs-work-color)';
+        case 'Not Attempted': default: return 'var(--not-attempted-color)';
+      }
+    }
+
+    /** Shows the tooltip with information about the hovered node. */
+    function showTooltip(event, d) {
+      const tooltip = domElements.tooltipDiv;
+      if (!tooltip) return;
+
+      // Build tooltip content
+      let content = `<strong>${d.name}</strong><br>`;
+      content += `<span style="font-size: 0.85em; color: #ccc;">(${d.isParent ? 'Topic' : 'Subtopic'} ID: ${d.conceptId || 'N/A'})</span><br>`;
+      content += `Mastery: ${d.mastery || 'N/A'}<br>`;
+      if (d.mastery !== 'Not Attempted' && d.performance !== undefined) {
+        content += `Performance: ${Math.round(d.performance * 100)}%`;
+      }
+      // Add tags if they exist
+      if (Array.isArray(d.tags) && d.tags.length > 0) {
+         content += `<br><span style="font-size: 0.85em;">Tags: ${d.tags.join(', ')}</span>`;
+      }
+
+      tooltip.innerHTML = content;
+      tooltip.style.opacity = 1; // Make tooltip visible
+
+      // Position tooltip near the mouse cursor, avoiding screen edges
+      const margin = 15; // Offset from cursor
+      const pointerX = event.pageX;
+      const pointerY = event.pageY;
+      const ttRect = tooltip.getBoundingClientRect(); // Tooltip dimensions
+      const bodyRect = document.body.getBoundingClientRect(); // Viewport dimensions
+
+      let left = pointerX + margin;
+      let top = pointerY + margin;
+
+      // Adjust position if tooltip goes off-screen
+      if (left + ttRect.width > bodyRect.right - margin) {
+        left = pointerX - ttRect.width - margin; // Move left
+      }
+      if (top + ttRect.height > bodyRect.bottom - margin) {
+        top = pointerY - ttRect.height - margin; // Move up
+      }
+      if (left < bodyRect.left + margin) {
+        left = bodyRect.left + margin; // Keep within left boundary
+      }
+      if (top < bodyRect.top + margin) {
+        top = bodyRect.top + margin; // Keep within top boundary
+      }
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    }
+
+    /** Hides the tooltip. */
+    function hideTooltip() {
+      if (domElements.tooltipDiv) domElements.tooltipDiv.style.opacity = 0;
+    }
+
+     /** Handles clicks on graph nodes (optional). */
+    function handleNodeClick(event, d) {
+        // Example: Log node data on click
+        debugLog("KM: Node clicked:", { id: d.conceptId, name: d.name, mastery: d.mastery });
+        // Potential actions:
+        // - Highlight the node and its neighbors
+        // - Show detailed info in the sidebar
+        // - Open learning resources related to the node
+        // - Trigger learning path recommendation focused on this node
+    }
+
+    // --- D3 Drag Event Handlers ---
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart(); // Increase simulation activity during drag
+      d.fx = d.x; // Fix the node's x position
+      d.fy = d.y; // Fix the node's y position
+      d3.select(this).raise(); // Bring dragged node to the front
+      d3.select(this).select('circle').style('stroke-width', '2.5px').style('stroke', '#333'); // Visual feedback
+    }
+    function dragged(event, d) {
+      // Update the fixed position as the node is dragged
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0); // Let simulation cool down
+      d.fx = null; // Release the fixed position constraint
+      d.fy = null;
+      // Reset visual feedback (use original stroke color logic)
+      d3.select(this).select('circle').style('stroke-width', null).style('stroke', d.isParent ? '#555' : '#fff');
+    }
+
+    /** Applies visibility filters to nodes and links based on checkbox states. */
+    function applyFilters() {
+      debugLog("KM: Applying filters...");
+      if (!knowledgeData || !svg) {
+        debugLog("KM: Cannot apply filters - data or SVG not ready.");
+        return;
+      }
+
+      // Get current filter checkbox states
+      const showMastered = domElements.filterCheckboxes[0]?.checked ?? true;
+      const showDeveloping = domElements.filterCheckboxes[1]?.checked ?? true;
+      const showNeedsWork = domElements.filterCheckboxes[2]?.checked ?? true;
+      const showNotAttempted = domElements.filterCheckboxes[3]?.checked ?? true;
+      const showParent = domElements.filterCheckboxes[4]?.checked ?? true;
+      const showChild = domElements.filterCheckboxes[5]?.checked ?? true;
+
+      // Function to determine if a node should be visible based on filters
+      const isNodeVisible = (d) => {
+        if ((d.isParent && !showParent) || (!d.isParent && !showChild)) return false;
+        switch (d.mastery) {
+          case 'Mastered': return showMastered;
+          case 'Developing': return showDeveloping;
+          case 'Needs Work': return showNeedsWork;
+          case 'Not Attempted': default: return showNotAttempted;
+        }
+      };
+
+      const nodeGroups = svg.select('g.nodes').selectAll('g.node-group');
+      const links = svg.select('g.links').selectAll('line');
+
+      const visibleNodeIds = new Set(); // Keep track of visible node numerical IDs
+
+      // Update node visibility and collect IDs of visible nodes
+      nodeGroups
+        .transition().duration(300) // Smooth transition for opacity
+        .style('opacity', d => {
+          const visible = isNodeVisible(d);
+          if (visible) visibleNodeIds.add(d.id); // Add numerical ID to the set
+          return visible ? 1 : 0.1; // Fully visible or faded
+        })
+        .style('pointer-events', d => isNodeVisible(d) ? 'all' : 'none'); // Disable interaction for hidden nodes
+
+      // Update link visibility based on whether *both* connected nodes are visible
+      links
+        .transition().duration(300)
+        .style('opacity', d => (visibleNodeIds.has(d.source.id) && visibleNodeIds.has(d.target.id))
+                               ? (d.source.isParent !== d.target.isParent ? 0.7 : 0.6) // Use original opacity
+                               : 0.05); // Very faded if source or target hidden
+
+      debugLog(`KM: Filters applied, ${visibleNodeIds.size} nodes visible.`);
+    }
+
+     /** Updates the summary card with statistics based on the provided nodes. */
+    function updateSummary(nodes) {
+      debugLog("KM: Updating summary card...");
+      hideLoader(domElements.summaryLoader); // Ensure loader is hidden
+      const container = domElements.summaryStatsDiv;
+      if (!container) return;
+
+      if (!nodes || nodes.length === 0) {
+        container.innerHTML = '<p>No concept data to summarize.</p>';
+        showContent(container); // Show the message
+        return;
+      }
+
+      // Calculate statistics
+      const total = nodes.length;
+      const parents = nodes.filter(d => d.isParent).length;
+      const children = total - parents;
+      const masteryCounts = nodes.reduce((acc, node) => {
+        const masteryLevel = node.mastery || 'Not Attempted';
+        acc[masteryLevel] = (acc[masteryLevel] || 0) + 1;
+        return acc;
+      }, { 'Mastered': 0, 'Developing': 0, 'Needs Work': 0, 'Not Attempted': 0 });
+
+      const getPercent = (count) => total > 0 ? Math.round((count / total) * 100) : 0;
+
+      // Generate HTML for the summary card
+      container.innerHTML = `
+        <div><strong>Total Concepts:</strong> ${total} (${parents} Topics, ${children} Subtopics)</div>
+        <div>
+          <strong>Mastered:</strong> ${masteryCounts.Mastered}/${total} (${getPercent(masteryCounts.Mastered)}%)
+          <div class="progress-bar"><div class="progress-fill" style="width:${getPercent(masteryCounts.Mastered)}%;background-color:var(--mastery-color);"></div></div>
+        </div>
+        <div>
+          <strong>Developing:</strong> ${masteryCounts.Developing}/${total} (${getPercent(masteryCounts.Developing)}%)
+          <div class="progress-bar"><div class="progress-fill" style="width:${getPercent(masteryCounts.Developing)}%;background-color:var(--developing-color);"></div></div>
+        </div>
+        <div>
+          <strong>Needs Work:</strong> ${masteryCounts['Needs Work']}/${total} (${getPercent(masteryCounts['Needs Work'])}%)
+          <div class="progress-bar"><div class="progress-fill" style="width:${getPercent(masteryCounts['Needs Work'])}%;background-color:var(--needs-work-color);"></div></div>
+        </div>
+        <div>
+          <strong>Not Attempted:</strong> ${masteryCounts['Not Attempted']}/${total} (${getPercent(masteryCounts['Not Attempted'])}%)
+          <div class="progress-bar"><div class="progress-fill" style="width:${getPercent(masteryCounts['Not Attempted'])}%;background-color:var(--not-attempted-color);"></div></div>
+        </div>
+      `;
+      showContent(container); // Show the populated summary
+      debugLog("KM: Summary updated.");
+    }
+
+    /** Generates learning recommendations based on node mastery levels. */
+    function generateRecommendations(nodes) {
+      debugLog("KM: Generating recommendations...");
+      hideLoader(domElements.recsLoader); // Ensure loader is hidden
+      const container = domElements.recommendationsContainer;
+      if (!container) return;
+
+       if (!nodes || nodes.length === 0) {
+           container.innerHTML = '<p>No data available for recommendations.</p>';
+           showContent(container);
+           return;
+       }
+
+      // Filter and sort subtopics by mastery and performance
+      const subtopics = nodes.filter(d => !d.isParent);
+      const needsWork = subtopics.filter(d => d.mastery === 'Needs Work').sort((a, b) => (a.performance || 0) - (b.performance || 0)); // Lowest performance first
+      const developing = subtopics.filter(d => d.mastery === 'Developing').sort((a, b) => (a.performance || 0) - (b.performance || 0)); // Lowest performance first
+      const notAttempted = subtopics.filter(d => d.mastery === 'Not Attempted');
+
+      let recommendationsHtml = '';
+      const maxRecsPerCategory = 3;
+      let recCount = 0;
+
+      // Helper to find parent name for context
+      const getParentName = (node) => {
+        const parentNode = nodes.find(p => p.isParent && p.parentNum === node.parentNum);
+        return parentNode ? parentNode.name : `Topic ${node.parentNum}`; // Fallback name
+      };
+
+      // 1. Recommend "Needs Work" items first
+      if (needsWork.length > 0) {
+        recommendationsHtml += `<p><strong>Focus on Improving:</strong></p>`;
+        needsWork.slice(0, maxRecsPerCategory).forEach(n => {
+          recommendationsHtml += `<div class="recommendation-item"><strong>${n.name}</strong> (${Math.round((n.performance || 0) * 100)}%) - <em>From ${getParentName(n)}</em></div>`;
+          recCount++;
+        });
+      }
+
+      // 2. Recommend "Developing" items next
+      if (developing.length > 0 && recCount < maxRecsPerCategory * 2) { // Limit total recommendations displayed
+        recommendationsHtml += `<p><strong>Solidify These Concepts:</strong></p>`;
+        developing.slice(0, maxRecsPerCategory).forEach(n => {
+          if (recCount >= maxRecsPerCategory * 2) return; // Stop if limit reached
+          recommendationsHtml += `<div class="recommendation-item"><strong>${n.name}</strong> (${Math.round((n.performance || 0) * 100)}%) - <em>From ${getParentName(n)}</em></div>`;
+          recCount++;
+        });
+      }
+
+      // 3. Recommend "Not Attempted" items last
+      if (notAttempted.length > 0 && recCount < maxRecsPerCategory * 2) {
+        recommendationsHtml += `<p><strong>Start Exploring:</strong></p>`;
+        // Prioritize N/A from topics where student has already mastered something
+        const masteredParentNums = new Set(subtopics.filter(n => n.mastery === 'Mastered').map(n => n.parentNum));
+        const priorityNA = notAttempted.filter(n => masteredParentNums.has(n.parentNum));
+        const otherNA = notAttempted.filter(n => !masteredParentNums.has(n.parentNum));
+        const sortedNA = [...priorityNA, ...otherNA]; // Show priority ones first
+
+        sortedNA.slice(0, maxRecsPerCategory).forEach(n => {
+           if (recCount >= maxRecsPerCategory * 2) return; // Stop if limit reached
+           recommendationsHtml += `<div class="recommendation-item">Explore <strong>${n.name}</strong> - <em>From ${getParentName(n)}</em></div>`;
+           recCount++;
+        });
+      }
+
+      // Handle cases with no specific recommendations needed
+      if (recommendationsHtml === '') {
+        if (subtopics.length > 0 && subtopics.every(n => n.mastery === 'Mastered')) {
+           recommendationsHtml = '<p><i class="fas fa-check-circle" style="color: var(--mastery-color);"></i> Excellent work! All assessed subtopics are mastered.</p>';
+        } else if (subtopics.length === 0) {
+            recommendationsHtml = '<p>No subtopic data available to generate recommendations.</p>';
+        }
+         else {
+           recommendationsHtml = '<p>Continue practicing across all topics to improve mastery.</p>';
+        }
+      }
+
+      container.innerHTML = recommendationsHtml;
+      showContent(container); // Show the recommendations card content
+      debugLog("KM: Recommendations generated.");
+    }
+
+     /** Shows the modal with learning path recommendations for the weakest topic. */
+    function showLearningPathRecommendation() {
+      debugLog("KM: 'Recommend Materials' button clicked");
+      // Ensure necessary data is loaded
+      if (!knowledgeData || !knowledgeData.nodes || !knowledgeData.learningPaths) {
+        alert("Learning path data is unavailable. Please ensure student data is loaded.");
+        return;
+      }
+      const modal = domElements.learningPathModal;
+      const titleElem = domElements.modalTitle;
+      const stepsContainer = domElements.modalStepsContainer;
+      if (!modal || !titleElem || !stepsContainer) {
+        alert("Error: Modal elements could not be found.");
+        return;
+      }
+
+      // Reset modal state and show loader
+      titleElem.textContent = "Recommended Learning Path";
+      stepsContainer.innerHTML = `<div class="loader-container show"><div class="spinner"></div> Analyzing weak areas...</div>`;
+      modal.classList.add('show'); // Display the modal
+
+      // --- Logic to find the weakest parent topic ---
+      const parentNodes = knowledgeData.nodes.filter(n => n.isParent);
+      // Define mastery order for sorting (lower is weaker)
+      const masteryOrder = { 'Needs Work': 1, 'Developing': 2, 'Not Attempted': 3, 'Mastered': 4 };
+      const weakParents = parentNodes
+        .filter(n => n.mastery !== 'Mastered') // Exclude already mastered topics
+        .sort((a, b) => {
+          const orderA = masteryOrder[a.mastery] || 5; // Assign low priority if mastery unknown
+          const orderB = masteryOrder[b.mastery] || 5;
+          // Primary sort: By mastery level (Needs Work first)
+          if (orderA !== orderB) return orderA - orderB;
+          // Secondary sort: By performance within the same mastery level (lower performance first)
+          return (a.performance || 0) - (b.performance || 0);
+        });
+
+      // --- Display Results ---
+      if (weakParents.length === 0) {
+        // Case: All parent topics are mastered
+        titleElem.textContent = "All Topics Mastered!";
+        stepsContainer.innerHTML = "<p>Excellent work! Based on the data, all main topics appear to be mastered. Focus on any remaining developing subtopics.</p>";
+        return;
+      }
+
+      // Target the weakest topic found
+      const targetTopic = weakParents[0];
+      const targetTopicId = targetTopic.conceptId; // Use the original string ID
+      debugLog(`KM: Weakest topic identified for recommendation: ${targetTopic.name} (ID: ${targetTopicId}, Mastery: ${targetTopic.mastery})`);
+
+      titleElem.textContent = `Learning Path for: ${targetTopic.name}`;
+      // Retrieve the learning path URLs for this topic ID from the loaded data
+      const pathUrls = knowledgeData.learningPaths[targetTopicId];
+
+      if (pathUrls && Array.isArray(pathUrls) && pathUrls.length > 0) {
+        // If URLs exist, format them as steps
+        let stepsHtml = '';
+        pathUrls.forEach((url, index) => {
+          let stepName = `Learning Material ${index + 1}`; // Default name
+          // Attempt to extract a more readable name from the URL filename
+          try {
+            const urlPath = new URL(url).pathname;
+            const filename = urlPath.substring(urlPath.lastIndexOf('/') + 1);
+            if (filename) {
+               // Basic cleanup: remove extension, replace separators, capitalize
+               stepName = filename.replace(/\.(html?|md|pdf)$/i, '').replace(/[-_]/g, ' ');
+               stepName = stepName.split(' ')
+                                 .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                                 .join(' ').trim();
+            }
+            if (!stepName) stepName = `Material ${index + 1}`; // Fallback if cleanup fails
+          } catch (e) { /* Ignore URL parsing errors, use default name */ }
+
+          stepsHtml += `<p><strong>Step ${index + 1}:</strong> <a href="${url}" target="_blank" rel="noopener noreferrer" title="Open: ${url}">${stepName}</a></p>`;
+        });
+        stepsContainer.innerHTML = stepsHtml;
+      } else {
+        // Case: No specific learning path URLs found for this topic
+        stepsContainer.innerHTML = `<p>No specific learning materials are currently linked for "${targetTopic.name}". Please review its subtopics in the knowledge map and consult course materials.</p>`;
+        debugLog(`KM: No learning path URLs found in data for topic ID ${targetTopicId}`);
+      }
+    }
+
+    /** Closes the learning path modal. */
+    function closeModal() {
+      domElements.learningPathModal?.classList.remove('show');
+    }
+
+    /** Displays an error specific to the Knowledge Map view. */
+    function showKMError(message) {
+      hideLoader(domElements.kmLoader); // Hide main KM loader
+      hideContent(domElements.knowledgeMapContent); // Hide the content wrapper
+      showError(domElements.kmErrorMessageDiv, domElements.kmErrorTextP, message); // Show the error message box
+      domElements.kmStudentSelector?.removeAttribute('disabled'); // Re-enable selector on error if needed
+      // Ensure specific loaders/content in sidebar are reset/hidden
+      hideLoader(domElements.summaryLoader);
+      hideLoader(domElements.recsLoader);
+      hideLoader(domElements.graphLoader);
+      domElements.summaryStatsDiv && (domElements.summaryStatsDiv.innerHTML = '<p>Unavailable due to error.</p>');
+      domElements.recommendationsContainer && (domElements.recommendationsContainer.innerHTML = '<p>Unavailable due to error.</p>');
+      domElements.recommendMaterialsButton?.setAttribute('disabled', 'true');
+      knowledgeData = null; // Reset data state
+    }
+
+
+    // --- Leaderboard (LB) Functions ---
+
+    /**
+     * Initializes the Leaderboard view: shows loader, hides content/errors, fetches LB data.
+     */
+    function loadInitialLBData() {
+      debugLog("LB: Initializing view...");
+      showLoader(domElements.lbLoader); // Show LB section loader
+      hideContent(domElements.lbContent); // Hide LB content wrapper
+      hideError(domElements.lbErrorDiv); // Hide any previous errors
+      domElements.lbStudentSelector?.setAttribute('disabled', 'true'); // Disable selector during load
+      fetchLeaderboardData(); // Start fetching leaderboard data
+    }
+
+    /**
+     * Handles the click on the LB Retry button.
+     */
+    function retryLB() {
+      debugLog("LB: Retry button clicked.");
+      loadInitialLBData(); // Restart the LB loading sequence
+    }
+
+    /**
+     * Fetches leaderboard data from the backend.
+     */
+    function fetchLeaderboardData() {
+      debugLog("LB: Fetching leaderboard data...");
+      showLoader(domElements.lbLoader); // Ensure loader is visible
+      hideContent(domElements.lbContent);
+      hideError(domElements.lbErrorDiv);
+
+      makeJsonpRequest(
+        backendApiUrl, // Use the single backend URL
+        { action: 'getLeaderboard' },
+        (data) => { // onSuccess
+          debugLog("LB: Leaderboard data received", data ? `${Object.keys(data.students || {}).length} students` : 'null');
+          // Validate received data structure
+          if (data && typeof data.students === 'object' && data.lastUpdated !== undefined && data.totalConcepts !== undefined) {
+            leaderboardData = data; // Store data globally
+            hideLoader(domElements.lbLoader); // Hide loader
+            showContent(domElements.lbContent); // Show content wrapper
+            // Populate student selector *only if* the student list wasn't loaded previously by KM view
+            if (allStudents.length === 0 && typeof data.students === 'object') {
+               populateStudentSelectors(Object.keys(data.students));
+            }
+            // Ensure selector is enabled now that data (or student list) is available
+            domElements.lbStudentSelector?.removeAttribute('disabled');
+            renderLeaderboard(leaderboardData); // Render the table
+          } else {
+            throw new Error("Invalid leaderboard data structure received from server.");
+          }
+        },
+        (errorMsg) => { // onError
+          showLBError(`Failed to load leaderboard data: ${errorMsg}`);
+          hideLoader(domElements.lbLoader); // Hide loader on error
+          // Re-enable selector if students were ever loaded, otherwise keep disabled
+          domElements.lbStudentSelector?.toggleAttribute('disabled', allStudents.length === 0);
+           leaderboardData = null; // Reset data state
+        }
+      );
+    }
+
+    /**
+     * Handles changes to the "Show Top N" input field.
+     */
+    function handleTopNChange() {
+      const inputElem = domElements.topNSelector;
+      if (!inputElem) return;
+
+      const newN = parseInt(inputElem.value, 10);
+      // Validate the input: must be a positive number
+      if (!isNaN(newN) && newN > 0) {
+        if (newN !== currentTopN) {
+          currentTopN = newN;
+          debugLog(`LB: Top N changed to ${currentTopN}`);
+          if (leaderboardData) {
+            renderLeaderboard(leaderboardData); // Re-render the leaderboard
+          }
+        }
+      } else if (inputElem.value !== '' && newN <= 0) {
+        // Handle invalid input (e.g., negative number, zero) - reset to default
+        debugLog(`LB: Invalid Top N value (${inputElem.value}), resetting to default.`);
+        inputElem.value = 10; // Reset input field
+        currentTopN = 10;
+        if (leaderboardData) renderLeaderboard(leaderboardData);
+      }
+      // Ignore empty input or non-numeric input without resetting immediately
+    }
+
+    /**
+     * Handles changes to the "Highlight Student" dropdown in the leaderboard.
+     */
+    function handleLBHighlightChange() {
+      highlightedStudent = domElements.lbStudentSelector?.value || ""; // Get selected value (empty string if 'All Students')
+      debugLog(`LB: Highlight student changed to: '${highlightedStudent || 'None'}'`);
+      if (leaderboardData) {
+        renderLeaderboard(leaderboardData); // Re-render to apply/remove highlight class
+      }
+    }
+
+    /**
+     * Renders the leaderboard table based on the fetched data and current settings (Top N, Highlight).
+     * @param {object} data - The leaderboard data object from the backend.
+     */
+    function renderLeaderboard(data) {
+      debugLog("LB: Rendering leaderboard...");
+      const container = domElements.studentListContainer;
+      if (!container) {
+        showLBError("Leaderboard container element not found in DOM.");
+        return;
+      }
+
+      container.innerHTML = ''; // Clear previous leaderboard rows
+      // Update the "Last Updated" timestamp
+      domElements.lastUpdatedP.textContent = `Last updated: ${data.lastUpdated || 'N/A'}`;
+
+      const studentArray = Object.values(data.students || {}); // Get students as an array
+      // Handle case where no student data exists
+      if (studentArray.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-secondary);">No student data available to display.</div>';
+        return;
+      }
+
+      // Sort students: Primary sort by Overall Mastery (desc), secondary by name (asc) for ties
+      studentArray.sort((a, b) => {
+        const masteryDiff = (b.overallMastery || 0) - (a.overallMastery || 0);
+        if (masteryDiff !== 0) return masteryDiff;
+        // If mastery is equal, sort alphabetically by name
+        return (a.name || '').localeCompare(b.name || '');
+      });
+
+      // Slice the array to get only the top N students
+      const topNData = studentArray.slice(0, currentTopN);
+
+      // Generate and append rows for each student in the top N list
+      topNData.forEach((student, index) => {
+        const rank = index + 1; // Rank starts from 1
+        // Safely access hard performance stats, providing defaults if missing
+        const hardStats = student.performanceByDifficulty?.Hard || { percentage: 0, correct: 0, total: 0 };
+
+        const row = document.createElement('div');
+        row.className = 'student-row';
+        // Add 'highlight' class if this student is selected in the dropdown
+        if (student.name === highlightedStudent) {
+          row.classList.add('highlight');
+        }
+
+        // --- Generate HTML for each cell ---
+
+        // 1. Rank Cell (with medals for top 3)
+        let rankHtml = rank.toString();
+        let rankClass = 'rank';
+        if (rank === 1) { rankHtml = '<i class="fas fa-medal"></i>'; }
+        else if (rank === 2) { rankHtml = '<i class="fas fa-medal"></i>'; rankClass += ' medal-silver'; }
+        else if (rank === 3) { rankHtml = '<i class="fas fa-medal"></i>'; rankClass += ' medal-bronze'; }
+        const rankCell = `<div class="${rankClass}">${rankHtml}</div>`;
+
+        // 2. Student Name Cell
+        const nameCell = `<div class="student-name" title="${student.name}">${student.name}</div>`;
+
+        // 3. Overall Mastery Progress Bar Cell
+        const masteryCell = `
+          <div class="metric-cell progress-mastery" title="Overall Mastery: ${student.overallMastery?.toFixed(1) || 0}%">
+            ${createProgressBar(student.overallMastery, 'mastery')}
+          </div>`;
+
+        // 4. Coverage Progress Bar Cell
+        const coverageCell = `
+          <div class="metric-cell progress-coverage" title="Concept Coverage: ${student.coverage?.toFixed(1) || 0}% (${student.attemptedConcepts}/${data.totalConcepts || '?'})">
+            ${createProgressBar(student.coverage, 'coverage')}
+          </div>`;
+
+        // 5. Mastered Concepts Count Cell
+        const masteredCell = `
+          <div class="metric-cell" title="${student.masteryCount} concepts mastered (>=80%)">
+            <span class="mastered-count">${student.masteryCount} <span class="total">/ ${data.totalConcepts || '?'}</span></span>
+          </div>`;
+
+        // 6. Hard Difficulty Performance Progress Bar Cell
+        const hardPerfCell = `
+          <div class="metric-cell progress-hard-perf" title="Hard Questions: ${hardStats.percentage?.toFixed(1) || 0}% correct (${hardStats.correct}/${hardStats.total})">
+            ${createProgressBar(hardStats.percentage, 'hard-perf', hardStats.total === 0 ? 'N/A' : null)}
+          </div>`;
+
+        // Assemble the row HTML
+        row.innerHTML = rankCell + nameCell + masteryCell + coverageCell + masteredCell + hardPerfCell;
+        container.appendChild(row); // Add the completed row to the list container
+      });
+      debugLog(`LB: Rendered ${topNData.length} students (Top ${currentTopN}).`);
+    }
+
+    /**
+     * Helper function to create the HTML for a progress bar cell in the leaderboard.
+     * @param {number} percentage - The percentage value (0-100).
+     * @param {string} typeClass - A class name suffix used for styling (e.g., 'mastery', 'coverage'). Maps to CSS var like --mastery-color.
+     * @param {string|null} [textOverride=null] - Optional text to display instead of the percentage (e.g., 'N/A').
+     * @returns {string} HTML string for the progress bar container.
+     */
+    function createProgressBar(percentage, typeClass, textOverride = null) {
+      const percent = Math.max(0, Math.min(100, percentage || 0)); // Clamp value between 0 and 100
+      const displayPercent = percent.toFixed(0); // Display whole number percentage
+      const barText = textOverride !== null ? textOverride : `${displayPercent}%`;
+      // Determine if text should be shown (e.g., if bar is wide enough or override text exists)
+      const showTextClass = (percent >= 10 || textOverride) ? 'show-text' : '';
+      // Use the typeClass to determine the background color via CSS variable
+      const bgColorVar = `var(--${typeClass}-color, var(--text-secondary))`; // Fallback color
+
+      return `
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill ${showTextClass}" style="width: ${percent}%; background-color: ${bgColorVar};">
+            ${barText}
+          </div>
+        </div>`;
+    }
+
+    /** Displays an error specific to the Leaderboard view. */
+    function showLBError(message) {
+      hideLoader(domElements.lbLoader); // Hide loader
+      hideContent(domElements.lbContent); // Hide content
+      showError(domElements.lbErrorDiv, domElements.lbErrorText, message); // Show error message box
+      // Re-enable selector only if student list has been loaded previously
+      domElements.lbStudentSelector?.toggleAttribute('disabled', allStudents.length === 0);
+       leaderboardData = null; // Reset data state
+    }
+
+  </script>
+
+</body>
+</html>
