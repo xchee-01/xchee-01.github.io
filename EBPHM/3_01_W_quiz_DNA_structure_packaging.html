@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA Structure and Packaging Quiz</title>
+    <style>
+        /* NUS Colors - Updated with drag & drop quiz colors */
+        :root {
+            --primary: #003D7C; /* NUS Blue */
+            --secondary: #EF7C00; /* NUS Orange */
+            --light-bg: #f8f9fa;
+            --text-dark: #333;
+            --text-medium: #495057;
+            --text-light: #6c757d;
+            --border-light: #dee2e6;
+            --correct: #28a745;
+            --incorrect: #dc3545;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-bg);
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background-color: var(--primary);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .score-container {
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 20px;
+            font-weight: 600;
+            position: relative;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--secondary);
+            will-change: transform;
+        }
+        
+        .score {
+            color: var(--secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .question {
+            display: none;
+            margin-bottom: 20px;
+            background-color: rgba(0, 61, 124, 0.06);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .question.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .timer {
+            text-align: right;
+            font-size: 1em;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        .timer svg {
+            margin-right: 5px;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .option {
+            padding: 15px;
+            background-color: var(--light-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .option:hover {
+            background-color: rgba(0, 61, 124, 0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .option.correct {
+            background-color: var(--correct);
+            color: white;
+            animation: correctAnswer 0.8s ease forwards;
+        }
+        
+        .option.incorrect {
+            background-color: var(--incorrect);
+            color: white;
+            animation: wrongAnswer 0.6s ease forwards;
+        }
+        
+        @keyframes correctAnswer {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
+            75% { transform: scale(1.04); }
+        }
+        
+        @keyframes wrongAnswer {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .option-prefix {
+            font-weight: 600;
+            margin-right: 12px;
+            min-width: 20px;
+            color: var(--primary);
+        }
+        
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .time-summary {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(0, 61, 124, 0.06);
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        #next-btn {
+            display: none;
+            padding: 14px 28px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 20px auto;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+        
+        #next-btn:hover {
+            background-color: #00285A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+        
+        #next-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        #final-result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: var(--primary);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .point-animation {
+            position: absolute;
+            color: var(--secondary);
+            font-weight: bold;
+            font-size: 32px;
+            text-shadow: 0 0 10px rgba(239, 124, 0, 0.6);
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+        }
+        
+        /* Overlay and message styles */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.4);
+            backdrop-filter: blur(3px);
+            z-index: 1500;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .celebration-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background-color: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            z-index: 2000;
+            animation: celebrate 0.7s forwards;
+            will-change: transform, opacity;
+        }
+        
+        .celebration-message h3 {
+            color: var(--primary);
+            font-size: 28px;
+            margin: 0 0 15px 0;
+        }
+        
+        .celebration-message p {
+            color: var(--text-medium);
+            margin-bottom: 20px;
+        }
+        
+        .celebration-icon {
+            font-size: 60px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+        
+        #continue-button {
+            padding: 14px 28px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 10px auto;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--secondary);
+        }
+        
+        #continue-button:hover {
+            background-color: #00285A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+        
+        #continue-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        /* Celebrate animation */
+        @keyframes celebrate {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        /* Hidden elements */
+        #username-container, #submit-container {
+            display: none;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .option {
+                padding: 12px;
+            }
+            
+            .quiz-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DNA Structure and Packaging Quiz</h1>
+        <div class="score-container">
+            Score: <span class="score">0</span>/18
+        </div>
+    </div>
+    
+    <div class="quiz-container">
+        <!-- Hidden username container -->
+        <div id="username-container">
+            <input type="hidden" id="username">
+        </div>
+        
+        <div id="quiz-content">
+            <!-- Question 1 -->
+            <div class="question active" id="q1">
+                <div class="timer" id="timer-q1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>1. What are the three components of a DNA nucleotide?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="A DNA nucleotide is composed of three distinct components: a five-carbon sugar called deoxyribose, a phosphate group, and a nitrogenous base. These components together form the building blocks of DNA, with the phosphate groups and sugars creating the backbone of the DNA strand while the nitrogenous bases project inward.">
+                        <span class="option-prefix">A)</span> Amino acid, phosphate group, and nitrogenous base
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="A DNA nucleotide is composed of three distinct components: a five-carbon sugar called deoxyribose, a phosphate group, and a nitrogenous base. These components together form the building blocks of DNA, with the phosphate groups and sugars creating the backbone of the DNA strand while the nitrogenous bases project inward.">
+                        <span class="option-prefix">B)</span> Five-carbon sugar, phosphate group, and nitrogenous base
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="A DNA nucleotide is composed of three distinct components: a five-carbon sugar called deoxyribose, a phosphate group, and a nitrogenous base. These components together form the building blocks of DNA, with the phosphate groups and sugars creating the backbone of the DNA strand while the nitrogenous bases project inward.">
+                        <span class="option-prefix">C)</span> Five-carbon sugar, hydroxyl group, and nitrogenous base
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="A DNA nucleotide is composed of three distinct components: a five-carbon sugar called deoxyribose, a phosphate group, and a nitrogenous base. These components together form the building blocks of DNA, with the phosphate groups and sugars creating the backbone of the DNA strand while the nitrogenous bases project inward.">
+                        <span class="option-prefix">D)</span> Ribose sugar, phosphate group, and amino acid
+                    </div>
+                </div>
+                <div class="feedback" id="q1-feedback"></div>
+                <div class="time-summary" id="time-summary-q1"></div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="question" id="q2">
+                <div class="timer" id="timer-q2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>2. Which of the following DNA bases are classified as purines?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Nitrogenous bases in DNA are classified into two groups based on their chemical structure. Purines have a double-ring structure and include Adenine (A) and Guanine (G). Pyrimidines have a single-ring structure and include Cytosine (C) and Thymine (T).">
+                        <span class="option-prefix">A)</span> Adenine and Cytosine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Nitrogenous bases in DNA are classified into two groups based on their chemical structure. Purines have a double-ring structure and include Adenine (A) and Guanine (G). Pyrimidines have a single-ring structure and include Cytosine (C) and Thymine (T).">
+                        <span class="option-prefix">B)</span> Guanine and Thymine
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Nitrogenous bases in DNA are classified into two groups based on their chemical structure. Purines have a double-ring structure and include Adenine (A) and Guanine (G). Pyrimidines have a single-ring structure and include Cytosine (C) and Thymine (T).">
+                        <span class="option-prefix">C)</span> Adenine and Guanine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Nitrogenous bases in DNA are classified into two groups based on their chemical structure. Purines have a double-ring structure and include Adenine (A) and Guanine (G). Pyrimidines have a single-ring structure and include Cytosine (C) and Thymine (T).">
+                        <span class="option-prefix">D)</span> Cytosine and Thymine
+                    </div>
+                </div>
+                <div class="feedback" id="q2-feedback"></div>
+                <div class="time-summary" id="time-summary-q2"></div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="question" id="q3">
+                <div class="timer" id="timer-q3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>3. According to the base-pairing rules in the DNA double helix, what base pairs with Cytosine?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="In the DNA double helix, specific base-pairing rules govern which nitrogenous bases pair with each other. Cytosine (C) always pairs with Guanine (G) through three hydrogen bonds. The other established pairing is between Adenine (A) and Thymine (T), which form two hydrogen bonds.">
+                        <span class="option-prefix">A)</span> Adenine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="In the DNA double helix, specific base-pairing rules govern which nitrogenous bases pair with each other. Cytosine (C) always pairs with Guanine (G) through three hydrogen bonds. The other established pairing is between Adenine (A) and Thymine (T), which form two hydrogen bonds.">
+                        <span class="option-prefix">B)</span> Thymine
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="In the DNA double helix, specific base-pairing rules govern which nitrogenous bases pair with each other. Cytosine (C) always pairs with Guanine (G) through three hydrogen bonds. The other established pairing is between Adenine (A) and Thymine (T), which form two hydrogen bonds.">
+                        <span class="option-prefix">C)</span> Guanine
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="In the DNA double helix, specific base-pairing rules govern which nitrogenous bases pair with each other. Cytosine (C) always pairs with Guanine (G) through three hydrogen bonds. The other established pairing is between Adenine (A) and Thymine (T), which form two hydrogen bonds.">
+                        <span class="option-prefix">D)</span> Another Cytosine
+                    </div>
+                </div>
+                <div class="feedback" id="q3-feedback"></div>
+                <div class="time-summary" id="time-summary-q3"></div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="question" id="q4">
+                <div class="timer" id="timer-q4">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>4. How many hydrogen bonds form between Adenine and Thymine in the DNA double helix?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="In the DNA double helix, Adenine (A) pairs with Thymine (T) through two hydrogen bonds. In contrast, Guanine (G) pairs with Cytosine (C) through three hydrogen bonds. This difference in hydrogen bonding contributes to the stability of GC-rich regions compared to AT-rich regions in the DNA molecule.">
+                        <span class="option-prefix">A)</span> One
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="In the DNA double helix, Adenine (A) pairs with Thymine (T) through two hydrogen bonds. In contrast, Guanine (G) pairs with Cytosine (C) through three hydrogen bonds. This difference in hydrogen bonding contributes to the stability of GC-rich regions compared to AT-rich regions in the DNA molecule.">
+                        <span class="option-prefix">B)</span> Two
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="In the DNA double helix, Adenine (A) pairs with Thymine (T) through two hydrogen bonds. In contrast, Guanine (G) pairs with Cytosine (C) through three hydrogen bonds. This difference in hydrogen bonding contributes to the stability of GC-rich regions compared to AT-rich regions in the DNA molecule.">
+                        <span class="option-prefix">C)</span> Three
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="In the DNA double helix, Adenine (A) pairs with Thymine (T) through two hydrogen bonds. In contrast, Guanine (G) pairs with Cytosine (C) through three hydrogen bonds. This difference in hydrogen bonding contributes to the stability of GC-rich regions compared to AT-rich regions in the DNA molecule.">
+                        <span class="option-prefix">D)</span> Four
+                    </div>
+                </div>
+                <div class="feedback" id="q4-feedback"></div>
+                <div class="time-summary" id="time-summary-q4"></div>
+            </div>
+
+            <!-- Question 5 -->
+            <div class="question" id="q5">
+                <div class="timer" id="timer-q5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>5. Which structural feature of DNA is primarily responsible for creating the uniform diameter of the double helix?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The complementary base pairing between the two DNA strands is primarily responsible for creating the uniform diameter of the double helix. The specific pairing of a purine with a pyrimidine (A with T and G with C) ensures that the width across the helix remains constant at approximately 2 nanometers, regardless of the sequence. This consistent geometry is essential for the stability of the double helix and for the recognition of DNA by various proteins involved in replication, transcription, and repair.">
+                        <span class="option-prefix">A)</span> The phosphodiester bonds in the backbone
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The complementary base pairing between the two DNA strands is primarily responsible for creating the uniform diameter of the double helix. The specific pairing of a purine with a pyrimidine (A with T and G with C) ensures that the width across the helix remains constant at approximately 2 nanometers, regardless of the sequence. This consistent geometry is essential for the stability of the double helix and for the recognition of DNA by various proteins involved in replication, transcription, and repair.">
+                        <span class="option-prefix">B)</span> The complementary base pairing between strands
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The complementary base pairing between the two DNA strands is primarily responsible for creating the uniform diameter of the double helix. The specific pairing of a purine with a pyrimidine (A with T and G with C) ensures that the width across the helix remains constant at approximately 2 nanometers, regardless of the sequence. This consistent geometry is essential for the stability of the double helix and for the recognition of DNA by various proteins involved in replication, transcription, and repair.">
+                        <span class="option-prefix">C)</span> The twisting of the sugar-phosphate backbone
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The complementary base pairing between the two DNA strands is primarily responsible for creating the uniform diameter of the double helix. The specific pairing of a purine with a pyrimidine (A with T and G with C) ensures that the width across the helix remains constant at approximately 2 nanometers, regardless of the sequence. This consistent geometry is essential for the stability of the double helix and for the recognition of DNA by various proteins involved in replication, transcription, and repair.">
+                        <span class="option-prefix">D)</span> The equal distribution of purines and pyrimidines
+                    </div>
+                </div>
+                <div class="feedback" id="q5-feedback"></div>
+                <div class="time-summary" id="time-summary-q5"></div>
+            </div>
+
+            <!-- Question 6 -->
+            <div class="question" id="q6">
+                <div class="timer" id="timer-q6">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>6. Which proteins form the core of a nucleosome?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The core of a nucleosome consists of a histone octamer, which is composed of eight histone proteins: two copies each of H2A, H2B, H3, and H4. These proteins form a disc-shaped structure around which approximately 146 base pairs of DNA wrap to create the fundamental unit of DNA packaging.">
+                        <span class="option-prefix">A)</span> DNA polymerases
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The core of a nucleosome consists of a histone octamer, which is composed of eight histone proteins: two copies each of H2A, H2B, H3, and H4. These proteins form a disc-shaped structure around which approximately 146 base pairs of DNA wrap to create the fundamental unit of DNA packaging.">
+                        <span class="option-prefix">B)</span> Histone octamer (two copies each of H2A, H2B, H3, and H4)
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The core of a nucleosome consists of a histone octamer, which is composed of eight histone proteins: two copies each of H2A, H2B, H3, and H4. These proteins form a disc-shaped structure around which approximately 146 base pairs of DNA wrap to create the fundamental unit of DNA packaging.">
+                        <span class="option-prefix">C)</span> Transcription factors
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The core of a nucleosome consists of a histone octamer, which is composed of eight histone proteins: two copies each of H2A, H2B, H3, and H4. These proteins form a disc-shaped structure around which approximately 146 base pairs of DNA wrap to create the fundamental unit of DNA packaging.">
+                        <span class="option-prefix">D)</span> Topoisomerases
+                    </div>
+                </div>
+                <div class="feedback" id="q6-feedback"></div>
+                <div class="time-summary" id="time-summary-q6"></div>
+            </div>
+
+            <!-- Question 7 -->
+            <div class="question" id="q7">
+                <div class="timer" id="timer-q7">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>7. What is the functional significance of DNA wrapping around histone proteins in nucleosomes?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The wrapping of DNA around histone octamers to form nucleosomes serves a dual purpose in the cell nucleus. First, it achieves substantial compaction of DNA, which is necessary to fit the entire genome within the nucleus. Second, this arrangement creates a dynamic structure that can be modified to either restrict or permit access to the genetic information. Through chemical modifications to the histones and remodeling of nucleosome positioning, the cell can selectively control which genes are accessible for transcription, creating a crucial regulatory mechanism for gene expression.">
+                        <span class="option-prefix">A)</span> It prevents DNA from being transcribed
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The wrapping of DNA around histone octamers to form nucleosomes serves a dual purpose in the cell nucleus. First, it achieves substantial compaction of DNA, which is necessary to fit the entire genome within the nucleus. Second, this arrangement creates a dynamic structure that can be modified to either restrict or permit access to the genetic information. Through chemical modifications to the histones and remodeling of nucleosome positioning, the cell can selectively control which genes are accessible for transcription, creating a crucial regulatory mechanism for gene expression.">
+                        <span class="option-prefix">B)</span> It provides access to the DNA repair machinery
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The wrapping of DNA around histone octamers to form nucleosomes serves a dual purpose in the cell nucleus. First, it achieves substantial compaction of DNA, which is necessary to fit the entire genome within the nucleus. Second, this arrangement creates a dynamic structure that can be modified to either restrict or permit access to the genetic information. Through chemical modifications to the histones and remodeling of nucleosome positioning, the cell can selectively control which genes are accessible for transcription, creating a crucial regulatory mechanism for gene expression.">
+                        <span class="option-prefix">C)</span> It achieves compaction while allowing selective access to genetic information
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The wrapping of DNA around histone octamers to form nucleosomes serves a dual purpose in the cell nucleus. First, it achieves substantial compaction of DNA, which is necessary to fit the entire genome within the nucleus. Second, this arrangement creates a dynamic structure that can be modified to either restrict or permit access to the genetic information. Through chemical modifications to the histones and remodeling of nucleosome positioning, the cell can selectively control which genes are accessible for transcription, creating a crucial regulatory mechanism for gene expression.">
+                        <span class="option-prefix">D)</span> It permanently silences genes in that region
+                    </div>
+                </div>
+                <div class="feedback" id="q7-feedback"></div>
+                <div class="time-summary" id="time-summary-q7"></div>
+            </div>
+
+            <!-- Question 8 -->
+            <div class="question" id="q8">
+                <div class="timer" id="timer-q8">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>8. Which of the following best describes the relationship between genome size and nuclear volume in human cells?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The human genome contains approximately 3 billion base pairs of DNA which, if fully extended, would be far too large to fit within the small volume of the nucleus. This creates a fundamental packaging challenge: the DNA must be compacted by approximately 10,000-fold to fit within a nucleus that is only about 6 micrometers in diameter. This extreme degree of compaction must be achieved while still maintaining the DNA's accessibility for critical cellular processes like transcription and replication. The hierarchical packaging system of chromatin evolved precisely to solve this remarkable spatial challenge.">
+                        <span class="option-prefix">A)</span> The genome easily fits within the nucleus with plenty of empty space
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The human genome contains approximately 3 billion base pairs of DNA which, if fully extended, would be far too large to fit within the small volume of the nucleus. This creates a fundamental packaging challenge: the DNA must be compacted by approximately 10,000-fold to fit within a nucleus that is only about 6 micrometers in diameter. This extreme degree of compaction must be achieved while still maintaining the DNA's accessibility for critical cellular processes like transcription and replication. The hierarchical packaging system of chromatin evolved precisely to solve this remarkable spatial challenge.">
+                        <span class="option-prefix">B)</span> The DNA must be substantially compacted to fit within the nuclear volume
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The human genome contains approximately 3 billion base pairs of DNA which, if fully extended, would be far too large to fit within the small volume of the nucleus. This creates a fundamental packaging challenge: the DNA must be compacted by approximately 10,000-fold to fit within a nucleus that is only about 6 micrometers in diameter. This extreme degree of compaction must be achieved while still maintaining the DNA's accessibility for critical cellular processes like transcription and replication. The hierarchical packaging system of chromatin evolved precisely to solve this remarkable spatial challenge.">
+                        <span class="option-prefix">C)</span> Most of the DNA is stored outside the nucleus in the cytoplasm
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The human genome contains approximately 3 billion base pairs of DNA which, if fully extended, would be far too large to fit within the small volume of the nucleus. This creates a fundamental packaging challenge: the DNA must be compacted by approximately 10,000-fold to fit within a nucleus that is only about 6 micrometers in diameter. This extreme degree of compaction must be achieved while still maintaining the DNA's accessibility for critical cellular processes like transcription and replication. The hierarchical packaging system of chromatin evolved precisely to solve this remarkable spatial challenge.">
+                        <span class="option-prefix">D)</span> The nucleus expands during interphase to accommodate the extended DNA
+                    </div>
+                </div>
+                <div class="feedback" id="q8-feedback"></div>
+                <div class="time-summary" id="time-summary-q8"></div>
+            </div>
+
+            <!-- Question 9 -->
+            <div class="question" id="q9">
+                <div class="timer" id="timer-q9">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>9. The first level of DNA packaging, with nucleosomes connected by linker DNA, is often described as:</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="When viewed under an electron microscope, the first level of DNA packaging resembles 'beads-on-a-string,' where the 'beads' are nucleosomes (histone octamers with DNA wrapped around them) and the 'string' is the linker DNA connecting adjacent nucleosomes. This structure has a diameter of about 11 nm.">
+                        <span class="option-prefix">A)</span> A double helix
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="When viewed under an electron microscope, the first level of DNA packaging resembles 'beads-on-a-string,' where the 'beads' are nucleosomes (histone octamers with DNA wrapped around them) and the 'string' is the linker DNA connecting adjacent nucleosomes. This structure has a diameter of about 11 nm.">
+                        <span class="option-prefix">B)</span> A 30 nm fiber
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="When viewed under an electron microscope, the first level of DNA packaging resembles 'beads-on-a-string,' where the 'beads' are nucleosomes (histone octamers with DNA wrapped around them) and the 'string' is the linker DNA connecting adjacent nucleosomes. This structure has a diameter of about 11 nm.">
+                        <span class="option-prefix">C)</span> Beads-on-a-string
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="When viewed under an electron microscope, the first level of DNA packaging resembles 'beads-on-a-string,' where the 'beads' are nucleosomes (histone octamers with DNA wrapped around them) and the 'string' is the linker DNA connecting adjacent nucleosomes. This structure has a diameter of about 11 nm.">
+                        <span class="option-prefix">D)</span> Sister chromatids
+                    </div>
+                </div>
+                <div class="feedback" id="q9-feedback"></div>
+                <div class="time-summary" id="time-summary-q9"></div>
+            </div>
+
+            <!-- Question 10 -->
+            <div class="question" id="q10">
+                <div class="timer" id="timer-q10">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>10. During which phase of the cell cycle do chromosomes reach their maximum level of compaction?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Chromosomes reach their maximum level of compaction during the M phase (mitosis) of the cell cycle, specifically during metaphase. At this stage, the chromatin condenses approximately 10,000-fold compared to its extended form, forming the classic X-shaped structures visible under a light microscope. This high level of compaction facilitates the accurate segregation of genetic material to daughter cells.">
+                        <span class="option-prefix">A)</span> G1 phase
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Chromosomes reach their maximum level of compaction during the M phase (mitosis) of the cell cycle, specifically during metaphase. At this stage, the chromatin condenses approximately 10,000-fold compared to its extended form, forming the classic X-shaped structures visible under a light microscope. This high level of compaction facilitates the accurate segregation of genetic material to daughter cells.">
+                        <span class="option-prefix">B)</span> S phase
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Chromosomes reach their maximum level of compaction during the M phase (mitosis) of the cell cycle, specifically during metaphase. At this stage, the chromatin condenses approximately 10,000-fold compared to its extended form, forming the classic X-shaped structures visible under a light microscope. This high level of compaction facilitates the accurate segregation of genetic material to daughter cells.">
+                        <span class="option-prefix">C)</span> G2 phase
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Chromosomes reach their maximum level of compaction during the M phase (mitosis) of the cell cycle, specifically during metaphase. At this stage, the chromatin condenses approximately 10,000-fold compared to its extended form, forming the classic X-shaped structures visible under a light microscope. This high level of compaction facilitates the accurate segregation of genetic material to daughter cells.">
+                        <span class="option-prefix">D)</span> M phase (mitosis)
+                    </div>
+                </div>
+                <div class="feedback" id="q10-feedback"></div>
+                <div class="time-summary" id="time-summary-q10"></div>
+            </div>
+
+            <!-- Question 11 -->
+            <div class="question" id="q11">
+                <div class="timer" id="timer-q11">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>11. Which of the following bonds does NOT contribute to the stability of the DNA double helix?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Peptide bonds are found in proteins, not in DNA. The stability of the DNA double helix is maintained by three main types of chemical interactions: phosphodiester bonds (which connect adjacent nucleotides in each strand), hydrogen bonds (which hold complementary base pairs together), and hydrophobic interactions (which occur between the stacked bases in the center of the helix).">
+                        <span class="option-prefix">A)</span> Phosphodiester bonds
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Peptide bonds are found in proteins, not in DNA. The stability of the DNA double helix is maintained by three main types of chemical interactions: phosphodiester bonds (which connect adjacent nucleotides in each strand), hydrogen bonds (which hold complementary base pairs together), and hydrophobic interactions (which occur between the stacked bases in the center of the helix).">
+                        <span class="option-prefix">B)</span> Hydrogen bonds between complementary bases
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Peptide bonds are found in proteins, not in DNA. The stability of the DNA double helix is maintained by three main types of chemical interactions: phosphodiester bonds (which connect adjacent nucleotides in each strand), hydrogen bonds (which hold complementary base pairs together), and hydrophobic interactions (which occur between the stacked bases in the center of the helix).">
+                        <span class="option-prefix">C)</span> Hydrophobic interactions between stacked bases
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Peptide bonds are found in proteins, not in DNA. The stability of the DNA double helix is maintained by three main types of chemical interactions: phosphodiester bonds (which connect adjacent nucleotides in each strand), hydrogen bonds (which hold complementary base pairs together), and hydrophobic interactions (which occur between the stacked bases in the center of the helix).">
+                        <span class="option-prefix">D)</span> Peptide bonds
+                    </div>
+                </div>
+                <div class="feedback" id="q11-feedback"></div>
+                <div class="time-summary" id="time-summary-q11"></div>
+            </div>
+
+            <!-- Question 12 -->
+            <div class="question" id="q12">
+                <div class="timer" id="timer-q12">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>12. What is the significance of the major and minor grooves in the DNA double helix?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The helical structure of DNA creates two grooves of unequal size: a major groove and a minor groove. These grooves are functionally important because they serve as binding sites for proteins that interact with DNA, such as transcription factors. The different sizes and chemical environments of these grooves allow proteins to recognize and bind to specific DNA sequences.">
+                        <span class="option-prefix">A)</span> They allow DNA to be more flexible when bending
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The helical structure of DNA creates two grooves of unequal size: a major groove and a minor groove. These grooves are functionally important because they serve as binding sites for proteins that interact with DNA, such as transcription factors. The different sizes and chemical environments of these grooves allow proteins to recognize and bind to specific DNA sequences.">
+                        <span class="option-prefix">B)</span> They serve as binding sites for proteins that interact with DNA
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The helical structure of DNA creates two grooves of unequal size: a major groove and a minor groove. These grooves are functionally important because they serve as binding sites for proteins that interact with DNA, such as transcription factors. The different sizes and chemical environments of these grooves allow proteins to recognize and bind to specific DNA sequences.">
+                        <span class="option-prefix">C)</span> They are artifacts created during X-ray crystallography
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The helical structure of DNA creates two grooves of unequal size: a major groove and a minor groove. These grooves are functionally important because they serve as binding sites for proteins that interact with DNA, such as transcription factors. The different sizes and chemical environments of these grooves allow proteins to recognize and bind to specific DNA sequences.">
+                        <span class="option-prefix">D)</span> They represent areas where the double helix can unwind easily
+                    </div>
+                </div>
+                <div class="feedback" id="q12-feedback"></div>
+                <div class="time-summary" id="time-summary-q12"></div>
+            </div>
+
+            <!-- Question 13 -->
+            <div class="question" id="q13">
+                <div class="timer" id="timer-q13">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>13. Which level of DNA packaging involves Topologically Associated Domains (TADs)?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Topologically Associated Domains (TADs) are part of the third level of DNA packaging, which involves chromatin loops and domains. TADs are regions of the genome that interact with each other more frequently than with other regions, creating functional domains that are important for gene regulation. This level of organization helps coordinate gene expression by keeping related genes and their regulatory elements in proximity.">
+                        <span class="option-prefix">A)</span> Level 1: Nucleosomes
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Topologically Associated Domains (TADs) are part of the third level of DNA packaging, which involves chromatin loops and domains. TADs are regions of the genome that interact with each other more frequently than with other regions, creating functional domains that are important for gene regulation. This level of organization helps coordinate gene expression by keeping related genes and their regulatory elements in proximity.">
+                        <span class="option-prefix">B)</span> Level 2: Chromatin Fiber
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Topologically Associated Domains (TADs) are part of the third level of DNA packaging, which involves chromatin loops and domains. TADs are regions of the genome that interact with each other more frequently than with other regions, creating functional domains that are important for gene regulation. This level of organization helps coordinate gene expression by keeping related genes and their regulatory elements in proximity.">
+                        <span class="option-prefix">C)</span> Level 3: Chromatin Loops and Domains
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Topologically Associated Domains (TADs) are part of the third level of DNA packaging, which involves chromatin loops and domains. TADs are regions of the genome that interact with each other more frequently than with other regions, creating functional domains that are important for gene regulation. This level of organization helps coordinate gene expression by keeping related genes and their regulatory elements in proximity.">
+                        <span class="option-prefix">D)</span> Level 4: Metaphase Chromosomes
+                    </div>
+                </div>
+                <div class="feedback" id="q13-feedback"></div>
+                <div class="time-summary" id="time-summary-q13"></div>
+            </div>
+
+            <!-- Question 14 -->
+            <div class="question" id="q14">
+                <div class="timer" id="timer-q14">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>14. What is the primary function of histone H1 in DNA packaging?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Unlike the core histones (H2A, H2B, H3, and H4) that form the nucleosome octamer, histone H1 is known as a 'linker histone.' It binds to the linker DNA where it enters and exits the nucleosome, as well as to the nucleosome itself. This binding helps stabilize the nucleosome structure and facilitates the formation of higher-order chromatin structures.">
+                        <span class="option-prefix">A)</span> It forms the core of the nucleosome
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Unlike the core histones (H2A, H2B, H3, and H4) that form the nucleosome octamer, histone H1 is known as a 'linker histone.' It binds to the linker DNA where it enters and exits the nucleosome, as well as to the nucleosome itself. This binding helps stabilize the nucleosome structure and facilitates the formation of higher-order chromatin structures.">
+                        <span class="option-prefix">B)</span> It binds to the linker DNA and stabilizes the nucleosome structure
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Unlike the core histones (H2A, H2B, H3, and H4) that form the nucleosome octamer, histone H1 is known as a 'linker histone.' It binds to the linker DNA where it enters and exits the nucleosome, as well as to the nucleosome itself. This binding helps stabilize the nucleosome structure and facilitates the formation of higher-order chromatin structures.">
+                        <span class="option-prefix">C)</span> It actively unwinds DNA during replication
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Unlike the core histones (H2A, H2B, H3, and H4) that form the nucleosome octamer, histone H1 is known as a 'linker histone.' It binds to the linker DNA where it enters and exits the nucleosome, as well as to the nucleosome itself. This binding helps stabilize the nucleosome structure and facilitates the formation of higher-order chromatin structures.">
+                        <span class="option-prefix">D)</span> It marks DNA for degradation
+                    </div>
+                </div>
+                <div class="feedback" id="q14-feedback"></div>
+                <div class="time-summary" id="time-summary-q14"></div>
+            </div>
+
+            <!-- Question 15 -->
+            <div class="question" id="q15">
+                <div class="timer" id="timer-q15">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>15. What does the ongoing debate about chromatin fiber models reveal about our understanding of genome organization?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The debate between different models of chromatin fiber organization (such as the solenoid and zigzag models) highlights a fundamental concept in genome biology: chromatin structure is not static or uniform but rather dynamic and context-dependent. Recent research suggests that the organization of chromatin varies based on cell type, developmental stage, and transcriptional status. This evolving understanding emphasizes that genome packaging is a highly regulated process that responds to cellular needs, with different regions adopting different conformations depending on their functional requirements, rather than following a single universal pattern throughout the genome.">
+                        <span class="option-prefix">A)</span> Our understanding is complete, with the solenoid model being definitively proven
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The debate between different models of chromatin fiber organization (such as the solenoid and zigzag models) highlights a fundamental concept in genome biology: chromatin structure is not static or uniform but rather dynamic and context-dependent. Recent research suggests that the organization of chromatin varies based on cell type, developmental stage, and transcriptional status. This evolving understanding emphasizes that genome packaging is a highly regulated process that responds to cellular needs, with different regions adopting different conformations depending on their functional requirements, rather than following a single universal pattern throughout the genome.">
+                        <span class="option-prefix">B)</span> DNA packaging is random and lacks consistent organization
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The debate between different models of chromatin fiber organization (such as the solenoid and zigzag models) highlights a fundamental concept in genome biology: chromatin structure is not static or uniform but rather dynamic and context-dependent. Recent research suggests that the organization of chromatin varies based on cell type, developmental stage, and transcriptional status. This evolving understanding emphasizes that genome packaging is a highly regulated process that responds to cellular needs, with different regions adopting different conformations depending on their functional requirements, rather than following a single universal pattern throughout the genome.">
+                        <span class="option-prefix">C)</span> Chromatin structure is likely more dynamic and context-dependent than originally thought
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The debate between different models of chromatin fiber organization (such as the solenoid and zigzag models) highlights a fundamental concept in genome biology: chromatin structure is not static or uniform but rather dynamic and context-dependent. Recent research suggests that the organization of chromatin varies based on cell type, developmental stage, and transcriptional status. This evolving understanding emphasizes that genome packaging is a highly regulated process that responds to cellular needs, with different regions adopting different conformations depending on their functional requirements, rather than following a single universal pattern throughout the genome.">
+                        <span class="option-prefix">D)</span> The 30 nm fiber doesn't exist in living cells
+                    </div>
+                </div>
+                <div class="feedback" id="q15-feedback"></div>
+                <div class="time-summary" id="time-summary-q15"></div>
+            </div>
+
+            <!-- Question 16 -->
+            <div class="question" id="q16">
+                <div class="timer" id="timer-q16">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>16. How does the hierarchical packaging of DNA relate to gene expression?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="The hierarchical packaging of DNA plays a crucial role in gene regulation. Regions of DNA that are actively transcribed are typically found in more loosely packaged chromatin (euchromatin), making them accessible to transcription machinery. In contrast, highly condensed regions (heterochromatin) are generally transcriptionally inactive. This dynamic packaging allows cells to regulate which genes are expressed at any given time. Topologically Associated Domains (TADs) and other higher-order structures further organize the genome into functional compartments that can coordinate the regulation of related genes.">
+                        <span class="option-prefix">A)</span> DNA packaging is uniform throughout the genome and has no effect on gene expression
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The hierarchical packaging of DNA plays a crucial role in gene regulation. Regions of DNA that are actively transcribed are typically found in more loosely packaged chromatin (euchromatin), making them accessible to transcription machinery. In contrast, highly condensed regions (heterochromatin) are generally transcriptionally inactive. This dynamic packaging allows cells to regulate which genes are expressed at any given time. Topologically Associated Domains (TADs) and other higher-order structures further organize the genome into functional compartments that can coordinate the regulation of related genes.">
+                        <span class="option-prefix">B)</span> More tightly packaged DNA generally facilitates gene expression
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="The hierarchical packaging of DNA plays a crucial role in gene regulation. Regions of DNA that are actively transcribed are typically found in more loosely packaged chromatin (euchromatin), making them accessible to transcription machinery. In contrast, highly condensed regions (heterochromatin) are generally transcriptionally inactive. This dynamic packaging allows cells to regulate which genes are expressed at any given time. Topologically Associated Domains (TADs) and other higher-order structures further organize the genome into functional compartments that can coordinate the regulation of related genes.">
+                        <span class="option-prefix">C)</span> Different levels of DNA packaging help regulate gene accessibility, with more loosely packaged regions generally more accessible for transcription
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="The hierarchical packaging of DNA plays a crucial role in gene regulation. Regions of DNA that are actively transcribed are typically found in more loosely packaged chromatin (euchromatin), making them accessible to transcription machinery. In contrast, highly condensed regions (heterochromatin) are generally transcriptionally inactive. This dynamic packaging allows cells to regulate which genes are expressed at any given time. Topologically Associated Domains (TADs) and other higher-order structures further organize the genome into functional compartments that can coordinate the regulation of related genes.">
+                        <span class="option-prefix">D)</span> Gene expression only occurs when DNA is in its most condensed form during mitosis
+                    </div>
+                </div>
+                <div class="feedback" id="q16-feedback"></div>
+                <div class="time-summary" id="time-summary-q16"></div>
+            </div>
+
+            <!-- Question 17 -->
+            <div class="question" id="q17">
+                <div class="timer" id="timer-q17">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>17. If a segment of DNA has a high percentage of G-C base pairs compared to A-T base pairs, what would be the most likely implications for its structure and function?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="G-C base pairs form three hydrogen bonds, whereas A-T base pairs form only two. Therefore, DNA segments with a higher percentage of G-C content have greater thermal stability due to the increased number of hydrogen bonds. Such GC-rich regions are often found in parts of the genome where stability is particularly important, such as genes that are constitutively expressed or in organisms that live in extreme environments. Additionally, the GC content can affect DNA packaging, replication timing, and susceptibility to denaturation, all of which can influence the biological function of that DNA segment.">
+                        <span class="option-prefix">A)</span> It would be less stable due to fewer hydrogen bonds
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="G-C base pairs form three hydrogen bonds, whereas A-T base pairs form only two. Therefore, DNA segments with a higher percentage of G-C content have greater thermal stability due to the increased number of hydrogen bonds. Such GC-rich regions are often found in parts of the genome where stability is particularly important, such as genes that are constitutively expressed or in organisms that live in extreme environments. Additionally, the GC content can affect DNA packaging, replication timing, and susceptibility to denaturation, all of which can influence the biological function of that DNA segment.">
+                        <span class="option-prefix">B)</span> It would be more stable due to more hydrogen bonds and might be found in regions requiring higher stability
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="G-C base pairs form three hydrogen bonds, whereas A-T base pairs form only two. Therefore, DNA segments with a higher percentage of G-C content have greater thermal stability due to the increased number of hydrogen bonds. Such GC-rich regions are often found in parts of the genome where stability is particularly important, such as genes that are constitutively expressed or in organisms that live in extreme environments. Additionally, the GC content can affect DNA packaging, replication timing, and susceptibility to denaturation, all of which can influence the biological function of that DNA segment.">
+                        <span class="option-prefix">C)</span> It would be unable to form a double helix structure
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="G-C base pairs form three hydrogen bonds, whereas A-T base pairs form only two. Therefore, DNA segments with a higher percentage of G-C content have greater thermal stability due to the increased number of hydrogen bonds. Such GC-rich regions are often found in parts of the genome where stability is particularly important, such as genes that are constitutively expressed or in organisms that live in extreme environments. Additionally, the GC content can affect DNA packaging, replication timing, and susceptibility to denaturation, all of which can influence the biological function of that DNA segment.">
+                        <span class="option-prefix">D)</span> It would exclusively be found in prokaryotic organisms
+                    </div>
+                </div>
+                <div class="feedback" id="q17-feedback"></div>
+                <div class="time-summary" id="time-summary-q17"></div>
+            </div>
+
+            <!-- Question 18 -->
+            <div class="question" id="q18">
+                <div class="timer" id="timer-q18">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 7V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Time: 0s
+                </div>
+                <p>18. How might disruptions in different levels of DNA packaging affect cellular processes?</p>
+                <div class="options">
+                    <div class="option" data-correct="false" data-feedback="Disruptions at different levels of DNA packaging can lead to distinct cellular consequences. At the nucleosome level, alterations in histone modifications or positioning can change gene expression patterns, potentially leading to developmental abnormalities or diseases like cancer. Disruptions in chromatin fiber formation might affect entire gene neighborhoods. Problems with higher-order chromatin domains could disrupt coordinated gene regulation and long-range chromosomal interactions. Finally, defects in metaphase chromosome condensation can lead to chromosome segregation errors during cell division, resulting in aneuploidy or genomic instability. Understanding these relationships is crucial for comprehending the molecular basis of various diseases and for developing targeted therapies.">
+                        <span class="option-prefix">A)</span> Disruptions at any level would have identical effects on all cellular processes
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Disruptions at different levels of DNA packaging can lead to distinct cellular consequences. At the nucleosome level, alterations in histone modifications or positioning can change gene expression patterns, potentially leading to developmental abnormalities or diseases like cancer. Disruptions in chromatin fiber formation might affect entire gene neighborhoods. Problems with higher-order chromatin domains could disrupt coordinated gene regulation and long-range chromosomal interactions. Finally, defects in metaphase chromosome condensation can lead to chromosome segregation errors during cell division, resulting in aneuploidy or genomic instability. Understanding these relationships is crucial for comprehending the molecular basis of various diseases and for developing targeted therapies.">
+                        <span class="option-prefix">B)</span> Only disruptions at the nucleosome level would affect cellular processes
+                    </div>
+                    <div class="option" data-correct="true" data-feedback="Disruptions at different levels of DNA packaging can lead to distinct cellular consequences. At the nucleosome level, alterations in histone modifications or positioning can change gene expression patterns, potentially leading to developmental abnormalities or diseases like cancer. Disruptions in chromatin fiber formation might affect entire gene neighborhoods. Problems with higher-order chromatin domains could disrupt coordinated gene regulation and long-range chromosomal interactions. Finally, defects in metaphase chromosome condensation can lead to chromosome segregation errors during cell division, resulting in aneuploidy or genomic instability. Understanding these relationships is crucial for comprehending the molecular basis of various diseases and for developing targeted therapies.">
+                        <span class="option-prefix">C)</span> Different disruptions can have varied effects, from altered gene expression to chromosome segregation errors, depending on the packaging level affected
+                    </div>
+                    <div class="option" data-correct="false" data-feedback="Disruptions at different levels of DNA packaging can lead to distinct cellular consequences. At the nucleosome level, alterations in histone modifications or positioning can change gene expression patterns, potentially leading to developmental abnormalities or diseases like cancer. Disruptions in chromatin fiber formation might affect entire gene neighborhoods. Problems with higher-order chromatin domains could disrupt coordinated gene regulation and long-range chromosomal interactions. Finally, defects in metaphase chromosome condensation can lead to chromosome segregation errors during cell division, resulting in aneuploidy or genomic instability. Understanding these relationships is crucial for comprehending the molecular basis of various diseases and for developing targeted therapies.">
+                        <span class="option-prefix">D)</span> Disruptions in DNA packaging only affect cell division and have no impact on other cellular processes
+                    </div>
+                </div>
+                <div class="feedback" id="q18-feedback"></div>
+                <div class="time-summary" id="time-summary-q18"></div>
+            </div>
+        </div>
+
+        <button id="next-btn">Next Question</button>
+        <div id="final-result"></div>
+        
+        <!-- Hidden submit container -->
+        <div id="submit-container">
+            <button id="submit-btn">Submit Quiz Results</button>
+            <div id="status-message" class="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context and Sound Management
+        const AudioManager = {
+            audioContext: null,
+            soundBuffers: {
+                correct: null,
+                final: null
+            },
+            audioInitialized: false,
+            
+            // Initialize audio immediately to ensure it's ready when first answer is selected
+            init() {
+                if (this.audioInitialized) return;
+                
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Load or create sounds
+                    this.loadSound('correct');
+                    this.createFinalSound();
+                    
+                    this.audioInitialized = true;
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                    // Create fallback sounds if loading failed
+                    if (!this.soundBuffers.correct) {
+                        this.soundBuffers.correct = this.createSuccessSound();
+                    }
+                    if (!this.soundBuffers.final) {
+                        this.soundBuffers.final = this.createFinalSound();
+                    }
+                    this.audioInitialized = true;
+                }
+            },
+            
+            // Load sound from URL or create synthetic
+            async loadSound(type) {
+                try {
+                    const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load sound');
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    this.soundBuffers.correct = await this.audioContext.decodeAudioData(arrayBuffer);
+                    return this.soundBuffers.correct;
+                } catch (error) {
+                    console.error('Error loading sound:', error);
+                    this.soundBuffers.correct = this.createSuccessSound();
+                    return this.soundBuffers.correct;
+                }
+            },
+            
+            // Create synthetic success sound (fallback)
+            createSuccessSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 0.6;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00]; // C, E, G
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        let envelope = t < 0.02 ? t / 0.02 : Math.pow(1 - ((t - 0.02) / (duration - 0.02)), 2);
+                        
+                        for (const freq of frequencies) {
+                            amplitude += Math.sin(freq * 2 * Math.PI * t) * envelope * 0.2;
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                return buffer;
+            },
+            
+            // Create synthetic final sound
+            createFinalSound() {
+                if (!this.audioContext) return null;
+                
+                const duration = 1.5;
+                const buffer = this.audioContext.createBuffer(2, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = buffer.getChannelData(channel);
+                    const frequencies = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                    const arpeggioDuration = 0.15;
+                    
+                    for (let i = 0; i < buffer.length; i++) {
+                        const t = i / this.audioContext.sampleRate;
+                        let amplitude = 0;
+                        
+                        for (let n = 0; n < frequencies.length; n++) {
+                            const noteStart = n * arpeggioDuration;
+                            const noteEnd = noteStart + arpeggioDuration * 2;
+                            
+                            if (t >= noteStart && t <= noteEnd) {
+                                const envelope = t - noteStart < 0.01 
+                                    ? (t - noteStart) / 0.01 
+                                    : Math.pow(1 - ((t - noteStart - 0.01) / (noteEnd - noteStart - 0.01)), 1.5);
+                                
+                                amplitude += Math.sin(frequencies[n] * 2 * Math.PI * t) * envelope * 0.2;
+                            }
+                        }
+                        
+                        data[i] = amplitude;
+                    }
+                }
+                
+                this.soundBuffers.final = buffer;
+                return buffer;
+            },
+            
+            // Play a sound
+            playSound(type) {
+                if (!this.audioContext || !this.soundBuffers[type]) {
+                    this.init();
+                    if (!this.audioContext || !this.soundBuffers[type]) return;
+                }
+                
+                const source = this.audioContext.createBufferSource();
+                source.buffer = this.soundBuffers[type];
+                
+                const gainNode = this.audioContext.createGain();
+                gainNode.gain.value = 0.4;
+                
+                source.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                source.start();
+            },
+            
+            // Helper methods
+            playCorrectSound() {
+                this.playSound('correct');
+            },
+            
+            playFinalSound() {
+                this.playSound('final');
+            }
+        };
+        
+        // Animation for score points
+        function animatePointToScore(sourceElement) {
+            const pointElement = document.createElement('div');
+            pointElement.className = 'point-animation';
+            pointElement.textContent = '+1';
+            
+            // Position at the source element's location
+            const sourceRect = sourceElement.getBoundingClientRect();
+            const scoreElement = document.querySelector('.score-container');
+            const scoreRect = scoreElement.getBoundingClientRect();
+            
+            // Starting position
+            const startX = sourceRect.left + sourceRect.width / 2;
+            const startY = sourceRect.top + sourceRect.height / 2;
+            
+            // Ending position
+            const endX = scoreRect.left + scoreRect.width / 2;
+            const endY = scoreRect.top + scoreRect.height / 2;
+            
+            // Apply direct transform
+            pointElement.style.position = 'fixed';
+            pointElement.style.left = `${startX}px`;
+            pointElement.style.top = `${startY}px`;
+            pointElement.style.transform = 'translate(-50%, -50%)';
+            pointElement.style.opacity = '1';
+            
+            document.body.appendChild(pointElement);
+            
+            // Animation with JS for better control
+            let startTime = null;
+            const duration = 1000; // milliseconds
+            
+            const animatePoint = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Cubic bezier easing
+                const easeOut = t => 1 - Math.pow(1 - t, 3);
+                const easedProgress = easeOut(progress);
+                
+                // Calculate current position with easing
+                const currentX = startX + (endX - startX) * easedProgress;
+                const currentY = startY + (endY - startY) * easedProgress;
+                
+                // Apply transforms
+                const scale = 1 - 0.4 * easedProgress;
+                const rotation = 45 * easedProgress;
+                const opacity = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
+                
+                pointElement.style.left = `${currentX}px`;
+                pointElement.style.top = `${currentY}px`;
+                pointElement.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`;
+                pointElement.style.opacity = `${opacity}`;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animatePoint);
+                } else {
+                    // Clean up when animation completes
+                    pointElement.remove();
+                }
+            };
+            
+            // Start animation in next frame
+            requestAnimationFrame(animatePoint);
+            
+            // Pulse effect on score
+            scoreElement.style.animation = 'pulse 0.5s ease-in-out';
+            
+            // Clean up score animation
+            setTimeout(() => {
+                scoreElement.style.animation = '';
+            }, 500);
+        }
+
+        // Create particles for celebration animation
+        function createParticles() {
+            // Use canvas for particle animation instead of DOM elements
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '1600';
+            document.body.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Reduce particle count for better performance
+            const particleCount = ('ontouchstart' in window) ? 12 : 25;
+            
+            // NUS colors
+            const colors = ['#003D7C', '#EF7C00', '#4A90E2', '#FFB74D'];
+            
+            // Create particles array
+            const particles = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: canvas.height,
+                    radius: Math.random() * 6 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: Math.random() * 2 + 1,
+                    angle: Math.random() * Math.PI * 2,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 2 - 1,
+                    alpha: 0
+                });
+            }
+            
+            // Animation variables
+            let animationStartTime = null;
+            const animationDuration = 2500; // milliseconds
+            
+            // Animation function
+            function animate(timestamp) {
+                if (!animationStartTime) animationStartTime = timestamp;
+                const elapsed = timestamp - animationStartTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw particles
+                for (const p of particles) {
+                    // Calculate position based on time
+                    const distance = 150 + Math.random() * 150;
+                    const targetY = canvas.height - distance - 300 * progress;
+                    
+                    // Ease-out function for smooth animation
+                    const easeOut = function(t) {
+                        return 1 - Math.pow(1 - t, 3);
+                    };
+                    
+                    // Apply easing
+                    const easedProgress = easeOut(progress);
+                    
+                    p.y = canvas.height - (canvas.height - targetY) * easedProgress;
+                    p.x += Math.cos(p.angle) * p.speed * 0.5;
+                    p.rotation += p.rotationSpeed;
+                    
+                    // Fade in then out
+                    if (progress < 0.3) {
+                        p.alpha = progress / 0.3; // Fade in
+                    } else if (progress > 0.7) {
+                        p.alpha = 1 - (progress - 0.7) / 0.3; // Fade out
+                    } else {
+                        p.alpha = 1;
+                    }
+                    
+                    // Draw particle
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                
+                // Continue animation or clean up
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Clean up canvas when done
+                    setTimeout(() => {
+                        canvas.remove();
+                    }, 100);
+                }
+            }
+            
+            // Start animation
+            requestAnimationFrame(animate);
+        }
+
+        // Function to show celebration/completion message
+        function celebrateCompletion(title, message, type) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            document.body.appendChild(overlay);
+            
+            // Trigger CSS animation by applying class after a small delay
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+            });
+            
+            // Create particles for perfect or great scores
+            if (type === "perfect" || type === "great") {
+                createParticles();
+            }
+            
+            // Create celebration message
+            const celebrationMsg = document.createElement('div');
+            celebrationMsg.className = 'celebration-message';
+            
+            // Choose the right icon based on score
+            let iconHTML;
+            if (type === "perfect") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#EF7C00" stroke-width="2" fill="rgba(239, 124, 0, 0.1)"/>
+                        <path d="M8 12L11 15L16 9" stroke="#003D7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>`;
+            } else if (type === "great") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15.4L8.24 17.67L9.24 13.39L5.92 10.51L10.3 10.13L12 6.1L13.71 10.14L18.09 10.52L14.77 13.4L15.77 17.68L12 15.4Z" fill="#EF7C00" stroke="#003D7C" stroke-width="1.5"/>
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                    </svg>`;
+            } else if (type === "good") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 13.5C8.83333 14.8333 10.3 17 12.5 15.5C14.7 14 16 15 16.5 16" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else if (type === "try") {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 14.5C9.5 13.5 14.5 13.5 16 14.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            } else {
+                iconHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#003D7C" stroke-width="2" fill="none"/>
+                        <path d="M8 15.5C9.5 16.5 14.5 16.5 16 15.5" stroke="#003D7C" stroke-width="2" stroke-linecap="round" transform="rotate(180 12 16)"/>
+                        <circle cx="8.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                        <circle cx="15.5" cy="9.5" r="1.5" fill="#003D7C"/>
+                    </svg>`;
+            }
+            
+            celebrationMsg.innerHTML = `
+                <div class="celebration-icon">
+                    ${iconHTML}
+                </div>
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <button id="continue-button">Continue</button>
+            `;
+            
+            document.body.appendChild(celebrationMsg);
+            
+            // Add event listener to continue button
+            document.getElementById('continue-button').addEventListener('click', () => {
+                celebrationMsg.style.animation = 'celebrate 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) reverse forwards';
+                overlay.classList.remove('show');
+                
+                setTimeout(() => {
+                    celebrationMsg.remove();
+                    overlay.remove();
+                }, 600);
+            });
+        }
+
+        // Extract username from localStorage on page load
+        function getUsername() {
+            try {
+                // Try to get the accounts data from localStorage
+                const accountsData = localStorage.getItem('accounts');
+                
+                if (accountsData) {
+                    // Parse the JSON array of accounts
+                    const accounts = JSON.parse(accountsData);
+                    
+                    // If accounts exist and there's at least one account with a username
+                    if (accounts && accounts.length > 0 && accounts[0].username) {
+                        return accounts[0].username; // Return the first account's username
+                    }
+                }
+                
+                // If we couldn't find a username or there was an error, return a default
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Error getting username from accounts:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Silently set the username on page load
+        document.getElementById('username').value = getUsername();
+        
+        let currentQuestionIndex = 0;
+        let score = 0;
+        const questions = document.querySelectorAll('.question');
+        const nextBtn = document.getElementById('next-btn');
+        const finalResultDiv = document.getElementById('final-result');
+        const scoreElement = document.querySelector('.score');
+        
+        // Variables to store quiz data
+        let questionData = [];
+        
+        // Timer variables
+        let startTime;
+        let timerInterval;
+        let questionTimes = [];
+        
+        // Initialize audio immediately to ensure it's ready for the first question
+        AudioManager.init();
+        
+        // Start timer for first question
+        startTimer();
+        
+        // Function to start the timer
+        function startTimer() {
+            startTime = new Date();
+            const currentTimerElement = document.getElementById(`timer-q${currentQuestionIndex + 1}`);
+            
+            // Clear any existing interval
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Update timer every second
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((new Date() - startTime) / 1000);
+                currentTimerElement.textContent = `Time: ${elapsedTime}s`;
+            }, 1000);
+        }
+        
+        // Function to stop the timer and record time
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const timeElapsed = Math.floor((new Date() - startTime) / 1000);
+            questionTimes[currentQuestionIndex] = timeElapsed;
+            
+            // Display the time taken for this question
+            const timeSummaryElement = document.getElementById(`time-summary-q${currentQuestionIndex + 1}`);
+            timeSummaryElement.innerHTML = `Time spent: ${timeElapsed} seconds`;
+            timeSummaryElement.style.display = 'block';
+            
+            return timeElapsed;
+        }
+
+        // Function to submit quiz data silently
+        function submitQuizData() {
+            const username = document.getElementById('username').value || 'Anonymous';
+            
+            // Prepare data to send to Google Apps Script
+            const data = {
+                username: username,
+                url: window.location.href,
+                questionData: questionData
+            };
+            
+            // Get the deployed script URL
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbzr-KFisJk2kcQTfh8wbAI-sImJ2uu1N8kPt1wXtx9p1aXdouFQJylATOhkByW9ObK6/exec';
+            
+            // Send data to Google Apps Script silently
+            fetch(scriptUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                mode: 'no-cors' // Important for Google Apps Script
+            })
+            .then(() => {
+                console.log('Quiz data submitted silently');
+            })
+            .catch(error => {
+                console.error('Error submitting quiz data:', error);
+            });
+        }
+
+        // Add click event listeners to all options
+        questions.forEach((question, qIndex) => {
+            const options = question.querySelectorAll('.option');
+            const feedbackDiv = question.querySelector('.feedback');
+            
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Prevent multiple selections
+                    if (question.classList.contains('answered')) return;
+
+                    // Stop the timer when an answer is selected
+                    const timeSpent = stopTimer();
+
+                    // Get the question number and selected text
+                    const questionNumber = qIndex + 1;
+                    const selectedText = option.textContent.trim();
+                    const isCorrect = option.getAttribute('data-correct') === 'true' ? "Yes" : "No";
+                    
+                    // Save the answer data
+                    questionData.push({
+                        questionNumber: questionNumber,
+                        selectedText: selectedText,
+                        timeSpent: timeSpent,
+                        isCorrect: isCorrect
+                    });
+
+                    // Remove previous selections
+                    options.forEach(opt => {
+                        opt.classList.remove('correct', 'incorrect');
+                    });
+
+                    // Mark selected option
+                    if (option.getAttribute('data-correct') === 'true') {
+                        option.classList.add('correct');
+                        
+                        // Increment score and update display
+                        score++;
+                        scoreElement.textContent = score;
+                        
+                        // Play correct sound - now initialized earlier to ensure it works from Q1
+                        AudioManager.playCorrectSound();
+                        
+                        // Animate point
+                        animatePointToScore(option);
+                    } else {
+                        option.classList.add('incorrect');
+                        // Highlight the correct answer
+                        options.forEach(opt => {
+                            if (opt.getAttribute('data-correct') === 'true') {
+                                opt.classList.add('correct');
+                            }
+                        });
+                    }
+
+                    // Show feedback
+                    feedbackDiv.innerHTML = option.getAttribute('data-feedback');
+                    feedbackDiv.style.display = 'block';
+
+                    // Mark question as answered
+                    question.classList.add('answered');
+
+                    // Show next button
+                    nextBtn.style.display = 'block';
+                });
+            });
+        });
+
+        // Next button click event
+        nextBtn.addEventListener('click', function() {
+            // Hide current question
+            questions[currentQuestionIndex].classList.remove('active');
+            
+            // Move to next question
+            currentQuestionIndex++;
+
+            // Check if quiz is complete
+            if (currentQuestionIndex >= questions.length) {
+                // Hide next button
+                nextBtn.style.display = 'none';
+                
+                // Determine message based on score (using styles from first sample code)
+                let title, message, type;
+                
+                if (score === 18) {
+                    title = "Perfect Score!";
+                    message = "Congratulations! You've successfully mastered all aspects of DNA structure and packaging. Your understanding is excellent!";
+                    type = "perfect";
+                    // Play final sound for perfect score
+                    AudioManager.playFinalSound();
+                } else if (score >= 15) {
+                    title = "Great Job!";
+                    message = `You got ${score} out of 18 correct! You have a very good understanding of DNA structure and packaging.`;
+                    type = "great";
+                } else if (score >= 12) {
+                    title = "Good Job!";
+                    message = `You got ${score} out of 18 correct! You have a solid understanding of DNA structure and packaging concepts.`;
+                    type = "great";
+                } else if (score >= 9) {
+                    title = "Good Effort!";
+                    message = `You got ${score} out of 18 correct. You're building a good foundation in DNA structure knowledge.`;
+                    type = "good";
+                } else if (score >= 6) {
+                    title = "Nice Try!";
+                    message = `You got ${score} out of 18 correct. With a bit more study, you'll improve your understanding of DNA structure.`;
+                    type = "try";
+                } else {
+                    title = "Keep Learning!";
+                    message = "DNA structure and packaging concepts can be challenging. Review the basic concepts and try again!";
+                    type = "learn";
+                }
+                
+                // Show celebration/completion message
+                celebrateCompletion(title, message, type);
+                
+                // Show time summary in final result div
+                let timeHTML = '<div style="margin-top: 20px; padding: 15px; background-color: rgba(0, 61, 124, 0.06); border-radius: 8px;">';
+                timeHTML += '<h3 style="color: var(--primary); margin-bottom: 10px;">Time Summary:</h3>';
+                timeHTML += '<ul style="list-style-type: none; padding-left: 0;">';
+                
+                let totalTime = 0;
+                for (let i = 0; i < questionTimes.length; i++) {
+                    totalTime += questionTimes[i];
+                    timeHTML += `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light);">
+                        <strong>Question ${i + 1}:</strong> ${questionTimes[i]} seconds
+                    </li>`;
+                }
+                
+                timeHTML += `<li style="margin-top: 10px; font-weight: bold; color: var(--primary);">
+                    Total time: ${totalTime} seconds
+                </li>`;
+                timeHTML += '</ul></div>';
+                
+                finalResultDiv.innerHTML = timeHTML;
+                
+                // Automatically submit quiz data silently after showing results
+                submitQuizData();
+                return;
+            }
+
+            // Show next question
+            questions[currentQuestionIndex].classList.add('active');
+            
+            // Hide next button until an answer is selected
+            nextBtn.style.display = 'none';
+            
+            // Clear previous feedback
+            const previousFeedback = questions[currentQuestionIndex - 1].querySelector('.feedback');
+            previousFeedback.style.display = 'none';
+            previousFeedback.innerHTML = '';
+            
+            // Start timer for new question
+            startTimer();
+        });
+    </script>
+</body>
+</html>
