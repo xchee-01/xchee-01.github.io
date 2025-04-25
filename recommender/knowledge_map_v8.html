@@ -5,43 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NUS Student Learning Dashboard</title>
   
-  <!-- Preconnect to external domains -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <!-- Resource Hints - Preconnect to External Domains -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
   
-  <!-- Critical CSS for initial render -->
+  <!-- Preload Critical Resources -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" as="script">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" as="style">
+  
+  <!-- Critical CSS Inlined for Fast Initial Render -->
   <style>
+    /* --- Critical CSS for Above-the-fold Content --- */
     :root {
       --nus-blue: #003D7C;
       --nus-orange: #EF7C00;
-      --nus-light-blue: #3f51b5;
       --background-light: #f8f9fa;
       --card-bg: #ffffff;
       --text-primary: #212529;
       --text-secondary: #6c757d;
       --border-color: #dee2e6;
-      --progress-bg: #e9ecef;
-      --mastery-color: #28a745;
-      --coverage-color: #17a2b8;
-      --mastered-count-color: var(--nus-orange);
-      --hard-perf-color: #dc3545;
-      --needs-work-color: #F44336;
-      --developing-color: #FFC107;
-      --not-attempted-color: #9E9E9E;
     }
+    
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body {
       font-family: 'Roboto', sans-serif;
       background-color: var(--background-light);
       color: var(--text-primary);
       margin: 0;
       padding: 0;
-      display: flex;
-      flex-direction: column;
       min-height: 100vh;
       overflow-x: hidden;
     }
+    
     #main-header {
       background-color: var(--nus-blue);
       color: white;
@@ -50,6 +48,7 @@
       position: relative;
       z-index: 10;
     }
+    
     #header-content {
       max-width: 1200px;
       margin: 0 auto;
@@ -59,10 +58,12 @@
       flex-wrap: wrap;
       gap: 20px;
     }
+    
     #title-area {
       display: flex;
       align-items: center;
     }
+    
     #title-area .logo {
       width: 50px;
       height: 50px;
@@ -73,17 +74,20 @@
       align-items: center;
       margin-right: 15px;
     }
+    
     #title-area h1 {
       margin: 0;
       font-size: 24px;
       font-weight: 700;
     }
+    
     #title-area .subtitle {
       font-size: 16px;
       font-weight: 300;
       opacity: 0.9;
       margin-top: 4px;
     }
+    
     #nav-tabs {
       background-color: white;
       border-bottom: 1px solid var(--border-color);
@@ -92,6 +96,7 @@
       top: 0;
       z-index: 5;
     }
+    
     .tabs-container {
       max-width: 1200px;
       margin: 0 auto;
@@ -99,9 +104,7 @@
       overflow-x: auto;
       scrollbar-width: none;
     }
-    .tabs-container::-webkit-scrollbar {
-      display: none;
-    }
+    
     .tab {
       padding: 15px 25px;
       color: var(--text-secondary);
@@ -114,28 +117,29 @@
       align-items: center;
       gap: 8px;
     }
-    .tab:hover {
-      background-color: #f5f5f5;
-      color: var(--nus-blue);
-    }
+    
     .tab.active {
       color: var(--nus-blue);
       border-bottom-color: var(--nus-orange);
     }
+    
     #main-content {
       flex: 1;
       position: relative;
       overflow-x: hidden;
     }
+    
     .content-view {
       display: none;
       width: 100%;
       min-height: calc(100vh - 170px);
       padding: 20px;
     }
+    
     .content-view.active {
       display: block;
     }
+    
     .loader {
       position: absolute;
       top: 50%;
@@ -145,6 +149,7 @@
       color: #666;
       font-size: 14px;
     }
+    
     .spinner {
       border: 4px solid rgba(0, 0, 0, 0.1);
       border-radius: 50%;
@@ -154,10 +159,53 @@
       animation: spin 0.8s linear infinite;
       margin: 0 auto 10px;
     }
+    
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+  </style>
+  
+  <!-- Deferred Non-Critical CSS -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"> 
+
+  <!-- Full CSS (loaded async) -->
+  <style>
+    /* --- NUS Colors --- */
+    :root {
+      --nus-blue: #003D7C;
+      --nus-orange: #EF7C00;
+      --nus-light-blue: #3f51b5;
+      --background-light: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-primary: #212529;
+      --text-secondary: #6c757d;
+      --border-color: #dee2e6;
+      --progress-bg: #e9ecef;
+      --mastery-color: #28a745; /* Green */
+      --coverage-color: #17a2b8; /* Teal */
+      --mastered-count-color: var(--nus-orange);
+      --hard-perf-color: #dc3545; /* Red */
+      --needs-work-color: #F44336;
+      --developing-color: #FFC107;
+      --not-attempted-color: #9E9E9E;
+    }
+
+    /* Tabs already covered in critical CSS */
+    .tabs-container::-webkit-scrollbar {
+      display: none; /* Hide scrollbar for Chrome/Safari */
+    }
+
+    .tab:hover {
+      background-color: #f5f5f5;
+      color: var(--nus-blue);
+    }
+
+    .tab i {
+      font-size: 18px;
+    }
+
+    /* --- Footer --- */
     footer {
       background-color: var(--nus-blue);
       color: rgba(255, 255, 255, 0.8);
@@ -165,11 +213,8 @@
       text-align: center;
       font-size: 0.85rem;
     }
-  </style>
-  
-  <!-- Non-critical CSS - loaded asynchronously -->
-  <style>
-    /* --- Error Message --- */
+
+    /* --- Common Components --- */
     .error-message {
       color: #D32F2F;
       background-color: #FFCDD2;
@@ -179,6 +224,7 @@
       border: 1px solid #EF9A9A;
       display: none;
     }
+
     .error-message p { margin: 0 0 10px 0; }
     .error-message button { margin-right: 10px; margin-top: 5px; }
 
@@ -192,6 +238,7 @@
       font-size: 14px;
       transition: background-color 0.2s ease;
     }
+
     .retry-button:hover { background-color: #002554; }
 
     /* --- Student Controls --- */
@@ -206,6 +253,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     }
+
     .student-controls label {
       font-weight: 500;
       color: var(--text-secondary);
@@ -213,6 +261,7 @@
       align-items: center;
       gap: 8px;
     }
+
     .student-controls select, 
     .student-controls input[type="number"] {
       padding: 8px 12px;
@@ -221,6 +270,7 @@
       font-size: 14px;
       min-width: 180px;
     }
+
     .student-controls input[type="number"] {
       width: 80px;
       min-width: unset;
@@ -234,6 +284,7 @@
       margin-bottom: 20px;
       overflow: hidden;
     }
+
     .card-header {
       padding: 15px;
       border-bottom: 1px solid var(--border-color);
@@ -241,6 +292,7 @@
       justify-content: space-between;
       align-items: center;
     }
+
     .card-title {
       margin: 0;
       font-size: 18px;
@@ -250,6 +302,7 @@
       align-items: center;
       gap: 8px;
     }
+
     .card-body {
       padding: 15px;
     }
@@ -259,19 +312,23 @@
       max-width: 1200px;
       margin: 0 auto;
     }
+
     #knowledge-map-container {
       display: flex;
       gap: 20px;
       flex-wrap: wrap;
     }
+
     #knowledge-map-sidebar {
       width: 280px;
       flex-shrink: 0;
     }
+
     #knowledge-map-main {
       flex: 1;
       min-width: 300px;
     }
+
     #visualization {
       position: relative;
       height: 600px;
@@ -280,33 +337,40 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
       overflow: hidden;
     }
+
     #graph {
       width: 100%;
       height: 100%;
       display: block;
     }
+
     .node.parent {
       stroke-width: 2px;
       stroke: #333;
     }
+
     .node.child {
       cursor: pointer;
       stroke-width: 1.5px;
       stroke: #fff;
     }
+
     .node:hover {
       stroke: #333;
       stroke-width: 2px;
     }
+
     .link {
       stroke: #bbb;
       stroke-opacity: 0.6;
     }
+
     .link.parent-child {
       stroke: #666;
       stroke-width: 2px;
       stroke-opacity: 0.7;
     }
+
     .tooltip {
       position: absolute;
       background-color: rgba(255, 255, 255, 0.95);
@@ -321,23 +385,28 @@
       max-width: 280px;
       z-index: 100;
     }
+
     .filter-section, .legend, .summary-section, .recommendations {
       margin-bottom: 20px;
     }
+
     .filter-option, .legend-item {
       display: flex;
       align-items: center;
       margin-bottom: 10px;
       font-size: 14px;
     }
+
     .filter-option input[type="checkbox"] {
       margin-right: 10px;
       cursor: pointer;
     }
+
     .filter-option label {
       cursor: pointer;
       flex-grow: 1;
     }
+
     .legend-color {
       width: 18px;
       height: 18px;
@@ -346,10 +415,12 @@
       border: 1px solid rgba(0,0,0,0.1);
       flex-shrink: 0;
     }
+
     .summary-section div {
       margin-bottom: 10px;
       font-size: 14px;
     }
+
     .progress-bar {
       background-color: #e0e0e0;
       height: 8px;
@@ -358,30 +429,36 @@
       margin-bottom: 12px;
       overflow: hidden;
     }
+
     .progress-fill {
       height: 100%;
       border-radius: 4px;
       transition: width 0.3s ease-in-out;
     }
+
     .recommendation-item {
       margin-bottom: 10px;
       padding-bottom: 10px;
       border-bottom: 1px solid #eee;
       font-size: 14px;
     }
+
     .recommendation-item:last-child {
       border-bottom: none;
       margin-bottom: 0;
       padding-bottom: 0;
     }
+
     .recommendation-item strong {
       color: #333;
     }
+
     .recommendations p {
       margin-bottom: 10px;
       font-size: 14px;
       color: #555;
     }
+
     .controls {
       position: absolute;
       bottom: 15px;
@@ -393,6 +470,7 @@
       display: flex;
       gap: 8px;
     }
+
     .control-button {
       background-color: var(--nus-blue);
       color: white;
@@ -403,25 +481,30 @@
       font-size: 12px;
       transition: background-color 0.2s ease;
     }
+
     .control-button:hover {
       background-color: #002554;
     }
+
     .node-label {
       font-size: 10px;
       fill: #333;
       pointer-events: none;
       text-anchor: middle;
     }
+
     .node-label.parent {
       font-size: 12px;
       font-weight: bold;
       fill: #222;
     }
+
     .legend-item.node-type {
       margin-top: 15px;
       padding-top: 10px;
       border-top: 1px solid #eee;
     }
+
     .legend-shape {
       width: 18px;
       height: 18px;
@@ -430,14 +513,17 @@
       background-color: #ccc;
       flex-shrink: 0;
     }
+
     .legend-shape.parent {
       border: 2px solid #333;
       background-color: #fff;
     }
+
     .legend-shape.child {
       border: 1.5px solid #fff;
       background-color: transparent;
     }
+
     #recommend-materials-button {
       display: block;
       width: 100%;
@@ -451,9 +537,11 @@
       cursor: pointer;
       transition: background-color 0.2s ease;
     }
+
     #recommend-materials-button:hover {
       background-color: #d66e00;
     }
+
     #recommend-materials-button:disabled {
       background-color: #bdbdbd;
       cursor: not-allowed;
@@ -472,6 +560,7 @@
       overflow: auto;
       background-color: rgba(0,0,0,0.6);
     }
+
     .modal-content {
       background-color: #fefefe;
       margin: 10% auto;
@@ -483,6 +572,7 @@
       position: relative;
       box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
     }
+
     .close-button {
       color: #aaa;
       position: absolute;
@@ -492,10 +582,12 @@
       font-weight: bold;
       cursor: pointer;
     }
+
     .close-button:hover, .close-button:focus {
       color: black;
       text-decoration: none;
     }
+
     #modal-topic-title {
       margin-top: 0;
       color: var(--nus-blue);
@@ -503,6 +595,7 @@
       padding-bottom: 10px;
       margin-bottom: 15px;
     }
+
     #modal-steps p {
       margin-bottom: 12px;
       font-size: 14px;
@@ -510,15 +603,18 @@
       border-bottom: 1px dashed #eee;
       padding-bottom: 8px;
     }
+
     #modal-steps p:last-child {
       border-bottom: none;
       padding-bottom: 0;
     }
+
     #modal-steps a {
       color: var(--nus-blue);
       text-decoration: none;
       word-break: break-all;
     }
+
     #modal-steps a:hover {
       text-decoration: underline;
     }
@@ -528,12 +624,14 @@
       max-width: 1200px;
       margin: 0 auto;
     }
+
     .leaderboard-container {
       background: var(--card-bg);
       border-radius: 8px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
       overflow: hidden;
     }
+
     .list-header-row {
       display: grid;
       grid-template-columns: 50px 1fr repeat(4, 110px);
@@ -548,12 +646,19 @@
       letter-spacing: 0.5px;
       align-items: center;
     }
+
     .list-header-row > div:not(:first-child):not(:nth-child(2)) {
       text-align: center;
     }
+
+    .list-header-row .metric-header i {
+      margin-right: 4px;
+    }
+
     .student-list {
       padding: 0 5px;
     }
+
     .student-row {
       display: grid;
       grid-template-columns: 50px 1fr repeat(4, 110px);
@@ -564,12 +669,15 @@
       transition: background-color 0.2s ease;
       font-size: 0.9rem;
     }
+
     .student-row:last-child {
       border-bottom: none;
     }
+
     .student-row:hover {
       background-color: #f8f9fa;
     }
+
     .student-row.highlight {
       background-color: #e7f3ff;
       border-left: 4px solid var(--nus-blue);
@@ -578,20 +686,28 @@
       border-bottom-color: var(--nus-blue) !important;
       border-radius: 0 4px 4px 0;
     }
+
     .rank {
       font-weight: 700;
       color: var(--nus-blue);
       text-align: center;
     }
+
+    .rank .fas {
+      color: var(--nus-orange);
+    }
+
     .student-name {
       font-weight: 500;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
     .metric-cell {
       text-align: center;
     }
+
     .progress-bar-container {
       height: 18px;
       background-color: var(--progress-bg);
@@ -601,6 +717,7 @@
       position: relative;
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
     }
+
     .progress-bar-fill {
       height: 100%;
       border-radius: 4px 0 0 4px;
@@ -614,45 +731,57 @@
       font-weight: 600;
       white-space: nowrap;
     }
+
     .progress-mastery .progress-bar-fill {
       background: linear-gradient(90deg, #67d582, var(--mastery-color));
     }
+
     .progress-coverage .progress-bar-fill {
       background: linear-gradient(90deg, #5bc0de, var(--coverage-color));
     }
+
     .progress-hard-perf .progress-bar-fill {
       background: linear-gradient(90deg, #f79496, var(--hard-perf-color));
     }
+
     .mastered-count {
       font-weight: 600;
       color: var(--mastered-count-color);
     }
+
     .mastered-count .total {
       font-size: 0.8em;
       color: var(--text-secondary);
       margin-left: 2px;
     }
+
     .progress-bar-fill.prof-high {
       background-color: var(--mastery-color);
     }
+
     .progress-bar-fill.prof-mid {
       background-color: var(--nus-orange);
       color: var(--text-primary);
     }
+
     .progress-bar-fill.prof-low {
       background-color: var(--hard-perf-color);
     }
+
     .progress-bar-fill.prof-none {
       background-color: var(--progress-bg);
       color: var(--text-secondary);
       justify-content: center;
     }
+
     .progress-bar-fill:not(.show-text) {
       color: transparent;
     }
+
     #lb-error-message, #km-error-message {
       display: none;
     }
+
     #last-updated {
       font-size: 0.85rem;
       color: var(--text-secondary);
@@ -666,48 +795,59 @@
       #knowledge-map-container {
         flex-direction: column;
       }
+
       #knowledge-map-sidebar {
         width: 100%;
         order: 2;
       }
+
       #knowledge-map-main {
         order: 1;
       }
+
       #visualization {
         height: 500px;
       }
     }
+
     @media (max-width: 900px) {
       .list-header-row, .student-row {
         grid-template-columns: 40px 1fr repeat(4, 90px);
         gap: 10px;
         font-size: 0.85rem;
       }
+
       .progress-bar-fill {
         font-size: 0.65rem;
         padding-right: 3px;
       }
+
       .mastered-count {
         font-size: 0.9em;
       }
     }
+
     @media (max-width: 768px) {
       #header-content {
         flex-direction: column;
         align-items: center;
         text-align: center;
       }
+
       .student-controls {
         flex-direction: column;
         align-items: flex-start;
       }
+
       .student-controls select {
         width: 100%;
       }
+
       .list-header-row, .student-row {
         grid-template-columns: 35px 1fr repeat(2, 80px);
         padding: 12px 10px;
       }
+
       .list-header-row > div:nth-child(5),
       .list-header-row > div:nth-child(6),
       .student-row > div:nth-child(5),
@@ -715,25 +855,31 @@
         display: none;
       }
     }
+
     @media (max-width: 480px) {
       #title-area h1 {
         font-size: 20px;
       }
+
       #title-area .subtitle {
         font-size: 14px;
       }
+
       .list-header-row, .student-row {
         grid-template-columns: 30px 1fr 75px 75px;
         gap: 5px;
         padding: 10px 8px;
         font-size: 0.8rem;
       }
+
       .progress-bar-fill {
         font-size: 0.6rem;
       }
+
       .rank {
         font-size: 0.9em;
       }
+
       .mastered-count {
         font-size: 0.8em;
       }
@@ -750,14 +896,15 @@
       font-size: 12px;
       display: none;
     }
+
     .debug-info.show {
       display: block;
     }
   </style>
   
-  <!-- Load Google Fonts asynchronously -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"></noscript>
+  <!-- Deferred JS Loading -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" defer></script>
 </head>
 <body>
   <!-- Main Header -->
@@ -765,11 +912,7 @@
     <div id="header-content">
       <div id="title-area">
         <div class="logo">
-          <!-- Inline SVG for graduation cap icon instead of Font Awesome -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#003D7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-            <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/>
-          </svg>
+          <i class="fas fa-graduation-cap"></i>
         </div>
         <div>
           <h1>NUS Student Learning Dashboard</h1>
@@ -783,24 +926,10 @@
   <nav id="nav-tabs">
     <div class="tabs-container">
       <div class="tab active" data-view="knowledge-map-view">
-        <!-- Inline SVG for project diagram -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3v18h18"></path>
-          <circle cx="7" cy="8" r="2"></circle>
-          <circle cx="15" cy="10" r="2"></circle>
-          <circle cx="12" cy="15" r="2"></circle>
-          <path d="M8 10 6 12l2 2"></path>
-          <path d="m15 12-3 3 1.5 1.5"></path>
-        </svg>
-        Knowledge Map
+        <i class="fas fa-project-diagram"></i> Knowledge Map
       </div>
       <div class="tab" data-view="leaderboard-view">
-        <!-- Inline SVG for chart line -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m3 3 18 18M3 21h18M21 3v18"></path>
-          <path d="M12 3v18M21 12H3"></path>
-        </svg>
-        Leaderboard
+        <i class="fas fa-chart-line"></i> Leaderboard
       </div>
     </div>
   </nav>
@@ -817,12 +946,7 @@
     <section id="knowledge-map-view" class="content-view active">
       <div class="student-controls">
         <label for="km-student-selector">
-          <!-- Inline SVG for user icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          Select Student:
+          <i class="fas fa-user"></i> Select Student:
         </label>
         <select id="km-student-selector" disabled>
           <option>Loading students...</option>
@@ -841,13 +965,7 @@
           <!-- Filters -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">
-                <!-- Inline SVG for filter icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                </svg>
-                Filters
-              </h3>
+              <h3 class="card-title"><i class="fas fa-filter"></i> Filters</h3>
             </div>
             <div class="card-body">
               <div class="filter-section">
@@ -887,15 +1005,7 @@
           <!-- Legend -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">
-                <!-- Inline SVG for info icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M12 16v-4"></path>
-                  <path d="M12 8h.01"></path>
-                </svg>
-                Legend
-              </h3>
+              <h3 class="card-title"><i class="fas fa-info-circle"></i> Legend</h3>
             </div>
             <div class="card-body">
               <div class="legend">
@@ -930,14 +1040,7 @@
           <!-- Summary -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">
-                <!-- Inline SVG for chart pie -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
-                  <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
-                </svg>
-                Knowledge Summary
-              </h3>
+              <h3 class="card-title"><i class="fas fa-chart-pie"></i> Knowledge Summary</h3>
             </div>
             <div class="card-body">
               <div class="summary-section">
@@ -955,15 +1058,7 @@
           <!-- Recommendations -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">
-                <!-- Inline SVG for lightbulb -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 18h6"></path>
-                  <path d="M10 22h4"></path>
-                  <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
-                </svg>
-                Recommendations
-              </h3>
+              <h3 class="card-title"><i class="fas fa-lightbulb"></i> Recommendations</h3>
             </div>
             <div class="card-body">
               <div class="recommendations">
@@ -984,7 +1079,7 @@
         <!-- Main Knowledge Map Area -->
         <div id="knowledge-map-main">
           <div id="visualization">
-            <svg id="graph" width="100%" height="100%"></svg>
+            <svg id="graph"></svg>
             <div class="tooltip" id="tooltip"></div>
             <div class="controls">
               <button class="control-button" id="zoom-in">Zoom In</button>
@@ -1005,12 +1100,7 @@
     <section id="leaderboard-view" class="content-view">
       <div class="student-controls">
         <label for="lb-student-selector">
-          <!-- Inline SVG for user icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          Highlight Student:
+          <i class="fas fa-user"></i> Highlight Student:
         </label>
         <select id="lb-student-selector" disabled>
           <option value="">All Students</option>
@@ -1018,16 +1108,7 @@
         </select>
 
         <label for="top-n-selector">
-          <!-- Inline SVG for list-ol -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="10" y1="6" x2="21" y2="6"></line>
-            <line x1="10" y1="12" x2="21" y2="12"></line>
-            <line x1="10" y1="18" x2="21" y2="18"></line>
-            <path d="M4 6h1v4"></path>
-            <path d="M4 10h2"></path>
-            <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path>
-          </svg>
-          Show Top:
+          <i class="fas fa-list-ol"></i> Show Top:
         </label>
         <input type="number" id="top-n-selector" value="5" min="1">
       </div>
@@ -1049,37 +1130,10 @@
         <div class="list-header-row">
           <div>Rank</div>
           <div class="student-name-header">Student</div>
-          <div class="metric-header">
-            <!-- Inline SVG for star icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-            Mastery
-          </div>
-          <div class="metric-header">
-            <!-- Inline SVG for book-open icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-            </svg>
-            Coverage
-          </div>
-          <div class="metric-header">
-            <!-- Inline SVG for check-double icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 6 7 17l-5-5"></path>
-              <path d="m22 10-8 8-4-4"></path>
-            </svg>
-            Mastered
-          </div>
-          <div class="metric-header">
-            <!-- Inline SVG for brain icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04Z"></path>
-              <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04Z"></path>
-            </svg>
-            Hard Perf.
-          </div>
+          <div class="metric-header"><i class="fas fa-star"></i> Mastery</div>
+          <div class="metric-header"><i class="fas fa-book-open"></i> Coverage</div>
+          <div class="metric-header"><i class="fas fa-check-double"></i> Mastered</div>
+          <div class="metric-header"><i class="fas fa-brain"></i> Hard Perf.</div>
         </div>
         <div id="student-list" class="student-list">
           <!-- Student rows will be inserted here by JavaScript -->
@@ -1107,21 +1161,19 @@
     <p>© National University of Singapore - Student Learning Dashboard</p>
   </footer>
 
-  <!-- Load D3.js asynchronously -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" defer></script>
-
-  <!-- Main application script - loaded deferred -->
   <script>
     // --- Configuration ---
     // API URLs - Replace these with your actual Google Apps Script Web App URLs
     const knowledgeMapApiUrl = 'https://script.google.com/macros/s/AKfycbwJxhPRmuatOhBWhLtEG7J6_dLOKFqzY4tneM89AnE31MGB3hCEbgODNdPn5anl7f9G/exec';
     const leaderboardApiUrl = 'https://script.google.com/macros/s/AKfycbwJxhPRmuatOhBWhLtEG7J6_dLOKFqzY4tneM89AnE31MGB3hCEbgODNdPn5anl7f9G/exec';
     
-    // Debug mode (set to false when in production)
-    const DEBUG_MODE = false;
+    // Debug mode (set to true when troubleshooting)
+    const DEBUG_MODE = true;
     
-    // Cache settings
-    const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+    // Cache expiration settings (milliseconds)
+    const STUDENT_LIST_CACHE_EXPIRY = 15 * 60 * 1000; // 15 minutes
+    const KNOWLEDGE_DATA_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+    const LEADERBOARD_CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutes
 
     // --- Global Variables ---
     // Knowledge Map Variables
@@ -1136,6 +1188,10 @@
     let leaderboardData = null;
     let currentTopN = 5;
     let highlightedStudent = "";
+    
+    // Pagination variables
+    let currentLeaderboardPage = 1;
+    const leaderboardPageSize = 10;
 
     // --- DOM Elements ---
     // Tab navigation elements
@@ -1175,56 +1231,99 @@
     const topNSelector = document.getElementById('top-n-selector');
     const lastUpdatedP = document.getElementById('last-updated');
 
-    // --- Cache Functions ---
-    function getFromCache(key) {
-      if (!window.localStorage) return null;
-      try {
-        const item = localStorage.getItem(key);
-        if (!item) return null;
+    // --- Utility Functions ---
+    /**
+     * Debounce function to limit frequency of function calls
+     */
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+    
+    /**
+     * Enhanced JSONP implementation using Promises
+     */
+    function fetchJsonp(url, options = {}) {
+      const timeout = options.timeout || 30000;
+      const callbackName = 'jsonp_' + Date.now() + '_' + Math.round(Math.random() * 10000);
+      
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('JSONP request timed out'));
+        }, timeout);
         
-        const parsed = JSON.parse(item);
-        if (!parsed || !parsed.timestamp || !parsed.data) return null;
+        function cleanup() {
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+          clearTimeout(timeoutId);
+        }
         
-        // Check if cache is still valid
-        if (Date.now() - parsed.timestamp > CACHE_DURATION) {
-          localStorage.removeItem(key); // Clean up expired cache
+        window[callbackName] = (data) => {
+          cleanup();
+          resolve(data);
+        };
+        
+        const separatorChar = url.includes('?') ? '&' : '?';
+        script.src = `${url}${separatorChar}callback=${callbackName}&_=${Date.now()}`;
+        script.onerror = () => {
+          cleanup();
+          reject(new Error('JSONP request failed'));
+        };
+        document.head.appendChild(script);
+      });
+    }
+    
+    /**
+     * Cache management for API data
+     */
+    const dataCache = {
+      get: function(key) {
+        try {
+          const item = localStorage.getItem(key);
+          if (!item) return null;
+          
+          const parsedItem = JSON.parse(item);
+          const now = Date.now();
+          
+          if (now > parsedItem.expiry) {
+            localStorage.removeItem(key);
+            return null;
+          }
+          
+          return parsedItem.data;
+        } catch (e) {
+          debugLog('Error getting from cache', e);
           return null;
         }
-        
-        return parsed.data;
-      } catch (e) {
-        debugLog('Cache error:', e);
-        return null;
-      }
-    }
-
-    function saveToCache(key, data) {
-      if (!window.localStorage) return;
-      try {
-        const item = {
-          timestamp: Date.now(),
-          data: data
-        };
-        localStorage.setItem(key, JSON.stringify(item));
-      } catch (e) {
-        debugLog('Error saving to cache:', e);
-        // If storage is full, clear older items
+      },
+      
+      set: function(key, data, ttl) {
         try {
-          const keys = Object.keys(localStorage);
-          if (keys.length > 10) { // If we have many items
-            // Sort by oldest cache item
-            const oldestKey = keys.sort((a, b) => {
-              const aTime = JSON.parse(localStorage.getItem(a))?.timestamp || 0;
-              const bTime = JSON.parse(localStorage.getItem(b))?.timestamp || 0;
-              return aTime - bTime;
-            })[0];
-            if (oldestKey) localStorage.removeItem(oldestKey);
-          }
-        } catch (clearError) {
-          debugLog('Error clearing cache:', clearError);
+          const item = {
+            data: data,
+            expiry: Date.now() + ttl
+          };
+          localStorage.setItem(key, JSON.stringify(item));
+          return true;
+        } catch (e) {
+          debugLog('Error setting cache', e);
+          return false;
         }
+      },
+      
+      remove: function(key) {
+        localStorage.removeItem(key);
       }
-    }
+    };
 
     // --- Debug Functions ---
     function debugLog(message, obj = null) {
@@ -1235,9 +1334,10 @@
       
       if (obj !== null) {
         try {
+          // Try to pretty-print the object, but fallback to regular JSON if it fails
           if (typeof obj === 'object') {
-            const objStr = JSON.stringify(obj, null, 2).substring(0, 500); // Reduced limit for performance
-            logMessage += `\n${objStr}${objStr.length >= 500 ? '...' : ''}`;
+            const objStr = JSON.stringify(obj, null, 2).substring(0, 1000); // Limit string length
+            logMessage += `\n${objStr}${objStr.length >= 1000 ? '...' : ''}`;
           } else {
             logMessage += `\n${obj}`;
           }
@@ -1256,8 +1356,8 @@
         newEntry.innerHTML = logMessage.replace(/\n/g, '<br>');
         debugLogContainer.appendChild(newEntry);
         
-        // Keep only the latest 5 entries for performance
-        while (debugLogContainer.children.length > 5) {
+        // Keep only the latest 10 entries
+        while (debugLogContainer.children.length > 10) {
           debugLogContainer.removeChild(debugLogContainer.firstChild);
         }
       }
@@ -1298,7 +1398,7 @@
         return;
       }
 
-      // Tab Navigation
+      // Tab Navigation - Only load data when tab is clicked
       tabs.forEach(tab => {
         tab.addEventListener('click', function() {
           const targetView = this.getAttribute('data-view');
@@ -1316,11 +1416,17 @@
             }
           });
           
-          // Load data for the view if needed
-          if (targetView === 'knowledge-map-view' && !knowledgeData) {
-            loadStudentList();
-          } else if (targetView === 'leaderboard-view' && !leaderboardData) {
-            fetchLeaderboardData();
+          // Load data for the view ONLY when needed
+          if (targetView === 'knowledge-map-view') {
+            // Only load student list if it hasn't been loaded
+            if (!allStudents.length) {
+              loadStudentList();
+            }
+          } else if (targetView === 'leaderboard-view') {
+            // Only load leaderboard if it hasn't been loaded
+            if (!leaderboardData) {
+              fetchLeaderboardData();
+            }
           }
         });
       });
@@ -1329,6 +1435,11 @@
       if (kmRetryButton) {
         kmRetryButton.addEventListener('click', function() {
           if (kmErrorMessageDiv) kmErrorMessageDiv.style.display = 'none';
+          // Clear cache on retry
+          dataCache.remove('student_list');
+          if (currentStudent) {
+            dataCache.remove(`knowledge_data_${currentStudent}`);
+          }
           loadStudentList();
         });
       }
@@ -1355,18 +1466,22 @@
 
       // Leaderboard Event Listeners
       if (lbRetryBtn) {
-        lbRetryBtn.addEventListener('click', fetchLeaderboardData);
+        lbRetryBtn.addEventListener('click', () => {
+          // Clear cache on retry
+          dataCache.remove('leaderboard_data');
+          fetchLeaderboardData();
+        });
       }
 
       if (topNSelector) {
-        topNSelector.addEventListener('change', () => {
+        topNSelector.addEventListener('change', debounce(() => {
           currentTopN = parseInt(topNSelector.value, 10) || 5;
           if (currentTopN < 1) currentTopN = 1;
           topNSelector.value = currentTopN;
           if (leaderboardData) {
             renderLeaderboard(leaderboardData);
           }
-        });
+        }, 300)); // Debounce to prevent too many rerenders
       }
 
       if (lbStudentSelector) {
@@ -1417,22 +1532,8 @@
     }
 
     // --- Knowledge Map Functions ---
-    function loadStudentList() {
+    async function loadStudentList() {
       debugLog('Attempting to load student list...');
-      
-      // Check cache first
-      const cachedStudents = getFromCache('student_list');
-      if (cachedStudents) {
-        debugLog('Using cached student list');
-        allStudents = cachedStudents;
-        populateStudentSelector(allStudents);
-        if (allStudents[0]) {
-          kmStudentSelector.value = allStudents[0];
-          handleStudentSelection({ target: { value: allStudents[0] } });
-        }
-        return;
-      }
-      
       if (kmStudentSelector) {
         kmStudentSelector.disabled = true;
         kmStudentSelector.innerHTML = '<option>Loading students...</option>';
@@ -1440,65 +1541,62 @@
       
       // Show general loading indicators
       if (mainLoader) mainLoader.style.display = 'block';
-      if (kmErrorMessageDiv) kmErrorMessageDiv.style.display = 'none';
-
-      let script = null;
-      const callbackName = 'jsonp_callback_students_' + Date.now();
-      const timeoutId = setTimeout(() => {
-        debugLog('Student list request timed out.');
-        showKMError('Request timed out fetching student list. Server might be busy.');
-        if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Error loading</option>';
-        cleanupJsonp(script, callbackName);
-      }, 20000); // 20 seconds timeout
-
-      window[callbackName] = function(data) {
-        clearTimeout(timeoutId);
-        debugLog('Received student list data');
-        try {
-          if (data && data.error) {
-            debugLog('Server error getting students:', data.error);
-            showKMError('Server Error getting students: ' + data.error);
-            if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Error</option>';
-          } else if (data && Array.isArray(data) && data.length > 0) {
-            allStudents = data;
-            // Cache valid student list
-            saveToCache('student_list', allStudents);
-            populateStudentSelector(allStudents);
-            if (allStudents[0]) {
-              // Automatically select and load data for the first student
-              kmStudentSelector.value = allStudents[0];
-              handleStudentSelection({ target: { value: allStudents[0] } });
-            } else {
-              showKMError("No students found in the list.");
-            }
-          } else if (data && Array.isArray(data) && data.length === 0) {
-            debugLog('No students returned from server.');
-            showKMError('No students found in the progress sheet header.');
-            if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>No students</option>';
-          } else {
-            debugLog('Invalid student list data structure');
-            showKMError('Received invalid student list data.');
-            if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Invalid data</option>';
-          }
-        } catch (error) {
-          debugLog('Error processing student list:', error);
-          showKMError('Error processing student list: ' + error.message);
-          if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Processing Error</option>';
-        } finally {
-          cleanupJsonp(script, callbackName);
+      if (summaryLoader) summaryLoader.style.display = 'block';
+      if (recsLoader) recsLoader.style.display = 'block';
+      if (summaryStatsDiv) summaryStatsDiv.innerHTML = '';
+      if (recommendationsContainer) recommendationsContainer.innerHTML = '';
+      if (recommendMaterialsButton) recommendMaterialsButton.disabled = true;
+      d3.select('#graph').selectAll('*').remove();
+      
+      // Try loading from cache first
+      const cachedStudents = dataCache.get('student_list');
+      if (cachedStudents) {
+        debugLog('Using cached student list', cachedStudents);
+        allStudents = cachedStudents;
+        populateStudentSelector(allStudents);
+        if (allStudents[0]) {
+          // Automatically select and load data for the first student
+          kmStudentSelector.value = allStudents[0];
+          handleStudentSelection({ target: { value: allStudents[0] } });
+        } else {
+          showKMError("No students found in the cached list.");
         }
-      };
+        return;
+      }
 
-      script = document.createElement('script');
-      script.src = knowledgeMapApiUrl + (knowledgeMapApiUrl.includes('?') ? '&' : '?') + 'action=getStudents' + '&callback=' + callbackName + '&_=' + Date.now();
-      script.onerror = function() {
-        clearTimeout(timeoutId);
-        debugLog('Failed to load student list script.');
-        showKMError('Failed to load student list. Network issue or script error.');
-        if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Load Failed</option>';
-        cleanupJsonp(script, callbackName);
-      };
-      document.head.appendChild(script);
+      try {
+        // Fetch fresh data using Promise-based JSONP
+        const students = await fetchJsonp(`${knowledgeMapApiUrl}?action=getStudents`);
+        
+        if (students && Array.isArray(students) && students.length > 0) {
+          debugLog('Received student list data:', students);
+          allStudents = students;
+          
+          // Cache the student list
+          dataCache.set('student_list', allStudents, STUDENT_LIST_CACHE_EXPIRY);
+          
+          populateStudentSelector(allStudents);
+          if (allStudents[0]) {
+            // Automatically select and load data for the first student
+            kmStudentSelector.value = allStudents[0];
+            handleStudentSelection({ target: { value: allStudents[0] } });
+          } else {
+            showKMError("No students found in the list.");
+          }
+        } else if (students && Array.isArray(students) && students.length === 0) {
+          debugLog('No students returned from server.');
+          showKMError('No students found in the progress sheet header.');
+          if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>No students</option>';
+        } else {
+          debugLog('Invalid student list data structure:', students);
+          showKMError('Received invalid student list data.');
+          if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Invalid data</option>';
+        }
+      } catch (error) {
+        debugLog('Error loading student list:', error);
+        showKMError(`Error loading student list: ${error.message}`);
+        if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Error loading</option>';
+      }
     }
 
     function populateStudentSelector(students) {
@@ -1543,22 +1641,11 @@
       // Make sure visualization container is properly sized
       ensureVizContainerSize();
 
-      // Check cache first
-      const cachedData = getFromCache(`student_data_${selectedStudent}`);
-      if (cachedData) {
-        debugLog(`Using cached data for ${selectedStudent}`);
-        knowledgeData = cachedData;
-        renderKnowledgeMap(knowledgeData);
-        if (kmStudentSelector) kmStudentSelector.disabled = false;
-        if (recommendMaterialsButton) recommendMaterialsButton.disabled = false;
-        return;
-      }
-
       // Load data for the selected student
       loadData(selectedStudent);
     }
 
-    function loadData(studentId) {
+    async function loadData(studentId) {
       if (!studentId) {
         debugLog("loadData called without studentId");
         showKMError("Cannot load data: No student selected.");
@@ -1573,57 +1660,50 @@
       if (recsLoader) recsLoader.style.display = 'block';
       if (kmErrorMessageDiv) kmErrorMessageDiv.style.display = 'none';
       if (recommendMaterialsButton) recommendMaterialsButton.disabled = true;
-
-      let script = null;
-      const callbackName = 'jsonp_callback_data_' + Date.now() + '_' + Math.round(10000 * Math.random());
-      const timeoutId = setTimeout(() => {
-        debugLog(`Request timed out for student ${studentId}.`);
-        showKMError(`Request timed out loading data for ${studentId}. Server might be busy.`);
-        cleanupJsonp(script, callbackName);
-        if (kmStudentSelector) kmStudentSelector.disabled = false;
-      }, 20000); // 20 seconds timeout
-
-      window[callbackName] = function(data) {
-        clearTimeout(timeoutId);
-        debugLog(`Received data for ${studentId}`);
-        
+      
+      // Try loading from cache first
+      const cacheKey = `knowledge_data_${studentId}`;
+      const cachedData = dataCache.get(cacheKey);
+      
+      if (cachedData) {
+        debugLog(`Using cached data for ${studentId}`);
         try {
-          if (data && data.error) {
-            debugLog(`Server error loading data for ${studentId}:`, data.error);
-            showKMError(`Server Error for ${studentId}: ${data.error}`);
-          } else if (data && data.nodes && data.links && data.learningPaths !== undefined) {
-            knowledgeData = data;
-            // Cache the data for future use
-            saveToCache(`student_data_${studentId}`, knowledgeData);
-            renderKnowledgeMap(knowledgeData);
-            if (recommendMaterialsButton) recommendMaterialsButton.disabled = false;
-          } else {
-            debugLog(`Invalid data structure received for ${studentId}`);
-            showKMError(`Received invalid data structure for ${studentId}.`);
-          }
-        } catch (error) {
-          debugLog(`Error processing data for ${studentId}:`, error);
-          showKMError(`Error processing data for ${studentId}: ${error.message}`);
-        } finally {
-          cleanupJsonp(script, callbackName);
+          knowledgeData = cachedData;
+          renderKnowledgeMap(knowledgeData);
+          if (recommendMaterialsButton) recommendMaterialsButton.disabled = false;
           if (kmStudentSelector) kmStudentSelector.disabled = false;
+          return;
+        } catch (error) {
+          debugLog(`Error using cached data for ${studentId}:`, error);
+          // If there's an error with cached data, continue to fetch fresh data
+          dataCache.remove(cacheKey);
         }
-      };
+      }
 
-      script = document.createElement('script');
-      script.src = knowledgeMapApiUrl + (knowledgeMapApiUrl.includes('?') ? '&' : '?') +
-                  'action=getData' +
-                  '&studentId=' + encodeURIComponent(studentId) +
-                  '&callback=' + callbackName +
-                  '&_=' + Date.now();
-      script.onerror = function() {
-        clearTimeout(timeoutId);
-        debugLog(`Failed to load data script for ${studentId}.`);
-        showKMError(`Failed to load data for ${studentId}. Network issue, script error, or deployment problem.`);
-        cleanupJsonp(script, callbackName);
+      try {
+        // Fetch fresh data
+        const data = await fetchJsonp(`${knowledgeMapApiUrl}?action=getData&studentId=${encodeURIComponent(studentId)}`);
+        
+        if (data && data.error) {
+          throw new Error(data.error);
+        }
+        
+        if (data && data.nodes && data.links && data.learningPaths !== undefined) {
+          // Cache the successful response
+          dataCache.set(cacheKey, data, KNOWLEDGE_DATA_CACHE_EXPIRY);
+          
+          knowledgeData = data;
+          renderKnowledgeMap(knowledgeData);
+          if (recommendMaterialsButton) recommendMaterialsButton.disabled = false;
+        } else {
+          throw new Error('Received invalid data structure');
+        }
+      } catch (error) {
+        debugLog(`Error loading data for ${studentId}:`, error);
+        showKMError(`Error loading data for ${studentId}: ${error.message}`);
+      } finally {
         if (kmStudentSelector) kmStudentSelector.disabled = false;
-      };
-      document.head.appendChild(script);
+      }
     }
 
     function renderKnowledgeMap(data) {
@@ -1660,34 +1740,6 @@
       // Clear any existing visualization
       d3.select('#graph').selectAll('*').remove();
       
-      // Progressive rendering - first render a skeleton with parent nodes only
-      renderGraphSkeleton(data);
-      
-      // Set a small delay to allow the initial rendering to complete
-      setTimeout(() => {
-        // Render the complete graph with all nodes
-        renderCompleteGraph(data);
-      }, 50);
-      
-      // Setup filters after the graph is rendered
-      setupFilters();
-      
-      // Update summary immediately with the data we have
-      updateSummary(data.nodes);
-      
-      // Defer recommendations to improve initial loading performance
-      setTimeout(() => {
-        generateRecommendations(data.nodes);
-      }, 100);
-      
-      debugLog('Knowledge map rendering initiated');
-    }
-    
-    function renderGraphSkeleton(data) {
-      const visContainer = document.getElementById('visualization');
-      const width = visContainer.clientWidth;
-      const height = visContainer.clientHeight;
-      
       // Setup zoom behavior
       zoom = d3.zoom()
         .scaleExtent([0.2, 8])
@@ -1706,67 +1758,6 @@
       const g = svg.append('g');
       svg.mainG = g; // Store reference to main group
       
-      // Only render parent nodes first for faster initial display
-      const parentNodes = data.nodes.filter(node => node.isParent);
-      
-      // Setup a simpler simulation for the skeleton
-      const skeletonSimulation = d3.forceSimulation(parentNodes)
-        .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('charge', d3.forceManyBody().strength(-300))
-        .force('collide', d3.forceCollide().radius(20));
-      
-      // Add circles for parent nodes
-      const parentCircles = g.append('g')
-        .attr('class', 'parent-nodes')
-        .selectAll('circle')
-        .data(parentNodes)
-        .enter()
-        .append('circle')
-        .attr('class', 'node parent')
-        .attr('r', 14)
-        .attr('fill', getNodeColor);
-      
-      // Add minimal labels
-      g.append('g')
-        .attr('class', 'parent-labels')
-        .selectAll('text')
-        .data(parentNodes)
-        .enter()
-        .append('text')
-        .attr('class', 'node-label parent')
-        .attr('dy', 28)
-        .text(d => d.name && d.name.length > 20 ? d.name.substring(0, 18) + '...' : d.name);
-      
-      // Update positions on each tick
-      skeletonSimulation.on('tick', () => {
-        parentCircles.attr('cx', d => d.x).attr('cy', d => d.y);
-        g.selectAll('text.node-label').attr('x', d => d.x).attr('y', d => d.y);
-      });
-      
-      // Setup zoom controls
-      const zoomInButton = document.getElementById('zoom-in');
-      const zoomOutButton = document.getElementById('zoom-out');
-      const resetZoomButton = document.getElementById('reset-zoom');
-      
-      if (zoomInButton) zoomInButton.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1.3);
-      if (zoomOutButton) zoomOutButton.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.3);
-      if (resetZoomButton) resetZoomButton.onclick = () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
-    }
-    
-    function renderCompleteGraph(data) {
-      const visContainer = document.getElementById('visualization');
-      const width = visContainer.clientWidth;
-      const height = visContainer.clientHeight;
-      
-      if (!svg || !svg.mainG) {
-        debugLog('Error: SVG not initialized correctly');
-        return;
-      }
-      
-      // Remove skeleton elements
-      svg.mainG.selectAll('.parent-nodes').remove();
-      svg.mainG.selectAll('.parent-labels').remove();
-      
       // Calculate appropriate parameters based on number of nodes
       const numNodes = data.nodes.length;
       const linkDistance = Math.max(80, Math.min(150, 100 + numNodes * 0.3));
@@ -1774,19 +1765,23 @@
       
       debugLog(`Simulation Parameters: Nodes=${numNodes}, LinkDistance=${linkDistance.toFixed(1)}, Charge=${chargeStrength.toFixed(1)}`);
       
-      // Create D3 force simulation
-      if (simulation) simulation.stop();
+      // Stop any existing simulation
+      if (simulation) {
+        simulation.stop();
+      }
       
+      // Create D3 force simulation with optimized parameters
       simulation = d3.forceSimulation(data.nodes)
         .force('link', d3.forceLink(data.links).id(d => d.id).distance(d => d.source.isParent !== d.target.isParent ? linkDistance * 0.7 : linkDistance).strength(d => d.source.isParent !== d.target.isParent ? 0.8 : 0.6))
         .force('charge', d3.forceManyBody().strength(d => d.isParent ? chargeStrength * 1.5 : chargeStrength))
         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.08))
         .force('collide', d3.forceCollide().radius(d => getNodeSize(d) + 8).strength(0.7))
         .force('x', d3.forceX(width / 2).strength(0.04))
-        .force('y', d3.forceY(height / 2).strength(0.04));
+        .force('y', d3.forceY(height / 2).strength(0.04))
+        .alphaDecay(0.04); // Optimization: Faster simulation convergence
       
       // Create links
-      const link = svg.mainG.append('g')
+      const link = g.append('g')
         .attr('class', 'links')
         .selectAll('line')
         .data(data.links)
@@ -1800,7 +1795,7 @@
         .attr('stroke-width', 1.5);
       
       // Create node groups
-      const nodeGroup = svg.mainG.append('g')
+      const nodeGroup = g.append('g')
         .attr('class', 'nodes')
         .selectAll('g.node-group')
         .data(data.nodes)
@@ -1826,21 +1821,38 @@
         .attr('dy', d => getNodeSize(d) + (d.isParent ? 14 : 10))
         .text(d => d.name && d.name.length > 20 ? d.name.substring(0, 18) + '...' : d.name);
       
-      // Update positions on each tick of the simulation
+      // Optimization: Throttle simulation tick updates
+      let tickCounter = 0;
       simulation.on('tick', () => {
-        link
-          .attr('x1', d => d.source.x)
-          .attr('y1', d => d.source.y)
-          .attr('x2', d => d.target.x)
-          .attr('y2', d => d.target.y);
-        
-        nodeGroup.attr('transform', d => `translate(${d.x}, ${d.y})`);
+        tickCounter++;
+        // Only update DOM every 3 ticks for better performance
+        if (tickCounter % 3 === 0) {
+          link
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+          
+          nodeGroup.attr('transform', d => `translate(${d.x}, ${d.y})`);
+        }
       });
       
-      debugLog('Complete knowledge map rendered');
+      // Setup zoom controls
+      const zoomInButton = document.getElementById('zoom-in');
+      const zoomOutButton = document.getElementById('zoom-out');
+      const resetZoomButton = document.getElementById('reset-zoom');
       
-      // Apply filters
+      if (zoomInButton && svg && zoom) zoomInButton.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1.3);
+      if (zoomOutButton && svg && zoom) zoomOutButton.onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.3);
+      if (resetZoomButton && svg && zoom) resetZoomButton.onclick = () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+      
+      // Setup filters and update summary/recommendations
+      setupFilters();
       applyFilters();
+      updateSummary(data.nodes);
+      generateRecommendations(data.nodes);
+      
+      debugLog('Knowledge map rendering complete');
     }
 
     function getNodeSize(d) {
@@ -1912,9 +1924,12 @@
 
     function setupFilters() {
       const cbs = document.querySelectorAll('#knowledge-map-sidebar input[type="checkbox"]');
+      // Use debounced version of applyFilters for performance
+      const debouncedApplyFilters = debounce(applyFilters, 100);
+      
       cbs.forEach(cb => {
         cb.removeEventListener('change', applyFilters);
-        cb.addEventListener('change', applyFilters);
+        cb.addEventListener('change', debouncedApplyFilters);
       });
     }
 
@@ -2193,66 +2208,49 @@
     }
 
     // --- Leaderboard Functions ---
-    function fetchLeaderboardData() {
-      debugLog("Fetching leaderboard data...");
+    async function fetchLeaderboardData(page = 1, pageSize = leaderboardPageSize) {
+      debugLog(`Fetching leaderboard data (page ${page}, size ${pageSize})...`);
+      showLeaderboardLoading();
       
-      // Try to get from cache first
-      const cachedLeaderboard = getFromCache('leaderboard_data');
+      // Try loading from cache first
+      const cacheKey = 'leaderboard_data';
+      const cachedLeaderboard = dataCache.get(cacheKey);
+      
       if (cachedLeaderboard) {
-        debugLog("Using cached leaderboard data");
+        debugLog('Using cached leaderboard data');
         leaderboardData = cachedLeaderboard;
         populateLBStudentSelector(Object.keys(leaderboardData.students));
         renderLeaderboard(leaderboardData);
         showLeaderboardContent();
         return;
       }
-      
-      showLeaderboardLoading();
 
-      const callbackName = 'jsonpCallback_' + Date.now();
-      const script = document.createElement('script');
-      const timeoutId = setTimeout(() => {
-        debugLog("Leaderboard request timed out.");
-        showLBError("Request timed out. Server might be busy.");
-        cleanupJsonp(script, callbackName);
-      }, 20000); // 20 seconds timeout
-
-      window[callbackName] = function(data) {
-        clearTimeout(timeoutId);
-        debugLog("Leaderboard data received");
+      try {
+        // Fetch fresh data
+        const data = await fetchJsonp(
+          `${leaderboardApiUrl}?action=getLeaderboard&page=${page}&pageSize=${pageSize}`
+        );
         
-        try {
-          if (data && data.error) {
-            throw new Error(data.error);
-          }
-          if (!data || !data.students) {
-            throw new Error("Invalid data structure.");
-          }
-          
-          leaderboardData = data;
-          // Cache the leaderboard data
-          saveToCache('leaderboard_data', leaderboardData);
-          
-          populateLBStudentSelector(Object.keys(data.students));
-          renderLeaderboard(data);
-          showLeaderboardContent();
-          
-        } catch (error) {
-          debugLog("Error processing leaderboard data:", error);
-          showLBError(`Error processing data: ${error.message}`);
-        } finally {
-          cleanupJsonp(script, callbackName);
+        if (data && data.error) {
+          throw new Error(data.error);
         }
-      };
-
-      script.src = `${leaderboardApiUrl}?action=getLeaderboard&callback=${callbackName}&_=${Date.now()}`;
-      script.onerror = () => {
-        clearTimeout(timeoutId);
-        debugLog("Failed to load leaderboard script.");
-        showLBError("Failed to connect. Check API URL & deployment.");
-        cleanupJsonp(script, callbackName);
-      };
-      document.head.appendChild(script);
+        
+        if (!data || !data.students) {
+          throw new Error("Invalid data structure.");
+        }
+        
+        // Cache the successful response
+        dataCache.set(cacheKey, data, LEADERBOARD_CACHE_EXPIRY);
+        
+        leaderboardData = data;
+        populateLBStudentSelector(Object.keys(data.students));
+        renderLeaderboard(data);
+        showLeaderboardContent();
+        
+      } catch (error) {
+        debugLog("Error processing leaderboard data:", error);
+        showLBError(`Error processing data: ${error.message}`);
+      }
     }
 
     function showLeaderboardLoading() {
@@ -2314,9 +2312,9 @@
 
           // 1. Rank
           let rankHtml = rank;
-          if (rank === 1) rankHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="gold" stroke="currentColor" stroke-width="1"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-          else if (rank === 2) rankHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#adb5bd" stroke="currentColor" stroke-width="1"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-          else if (rank === 3) rankHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#e0ac69" stroke="currentColor" stroke-width="1"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+          if (rank === 1) rankHtml = '<i class="fas fa-medal" title="1st Place"></i>';
+          else if (rank === 2) rankHtml = '<i class="fas fa-medal" style="color: #adb5bd;" title="2nd Place"></i>';
+          else if (rank === 3) rankHtml = '<i class="fas fa-medal" style="color: #e0ac69;" title="3rd Place"></i>';
 
           // 2. Name
           const nameHtml = `<div class="student-name" title="${student.name}">${student.name}</div>`;
@@ -2377,18 +2375,6 @@
                  ${barText}
             </div>
         </div>`;
-    }
-
-    // --- Common Helper Functions ---
-    function cleanupJsonp(scriptElement, callbackName) {
-      if (scriptElement && scriptElement.parentNode) {
-        scriptElement.parentNode.removeChild(scriptElement);
-      }
-      try {
-        delete window[callbackName];
-      } catch (e) {
-        window[callbackName] = undefined;
-      }
     }
 
     // Initialize the app once everything is loaded
