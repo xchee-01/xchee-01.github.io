@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python Plotting (Matplotlib/Seaborn/Plotly) in Browser</title>
+    <title>Python Plotting (Matplotlib/Plotly) in Browser</title>
     <style>
         /* Basic styling - feel free to enhance */
         body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
@@ -33,10 +33,10 @@
 </head>
 <body>
     <div id="container">
-        <h1>Python Plotting (Matplotlib/Seaborn/Plotly) in Browser</h1>
+        <h1>Python Plotting (Matplotlib/Plotly) in Browser</h1>
 
         <p>
-            Run Python code using Pyodide. This example supports plotting with Matplotlib, Seaborn, and Plotly.
+            Run Python code using Pyodide. This example supports plotting with Matplotlib and Plotly.
             Required packages will be loaded on startup (may take some time).
             <br><strong>Important:</strong> Only the *last plot generated* and explicitly returned by the Python code will be displayed.
         </p>
@@ -48,14 +48,16 @@
 
 import io, base64
 import numpy as np
+# Pandas is needed for the Plotly example, keep it imported if needed
+import pandas as pd
 
 # Standard way to return plots for this environment:
 # Return a dictionary:
-# {"type": "matplotlib" or "seaborn", "data": "data:image/png;base64,..."}
+# {"type": "matplotlib", "data": "data:image/png;base64,..."}
 # or
 # {"type": "plotly", "data": "<plotly_html_string>"}
 
-# --- Example 1: Matplotlib Plot ---
+# --- Example 1: Matplotlib Plot (Default Active Example) ---
 print("Generating Matplotlib plot...")
 import matplotlib
 matplotlib.use('agg') # Use non-interactive backend
@@ -72,7 +74,7 @@ ax_mpl.set_title("Matplotlib Example")
 ax_mpl.legend()
 ax_mpl.grid(True)
 
-# Save Matplotlib/Seaborn plot to buffer and encode
+# Save Matplotlib plot to buffer and encode
 buf_mpl = io.BytesIO()
 fig_mpl.savefig(buf_mpl, format='png', bbox_inches='tight')
 buf_mpl.seek(0)
@@ -84,36 +86,10 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
 # --- End Example 1 ---
 
 
-# --- Example 2: Seaborn Plot (Uncomment to run) ---
-# print("Generating Seaborn plot...")
-# import matplotlib
-# matplotlib.use('agg') # Use non-interactive backend
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# import pandas as pd
-#
-# # Requires 'pandas', make sure it's loaded
-# tips = sns.load_dataset("tips") # Seaborn has sample datasets
-# fig_sns, ax_sns = plt.subplots(figsize=(7, 5))
-# sns.scatterplot(data=tips, x="total_bill", y="tip", hue="time", ax=ax_sns)
-# ax_sns.set_title("Seaborn Scatter Plot (Tips Dataset)")
-#
-# # Save Matplotlib/Seaborn plot to buffer and encode
-# buf_sns = io.BytesIO()
-# fig_sns.savefig(buf_sns, format='png', bbox_inches='tight')
-# buf_sns.seek(0)
-# img_str_sns = base64.b64encode(buf_sns.read()).decode('utf-8')
-# plt.close(fig_sns) # Close the plot figure
-#
-# # Return the dictionary for Seaborn
-# return {"type": "seaborn", "data": f"data:image/png;base64,{img_str_sns}"}
-# --- End Example 2 ---
-
-
-# --- Example 3: Plotly Plot (Uncomment to run) ---
+# --- Example 2: Plotly Plot (Uncomment to run) ---
 # print("Generating Plotly plot...")
 # import plotly.express as px
-# import pandas as pd
+# # Uses pandas (pd was imported earlier)
 #
 # # Create some data (can also use pandas DataFrames)
 # df = px.data.iris() # Plotly has sample datasets
@@ -127,11 +103,12 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
 # plotly_html = fig_plotly.to_html(full_html=False, include_plotlyjs='cdn')
 #
 # # Return the dictionary for Plotly
+# # Make sure to comment out the return statement from Example 1 if running this
 # return {"type": "plotly", "data": plotly_html}
-# --- End Example 3 ---
+# --- End Example 2 ---
 
 
-# --- Example 4: SciPy usage (No plot, just calculation) ---
+# --- Example 3: SciPy usage (No plot, just calculation - Uncomment to run) ---
 # from scipy.stats import norm
 # print("\nUsing SciPy:")
 # # Generate some data if not available from previous examples
@@ -140,7 +117,8 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
 # mu, std = norm.fit(y_sci)
 # print(f"Fitted Normal Distribution (SciPy): mu={mu:.4f}, std={std:.4f}")
 # # No plot returned here, only text output will be shown
-# --- End Example 4 ---
+# # Make sure to comment out return statements from other examples if running this
+# --- End Example 3 ---
 
 </textarea>
 
@@ -166,8 +144,9 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
         const statusElement = document.getElementById('status');
         let pyodide = null;
 
-        // List required Python packages
-        const requiredPackages = ['matplotlib', 'numpy', 'scipy', 'seaborn', 'pandas', 'plotly']; // Added plotly
+        // List required Python packages (REMOVED 'seaborn')
+        // Keep pandas if the Plotly example needs it
+        const requiredPackages = ['matplotlib', 'numpy', 'scipy', 'pandas', 'plotly'];
 
         async function main() {
             try {
@@ -204,7 +183,6 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
             plotOutputArea.innerHTML = ''; // Clear previous plot/content
 
             if (!resultProxy) {
-                // Python code might not return anything explicitly (e.g., only prints)
                  plotOutputArea.textContent = "(No plot object returned by Python code)";
                  console.log("Python code returned undefined/null.");
                  return;
@@ -212,16 +190,17 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
 
             let result;
             try {
-                 // Convert PyProxy to JS object/primitive.
-                 // Use Object.fromEntries for dict conversion
                  result = resultProxy.toJs({ dict_converter: Object.fromEntries });
-                 // Make sure to destroy the proxy if not needed anymore, especially in loops
-                 // resultProxy.destroy(); // Uncomment if memory becomes an issue
             } catch (e) {
                  console.error("Error converting Pyodide result proxy:", e);
                  appendToOutputArea(`\n[Error converting Python result: ${e}]`);
                  plotOutputArea.textContent = `(Error processing result: ${e})`;
                  return;
+            } finally {
+                 // It's good practice to destroy the proxy when done
+                 if (resultProxy && typeof resultProxy.destroy === 'function') {
+                    resultProxy.destroy();
+                 }
             }
 
 
@@ -230,7 +209,8 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
                 const plotType = result.type.toLowerCase();
                 const plotData = result.data;
 
-                if ((plotType === 'matplotlib' || plotType === 'seaborn') && typeof plotData === 'string' && plotData.startsWith('data:image/png;base64,')) {
+                // Note: 'seaborn' condition removed here
+                if (plotType === 'matplotlib' && typeof plotData === 'string' && plotData.startsWith('data:image/png;base64,')) {
                     console.log(`Rendering ${plotType} plot as image.`);
                     const img = document.createElement('img');
                     img.src = plotData;
@@ -239,11 +219,7 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
                     plotOutputArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 } else if (plotType === 'plotly' && typeof plotData === 'string') {
                     console.log("Rendering Plotly plot as HTML.");
-                    // Inject the HTML directly. Assumes the HTML includes Plotly.js or it's loaded globally.
                     plotOutputArea.innerHTML = plotData;
-                     // Plotly's JS will find the div and render the plot.
-                     // We might need to explicitly call Plotly.react or Plotly.newPlot if using JSON output
-                     // and loading Plotly.js separately. For HTML output, this is usually enough.
                      plotOutputArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 } else {
                     console.warn("Received plot dictionary but format is unexpected:", result);
@@ -251,10 +227,8 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
                     appendToOutputArea(`\n[Received unexpected plot data format: Type=${plotType}, Data Type=${typeof plotData}]`);
                 }
             } else {
-                 // Handle cases where Python returns something other than our plot dict
                  console.log("Python code returned a non-plot result:", result);
                  plotOutputArea.textContent = "(No plot object returned, see text output if any)";
-                 // Optionally display the raw result in the text area if it's simple
                  if (typeof result !== 'undefined' && result !== null) {
                      appendToOutputArea(`\n[Final Python Result (non-plot): ${JSON.stringify(result, null, 2)}]`);
                  }
@@ -278,17 +252,12 @@ return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
             clearButton.disabled = true;
 
             try {
-                // runPythonAsync executes the code and returns the result of the last expression (as a PyProxy)
                 let resultProxy = await pyodide.runPythonAsync(pythonCode);
-
-                // Display the output (plot or other result)
-                displayOutput(resultProxy);
-
+                displayOutput(resultProxy); // Pass the proxy directly
                 statusElement.textContent = 'Execution finished.';
 
             } catch (error) {
                 console.error("Python execution error:", error);
-                // Display error in the text output area
                 appendToOutputArea(`\n--- Python Execution Error --- \n${error}\n-----------------------------`);
                 plotOutputArea.innerHTML = '(Error during execution, see text output)';
                 statusElement.textContent = 'Error during execution.';
