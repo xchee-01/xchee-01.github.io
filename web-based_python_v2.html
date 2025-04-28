@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Plotting (Matplotlib/Seaborn/Plotly) in Browser</title>
+    <style>
+        /* Basic styling - feel free to enhance */
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
+        #container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
+        h1 { color: #333; text-align: center; }
+        textarea { width: 98%; min-height: 300px; /* Increased height */ border: 1px solid #ccc; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 14px; margin-bottom: 10px; display: block; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; margin-right: 10px; }
+        button#run-button { background-color: #28a745; }
+        button#run-button:hover:not(:disabled) { background-color: #218838; }
+        button#clear-button { background-color: #dc3545; }
+        button#clear-button:hover:not(:disabled) { background-color: #c82333; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #output-area, #plot-output-area { margin-top: 15px; border: 1px solid #eee; background-color: #f9f9f9; padding: 15px; border-radius: 4px; min-height: 80px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; overflow: auto; /* Ensure scrollbars if needed */ }
+        #plot-output-area img { max-width: 100%; height: auto; display: block; margin: 10px auto; border: 1px solid #ddd; background-color: white;}
+        /* Style for plotly divs */
+        #plot-output-area .plotly-graph-div { margin: auto; }
+        #status { margin-top: 15px; font-style: italic; color: #555; text-align: center; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .output-label { font-weight: bold; margin-bottom: 5px; display: block; margin-top: 15px;}
+    </style>
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Plotly.js (optional but good practice if using to_json)
+         Not strictly needed if Python returns HTML with include_plotlyjs='cdn'
+    <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+    -->
+</head>
+<body>
+    <div id="container">
+        <h1>Python Plotting (Matplotlib/Seaborn/Plotly) in Browser</h1>
+
+        <p>
+            Run Python code using Pyodide. This example supports plotting with Matplotlib, Seaborn, and Plotly.
+            Required packages will be loaded on startup (may take some time).
+            <br><strong>Important:</strong> Only the *last plot generated* and explicitly returned by the Python code will be displayed.
+        </p>
+
+        <label for="python-code">Enter Python Code:</label>
+        <textarea id="python-code">
+# IMPORTANT: Imports MUST happen first.
+# Make sure the specific plotting library you want to use is imported.
+
+import io, base64
+import numpy as np
+
+# Standard way to return plots for this environment:
+# Return a dictionary:
+# {"type": "matplotlib" or "seaborn", "data": "data:image/png;base64,..."}
+# or
+# {"type": "plotly", "data": "<plotly_html_string>"}
+
+# --- Example 1: Matplotlib Plot ---
+print("Generating Matplotlib plot...")
+import matplotlib
+matplotlib.use('agg') # Use non-interactive backend
+import matplotlib.pyplot as plt
+
+x = np.linspace(0, 10, 100)
+y = np.sin(x) * np.exp(-x/5)
+
+fig_mpl, ax_mpl = plt.subplots(figsize=(6, 4))
+ax_mpl.plot(x, y, label='Damped Sine Wave')
+ax_mpl.set_xlabel("X-axis")
+ax_mpl.set_ylabel("Y-axis")
+ax_mpl.set_title("Matplotlib Example")
+ax_mpl.legend()
+ax_mpl.grid(True)
+
+# Save Matplotlib/Seaborn plot to buffer and encode
+buf_mpl = io.BytesIO()
+fig_mpl.savefig(buf_mpl, format='png', bbox_inches='tight')
+buf_mpl.seek(0)
+img_str_mpl = base64.b64encode(buf_mpl.read()).decode('utf-8')
+plt.close(fig_mpl) # Close the plot figure
+
+# Return the dictionary for Matplotlib
+return {"type": "matplotlib", "data": f"data:image/png;base64,{img_str_mpl}"}
+# --- End Example 1 ---
+
+
+# --- Example 2: Seaborn Plot (Uncomment to run) ---
+# print("Generating Seaborn plot...")
+# import matplotlib
+# matplotlib.use('agg') # Use non-interactive backend
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# import pandas as pd
+#
+# # Requires 'pandas', make sure it's loaded
+# tips = sns.load_dataset("tips") # Seaborn has sample datasets
+# fig_sns, ax_sns = plt.subplots(figsize=(7, 5))
+# sns.scatterplot(data=tips, x="total_bill", y="tip", hue="time", ax=ax_sns)
+# ax_sns.set_title("Seaborn Scatter Plot (Tips Dataset)")
+#
+# # Save Matplotlib/Seaborn plot to buffer and encode
+# buf_sns = io.BytesIO()
+# fig_sns.savefig(buf_sns, format='png', bbox_inches='tight')
+# buf_sns.seek(0)
+# img_str_sns = base64.b64encode(buf_sns.read()).decode('utf-8')
+# plt.close(fig_sns) # Close the plot figure
+#
+# # Return the dictionary for Seaborn
+# return {"type": "seaborn", "data": f"data:image/png;base64,{img_str_sns}"}
+# --- End Example 2 ---
+
+
+# --- Example 3: Plotly Plot (Uncomment to run) ---
+# print("Generating Plotly plot...")
+# import plotly.express as px
+# import pandas as pd
+#
+# # Create some data (can also use pandas DataFrames)
+# df = px.data.iris() # Plotly has sample datasets
+# fig_plotly = px.scatter(df, x="sepal_width", y="sepal_length", color="species",
+#                         title="Plotly Iris Scatter Plot")
+# fig_plotly.update_layout(autosize=True, height=500) # Adjust layout if needed
+#
+# # Convert Plotly figure to HTML string (self-contained)
+# # include_plotlyjs='cdn' makes it easier - no need to load Plotly.js separately in HTML
+# # full_html=False generates just the div, not a full HTML page
+# plotly_html = fig_plotly.to_html(full_html=False, include_plotlyjs='cdn')
+#
+# # Return the dictionary for Plotly
+# return {"type": "plotly", "data": plotly_html}
+# --- End Example 3 ---
+
+
+# --- Example 4: SciPy usage (No plot, just calculation) ---
+# from scipy.stats import norm
+# print("\nUsing SciPy:")
+# # Generate some data if not available from previous examples
+# x_sci = np.linspace(0, 10, 100)
+# y_sci = np.sin(x_sci) * np.exp(-x_sci/5)
+# mu, std = norm.fit(y_sci)
+# print(f"Fitted Normal Distribution (SciPy): mu={mu:.4f}, std={std:.4f}")
+# # No plot returned here, only text output will be shown
+# --- End Example 4 ---
+
+</textarea>
+
+        <button id="run-button" disabled>Run Python & Generate Plot</button>
+        <button id="clear-button">Clear Output & Plot</button>
+
+        <div id="status">Loading Pyodide runtime... Please wait.</div>
+
+        <label for="plot-output-area" class="output-label">Plot Output:</label>
+        <div id="plot-output-area"> (Plot will appear here) </div>
+
+        <label for="output-area" class="output-label">Text Output:</label>
+        <pre id="output-area"></pre>
+
+    </div>
+
+    <script>
+        const codeInput = document.getElementById('python-code');
+        const runButton = document.getElementById('run-button');
+        const clearButton = document.getElementById('clear-button');
+        const outputArea = document.getElementById('output-area');
+        const plotOutputArea = document.getElementById('plot-output-area');
+        const statusElement = document.getElementById('status');
+        let pyodide = null;
+
+        // List required Python packages
+        const requiredPackages = ['matplotlib', 'numpy', 'scipy', 'seaborn', 'pandas', 'plotly']; // Added plotly
+
+        async function main() {
+            try {
+                statusElement.textContent = 'Loading Pyodide core...';
+                pyodide = await loadPyodide();
+                statusElement.textContent = `Pyodide loaded. Loading Python packages (${requiredPackages.join(', ')})... This may take a moment.`;
+
+                // Redirect stdout/stderr for text output
+                pyodide.setStdout({ batched: (msg) => appendToOutputArea(msg) });
+                pyodide.setStderr({ batched: (msg) => appendToOutputArea(`Error: ${msg}`) });
+
+                // Load the required scientific packages
+                await pyodide.loadPackage(requiredPackages);
+
+                statusElement.textContent = 'Pyodide and packages are ready!';
+                runButton.disabled = false; // Enable the run button
+                console.log("Pyodide Ready with packages!");
+
+            } catch (error) {
+                statusElement.textContent = `Error loading Pyodide or packages: ${error}`;
+                console.error("Pyodide loading error:", error);
+                runButton.disabled = true; // Keep button disabled if loading fails
+            }
+        }
+
+        // Function to append text messages to the text output area
+        function appendToOutputArea(message) {
+            outputArea.textContent += message + (message.endsWith('\n') ? '' : '\n');
+            outputArea.scrollTop = outputArea.scrollHeight; // Scroll to bottom
+        }
+
+        // Function to display the plot or other output from Python
+        function displayOutput(resultProxy) {
+            plotOutputArea.innerHTML = ''; // Clear previous plot/content
+
+            if (!resultProxy) {
+                // Python code might not return anything explicitly (e.g., only prints)
+                 plotOutputArea.textContent = "(No plot object returned by Python code)";
+                 console.log("Python code returned undefined/null.");
+                 return;
+            }
+
+            let result;
+            try {
+                 // Convert PyProxy to JS object/primitive.
+                 // Use Object.fromEntries for dict conversion
+                 result = resultProxy.toJs({ dict_converter: Object.fromEntries });
+                 // Make sure to destroy the proxy if not needed anymore, especially in loops
+                 // resultProxy.destroy(); // Uncomment if memory becomes an issue
+            } catch (e) {
+                 console.error("Error converting Pyodide result proxy:", e);
+                 appendToOutputArea(`\n[Error converting Python result: ${e}]`);
+                 plotOutputArea.textContent = `(Error processing result: ${e})`;
+                 return;
+            }
+
+
+            // Check if the result is our expected plot dictionary
+            if (typeof result === 'object' && result !== null && result.hasOwnProperty('type') && result.hasOwnProperty('data')) {
+                const plotType = result.type.toLowerCase();
+                const plotData = result.data;
+
+                if ((plotType === 'matplotlib' || plotType === 'seaborn') && typeof plotData === 'string' && plotData.startsWith('data:image/png;base64,')) {
+                    console.log(`Rendering ${plotType} plot as image.`);
+                    const img = document.createElement('img');
+                    img.src = plotData;
+                    img.alt = `${plotType} Plot`;
+                    plotOutputArea.appendChild(img);
+                    plotOutputArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else if (plotType === 'plotly' && typeof plotData === 'string') {
+                    console.log("Rendering Plotly plot as HTML.");
+                    // Inject the HTML directly. Assumes the HTML includes Plotly.js or it's loaded globally.
+                    plotOutputArea.innerHTML = plotData;
+                     // Plotly's JS will find the div and render the plot.
+                     // We might need to explicitly call Plotly.react or Plotly.newPlot if using JSON output
+                     // and loading Plotly.js separately. For HTML output, this is usually enough.
+                     plotOutputArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    console.warn("Received plot dictionary but format is unexpected:", result);
+                    plotOutputArea.textContent = "(Received unexpected plot data format from Python)";
+                    appendToOutputArea(`\n[Received unexpected plot data format: Type=${plotType}, Data Type=${typeof plotData}]`);
+                }
+            } else {
+                 // Handle cases where Python returns something other than our plot dict
+                 console.log("Python code returned a non-plot result:", result);
+                 plotOutputArea.textContent = "(No plot object returned, see text output if any)";
+                 // Optionally display the raw result in the text area if it's simple
+                 if (typeof result !== 'undefined' && result !== null) {
+                     appendToOutputArea(`\n[Final Python Result (non-plot): ${JSON.stringify(result, null, 2)}]`);
+                 }
+            }
+        }
+
+
+        // Run Python code when the button is clicked
+        runButton.addEventListener('click', async () => {
+            if (!pyodide) {
+                appendToOutputArea("Error: Pyodide is not loaded yet.");
+                return;
+            }
+
+            const pythonCode = codeInput.value;
+            outputArea.textContent = ''; // Clear previous text output for new run
+            plotOutputArea.innerHTML = '(Generating plot...)'; // Clear plot area and show placeholder
+
+            statusElement.textContent = 'Running Python code...';
+            runButton.disabled = true;
+            clearButton.disabled = true;
+
+            try {
+                // runPythonAsync executes the code and returns the result of the last expression (as a PyProxy)
+                let resultProxy = await pyodide.runPythonAsync(pythonCode);
+
+                // Display the output (plot or other result)
+                displayOutput(resultProxy);
+
+                statusElement.textContent = 'Execution finished.';
+
+            } catch (error) {
+                console.error("Python execution error:", error);
+                // Display error in the text output area
+                appendToOutputArea(`\n--- Python Execution Error --- \n${error}\n-----------------------------`);
+                plotOutputArea.innerHTML = '(Error during execution, see text output)';
+                statusElement.textContent = 'Error during execution.';
+            } finally {
+                runButton.disabled = false; // Re-enable buttons
+                clearButton.disabled = false;
+            }
+        });
+
+        // Clear the output areas
+        clearButton.addEventListener('click', () => {
+            outputArea.textContent = '';
+            plotOutputArea.innerHTML = '(Plot will appear here)';
+            statusElement.textContent = 'Output cleared. Pyodide is ready.';
+        });
+
+        // Start loading Pyodide and packages when the script runs
+        main();
+
+    </script>
+
+</body>
+</html>
