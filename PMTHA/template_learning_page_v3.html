@@ -82,7 +82,7 @@
             margin: 0 auto;
             padding: 0;
             position: relative;
-            min-height: calc(100vh - 65px - 60px); /* Viewport height minus header and footer */
+            min-height: calc(100vh - 65px - 42px - 60px); /* Viewport height minus header, nav, and footer */
         }
         
         #learning-materials {
@@ -97,8 +97,8 @@
             background-color: var(--nus-light-gray);
             padding: 1.5rem;
             position: sticky;
-            top: 65px; /* Height of the header */
-            height: calc(100vh - 65px - 60px); /* Viewport height minus header and footer */
+            top: 107px; /* Height of the header + nav */
+            height: calc(100vh - 65px - 42px - 60px); /* Viewport height minus header, nav, and footer */
             overflow-y: auto;
             box-shadow: -5px 0 15px rgba(0,0,0,0.05);
         }
@@ -120,6 +120,7 @@
             margin-top: 2.5rem;
             padding-bottom: 0.3rem;
             border-bottom: 2px solid var(--nus-light-blue);
+            scroll-margin-top: 80px; /* Ensures proper scrolling with sticky header */
         }
         
         h3 {
@@ -335,6 +336,58 @@
             text-decoration: underline;
         }
         
+        /* Main Navigation Styling */
+        .main-nav {
+            background-color: var(--nus-light-gray);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 65px;
+            z-index: 900;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: thin;
+            scrollbar-color: var(--nus-light-blue) var(--nus-light-gray);
+            -webkit-overflow-scrolling: touch;
+            padding: 0.5rem 1rem;
+        }
+        
+        .nav-container::-webkit-scrollbar {
+            height: 4px;
+        }
+        
+        .nav-container::-webkit-scrollbar-track {
+            background: var(--nus-light-gray);
+        }
+        
+        .nav-container::-webkit-scrollbar-thumb {
+            background-color: var(--nus-light-blue);
+            border-radius: 6px;
+        }
+        
+        .nav-item {
+            padding: 0.75rem 1rem;
+            color: var(--nus-dark-gray);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+            display: inline-block;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            color: var(--nus-orange);
+            border-bottom: 3px solid var(--nus-orange);
+        }
+        
+        /* Active section highlight script will be added later */
+        
         /* Media Queries for Responsiveness */
         @media (max-width: 1200px) {
             main {
@@ -360,9 +413,11 @@
                 gap: 1rem;
             }
             
-            .nav-links {
+            .dropdown-content {
+                right: auto;
+                left: 0;
                 width: 100%;
-                justify-content: space-around;
+                max-width: 90vw;
             }
             
             main {
@@ -397,14 +452,23 @@
                 <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
                 NUS <span>Precision Health</span>
             </div>
-            <nav class="nav-links">
-                <a href="#section-1-1"><i class="fas fa-book fa-sm"></i> 1.1</a>
-                <a href="#section-1-2"><i class="fas fa-book fa-sm"></i> 1.2</a>
-                <a href="#section-1-3"><i class="fas fa-book fa-sm"></i> 1.3</a>
-                <a href="#section-1-4"><i class="fas fa-book fa-sm"></i> 1.4</a>
-            </nav>
         </div>
     </header>
+    
+    <nav class="main-nav">
+        <div class="nav-container">
+            <a href="#section-1-1" class="nav-item">1.1: Introduction to Python</a>
+            <a href="#section-1-2" class="nav-item">1.2: Comments in Python</a>
+            <a href="#section-1-3" class="nav-item">1.3: Basic Syntax Rules</a>
+            <a href="#section-1-4" class="nav-item">1.4: Code Structure</a>
+            <a href="#section-1-5" class="nav-item">1.5: Statements & Expressions</a>
+            <a href="#section-1-6" class="nav-item">1.6: Naming Conventions</a>
+            <a href="#section-1-7" class="nav-item">1.7: Statement Termination</a>
+            <a href="#section-1-8" class="nav-item">1.8: Python Identifiers</a>
+            <a href="#section-1-9" class="nav-item">1.9: Python Keywords</a>
+            <a href="#section-1-10" class="nav-item">1.10: Final Summary</a>
+        </div>
+    </nav>
     
     <main>
         <section id="learning-materials">
@@ -1066,6 +1130,52 @@ else:
         // List required Python packages
         const requiredPackages = ['numpy', 'scipy', 'pandas'];
 
+        // Track active navigation item
+        function setActiveNavItem() {
+            const sections = document.querySelectorAll('h2[id^="section-"]');
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            // Get current scroll position
+            const scrollPosition = window.scrollY;
+            
+            // Find the current section
+            let currentSection = sections[0].id;
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 110; // Adjust for header and nav height
+                if (scrollPosition >= sectionTop) {
+                    currentSection = section.id;
+                }
+            });
+            
+            // Remove active class from all nav items
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                
+                // Add active class to current nav item
+                if (item.getAttribute('href') === '#' + currentSection) {
+                    item.classList.add('active');
+                    
+                    // Scroll the navigation to show the active item if needed
+                    const navContainer = document.querySelector('.nav-container');
+                    const itemOffsetLeft = item.offsetLeft;
+                    const containerWidth = navContainer.offsetWidth;
+                    
+                    if (itemOffsetLeft < navContainer.scrollLeft || 
+                        itemOffsetLeft > navContainer.scrollLeft + containerWidth - item.offsetWidth) {
+                        navContainer.scrollLeft = itemOffsetLeft - containerWidth / 2 + item.offsetWidth / 2;
+                    }
+                }
+            });
+        }
+
+        // Call on scroll and on page load
+        window.addEventListener('scroll', setActiveNavItem);
+        window.addEventListener('load', () => {
+            setActiveNavItem();
+            main();
+        });
+
         async function main() {
             try {
                 statusElement.textContent = 'Loading Python core...';
@@ -1128,9 +1238,6 @@ else:
             outputArea.textContent = '';
             statusElement.textContent = 'Output cleared. Python is ready.';
         });
-
-        // Start loading Python when the page loads
-        window.addEventListener('load', main);
     </script>
 </body>
 </html>
