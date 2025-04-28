@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python (NumPy/SciPy/Pandas) in Browser</title>
+    <style>
+        /* Basic styling - feel free to enhance */
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
+        #container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
+        h1 { color: #333; text-align: center; }
+        textarea { width: 98%; min-height: 200px; border: 1px solid #ccc; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 14px; margin-bottom: 10px; display: block; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; margin-right: 10px; }
+        button#run-button { background-color: #28a745; }
+        button#run-button:hover:not(:disabled) { background-color: #218838; }
+        button#clear-button { background-color: #6c757d; }
+        button#clear-button:hover:not(:disabled) { background-color: #5a6268; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #output-area { margin-top: 15px; border: 1px solid #eee; background-color: #f9f9f9; padding: 15px; border-radius: 4px; min-height: 100px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; overflow: auto; }
+        #status { margin-top: 15px; font-style: italic; color: #555; text-align: center; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .output-label { font-weight: bold; margin-bottom: 5px; display: block; margin-top: 15px;}
+    </style>
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+</head>
+<body>
+    <div id="container">
+        <h1>Python (NumPy/SciPy/Pandas) in Browser</h1>
+
+        <p>
+            Run Python code using Pyodide with NumPy, SciPy, and Pandas.
+            Required packages will be loaded on startup (may take some time).
+            Output will appear in the text area below.
+        </p>
+
+        <label for="python-code">Enter Python Code:</label>
+        <textarea id="python-code">
+# Imports
+import numpy as np
+import pandas as pd
+from scipy.stats import norm
+import io
+
+print("--- NumPy Example ---")
+x = np.linspace(0, 10, 5) # Create a small NumPy array
+print("NumPy array 'x':\n", x)
+y = np.sin(x)
+print("NumPy array 'y' (sin(x)):\n", y)
+
+
+print("\n--- Pandas Example ---")
+# Create a Pandas DataFrame
+data = {'col1': x, 'col2': y}
+df = pd.DataFrame(data)
+print("Pandas DataFrame description:")
+print(df.describe())
+
+
+print("\n--- SciPy Example ---")
+# Use SciPy to fit a normal distribution to 'y' data
+if len(y) > 1:
+    mu, std = norm.fit(y)
+    print(f"Fitted Normal Distribution for 'y' (SciPy):")
+    print(f"  mu = {mu:.4f}")
+    print(f"  std = {std:.4f}")
+else:
+    print("Not enough data points in 'y' to fit distribution.")
+
+print("\n--- End of Script ---")
+
+# No plot is generated, so we don't need to return anything specific.
+# The result of the last expression is None implicitly.
+# You could explicitly return a success message:
+# "Script finished successfully."
+</textarea>
+
+        <button id="run-button" disabled>Run Python Code</button>
+        <button id="clear-button">Clear Output</button>
+
+        <div id="status">Loading Pyodide runtime... Please wait.</div>
+
+        <!-- Removed the plot-output-area -->
+        <label for="output-area" class="output-label">Text Output:</label>
+        <pre id="output-area"></pre>
+
+    </div>
+
+    <script>
+        const codeInput = document.getElementById('python-code');
+        const runButton = document.getElementById('run-button');
+        const clearButton = document.getElementById('clear-button');
+        const outputArea = document.getElementById('output-area');
+        const statusElement = document.getElementById('status');
+        let pyodide = null;
+
+        // List required Python packages (Matplotlib removed)
+        const requiredPackages = ['numpy', 'scipy', 'pandas'];
+
+        async function main() {
+            try {
+                statusElement.textContent = 'Loading Pyodide core...';
+                pyodide = await loadPyodide();
+                statusElement.textContent = `Pyodide loaded. Loading Python packages (${requiredPackages.join(', ')})... This may take a moment.`;
+
+                // Redirect stdout/stderr for text output
+                // Using batched callback is generally efficient
+                pyodide.setStdout({ batched: (msg) => appendToOutputArea(msg) });
+                pyodide.setStderr({ batched: (msg) => appendToOutputArea(`Error: ${msg}`) });
+
+                // Load the required scientific packages
+                await pyodide.loadPackage(requiredPackages);
+
+                statusElement.textContent = 'Pyodide and packages are ready!';
+                runButton.disabled = false; // Enable the run button
+                console.log("Pyodide Ready with packages:", requiredPackages);
+
+            } catch (error) {
+                statusElement.textContent = `Error loading Pyodide or packages: ${error}`;
+                console.error("Pyodide loading error:", error);
+                runButton.disabled = true; // Keep button disabled if loading fails
+            }
+        }
+
+        // Function to append text messages to the text output area
+        function appendToOutputArea(message) {
+            outputArea.textContent += message + (message.endsWith('\n') ? '' : '\n');
+            outputArea.scrollTop = outputArea.scrollHeight; // Scroll to bottom
+        }
+
+        // Run Python code when the button is clicked
+        runButton.addEventListener('click', async () => {
+            if (!pyodide) {
+                appendToOutputArea("Error: Pyodide is not loaded yet.");
+                return;
+            }
+
+            const pythonCode = codeInput.value;
+            outputArea.textContent = ''; // Clear previous text output for new run
+
+            statusElement.textContent = 'Running Python code...';
+            runButton.disabled = true;
+            clearButton.disabled = true;
+
+            try {
+                // runPythonAsync executes the code. The return value is ignored here.
+                // stdout/stderr are captured via the handlers set in main().
+                await pyodide.runPythonAsync(pythonCode);
+
+                // Optional: Check if the Python code returned anything explicitly
+                // let resultProxy = await pyodide.runPythonAsync(pythonCode);
+                // if (resultProxy !== undefined) {
+                //     let finalResult = resultProxy.toString();
+                //     appendToOutputArea(`\n[Script Result: ${finalResult}]`);
+                //     // resultProxy.destroy();
+                // }
+
+                statusElement.textContent = 'Execution finished.';
+
+            } catch (error) {
+                console.error("Python execution error:", error);
+                // Display error in the text output area via the stderr handler,
+                // but also add a clear marker.
+                appendToOutputArea(`\n--- Python Execution Error --- \n${error}\n-----------------------------`);
+                statusElement.textContent = 'Error during execution.';
+            } finally {
+                runButton.disabled = false; // Re-enable buttons
+                clearButton.disabled = false;
+            }
+        });
+
+        // Clear the output area
+        clearButton.addEventListener('click', () => {
+            outputArea.textContent = '';
+            statusElement.textContent = 'Output cleared. Pyodide is ready.';
+        });
+
+        // Start loading Pyodide and packages when the script runs
+        main();
+
+    </script>
+
+</body>
+</html>
