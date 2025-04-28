@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Plotting (Matplotlib) in Browser</title>
+    <style>
+        /* Basic styling - feel free to enhance */
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
+        #container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
+        h1 { color: #333; text-align: center; }
+        textarea { width: 98%; min-height: 250px; border: 1px solid #ccc; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 14px; margin-bottom: 10px; display: block; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; margin-right: 10px; }
+        button#run-button { background-color: #28a745; }
+        button#run-button:hover:not(:disabled) { background-color: #218838; }
+        button#clear-button { background-color: #6c757d; }
+        button#clear-button:hover:not(:disabled) { background-color: #5a6268; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #output-area, #plot-output-area { margin-top: 15px; border: 1px solid #eee; background-color: #f9f9f9; padding: 15px; border-radius: 4px; min-height: 80px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; overflow: auto; }
+        #plot-output-area img { max-width: 100%; height: auto; display: block; margin: 10px auto; border: 1px solid #ddd; background-color: white;}
+        #status { margin-top: 15px; font-style: italic; color: #555; text-align: center; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .output-label { font-weight: bold; margin-bottom: 5px; display: block; margin-top: 15px;}
+    </style>
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+</head>
+<body>
+    <div id="container">
+        <h1>Python Plotting (Matplotlib) in Browser</h1>
+
+        <p>
+            Run Python code using Pyodide. This example supports plotting with Matplotlib using Numpy, Pandas, and SciPy.
+            Required packages will be loaded on startup (may take some time).
+        </p>
+
+        <label for="python-code">Enter Python Code:</label>
+        <textarea id="python-code">
+# IMPORTANT: Imports and backend setting MUST happen first
+import matplotlib
+matplotlib.use('agg') # Use non-interactive backend suitable for web workers/WASM
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from scipy.stats import norm
+import io, base64
+
+# --- Example 1: Matplotlib Plot using NumPy ---
+print("Generating Matplotlib plot using NumPy...")
+x = np.linspace(0, 10, 100)
+y = np.sin(x) * np.exp(-x/5)
+
+fig, ax = plt.subplots(figsize=(6, 4)) # Control figure size
+ax.plot(x, y, label='Damped Sine Wave (NumPy)')
+ax.set_xlabel("X-axis")
+ax.set_ylabel("Y-axis")
+ax.set_title("Matplotlib Example with NumPy")
+ax.legend()
+ax.grid(True)
+print("Matplotlib plot generated.")
+# --- End Example 1 ---
+
+
+# --- Example 2: Using Pandas and SciPy (Optional: modify plot or just print) ---
+print("\nUsing Pandas and SciPy...")
+# Create a Pandas Series from the NumPy data
+s = pd.Series(y, name='Data')
+print("Pandas Series Description:")
+print(s.describe())
+
+# Use SciPy to fit a normal distribution to the data
+mu, std = norm.fit(s)
+print(f"\nFitted Normal Distribution (SciPy): mu={mu:.4f}, std={std:.4f}")
+
+# You could add this fit to the plot if desired, but keeping it simple here.
+# --- End Example 2 ---
+
+
+# --- Code to save the *last* active Matplotlib plot to buffer and return as Base64 ---
+# This assumes 'fig' is the variable holding the figure you want to display
+print("\nSaving plot to image format...")
+buf = io.BytesIO()
+fig.savefig(buf, format='png', bbox_inches='tight') # Save figure to buffer
+buf.seek(0) # Rewind buffer
+img_str = base64.b64encode(buf.read()).decode('utf-8') # Encode as base64
+plt.close(fig) # Close the plot to free memory
+
+print("Plot saved. Returning image data.")
+
+# Return the Base64 string prepended with the data URI scheme
+# JavaScript will use this to display the image
+f"data:image/png;base64,{img_str}" # The last expression evaluated is returned
+
+</textarea>
+
+        <button id="run-button" disabled>Run Python & Generate Plot</button>
+        <button id="clear-button">Clear Output & Plot</button>
+
+        <div id="status">Loading Pyodide runtime... Please wait.</div>
+
+        <label for="plot-output-area" class="output-label">Plot Output:</label>
+        <div id="plot-output-area"> (Plot will appear here) </div>
+
+        <label for="output-area" class="output-label">Text Output:</label>
+        <pre id="output-area"></pre>
+
+    </div>
+
+    <script>
+        const codeInput = document.getElementById('python-code');
+        const runButton = document.getElementById('run-button');
+        const clearButton = document.getElementById('clear-button');
+        const outputArea = document.getElementById('output-area');
+        const plotOutputArea = document.getElementById('plot-output-area');
+        const statusElement = document.getElementById('status');
+        let pyodide = null;
+
+        // List required Python packages
+        const requiredPackages = ['numpy', 'scipy', 'pandas', 'matplotlib']; // Only the requested ones
+
+        async function main() {
+            try {
+                statusElement.textContent = 'Loading Pyodide core...';
+                pyodide = await loadPyodide();
+                statusElement.textContent = `Pyodide loaded. Loading Python packages (${requiredPackages.join(', ')})... This may take a moment.`;
+
+                // Redirect stdout/stderr for text output
+                pyodide.setStdout({ batched: (msg) => appendToOutputArea(msg) });
+                pyodide.setStderr({ batched: (msg) => appendToOutputArea(`Error: ${msg}`) });
+
+                // Load the required scientific packages
+                await pyodide.loadPackage(requiredPackages);
+
+                statusElement.textContent = 'Pyodide and packages are ready!';
+                runButton.disabled = false; // Enable the run button
+                console.log("Pyodide Ready with packages:", requiredPackages);
+
+            } catch (error) {
+                statusElement.textContent = `Error loading Pyodide or packages: ${error}`;
+                console.error("Pyodide loading error:", error);
+                runButton.disabled = true; // Keep button disabled if loading fails
+            }
+        }
+
+        // Function to append text messages to the text output area
+        function appendToOutputArea(message) {
+            outputArea.textContent += message + (message.endsWith('\n') ? '' : '\n');
+            outputArea.scrollTop = outputArea.scrollHeight; // Scroll to bottom
+        }
+
+        // Function to display the Matplotlib plot image
+        function displayPlot(imageDataUri) {
+            plotOutputArea.innerHTML = ''; // Clear previous plot
+
+            // Check if the result is a string starting with the image data URI prefix
+            if (typeof imageDataUri === 'string' && imageDataUri.startsWith('data:image/png;base64,')) {
+                console.log("Rendering Matplotlib plot as image.");
+                const img = document.createElement('img');
+                img.src = imageDataUri;
+                img.alt = "Generated Matplotlib Plot";
+                plotOutputArea.appendChild(img);
+                plotOutputArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); // Scroll plot into view
+            } else if (imageDataUri) {
+                 // Handle cases where the Python code might return something else unexpectedly
+                 console.warn("Python returned non-image data:", typeof imageDataUri, imageDataUri);
+                 appendToOutputArea(`\n[Note: Python code finished, but the returned result was not a plot image data URI. Result type: ${typeof imageDataUri}]`);
+                 plotOutputArea.textContent = "(No plot image returned by Python code)";
+            } else {
+                 // Handle cases where the Python code returns None or undefined
+                 console.log("Python code returned no value.");
+                 plotOutputArea.textContent = "(No plot generated or returned by code)";
+            }
+        }
+
+
+        // Run Python code when the button is clicked
+        runButton.addEventListener('click', async () => {
+            if (!pyodide) {
+                appendToOutputArea("Error: Pyodide is not loaded yet.");
+                return;
+            }
+
+            const pythonCode = codeInput.value;
+            outputArea.textContent = ''; // Clear previous text output for new run
+            plotOutputArea.innerHTML = '(Generating plot...)'; // Clear plot area and show placeholder
+
+            statusElement.textContent = 'Running Python code...';
+            runButton.disabled = true;
+            clearButton.disabled = true;
+
+            try {
+                // runPythonAsync executes the code and returns the result of the last expression (as a PyProxy)
+                let resultProxy = await pyodide.runPythonAsync(pythonCode);
+
+                // Convert result to JS string (expected for Matplotlib base64)
+                let result = undefined;
+                if (resultProxy !== undefined) {
+                    try {
+                         result = resultProxy.toString(); // Get the string representation
+                         // resultProxy.destroy(); // Optional: free PyProxy memory if needed
+                    } catch(e){
+                         console.error("Error converting result proxy to string:", e);
+                         appendToOutputArea(`\n--- Error Processing Result --- \n${e}\n-----------------------------`);
+                         result = null; // Mark as failed conversion
+                    }
+                }
+
+                // Display the plot if the result looks like our data URI
+                displayPlot(result);
+
+                statusElement.textContent = 'Execution finished.';
+
+            } catch (error) {
+                console.error("Python execution error:", error);
+                // Display error in the text output area
+                appendToOutputArea(`\n--- Python Execution Error --- \n${error}\n-----------------------------`);
+                plotOutputArea.innerHTML = '(Error during execution, see text output)';
+                statusElement.textContent = 'Error during execution.';
+            } finally {
+                runButton.disabled = false; // Re-enable buttons
+                clearButton.disabled = false;
+            }
+        });
+
+        // Clear the output areas
+        clearButton.addEventListener('click', () => {
+            outputArea.textContent = '';
+            plotOutputArea.innerHTML = '(Plot will appear here)';
+            statusElement.textContent = 'Output cleared. Pyodide is ready.';
+        });
+
+        // Start loading Pyodide and packages when the script runs
+        main();
+
+    </script>
+
+</body>
+</html>
