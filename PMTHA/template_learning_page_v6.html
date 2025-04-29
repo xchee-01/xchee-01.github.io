@@ -433,6 +433,50 @@
             align-items: center;
         }
         
+        /* User Information Box Styling */
+        .user-info-box {
+            display: none;
+            margin-top: 30px;
+            padding: 15px;
+            background-color: var(--nus-light-gray);
+            border: 1px solid var(--nus-blue);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .user-info-box h3 {
+            color: var(--nus-blue);
+            margin-top: 0;
+            border-bottom: 1px solid var(--nus-blue);
+            padding-bottom: 5px;
+        }
+        
+        .user-info-item {
+            margin: 8px 0;
+        }
+        
+        .user-info-label {
+            font-weight: bold;
+            color: var(--nus-blue);
+        }
+        
+        #status-message {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
         /* Media Queries for Responsiveness */
         @media (max-width: 1200px) {
             main {
@@ -495,7 +539,7 @@
     
     <main>
         <section id="learning-materials">
-            <h1>Python Syntax Basics for Precision Health</h1>
+            <h1>Python Syntax Basics</h1>
             
             <p>Welcome to your journey as a Precision Health Programmer! In this module, you'll learn the fundamental building blocks of Python syntax that will empower you to analyze medical data, process genomic information, and build tools for personalized healthcare. As precision medicine increasingly relies on computational approaches to analyze large biological datasets, these foundational programming skills will be invaluable in your career.</p>
             
@@ -916,7 +960,7 @@ print(summary_text)</div>
             
             <hr>
             
-            <h2 id="section-5">Summary: Python Syntax Basics for Precision Health</h2>
+            <h2 id="section-5">Summary: Python Syntax Basics</h2>
             <p>Congratulations on completing the Python Syntax Basics module! You've gained essential skills that form the foundation of your precision health programming toolkit:</p>
             
             <ol>
@@ -954,6 +998,24 @@ print("Welcome to Precision Health Programming")
         </section>
     </main>
     
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
     <footer>
         <div class="footer-content">
             <div>© 2025 National University of Singapore. All rights reserved.</div>
@@ -974,6 +1036,10 @@ print("Welcome to Precision Health Programming")
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
+        // Replace with your deployed Google Apps Script Web App URL
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxedhPDv6htF5BgUvGrnERM2qsmIWxkLR0suckhVGvDfzExTKi2Q7fqYIjoKC6Om0fxpQ/exec';
+        const SIGN_IN_URL = 'https://xchee-01.github.io/PMTHA/SOM-PMTHA_signin.html';
+        
         const codeInput = document.getElementById('python-code');
         const runButton = document.getElementById('run-button');
         const clearButton = document.getElementById('clear-button');
@@ -1141,8 +1207,107 @@ print("Welcome to Precision Health Programming")
             setupCelebrationButtons();
         });
 
+        // Optimized function to get username
+        function getUsername() {
+            try {
+                const accountsData = localStorage.getItem('accounts');
+                if (accountsData) {
+                    const accounts = JSON.parse(accountsData);
+                    return (accounts && accounts.length > 0 && accounts[0].username) 
+                        ? accounts[0].username 
+                        : 'Guest_' + Math.floor(Math.random() * 10000);
+                }
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                console.error('Username retrieval error:', error);
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Streamlined URL storage
+        function storeCurrentUrl() {
+            try {
+                localStorage.setItem('lastVisitedUrl', window.location.href);
+            } catch (error) {
+                console.error('URL storage error:', error);
+            }
+        }
+        
+        // Simplified authentication check
+        function checkAuthentication() {
+            const accountsData = localStorage.getItem('accounts');
+            if (!accountsData) {
+                redirectToSignIn();
+                return false;
+            }
+            
+            try {
+                const accounts = JSON.parse(accountsData);
+                if (!accounts || accounts.length === 0 || !accounts[0].username) {
+                    redirectToSignIn();
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Authentication check error:', error);
+                redirectToSignIn();
+                return false;
+            }
+        }
+        
+        // Centralized redirect function
+        function redirectToSignIn() {
+            storeCurrentUrl();
+            window.location.href = SIGN_IN_URL;
+        }
+        
+        // Async logging function
+        async function logVisit() {
+            const username = getUsername();
+            const now = new Date();
+            const data = {
+                username: username,
+                accessTime: now.toLocaleString(),
+                url: window.location.href
+                // User agent tracking removed for privacy
+            };
+            
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+                console.log('Visit logged successfully');
+            } catch (error) {
+                console.error('Visit logging error:', error);
+            }
+        }
+        
+        // For displaying in hidden user info box
+        function updateUserInfoDisplay() {
+            const username = getUsername();
+            const now = new Date();
+            document.getElementById('username').textContent = username;
+            document.getElementById('access-time').textContent = now.toLocaleString();
+            document.getElementById('current-url').textContent = window.location.href;
+        }
+
         async function main() {
             try {
+                // Authentication and tracking initialization
+                storeCurrentUrl();
+                updateUserInfoDisplay();
+                
+                if (!checkAuthentication()) {
+                    return; // Stop further execution if redirecting
+                }
+                
+                // Async logging
+                logVisit();
+                
+                // Python initialization
                 statusElement.textContent = 'Loading Python core...';
                 pyodide = await loadPyodide();
                 statusElement.textContent = `Loading Python libraries... This may take a moment.`;
