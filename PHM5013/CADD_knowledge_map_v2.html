@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer-Aided Drug Discovery Mind Map</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .mindmap-viewport {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        .mindmap-container {
+            position: absolute;
+            transform-origin: center;
+            transition: transform 0.1s ease-out;
+        }
+        .node {
+            position: absolute;
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 2;
+            text-align: center;
+            max-width: 250px;
+            white-space: normal;
+        }
+        .node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .central-node {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            z-index: 3;
+        }
+        .module-node {
+            font-weight: bold;
+            max-width: 200px;
+            padding: 12px 15px;
+        }
+        .submodule-node {
+            font-size: 12px;
+            padding: 8px 12px;
+            max-width: 180px;
+        }
+        .connection {
+            position: absolute;
+            height: 2px;
+            background-color: #bdc3c7;
+            transform-origin: 0 0;
+            z-index: 1;
+        }
+        .curved-connection {
+            position: absolute;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .module-0 { background-color: #e3f2fd; border-left: 4px solid #2196F3; }
+        .module-1 { background-color: #e8f5e9; border-left: 4px solid #4CAF50; }
+        .module-2 { background-color: #fff3e0; border-left: 4px solid #FF9800; }
+        .module-3 { background-color: #f3e5f5; border-left: 4px solid #9C27B0; }
+        .module-4 { background-color: #e0f7fa; border-left: 4px solid #00BCD4; }
+        .module-5 { background-color: #fff8e1; border-left: 4px solid #FFC107; }
+        .module-6 { background-color: #ffebee; border-left: 4px solid #F44336; }
+        .module-7 { background-color: #e8eaf6; border-left: 4px solid #3F51B5; }
+        
+        /* Connection colors */
+        .conn-0 { stroke: #2196F3; }  /* Module 0 connections */
+        .conn-1-4 { stroke: #4CAF50; } /* Module 1 to 4 */
+        .conn-2-5 { stroke: #FF9800; } /* Module 2 to 5 */
+        .conn-3-6 { stroke: #9C27B0; } /* Module 3 to 6 */
+        .conn-seq-0 { stroke: #2196F3; stroke-dasharray: none; stroke-width: 1.5; } /* Module 0 sequential */
+        .conn-seq-1 { stroke: #4CAF50; stroke-dasharray: none; stroke-width: 1.5; } /* Module 1 sequential */
+        .conn-seq-2 { stroke: #FF9800; stroke-dasharray: none; stroke-width: 1.5; } /* Module 2 sequential */
+        .conn-seq-3 { stroke: #9C27B0; stroke-dasharray: none; stroke-width: 1.5; } /* Module 3 sequential */
+        .conn-seq-4 { stroke: #00BCD4; stroke-dasharray: none; stroke-width: 1.5; } /* Module 4 sequential */
+        .conn-seq-5 { stroke: #FFC107; stroke-dasharray: none; stroke-width: 1.5; } /* Module 5 sequential */
+        .conn-seq-6 { stroke: #F44336; stroke-dasharray: none; stroke-width: 1.5; } /* Module 6 sequential */
+        .conn-seq-7 { stroke: #3F51B5; stroke-dasharray: none; stroke-width: 1.5; } /* Module 7 sequential */
+        
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .controls button {
+            margin: 5px;
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+        .info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            font-size: 12px;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        
+        .legend {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            font-size: 12px;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-color {
+            width: 30px;
+            height: 3px;
+            margin-right: 10px;
+        }
+        .legend-dash {
+            stroke-dasharray: 4,4;
+        }
+        .legend-solid {
+            stroke-dasharray: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="mindmap-viewport" id="mindmap-viewport">
+        <div class="mindmap-container" id="mindmap-container">
+            <!-- Nodes will be added here by JavaScript -->
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="zoom-in">+</button>
+        <button id="zoom-out">−</button>
+        <button id="reset">Reset</button>
+    </div>
+    
+    <div class="legend">
+        <h3 style="margin-top: 0;">Legend</h3>
+        <div class="legend-item">
+            <svg width="30" height="3"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#2196F3" stroke-width="3" stroke-dasharray="4,4" /></svg>
+            <span>Module 0 to all modules</span>
+        </div>
+        <div class="legend-item">
+            <svg width="30" height="3"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#4CAF50" stroke-width="3" stroke-dasharray="4,4" /></svg>
+            <span>Module 1 to Module 4</span>
+        </div>
+        <div class="legend-item">
+            <svg width="30" height="3"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#FF9800" stroke-width="3" stroke-dasharray="4,4" /></svg>
+            <span>Module 2 to Module 5</span>
+        </div>
+        <div class="legend-item">
+            <svg width="30" height="3"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#9C27B0" stroke-width="3" stroke-dasharray="4,4" /></svg>
+            <span>Module 3 to Module 6</span>
+        </div>
+        <div class="legend-item">
+            <svg width="30" height="3"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#2196F3" stroke-width="2" /></svg>
+            <span>Sequential connections</span>
+        </div>
+    </div>
+    
+    <div class="info">
+        🖱️ <strong>Drag</strong> to pan | <strong>Scroll</strong> to zoom | <strong>Click</strong> a node to focus
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const viewport = document.getElementById('mindmap-viewport');
+            const container = document.getElementById('mindmap-container');
+            const zoomInBtn = document.getElementById('zoom-in');
+            const zoomOutBtn = document.getElementById('zoom-out');
+            const resetBtn = document.getElementById('reset');
+            
+            // Set container to be centered initially
+            const viewportWidth = viewport.clientWidth;
+            const viewportHeight = viewport.clientHeight;
+            container.style.width = `${viewportWidth * 5}px`;
+            container.style.height = `${viewportHeight * 5}px`;
+            container.style.top = `${viewportHeight * 2}px`;
+            container.style.left = `${viewportWidth * 2}px`;
+            
+            const centerX = container.clientWidth / 2;
+            const centerY = container.clientHeight / 2;
+            
+            // Pan & Zoom variables
+            let scale = 1;
+            let offsetX = 0;
+            let offsetY = 0;
+            let isDragging = false;
+            let startX = 0;
+            let startY = 0;
+            
+            // Create SVG container for curved connections
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("width", "100%");
+            svg.setAttribute("height", "100%");
+            svg.style.position = "absolute";
+            svg.style.top = "0";
+            svg.style.left = "0";
+            svg.style.zIndex = "1";
+            svg.style.pointerEvents = "none";
+            container.appendChild(svg);
+            
+            // Create central node
+            const centralNode = createNode('Computer-Aided Drug Discovery', centerX, centerY, 'central-node');
+            container.appendChild(centralNode);
+            
+            // Module data
+            const modules = [
+                {
+                    title: 'Module 0: Foundations of Drug Discovery',
+                    submodules: [
+                        '0.1. Drug Discovery Context',
+                        '0.2. Basic Chemistry for Drug Discovery',
+                        '0.3. Biological Targets and Ligands',
+                        '0.4. Molecular Interactions',
+                        '0.5. Protein-Ligand Binding Fundamentals',
+                        '0.6. Computational Representation of Molecules',
+                        '0.7. Computing Fundamentals for CADD'
+                    ],
+                    angle: 0
+                },
+                {
+                    title: 'Module 1: Ligand-Based Virtual Screening',
+                    submodules: [
+                        '1.1. LBVS Fundamentals',
+                        '1.2. Molecular Descriptors',
+                        '1.3. Molecular Fingerprints',
+                        '1.4. Pharmacophore-Based Screening',
+                        '1.5. Shape-Based Screening',
+                        '1.6. LBVS Practical Applications'
+                    ],
+                    angle: 45
+                },
+                {
+                    title: 'Module 2: Structure-Based Virtual Screening',
+                    submodules: [
+                        '2.1. Structural Biology Foundations',
+                        '2.2. Interaction Analysis in Protein-Ligand Complexes',
+                        '2.3. Molecular Docking Preparation',
+                        '2.4. Docking Algorithms',
+                        '2.5. Scoring Functions',
+                        '2.6. SBVS Implementation'
+                    ],
+                    angle: 90
+                },
+                {
+                    title: 'Module 3: Quantitative Structure-Activity Relationship',
+                    submodules: [
+                        '3.1. QSAR Fundamentals',
+                        '3.2. Medicinal Chemistry Principles for QSAR',
+                        '3.3. Molecular Descriptors for QSAR',
+                        '3.4. QSAR Modeling Techniques',
+                        '3.5. Model Validation and Evaluation',
+                        '3.6. QSAR Applications'
+                    ],
+                    angle: 135
+                },
+                {
+                    title: 'Module 4: Machine Learning-Based Virtual Screening',
+                    submodules: [
+                        '4.1. ML Foundations for Drug Discovery',
+                        '4.2. Feature Representation for ML',
+                        '4.3. ML Algorithms for CADD',
+                        '4.4. Advanced ML Methods',
+                        '4.5. ML Implementation in Drug Discovery'
+                    ],
+                    angle: 180
+                },
+                {
+                    title: 'Module 5: Molecular Dynamics Simulation',
+                    submodules: [
+                        '5.1. Physical Chemistry Foundations for MD',
+                        '5.2. MD Fundamentals',
+                        '5.3. Solvation Models',
+                        '5.4. MD System Setup',
+                        '5.5. Production MD',
+                        '5.6. Enhanced Sampling Techniques',
+                        '5.7. MD Analysis',
+                        '5.8. MD Applications'
+                    ],
+                    angle: 225
+                },
+                {
+                    title: 'Module 6: ADME/Tox Predictions',
+                    submodules: [
+                        '6.1. ADME Fundamentals',
+                        '6.2. Chemical Basis of ADME Properties',
+                        '6.3. Toxicity Prediction',
+                        '6.4. Drug Optimization Strategies'
+                    ],
+                    angle: 270
+                },
+                {
+                    title: 'Module 7: Integration and Practical Applications',
+                    submodules: [
+                        '7.1. Integrated Approaches',
+                        '7.2. Case Studies and Applications',
+                        '7.3. Practical Considerations',
+                        '7.4. Advanced Topics and Future Directions'
+                    ],
+                    angle: 315
+                }
+            ];
+            
+            // Store module nodes to create connections
+            const moduleNodes = [];
+            
+            // Create module nodes
+            modules.forEach((module, index) => {
+                const distance = 400;  // Increased distance from the center
+                const radian = (module.angle * Math.PI) / 180;
+                const x = centerX + distance * Math.cos(radian);
+                const y = centerY + distance * Math.sin(radian);
+                
+                const moduleNode = createNode(
+                    module.title, 
+                    x, 
+                    y, 
+                    `module-node module-${index}`
+                );
+                container.appendChild(moduleNode);
+                moduleNodes.push({node: moduleNode, x, y});
+                
+                // Create curved connection from central node to module node
+                createCurvedConnection(
+                    centerX, centerY, 
+                    x, y, 
+                    index === 0 ? 'conn-0' : ''
+                );
+                
+                // Create submodule nodes
+                const submodules = [];
+                module.submodules.forEach((submodule, subIndex) => {
+                    // Arrange submodules in an arc with more spread
+                    const spread = module.submodules.length > 5 ? 120 : 80;
+                    const subAngle = module.angle - (spread/2) + (subIndex * spread / (module.submodules.length - 1 || 1));
+                    const subDistance = 250; // Increased distance from module node
+                    const subRadian = (subAngle * Math.PI) / 180;
+                    
+                    const subX = x + subDistance * Math.cos(subRadian);
+                    const subY = y + subDistance * Math.sin(subRadian);
+                    
+                    const submoduleNode = createNode(
+                        submodule, 
+                        subX, 
+                        subY, 
+                        `submodule-node module-${index}`
+                    );
+                    container.appendChild(submoduleNode);
+                    submodules.push({node: submoduleNode, x: subX, y: subY});
+                    
+                    // Create curved connection from module to submodule
+                    createCurvedConnection(x, y, subX, subY);
+                });
+                
+                // Create sequential connections between submodules (x.1 → x.2 → x.3, etc.)
+                for (let i = 0; i < submodules.length - 1; i++) {
+                    createCurvedConnection(
+                        submodules[i].x, submodules[i].y,
+                        submodules[i+1].x, submodules[i+1].y,
+                        `conn-seq-${index}`,
+                        0.3 // Lower curve intensity for sequential connections
+                    );
+                }
+            });
+            
+            // Create special connections between modules
+            // Module 0 connects to all other modules
+            for (let i = 1; i < moduleNodes.length; i++) {
+                createCurvedConnection(
+                    moduleNodes[0].x, moduleNodes[0].y, 
+                    moduleNodes[i].x, moduleNodes[i].y, 
+                    'conn-0'
+                );
+            }
+            
+            // Module 1 connects to Module 4
+            createCurvedConnection(
+                moduleNodes[1].x, moduleNodes[1].y, 
+                moduleNodes[4].x, moduleNodes[4].y, 
+                'conn-1-4'
+            );
+            
+            // Module 2 connects to Module 5
+            createCurvedConnection(
+                moduleNodes[2].x, moduleNodes[2].y, 
+                moduleNodes[5].x, moduleNodes[5].y, 
+                'conn-2-5'
+            );
+            
+            // Module 3 connects to Module 6
+            createCurvedConnection(
+                moduleNodes[3].x, moduleNodes[3].y, 
+                moduleNodes[6].x, moduleNodes[6].y, 
+                'conn-3-6'
+            );
+            
+            // Helper function to create a node
+            function createNode(text, x, y, className = '') {
+                const node = document.createElement('div');
+                node.className = `node ${className}`;
+                node.innerText = text;
+                node.style.left = `${x}px`;
+                node.style.top = `${y}px`;
+                node.style.transform = 'translate(-50%, -50%)';
+                
+                // Add click event for focusing
+                node.addEventListener('click', function() {
+                    // Calculate the position to center this node
+                    const nodeRect = node.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    const nodeX = (nodeRect.left + nodeRect.width/2) - containerRect.left;
+                    const nodeY = (nodeRect.top + nodeRect.height/2) - containerRect.top;
+                    
+                    const viewportCenterX = viewport.clientWidth / 2;
+                    const viewportCenterY = viewport.clientHeight / 2;
+                    
+                    // Calculate the offset needed to center the node
+                    offsetX = viewportCenterX - nodeX;
+                    offsetY = viewportCenterY - nodeY;
+                    
+                    updateTransform();
+                });
+                
+                return node;
+            }
+            
+            // Helper function to create a curved connection between two points
+            function createCurvedConnection(x1, y1, x2, y2, className = '', curveIntensityFactor = 0.2) {
+                const path = document.createElementNS(svgNS, "path");
+                
+                // Calculate control points for a curved path
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Curve intensity can be adjusted
+                const curveIntensity = Math.min(distance * curveIntensityFactor, 100);
+                
+                // Calculate perpendicular offset for curve
+                const perpX = -dy / distance * curveIntensity;
+                const perpY = dx / distance * curveIntensity;
+                
+                // Create curve path
+                const pathData = `M ${x1} ${y1} Q ${(x1 + x2) / 2 + perpX} ${(y1 + y2) / 2 + perpY} ${x2} ${y2}`;
+                
+                path.setAttribute("d", pathData);
+                path.setAttribute("stroke", "#bdc3c7");
+                path.setAttribute("stroke-width", "2");
+                path.setAttribute("fill", "none");
+                
+                // Add dashed style for hierarchical connections
+                if (!className.includes('conn-seq')) {
+                    path.setAttribute("stroke-dasharray", "4,4");
+                }
+                
+                if (className) {
+                    path.classList.add(className);
+                }
+                
+                svg.appendChild(path);
+                
+                return path;
+            }
+            
+            // Pan functionality
+            viewport.addEventListener('mousedown', (e) => {
+                if (e.target === viewport || e.target === container) {
+                    isDragging = true;
+                    startX = e.clientX - offsetX;
+                    startY = e.clientY - offsetY;
+                    viewport.style.cursor = 'grabbing';
+                }
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    offsetX = e.clientX - startX;
+                    offsetY = e.clientY - startY;
+                    updateTransform();
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                viewport.style.cursor = 'default';
+            });
+            
+            // Zoom functionality
+            viewport.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                
+                // Get mouse position relative to viewport
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+                
+                // Get mouse position relative to the transformed container
+                const containerRect = container.getBoundingClientRect();
+                const mouseXInContainer = (mouseX - containerRect.left) / scale;
+                const mouseYInContainer = (mouseY - containerRect.top) / scale;
+                
+                // Adjust scale based on wheel direction
+                const scaleFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                scale = Math.min(Math.max(0.2, scale * scaleFactor), 3);
+                
+                // Adjust offsets to zoom toward/from mouse position
+                offsetX = mouseX - mouseXInContainer * scale;
+                offsetY = mouseY - mouseYInContainer * scale;
+                
+                updateTransform();
+            });
+            
+            // Button controls
+            zoomInBtn.addEventListener('click', () => {
+                scale = Math.min(scale * 1.2, 3);
+                updateTransform();
+            });
+            
+            zoomOutBtn.addEventListener('click', () => {
+                scale = Math.max(scale * 0.8, 0.2);
+                updateTransform();
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                scale = 1;
+                offsetX = 0;
+                offsetY = 0;
+                updateTransform();
+            });
+            
+            function updateTransform() {
+                container.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+            }
+            
+            // Initial transform
+            updateTransform();
+        });
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer-Aided Drug Discovery Mind Map</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .mindmap-viewport {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        .mindmap-container {
+            position: absolute;
+            transform-origin: center;
+            transition: transform 0.1s ease-out;
+        }
+        .node {
+            position: absolute;
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 2;
+            text-align: center;
+            max-width: 250px;
+            white-space: normal;
+        }
+        .node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .central-node {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            z-index: 3;
+        }
+        .module-node {
+            font-weight: bold;
+            max-width: 200px;
+            padding: 12px 15px;
+        }
+        .submodule-node {
+            font-size: 12px;
+            padding: 8px 12px;
+            max-width: 180px;
+        }
+        .connection {
+            position: absolute;
+            height: 2px;
+            background-color: #bdc3c7;
+            transform-origin: 0 0;
+            z-index: 1;
+        }
+        .curved-connection {
+            position: absolute;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .module-0 { background-color: #e3f2fd; border-left: 4px solid #2196F3; }
+        .module-1 { background-color: #e8f5e9; border-left: 4px solid #4CAF50; }
+        .module-2 { background-color: #fff3e0; border-left: 4px solid #FF9800; }
+        .module-3 { background-color: #f3e5f5; border-left: 4px solid #9C27B0; }
+        .module-4 { background-color: #e0f7fa; border-left: 4px solid #00BCD4; }
+        .module-5 { background-color: #fff8e1; border-left: 4px solid #FFC107; }
+        .module-6 { background-color: #ffebee; border-left: 4px solid #F44336; }
+        .module-7 { background-color: #e8eaf6; border-left: 4px solid #3F51B5; }
+        
+        /* Connection colors */
+        .conn-0 { stroke: #2196F3; }  /* Module 0 connections */
+        .conn-1-4 { stroke: #4CAF50; } /* Module 1 to 4 */
+        .conn-2-5 { stroke: #FF9800; } /* Module 2 to 5 */
+        .conn-3-6 { stroke: #9C27B0; } /* Module 3 to 6 */
+        
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .controls button {
+            margin: 5px;
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+        .info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            font-size: 12px;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="mindmap-viewport" id="mindmap-viewport">
+        <div class="mindmap-container" id="mindmap-container">
+            <!-- Nodes will be added here by JavaScript -->
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="zoom-in">+</button>
+        <button id="zoom-out">−</button>
+        <button id="reset">Reset</button>
+    </div>
+    
+    <div class="info">
+        🖱️ <strong>Drag</strong> to pan | <strong>Scroll</strong> to zoom | <strong>Click</strong> a node to focus
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const viewport = document.getElementById('mindmap-viewport');
+            const container = document.getElementById('mindmap-container');
+            const zoomInBtn = document.getElementById('zoom-in');
+            const zoomOutBtn = document.getElementById('zoom-out');
+            const resetBtn = document.getElementById('reset');
+            
+            // Set container to be centered initially
+            const viewportWidth = viewport.clientWidth;
+            const viewportHeight = viewport.clientHeight;
+            container.style.width = `${viewportWidth * 5}px`;
+            container.style.height = `${viewportHeight * 5}px`;
+            container.style.top = `${viewportHeight * 2}px`;
+            container.style.left = `${viewportWidth * 2}px`;
+            
+            const centerX = container.clientWidth / 2;
+            const centerY = container.clientHeight / 2;
+            
+            // Pan & Zoom variables
+            let scale = 1;
+            let offsetX = 0;
+            let offsetY = 0;
+            let isDragging = false;
+            let startX = 0;
+            let startY = 0;
+            
+            // Create SVG container for curved connections
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("width", "100%");
+            svg.setAttribute("height", "100%");
+            svg.style.position = "absolute";
+            svg.style.top = "0";
+            svg.style.left = "0";
+            svg.style.zIndex = "1";
+            svg.style.pointerEvents = "none";
+            container.appendChild(svg);
+            
+            // Create central node
+            const centralNode = createNode('Computer-Aided Drug Discovery', centerX, centerY, 'central-node');
+            container.appendChild(centralNode);
+            
+            // Module data
+            const modules = [
+                {
+                    title: 'Module 0: Foundations of Drug Discovery',
+                    submodules: [
+                        '0.1. Drug Discovery Context',
+                        '0.2. Basic Chemistry for Drug Discovery',
+                        '0.3. Biological Targets and Ligands',
+                        '0.4. Molecular Interactions',
+                        '0.5. Protein-Ligand Binding Fundamentals',
+                        '0.6. Computational Representation of Molecules',
+                        '0.7. Computing Fundamentals for CADD'
+                    ],
+                    angle: 0
+                },
+                {
+                    title: 'Module 1: Ligand-Based Virtual Screening',
+                    submodules: [
+                        '1.1. LBVS Fundamentals',
+                        '1.2. Molecular Descriptors',
+                        '1.3. Molecular Fingerprints',
+                        '1.4. Pharmacophore-Based Screening',
+                        '1.5. Shape-Based Screening',
+                        '1.6. LBVS Practical Applications'
+                    ],
+                    angle: 45
+                },
+                {
+                    title: 'Module 2: Structure-Based Virtual Screening',
+                    submodules: [
+                        '2.1. Structural Biology Foundations',
+                        '2.2. Interaction Analysis in Protein-Ligand Complexes',
+                        '2.3. Molecular Docking Preparation',
+                        '2.4. Docking Algorithms',
+                        '2.5. Scoring Functions',
+                        '2.6. SBVS Implementation'
+                    ],
+                    angle: 90
+                },
+                {
+                    title: 'Module 3: Quantitative Structure-Activity Relationship',
+                    submodules: [
+                        '3.1. QSAR Fundamentals',
+                        '3.2. Medicinal Chemistry Principles for QSAR',
+                        '3.3. Molecular Descriptors for QSAR',
+                        '3.4. QSAR Modeling Techniques',
+                        '3.5. Model Validation and Evaluation',
+                        '3.6. QSAR Applications'
+                    ],
+                    angle: 135
+                },
+                {
+                    title: 'Module 4: Machine Learning-Based Virtual Screening',
+                    submodules: [
+                        '4.1. ML Foundations for Drug Discovery',
+                        '4.2. Feature Representation for ML',
+                        '4.3. ML Algorithms for CADD',
+                        '4.4. Advanced ML Methods',
+                        '4.5. ML Implementation in Drug Discovery'
+                    ],
+                    angle: 180
+                },
+                {
+                    title: 'Module 5: Molecular Dynamics Simulation',
+                    submodules: [
+                        '5.1. Physical Chemistry Foundations for MD',
+                        '5.2. MD Fundamentals',
+                        '5.3. Solvation Models',
+                        '5.4. MD System Setup',
+                        '5.5. Production MD',
+                        '5.6. Enhanced Sampling Techniques',
+                        '5.7. MD Analysis',
+                        '5.8. MD Applications'
+                    ],
+                    angle: 225
+                },
+                {
+                    title: 'Module 6: ADME/Tox Predictions',
+                    submodules: [
+                        '6.1. ADME Fundamentals',
+                        '6.2. Chemical Basis of ADME Properties',
+                        '6.3. Toxicity Prediction',
+                        '6.4. Drug Optimization Strategies'
+                    ],
+                    angle: 270
+                },
+                {
+                    title: 'Module 7: Integration and Practical Applications',
+                    submodules: [
+                        '7.1. Integrated Approaches',
+                        '7.2. Case Studies and Applications',
+                        '7.3. Practical Considerations',
+                        '7.4. Advanced Topics and Future Directions'
+                    ],
+                    angle: 315
+                }
+            ];
+            
+            // Store module nodes to create connections
+            const moduleNodes = [];
+            
+            // Create module nodes
+            modules.forEach((module, index) => {
+                const distance = 400;  // Increased distance from the center
+                const radian = (module.angle * Math.PI) / 180;
+                const x = centerX + distance * Math.cos(radian);
+                const y = centerY + distance * Math.sin(radian);
+                
+                const moduleNode = createNode(
+                    module.title, 
+                    x, 
+                    y, 
+                    `module-node module-${index}`
+                );
+                container.appendChild(moduleNode);
+                moduleNodes.push({node: moduleNode, x, y});
+                
+                // Create curved connection from central node to module node
+                createCurvedConnection(
+                    centerX, centerY, 
+                    x, y, 
+                    index === 0 ? 'conn-0' : ''
+                );
+                
+                // Create submodule nodes
+                const submodules = [];
+                module.submodules.forEach((submodule, subIndex) => {
+                    // Arrange submodules in an arc with more spread
+                    const spread = module.submodules.length > 5 ? 120 : 80;
+                    const subAngle = module.angle - (spread/2) + (subIndex * spread / (module.submodules.length - 1 || 1));
+                    const subDistance = 250; // Increased distance from module node
+                    const subRadian = (subAngle * Math.PI) / 180;
+                    
+                    const subX = x + subDistance * Math.cos(subRadian);
+                    const subY = y + subDistance * Math.sin(subRadian);
+                    
+                    const submoduleNode = createNode(
+                        submodule, 
+                        subX, 
+                        subY, 
+                        `submodule-node module-${index}`
+                    );
+                    container.appendChild(submoduleNode);
+                    submodules.push({node: submoduleNode, x: subX, y: subY});
+                    
+                    // Create curved connection from module to submodule
+                    createCurvedConnection(x, y, subX, subY);
+                });
+            });
+            
+            // Create special connections between modules
+            // Module 0 connects to all other modules
+            for (let i = 1; i < moduleNodes.length; i++) {
+                createCurvedConnection(
+                    moduleNodes[0].x, moduleNodes[0].y, 
+                    moduleNodes[i].x, moduleNodes[i].y, 
+                    'conn-0'
+                );
+            }
+            
+            // Module 1 connects to Module 4
+            createCurvedConnection(
+                moduleNodes[1].x, moduleNodes[1].y, 
+                moduleNodes[4].x, moduleNodes[4].y, 
+                'conn-1-4'
+            );
+            
+            // Module 2 connects to Module 5
+            createCurvedConnection(
+                moduleNodes[2].x, moduleNodes[2].y, 
+                moduleNodes[5].x, moduleNodes[5].y, 
+                'conn-2-5'
+            );
+            
+            // Module 3 connects to Module 6
+            createCurvedConnection(
+                moduleNodes[3].x, moduleNodes[3].y, 
+                moduleNodes[6].x, moduleNodes[6].y, 
+                'conn-3-6'
+            );
+            
+            // Helper function to create a node
+            function createNode(text, x, y, className = '') {
+                const node = document.createElement('div');
+                node.className = `node ${className}`;
+                node.innerText = text;
+                node.style.left = `${x}px`;
+                node.style.top = `${y}px`;
+                node.style.transform = 'translate(-50%, -50%)';
+                
+                // Add click event for focusing
+                node.addEventListener('click', function() {
+                    // Calculate the position to center this node
+                    const nodeRect = node.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    const nodeX = (nodeRect.left + nodeRect.width/2) - containerRect.left;
+                    const nodeY = (nodeRect.top + nodeRect.height/2) - containerRect.top;
+                    
+                    const viewportCenterX = viewport.clientWidth / 2;
+                    const viewportCenterY = viewport.clientHeight / 2;
+                    
+                    // Calculate the offset needed to center the node
+                    offsetX = viewportCenterX - nodeX;
+                    offsetY = viewportCenterY - nodeY;
+                    
+                    updateTransform();
+                });
+                
+                return node;
+            }
+            
+            // Helper function to create a curved connection between two points
+            function createCurvedConnection(x1, y1, x2, y2, className = '') {
+                const path = document.createElementNS(svgNS, "path");
+                
+                // Calculate control points for a curved path
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // More curve for longer distances
+                const curveIntensity = Math.min(distance * 0.2, 100);
+                
+                // Calculate perpendicular offset for curve
+                const perpX = -dy / distance * curveIntensity;
+                const perpY = dx / distance * curveIntensity;
+                
+                // Create curve path
+                const pathData = `M ${x1} ${y1} Q ${(x1 + x2) / 2 + perpX} ${(y1 + y2) / 2 + perpY} ${x2} ${y2}`;
+                
+                path.setAttribute("d", pathData);
+                path.setAttribute("stroke", "#bdc3c7");
+                path.setAttribute("stroke-width", "2");
+                path.setAttribute("fill", "none");
+                path.setAttribute("stroke-dasharray", "4,4");
+                
+                if (className) {
+                    path.classList.add(className);
+                }
+                
+                svg.appendChild(path);
+                
+                return path;
+            }
+            
+            // Pan functionality
+            viewport.addEventListener('mousedown', (e) => {
+                if (e.target === viewport || e.target === container) {
+                    isDragging = true;
+                    startX = e.clientX - offsetX;
+                    startY = e.clientY - offsetY;
+                    viewport.style.cursor = 'grabbing';
+                }
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    offsetX = e.clientX - startX;
+                    offsetY = e.clientY - startY;
+                    updateTransform();
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                viewport.style.cursor = 'default';
+            });
+            
+            // Zoom functionality
+            viewport.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                
+                // Get mouse position relative to viewport
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+                
+                // Get mouse position relative to the transformed container
+                const containerRect = container.getBoundingClientRect();
+                const mouseXInContainer = (mouseX - containerRect.left) / scale;
+                const mouseYInContainer = (mouseY - containerRect.top) / scale;
+                
+                // Adjust scale based on wheel direction
+                const scaleFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                scale = Math.min(Math.max(0.2, scale * scaleFactor), 3);
+                
+                // Adjust offsets to zoom toward/from mouse position
+                offsetX = mouseX - mouseXInContainer * scale;
+                offsetY = mouseY - mouseYInContainer * scale;
+                
+                updateTransform();
+            });
+            
+            // Button controls
+            zoomInBtn.addEventListener('click', () => {
+                scale = Math.min(scale * 1.2, 3);
+                updateTransform();
+            });
+            
+            zoomOutBtn.addEventListener('click', () => {
+                scale = Math.max(scale * 0.8, 0.2);
+                updateTransform();
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                scale = 1;
+                offsetX = 0;
+                offsetY = 0;
+                updateTransform();
+            });
+            
+            function updateTransform() {
+                container.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+            }
+            
+            // Initial transform
+            updateTransform();
+        });
+    </script>
+</body>
+</html>
