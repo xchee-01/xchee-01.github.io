@@ -1962,31 +1962,60 @@
                 tooltip.classList.remove('active');
             }
             
-            // Function to toggle submodules visibility
-            function toggleSubmodules(moduleId) {
+            // Function to show submodules on hover
+            function showSubmodules(moduleId) {
                 const targetContainer = document.getElementById(`submodules-${moduleId}`);
-                const isAlreadyActive = activeModuleId === moduleId;
                 
-                // Reset all modules and hide all submodules
-                moduleGroups.forEach(group => {
-                    group.classList.remove('active');
-                });
+                // Show the submodules container
+                targetContainer.classList.remove('hidden');
                 
-                submoduleContainers.forEach(container => {
-                    container.classList.add('hidden');
-                });
+                // Add active class to the module
+                document.getElementById(`module-${moduleId}`).classList.add('active');
                 
+                // Highlight connections
+                highlightConnections(moduleId);
+                
+                // Apply subtle pulse animation
+                const moduleNode = document.getElementById(`module-${moduleId}`);
+                moduleNode.style.animation = 'pulse 1.5s ease-in-out';
+            }
+            
+            // Function to hide submodules on mouse leave
+            function hideSubmodules(moduleId) {
+                const targetContainer = document.getElementById(`submodules-${moduleId}`);
+                
+                // Hide the submodules container
+                targetContainer.classList.add('hidden');
+                
+                // Remove active class from the module
+                document.getElementById(`module-${moduleId}`).classList.remove('active');
+                
+                // Reset connections
                 links.forEach(link => {
                     link.classList.remove('highlighted');
                     link.classList.remove('faded');
                 });
+                
+                // Reset animation
+                const moduleNode = document.getElementById(`module-${moduleId}`);
+                moduleNode.style.animation = '';
+            }
+            
+            // Function to handle module selection (clicking)
+            function selectModule(moduleId) {
+                const isAlreadyActive = activeModuleId === moduleId;
+                
+                // Reset previous selection
+                if (activeModuleId !== null) {
+                    document.querySelector(`.module-item[data-module="${activeModuleId}"]`).classList.remove('active');
+                }
                 
                 // Update module nav selection
                 moduleItems.forEach(item => {
                     item.classList.remove('active');
                 });
                 
-                // If we're toggling the same module off, just reset
+                // If clicking the same module again, deselect it
                 if (isAlreadyActive) {
                     activeModuleId = null;
                     detailsPanel.classList.remove('active');
@@ -1995,24 +2024,10 @@
                 
                 // Otherwise, set the new active module
                 activeModuleId = moduleId;
-                document.getElementById(`module-${moduleId}`).classList.add('active');
-                targetContainer.classList.remove('hidden');
-                
-                // Update module nav selection
                 document.querySelector(`.module-item[data-module="${moduleId}"]`).classList.add('active');
-                
-                // Highlight related links
-                highlightConnections(moduleId);
                 
                 // Show details panel
                 showModuleDetails(moduleId);
-                
-                // Animation effect for the active module
-                const activeModule = document.getElementById(`module-${moduleId}`);
-                activeModule.style.animation = 'pulse 2s ease-in-out';
-                setTimeout(() => {
-                    activeModule.style.animation = '';
-                }, 2000);
             }
             
             // Function to highlight connections
@@ -2027,6 +2042,55 @@
                     } else {
                         link.classList.add('faded');
                     }
+                });
+            }
+            
+            // Function to improve the fan layout of submodules
+            function improveSubmoduleFanning() {
+                // For each module's submodules, create a nicer fan layout
+                const submoduleGroups = document.querySelectorAll('.submodule-container');
+                
+                submoduleGroups.forEach(group => {
+                    const parentId = group.getAttribute('data-parent');
+                    const submodules = group.querySelectorAll('.node-group');
+                    const links = group.querySelectorAll('.link');
+                    
+                    // Skip if no submodules
+                    if (submodules.length === 0) return;
+                    
+                    // Add transition for smooth animation
+                    submodules.forEach(node => {
+                        if (!node.style.transition) {
+                            node.style.transition = 'transform 0.4s ease-out';
+                        }
+                    });
+                    
+                    links.forEach(link => {
+                        if (!link.style.transition) {
+                            link.style.transition = 'opacity 0.4s ease-out';
+                        }
+                    });
+                    
+                    // Add hover effect directly in JS for better fan control
+                    group.addEventListener('transitionrun', () => {
+                        // This will run when the container starts becoming visible (not hidden)
+                        if (!group.classList.contains('hidden')) {
+                            // Enhance fan effect with slight delay between each node
+                            submodules.forEach((node, i) => {
+                                setTimeout(() => {
+                                    node.style.opacity = '1';
+                                    node.style.transform = 'scale(1.1)';
+                                }, i * 50);
+                            });
+                            
+                            // Make links appear with slight delay
+                            links.forEach((link, i) => {
+                                setTimeout(() => {
+                                    link.style.opacity = '1';
+                                }, i * 30);
+                            });
+                        }
+                    });
                 });
             }
             
@@ -2193,12 +2257,16 @@
             moduleGroups.forEach(node => {
                 const moduleId = node.getAttribute('data-module');
                 
+                // Show submodules on hover
                 node.addEventListener('mouseenter', (e) => {
                     showTooltip(e, node);
+                    showSubmodules(moduleId);
                 });
                 
+                // Hide submodules when mouse leaves
                 node.addEventListener('mouseleave', () => {
                     hideTooltip();
+                    hideSubmodules(moduleId);
                 });
                 
                 node.addEventListener('mousemove', (e) => {
@@ -2207,8 +2275,9 @@
                     }
                 });
                 
+                // Show details panel on click
                 node.addEventListener('click', () => {
-                    toggleSubmodules(moduleId);
+                    selectModule(moduleId);
                 });
             });
             
@@ -2216,16 +2285,21 @@
             document.querySelectorAll('.submodule-node').forEach(node => {
                 node.addEventListener('mouseenter', (e) => {
                     showTooltip(e, node.parentNode);
+                    // Prevent parent's mouseleave from being triggered
+                    e.stopPropagation(); 
                 });
                 
-                node.addEventListener('mouseleave', () => {
+                node.addEventListener('mouseleave', (e) => {
                     hideTooltip();
+                    // Prevent parent's mouseleave from being triggered
+                    e.stopPropagation();
                 });
                 
                 node.addEventListener('mousemove', (e) => {
                     if (tooltip.classList.contains('active')) {
                         showTooltip(e, node.parentNode);
                     }
+                    e.stopPropagation();
                 });
                 
                 node.addEventListener('click', (e) => {
@@ -2233,8 +2307,15 @@
                     const title = node.parentNode.querySelector('title').textContent;
                     const match = title.match(/(\d+\.\d+)\. (.*)/);
                     if (match) {
-                        alert(`Submodule: ${match[2]}\nID: ${match[1]}`);
-                        // Here you could show more detailed submodule info if available
+                        // Display a tooltip with more detailed info instead of an alert
+                        tooltip.innerHTML = `<h4>${match[2]}</h4><p>Submodule ${match[1]}</p>`;
+                        tooltip.classList.add('active');
+                        
+                        // Position tooltip near the node
+                        const rect = node.getBoundingClientRect();
+                        const svgRect = svgContainer.getBoundingClientRect();
+                        tooltip.style.left = `${rect.left - svgRect.left + rect.width/2}px`;
+                        tooltip.style.top = `${rect.top - svgRect.top - 15}px`;
                     }
                 });
             });
