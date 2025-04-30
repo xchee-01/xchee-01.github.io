@@ -1,73 +1,2579 @@
-/* Ensure smooth transitions for opacity */
-.submodule-container,
-.submodule-container .node-group,
-.submodule-container .link {
-    transition: opacity var(--transition-normal), transform var(--transition-normal);
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive CADD Knowledge Map - NUS Pharmacy</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Typography */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
 
-/* Style for hidden submodules */
-.submodule-container.hidden {
-    opacity: 0;
-    pointer-events: none;
-    /* Consider using visibility: hidden; instead of display: none if transitions break */
-    visibility: hidden;
-}
-.submodule-container {
-    opacity: 0; /* Start hidden */
-    pointer-events: none;
-    visibility: hidden;
-}
+        :root {
+            /* NUS Color Palette */
+            --nus-blue: #003D7C;
+            --nus-blue-light: #0055B8;
+            --nus-blue-dark: #002855;
+            --nus-orange: #EF7C00;
+            --nus-orange-light: #FF9D33;
+            --nus-orange-dark: #D16000;
 
-/* Override faded opacity for active/hovered elements */
-.node-group.active,
-.submodule-container:not(.hidden), /* Show visible containers */
-.link.highlighted {
-    opacity: 1 !important; /* Ensure visibility */
-}
+            /* Extended Palette */
+            --nus-teal: #008196;
+            --nus-green: #00A651;
+            --nus-purple: #6F42C1;
 
-/* Ensure submodule nodes and links inside visible container are visible */
-.submodule-container:not(.hidden) .node-group,
-.submodule-container:not(.hidden) .link {
-     opacity: 1; /* Or specific opacity like 0.7 for links */
-     pointer-events: auto;
-     visibility: visible;
-}
-.submodule-container:not(.hidden) .link {
-     opacity: 0.7; /* Default link opacity when shown */
-}
+            /* Neutral Colors */
+            --neutral-100: #ffffff;
+            --neutral-200: #f8f9fc;
+            --neutral-300: #eef1f8;
+            --neutral-400: #dde2ec;
+            --neutral-500: #b7bec9;
+            --neutral-600: #8594a8;
+            --neutral-700: #5a6a80;
+            --neutral-800: #3d4a5c;
+            --neutral-900: #1e2938;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.08);
+            --shadow-xl: 0 15px 25px rgba(0,0,0,0.05), 0 5px 10px rgba(0,0,0,0.1);
+
+            /* Animation */
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
+            --transition-slow: 0.4s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: var(--neutral-200);
+            color: var(--neutral-900);
+            line-height: 1.5;
+        }
+
+        /* Header Section */
+        .header {
+            background: linear-gradient(135deg, var(--nus-blue-light) 0%, var(--nus-blue) 60%, var(--nus-blue-dark) 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='rgba(255,255,255,0.03)' fill-rule='evenodd'/%3E%3C/svg%3E");
+            opacity: 0.5;
+            z-index: 1;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            margin: 0;
+            font-size: 2.5rem;
+            letter-spacing: -0.02em;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .header p {
+            margin-top: 1rem;
+            opacity: 0.9;
+            font-weight: 400;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeInUp 1s ease;
+            font-size: 1.1rem;
+        }
+
+        .nus-logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .nus-logo {
+            height: 60px;
+        }
+
+        .logo-text {
+            margin-left: 1rem;
+            text-align: left;
+        }
+
+        .logo-text h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .logo-text p {
+            margin: 0;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            flex-grow: 1; /* Make main container grow */
+            display: flex; /* Use flex for inner layout */
+            flex-direction: column;
+        }
+
+        .map-container {
+            background-color: var(--neutral-100);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            padding: 1.5rem;
+            width: 100%;
+            overflow: hidden; /* Important for SVG panning */
+            position: relative; /* Needed for absolute positioning of children */
+            border: 1px solid var(--neutral-300);
+             /* Let it take available space */
+             flex-grow: 1;
+             display: flex;
+             flex-direction: column; /* Stack controls and SVG */
+             min-height: 500px; /* Ensure minimum height */
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+            align-items: center;
+            border-bottom: 1px solid var(--neutral-300);
+            padding-bottom: 1.5rem;
+            flex-shrink: 0; /* Prevent controls from shrinking */
+        }
+
+        .map-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--nus-blue);
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .map-title i {
+            margin-right: 0.7rem;
+            color: var(--nus-blue-light);
+        }
+
+        .map-subtitle {
+            font-size: 0.95rem;
+            color: var(--neutral-700);
+            margin-left: 2.2rem; /* Align with title text */
+            margin-top: 0.3rem;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+        }
+
+        .control-btn {
+            background-color: var(--neutral-100);
+            color: var(--nus-blue);
+            border: 1px solid var(--neutral-400);
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-family: inherit;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: inline-flex; /* Changed from flex to inline-flex */
+            align-items: center;
+            gap: 0.5rem;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: -100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .control-btn:hover {
+            background-color: var(--nus-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .control-btn:hover::after {
+            left: 100%;
+        }
+
+        .control-btn.active {
+            background-color: var(--nus-blue);
+            color: white;
+        }
+
+        .control-btn i {
+            font-size: 1rem;
+        }
+
+        /* SVG Styling */
+        .svg-container {
+            width: 100%;
+             height: 100%; /* Fill available vertical space */
+            overflow: hidden; /* Crucial for panning/zooming */
+            position: relative;
+            border-radius: 8px;
+            background-color: var(--neutral-200); /* Changed to light grey */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+             flex-grow: 1; /* Allow SVG container to grow */
+             cursor: grab; /* Default cursor */
+             user-select: none; /* Prevent text selection during pan */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
 
 
-/* Style for selected module (optional, if you want click selection visual) */
-.node-group.selected .module-node {
-    stroke-width: 3px;
-    stroke: var(--nus-orange); /* Example highlight */
-    filter: drop-shadow(0px 0px 10px var(--nus-orange));
-}
+        svg {
+            display: block; /* Remove extra space below SVG */
+            width: 100%;
+            height: 100%;
+            max-width: 100%; /* Ensure SVG scales down */
+            max-height: 100%;
+            /* viewbox is set dynamically, initial one in HTML */
+        }
 
-/* Ensure highlighted links stand out */
-.link.highlighted {
-    stroke-width: 3.5px !important;
-    opacity: 1 !important;
-}
+        /* Node Styles */
+        .node-group text {
+            font-family: 'Inter', sans-serif;
+            text-anchor: middle;
+            pointer-events: none; /* Text shouldn't block hover on shapes */
+            font-weight: 600;
+            user-select: none; /* Prevent text selection */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
 
-/* Improve base link styling for visibility */
-.link {
-    stroke-width: 2px;
-    fill: none;
-    opacity: 0.6; /* Slightly more visible base opacity */
-    transition: opacity var(--transition-fast), stroke-width var(--transition-fast), stroke var(--transition-fast); /* Add stroke transition */
-}
-/* Main prerequisite links */
-#main-links .link {
-     stroke-width: 3px; /* Make them thicker */
-     opacity: 0.8; /* More visible */
-}
+        .module-node {
+            transition: all var(--transition-normal);
+            filter: drop-shadow(0px 3px 5px rgba(0, 0, 0, 0.15));
+            cursor: pointer;
+        }
 
-/* Make sure SVG container allows grabbing cursor */
-.svg-container {
-    cursor: grab; /* Default cursor */
-    user-select: none; /* Prevent text selection during pan */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-}
+        .module-node.m0 {
+            fill: url(#m0Gradient);
+            stroke: var(--nus-orange-dark);
+            stroke-width: 2px;
+        }
+
+        .module-node.m1,
+        .module-node.m2,
+        .module-node.m3,
+        .module-node.m4,
+        .module-node.m5,
+        .module-node.m6,
+        .module-node.m7 {
+            fill: url(#nusBlueFill);
+            stroke: var(--nus-blue-dark);
+            stroke-width: 2px;
+        }
+
+        .module-node-text {
+            font-weight: 700;
+            font-size: 18px;
+            fill: var(--neutral-100);
+        }
+
+        .module-node-label {
+            font-weight: 500;
+            font-size: 14px;
+            fill: var(--neutral-100);
+            opacity: 0.95;
+        }
+
+        .submodule-node {
+            rx: 8;
+            ry: 8;
+            transition: all var(--transition-normal);
+            filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
+            cursor: pointer;
+        }
+
+        .submodule-node.m0 {
+            fill: rgba(239, 124, 0, 0.12); /* Slightly more opaque */
+            stroke: var(--nus-orange);
+            stroke-width: 1.5px;
+        }
+
+        .submodule-node.m1,
+        .submodule-node.m2,
+        .submodule-node.m3,
+        .submodule-node.m4,
+        .submodule-node.m5,
+        .submodule-node.m6,
+        .submodule-node.m7 {
+            fill: rgba(0, 61, 124, 0.12); /* Slightly more opaque */
+            stroke: var(--nus-blue);
+            stroke-width: 1.5px;
+        }
+
+        .submodule-node-text {
+            fill: var(--neutral-800);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Link Styles */
+        .link {
+            stroke-width: 2px;
+            fill: none;
+            opacity: 0.6; /* Base visibility */
+            transition: opacity var(--transition-fast), stroke-width var(--transition-fast), stroke var(--transition-fast);
+        }
+
+        #main-links .link { /* Main prerequisite links */
+             stroke-width: 3px;
+             opacity: 0.8;
+        }
+
+
+        .link.m0 { stroke: var(--nus-orange); }
+        .link.m1, .link.m2, .link.m3, .link.m4, .link.m5, .link.m6, .link.m7 {
+            stroke: var(--nus-blue);
+        }
+        /* Submodule links */
+        .submodule-container .link {
+            stroke-width: 1.5px;
+            opacity: 0.7;
+        }
+
+
+        /* Hover and Active States */
+        .node-group:hover .module-node:not(.faded),
+        .node-group.active .module-node:not(.faded) {
+            transform: scale(1.05);
+            filter: drop-shadow(0px 6px 8px rgba(0, 0, 0, 0.2));
+        }
+
+        .node-group:hover .submodule-node:not(.faded) {
+            transform: scale(1.1);
+            filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.15));
+        }
+
+        .highlighted {
+            opacity: 1 !important;
+        }
+
+        .link.highlighted {
+            stroke-width: 3.5px !important;
+            opacity: 1 !important;
+        }
+
+        .faded {
+            opacity: 0.15 !important;
+            transition: opacity var(--transition-slow); /* Slower fade transition */
+        }
+
+        /* Make sure active/hovered items override faded */
+        .node-group.active,
+        .node-group.selected, /* Add selected style */
+        .submodule-container:not(.hidden) {
+            opacity: 1 !important;
+        }
+        .submodule-container:not(.hidden) .node-group,
+        .submodule-container:not(.hidden) .link {
+            opacity: 1; /* Default full opacity when shown */
+            pointer-events: auto;
+            visibility: visible;
+        }
+        .submodule-container:not(.hidden) .link {
+            opacity: 0.7; /* Link default opacity */
+        }
+
+        /* Style for selected module (click) */
+        .node-group.selected .module-node {
+            stroke-width: 3px;
+            stroke: var(--nus-orange-light);
+            filter: drop-shadow(0px 0px 10px var(--nus-orange));
+        }
+
+
+        /* Submodule Visibility/Animation */
+        .submodule-container {
+            opacity: 0; /* Start hidden */
+            pointer-events: none;
+            visibility: hidden;
+            transition: opacity var(--transition-normal), visibility 0s var(--transition-normal);
+        }
+        .submodule-container:not(.hidden) {
+            opacity: 1;
+            pointer-events: auto;
+            visibility: visible;
+             transition: opacity var(--transition-normal), visibility 0s 0s;
+        }
+        .submodule-container .node-group,
+        .submodule-container .link {
+            transition: opacity var(--transition-normal), transform var(--transition-normal);
+        }
+
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: absolute;
+            text-align: left;
+            padding: 12px 16px; /* Slightly smaller padding */
+            font-family: 'Inter', sans-serif;
+            font-size: 13px; /* Slightly smaller font */
+            line-height: 1.45;
+            background: rgba(30, 41, 56, 0.95); /* More opaque */
+            color: white;
+            border-radius: 8px; /* Smaller radius */
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden; /* Use visibility for transition */
+            z-index: 1000;
+            max-width: 320px; /* Slightly smaller max width */
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            transition: opacity 0.15s ease, visibility 0s 0.15s, transform 0.15s ease; /* Faster transition */
+            transform: translateY(8px); /* Smaller initial offset */
+        }
+
+        .tooltip.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            transition: opacity 0.15s ease, visibility 0s 0s, transform 0.15s ease;
+        }
+
+        .tooltip h4 {
+            margin: 0 0 6px 0; /* Reduced margin */
+            font-weight: 600;
+            color: var(--nus-orange-light);
+            font-size: 15px; /* Slightly smaller */
+        }
+
+        .tooltip p {
+            margin: 0 0 4px 0; /* Reduced margin */
+            font-weight: 400;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .tooltip p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Details Panel */
+        .details-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            max-height: calc(100% - 160px); /* Limit height relative to map */
+            background: var(--neutral-100);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--neutral-300);
+            transform: translateX(110%); /* Slide in from right */
+            transition: transform var(--transition-normal), opacity var(--transition-normal);
+            z-index: 100;
+            opacity: 0;
+            display: flex; /* Use flex for layout */
+            flex-direction: column;
+        }
+
+        .details-panel.active {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .details-header {
+            padding: 1.2rem 1.5rem; /* Consistent padding */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+             border-bottom: 1px solid var(--neutral-300);
+             flex-shrink: 0; /* Prevent header from shrinking */
+        }
+
+        .details-header h3 {
+            margin: 0;
+            color: var(--nus-blue);
+            font-size: 1.1rem; /* Slightly smaller */
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+             gap: 0.6rem; /* Space between icon and text */
+        }
+
+        .details-close {
+            background: none;
+            border: none;
+            color: var(--neutral-600);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0.3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+
+        .details-close:hover {
+            background-color: var(--neutral-300);
+            color: var(--neutral-800);
+        }
+
+        .details-content {
+            padding: 1.5rem;
+            overflow-y: auto; /* Allow content to scroll */
+            flex-grow: 1; /* Allow content to take available space */
+        }
+
+        .details-content p {
+            margin: 0 0 0.8rem 0;
+            font-size: 0.95rem;
+            color: var(--neutral-800);
+            line-height: 1.6;
+        }
+
+        .details-content strong {
+            color: var(--nus-blue-dark);
+            font-weight: 600;
+        }
+
+        .topic-list {
+            margin: 1rem 0 0 0; /* Adjusted margin */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .topic-item {
+            background-color: var(--neutral-200);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--neutral-800);
+            border: 1px solid var(--neutral-300);
+            transition: all var(--transition-fast);
+            white-space: nowrap; /* Prevent wrapping within a tag */
+        }
+
+        .topic-item:hover {
+            background-color: var(--neutral-300);
+            transform: translateY(-2px);
+        }
+
+        .details-footer {
+            padding: 1rem 1.5rem;
+             border-top: 1px solid var(--neutral-300);
+            text-align: right;
+             flex-shrink: 0; /* Prevent footer shrinking */
+        }
+
+        .explore-btn {
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.6rem 1.2rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .explore-btn:hover {
+            background-color: var(--nus-blue-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Legend Styles */
+        .legend {
+            background: var(--neutral-100);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 0; /* Remove padding, handle internally */
+            position: absolute;
+            top: 70px; /* Adjust as needed */
+            right: 20px;
+            width: 260px;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden; /* Use visibility */
+            border: 1px solid var(--neutral-300);
+            transition: opacity var(--transition-normal), visibility 0s var(--transition-normal), transform var(--transition-normal);
+            transform: translateY(-10px);
+             overflow: hidden; /* Clip content */
+        }
+
+        .legend.active {
+            opacity: 1;
+            pointer-events: auto;
+            visibility: visible;
+            transform: translateY(0);
+            transition: opacity var(--transition-normal), visibility 0s 0s, transform var(--transition-normal);
+        }
+
+        .legend h3 {
+            margin: 0;
+            padding: 1rem 1.5rem; /* Add padding here */
+            font-size: 1.1rem;
+            color: var(--nus-blue);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--neutral-300);
+             background-color: var(--neutral-100); /* Ensure bg color */
+        }
+
+        .legend h3 i {
+            margin-right: 0.5rem;
+            color: var(--nus-blue-light);
+        }
+
+        .legend h3 button {
+            background: none;
+            border: none;
+            color: var(--neutral-600);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+
+        .legend h3 button:hover {
+            background-color: var(--neutral-300);
+            color: var(--neutral-800);
+        }
+         .legend-content {
+             padding: 1rem 1.5rem 1.5rem 1.5rem; /* Padding for items */
+         }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.8rem; /* Reduced margin */
+            padding: 0.3rem; /* Minimal padding for hover */
+            border-radius: 6px;
+            transition: background-color var(--transition-fast);
+        }
+         .legend-item:last-child {
+             margin-bottom: 0;
+         }
+
+        .legend-item:hover {
+            background-color: var(--neutral-200);
+        }
+
+        .legend-color {
+            width: 20px; /* Slightly smaller */
+            height: 20px;
+            border-radius: 4px; /* Smaller radius */
+            margin-right: 0.8rem; /* Reduced margin */
+            box-shadow: var(--shadow-sm);
+             flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .legend-color.module-foundation {
+            background: linear-gradient(135deg, var(--nus-orange-light) 0%, var(--nus-orange) 100%);
+            border: 1px solid var(--nus-orange-dark);
+        }
+
+        .legend-color.module-advanced {
+            background: linear-gradient(135deg, var(--nus-blue-light) 0%, var(--nus-blue) 100%);
+            border: 1px solid var(--nus-blue-dark);
+        }
+
+        .legend-color.submodule-foundation {
+            background: rgba(239, 124, 0, 0.15); /* Updated fill */
+            border: 1.5px solid var(--nus-orange);
+        }
+
+        .legend-color.submodule-advanced {
+            background: rgba(0, 61, 124, 0.15); /* Updated fill */
+            border: 1.5px solid var(--nus-blue);
+        }
+
+        .legend-text {
+            font-size: 0.9rem;
+            color: var(--neutral-800);
+            font-weight: 500;
+        }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.8); /* Semi-transparent bg */
+            backdrop-filter: blur(4px);
+            padding: 0.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--neutral-300);
+        }
+
+        .zoom-btn {
+            background: var(--neutral-100);
+            color: var(--nus-blue);
+            border: 1px solid var(--neutral-400);
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 1rem;
+        }
+
+        .zoom-btn:hover {
+            background: var(--nus-blue);
+            color: white;
+            transform: scale(1.05) translateY(-1px); /* Combine transforms */
+            box-shadow: var(--shadow-sm);
+        }
+         .zoom-btn:active {
+             transform: scale(0.95); /* Click feedback */
+         }
+
+        /* Search Bar */
+        .search-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: clamp(280px, 30vw, 400px); /* Responsive width */
+            z-index: 100;
+            transition: all var(--transition-normal);
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            padding-left: 3rem; /* Space for icon */
+            border-radius: 20px; /* Pill shape */
+            border: 1px solid var(--neutral-300);
+            box-shadow: var(--shadow-md);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all var(--transition-fast);
+            background-color: var(--neutral-100);
+            appearance: none; /* Remove default styling */
+             outline: none; /* Remove default outline */
+        }
+
+        .search-bar:focus {
+            border-color: var(--nus-blue-light);
+            box-shadow: 0 0 0 3px rgba(0, 85, 184, 0.2), var(--shadow-md); /* Combine shadows */
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--neutral-600);
+            font-size: 1rem;
+            pointer-events: none; /* Icon doesn't block input */
+             transition: color var(--transition-fast);
+        }
+         .search-bar:focus + .search-icon {
+             color: var(--nus-blue); /* Change icon color on focus */
+         }
+
+        /* Module Navigation */
+        .module-nav {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            z-index: 100; /* Below search/legend */
+            width: 240px; /* Slightly wider */
+            background: var(--neutral-100);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--neutral-300);
+            overflow: hidden;
+            transition: max-height var(--transition-slow), box-shadow var(--transition-slow); /* Smooth height transition */
+            max-height: 55px; /* Height of header */
+        }
+
+        .module-nav.expanded {
+             max-height: min(450px, 60vh); /* Limit max height relative to viewport */
+             box-shadow: var(--shadow-xl); /* Stronger shadow when expanded */
+        }
+
+        .module-nav-header {
+            padding: 1rem 1.2rem; /* Consistent padding */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            /* border-bottom: 1px solid var(--neutral-300); */ /* Removed bottom border */
+            background-color: var(--neutral-100);
+            transition: background-color var(--transition-fast);
+             height: 55px; /* Fixed header height */
+        }
+
+        .module-nav-header:hover {
+            background-color: var(--neutral-200);
+        }
+         .module-nav.expanded .module-nav-header {
+             border-bottom: 1px solid var(--neutral-300); /* Add border only when expanded */
+         }
+
+
+        .module-nav-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--nus-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+         .module-nav-header i.fa-chevron-down,
+         .module-nav-header i.fa-chevron-up {
+             transition: transform var(--transition-normal);
+             color: var(--neutral-600);
+         }
+         .module-nav.expanded .module-nav-header i.fa-chevron-down {
+              transform: rotate(180deg);
+         }
+
+
+        .module-list {
+             /* Max height is controlled by .module-nav.expanded */
+             overflow-y: auto;
+             padding: 0.5rem; /* Padding around the list */
+             /* Add subtle scrollbar styling */
+             scrollbar-width: thin;
+             scrollbar-color: var(--neutral-400) var(--neutral-200);
+        }
+         .module-list::-webkit-scrollbar {
+             width: 6px;
+         }
+         .module-list::-webkit-scrollbar-track {
+             background: var(--neutral-200);
+             border-radius: 3px;
+         }
+         .module-list::-webkit-scrollbar-thumb {
+             background-color: var(--neutral-400);
+             border-radius: 3px;
+         }
+
+
+        .module-item {
+            padding: 0.7rem 0.8rem; /* Adjusted padding */
+            border-radius: 6px;
+            margin-bottom: 0.3rem; /* Spacing between items */
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 0.7rem; /* Increased gap */
+             color: var(--neutral-800); /* Default text color */
+        }
+         .module-item:last-child {
+             margin-bottom: 0;
+         }
+
+        .module-item:hover {
+            background-color: var(--neutral-200);
+            color: var(--nus-blue-dark); /* Darker blue on hover */
+        }
+        .module-item.active {
+            background-color: var(--nus-blue);
+            color: white;
+             font-weight: 600; /* Bolder text when active */
+        }
+         /* Keep icon color consistent when active */
+         .module-item.active .module-item-icon {
+             /* Colors are set by m0, m1 etc classes */
+         }
+          .module-item.active .module-item-text {
+             color: white; /* Ensure text is white */
+         }
+
+
+        .module-item-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.7rem;
+             flex-shrink: 0; /* Prevent icon shrinking */
+        }
+
+        .module-item-icon.m0 { background-color: var(--nus-orange); color: white; }
+        .module-item-icon.m1, .module-item-icon.m2, .module-item-icon.m3,
+        .module-item-icon.m4, .module-item-icon.m5, .module-item-icon.m6,
+        .module-item-icon.m7 { background-color: var(--nus-blue); color: white; }
+
+        .module-item-text {
+            font-size: 0.9rem; /* Slightly larger text */
+            font-weight: 500;
+             flex-grow: 1; /* Allow text to take space */
+             line-height: 1.3; /* Adjust line height */
+        }
+
+
+        /* Footer */
+        .footer {
+            background-color: var(--nus-blue-dark);
+            color: var(--neutral-300);
+            text-align: center;
+            padding: 2rem 1.5rem; /* Consistent padding */
+            margin-top: auto; /* Push footer to bottom */
+            flex-shrink: 0; /* Prevent footer shrinking */
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .footer-logo svg {
+            width: 120px;
+            height: auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem 4rem; /* Row and column gap */
+            flex-wrap: wrap;
+        }
+
+        .footer-link-group {
+             text-align: left; /* Align text left within groups */
+        }
+
+        .footer-link-group h4 {
+            color: var(--neutral-100);
+            font-size: 1rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+             font-family: 'Poppins', sans-serif;
+        }
+
+        .footer-link-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-link-list li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-link-list a {
+            color: var(--neutral-400);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color var(--transition-fast);
+        }
+
+        .footer-link-list a:hover {
+            color: var(--nus-orange-light);
+            text-decoration: underline;
+        }
+
+        .footer-bottom {
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.85rem;
+            color: var(--neutral-500);
+        }
+
+        .footer-bottom a {
+            color: var(--nus-orange-light);
+            text-decoration: none;
+        }
+
+        .footer-bottom a:hover {
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Feedback Badge */
+        .feedback-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all var(--transition-fast);
+            font-weight: 500;
+             font-size: 0.9rem;
+        }
+
+        .feedback-badge:hover {
+            background-color: var(--nus-blue-light);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: var(--shadow-xl);
+        }
+         .feedback-badge i {
+             font-size: 0.9em; /* Slightly smaller icon */
+         }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .header h1 { font-size: 2.2rem; }
+            .details-panel { width: 340px; }
+        }
+
+        @media (max-width: 992px) {
+            .search-container { width: clamp(250px, 40vw, 350px); } /* Adjust search width */
+            .module-nav { width: 220px; }
+            .module-nav-title { font-size: 0.9rem; }
+            .details-panel { width: 320px; bottom: 15px; right: 15px; }
+             .legend { right: 15px; top: 65px; width: 240px; }
+             .zoom-controls { bottom: 15px; left: 15px; }
+        }
+
+        @media (max-width: 768px) {
+            .header { padding: 2rem 1.5rem; }
+            .header h1 { font-size: 1.8rem; }
+            .header p { font-size: 1rem; }
+            .container { padding: 1.5rem 1rem; }
+            .map-container { padding: 1rem; }
+
+            .controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+             .control-buttons {
+                 width: 100%;
+                 justify-content: flex-start; /* Align buttons left */
+             }
+             .control-btn {
+                  padding: 0.6rem 1rem;
+                  font-size: 0.9rem;
+             }
+
+            /* Move UI elements out of the map overlay on mobile */
+            .search-container {
+                position: relative; /* Static positioning */
+                transform: none;
+                left: auto; top: auto;
+                width: 100%;
+                margin-bottom: 1rem;
+                 order: -2; /* Place search above controls */
+            }
+             .search-bar { font-size: 1rem; padding: 0.9rem 1.2rem 0.9rem 3rem; }
+
+            .module-nav {
+                position: relative; /* Static positioning */
+                left: auto; top: auto;
+                width: 100%;
+                margin-bottom: 1rem;
+                 order: -1; /* Place nav below search */
+                 max-height: 55px; /* Start collapsed */
+            }
+             .module-nav.expanded { max-height: 40vh; } /* Limit expanded height */
+
+             /* Modal-like behavior for Legend and Details on mobile */
+            .legend, .details-panel {
+                position: fixed; /* Fixed position */
+                top: 0; left: 0; right: 0; bottom: 0; /* Full screen */
+                width: 90%; /* Width of the modal */
+                max-width: 450px;
+                height: auto; /* Auto height based on content */
+                max-height: 85vh; /* Limit height */
+                margin: auto; /* Center it */
+                transform: scale(0.95) translateY(10px); /* Start state for animation */
+                opacity: 0;
+                 visibility: hidden;
+                 border-radius: 16px; /* Larger radius for modal */
+                 transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0.25s;
+                 z-index: 1100; /* Above everything else */
+                 display: flex;
+                 flex-direction: column;
+            }
+             .legend.active, .details-panel.active {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+                 visibility: visible;
+                 transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0s;
+            }
+             /* Add backdrop for modal effect */
+             body::after {
+                  content: "";
+                  position: fixed;
+                  top: 0; left: 0; right: 0; bottom: 0;
+                  background: rgba(0, 0, 0, 0.4);
+                  opacity: 0;
+                  visibility: hidden;
+                  z-index: 1050; /* Below modals */
+                  transition: opacity 0.25s ease, visibility 0s 0.25s;
+             }
+              body.modal-open::after {
+                   opacity: 1;
+                   visibility: visible;
+                   transition: opacity 0.25s ease, visibility 0s 0s;
+              }
+              /* Adjust Legend/Details header/content for modal */
+             .legend h3, .details-header { padding: 1rem 1.5rem; font-size: 1.2rem; }
+             .legend-content, .details-content { padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
+             .details-footer { padding: 1rem 1.5rem; }
+
+
+            .zoom-controls { bottom: 10px; left: 10px; z-index: 90; /* Below modals */}
+
+            .footer-links { flex-direction: column; gap: 1.5rem; text-align: center; }
+            .footer-link-group { text-align: center; }
+
+            .feedback-badge {
+                bottom: 10px; right: 10px;
+                padding: 0.6rem 1rem;
+                font-size: 0.85rem;
+                z-index: 90; /* Below modals */
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header { padding: 1.5rem 1rem; }
+            .header h1 { font-size: 1.6rem; } /* Further reduce */
+            .nus-logo-container { flex-direction: column; gap: 0.5rem; }
+            .logo-text { text-align: center; margin-left: 0; }
+            .logo-text h2 { font-size: 1.1rem; }
+            .container { padding: 1rem; }
+
+            .control-btn { padding: 0.6rem 0.8rem; font-size: 0.85rem; }
+            .control-btn span { display: none; } /* Hide text, show only icon */
+             .control-btn i { margin-right: 0; } /* Remove margin when text is hidden */
+             .control-buttons { gap: 0.5rem; } /* Reduce gap */
+
+            .zoom-btn { width: 32px; height: 32px; font-size: 0.9rem; }
+
+             /* Adjust modal size on very small screens */
+             .legend, .details-panel { width: 95%; }
+
+             .footer { padding: 1.5rem 1rem; }
+             .footer-logo svg { width: 100px; }
+             .footer-link-group h4 { font-size: 0.95rem; }
+             .footer-link-list a { font-size: 0.85rem; }
+             .footer-bottom { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <!-- NUS logo and branding -->
+            <div class="nus-logo-container">
+                <svg class="nus-logo" viewBox="0 0 60 60" width="60" height="60">
+                    <rect width="60" height="60" fill="#003D7C" rx="8"></rect>
+                    <path d="M15 15 L45 15 L45 20 L25 20 L25 28 L42 28 L42 33 L25 33 L25 45 L15 45 Z" fill="#ffffff"/>
+                </svg>
+                <div class="logo-text">
+                    <h2>National University of Singapore</h2>
+                    <p>Department of Pharmacy</p>
+                </div>
+            </div>
+            <h1>Computer-Aided Drug Discovery Knowledge Map</h1>
+            <p>Explore the comprehensive CADD curriculum structure with this interactive visualization tool</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="map-container">
+
+            <!-- Search Bar (Positioned via CSS, moved here for structure) -->
+            <div class="search-container">
+                <input type="text" class="search-bar" id="module-search" placeholder="Search modules or topics...">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+
+             <!-- Module Navigation (Positioned via CSS, moved here for structure) -->
+            <div class="module-nav" id="module-nav">
+                <div class="module-nav-header" id="module-nav-header">
+                    <div class="module-nav-title">
+                        <i class="fas fa-book-open"></i> Module Navigator
+                    </div>
+                    <i class="fas fa-chevron-down" id="module-nav-toggle"></i>
+                </div>
+                <div class="module-list">
+                    <!-- Module items populated by script or hardcoded if static -->
+                     <div class="module-item" data-module="0">
+                        <div class="module-item-icon m0">M0</div>
+                        <div class="module-item-text">Foundations of Drug Discovery</div>
+                    </div>
+                    <div class="module-item" data-module="1">
+                        <div class="module-item-icon m1">M1</div>
+                        <div class="module-item-text">Ligand-Based Virtual Screening</div>
+                    </div>
+                    <div class="module-item" data-module="2">
+                        <div class="module-item-icon m2">M2</div>
+                        <div class="module-item-text">Structure-Based Virtual Screening</div>
+                    </div>
+                    <div class="module-item" data-module="3">
+                        <div class="module-item-icon m3">M3</div>
+                        <div class="module-item-text">Quantitative Structure-Activity Relationship</div>
+                    </div>
+                    <div class="module-item" data-module="4">
+                        <div class="module-item-icon m4">M4</div>
+                        <div class="module-item-text">Machine Learning Methods</div>
+                    </div>
+                    <div class="module-item" data-module="5">
+                        <div class="module-item-icon m5">M5</div>
+                        <div class="module-item-text">Molecular Dynamics Simulation</div>
+                    </div>
+                    <div class="module-item" data-module="6">
+                        <div class="module-item-icon m6">M6</div>
+                        <div class="module-item-text">ADME/Tox Predictions</div>
+                    </div>
+                    <div class="module-item" data-module="7">
+                        <div class="module-item-icon m7">M7</div>
+                        <div class="module-item-text">Integration & Applications</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div>
+                    <h2 class="map-title"><i class="fas fa-project-diagram"></i> CADD Curriculum Structure</h2>
+                    <p class="map-subtitle">Hover or click on modules to explore content and connections</p>
+                </div>
+                <div class="control-buttons">
+                    <button class="control-btn" id="toggle-module-nav-btn"> <!-- Renamed ID -->
+                        <i class="fas fa-th-list"></i> <span>Module List</span>
+                    </button>
+                    <button class="control-btn" id="toggle-legends">
+                        <i class="fas fa-info-circle"></i> <span>Legend</span>
+                    </button>
+                    <button class="control-btn" id="reset-view">
+                        <i class="fas fa-sync-alt"></i> <span>Reset View</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SVG Map Container -->
+            <div class="svg-container" id="svg-container">
+                <svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 1900 1900" id="knowledge-map">
+                    <defs>
+                        <!-- Enhanced Gradients -->
+                        <linearGradient id="m0Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FF9D33;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#EF7C00;stop-opacity:1" />
+                        </linearGradient>
+
+                        <linearGradient id="nusBlueFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#0055B8;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#003D7C;stop-opacity:1" />
+                        </linearGradient>
+
+                        <!-- Improved Arrowheads -->
+                        <marker id="arrow-m0" viewBox="0 -5 10 10" refX="8" refY="0" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M0,-5L10,0L0,5" fill="#EF7C00" stroke="none"></path>
+                        </marker>
+
+                        <marker id="arrow-blue" viewBox="0 -5 10 10" refX="8" refY="0" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M0,-5L10,0L0,5" fill="#003D7C" stroke="none"></path>
+                        </marker>
+                    </defs>
+
+                    <!-- Background Pattern -->
+                    <rect width="100%" height="100%" fill="#f8f9fc" />
+                    <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <rect width="40" height="40" fill="none" />
+                        <circle cx="20" cy="20" r="0.75" fill="#dde2ec" /> <!-- Slightly larger dots -->
+                    </pattern>
+                    <rect width="100%" height="100%" fill="url(#grid-pattern)" pointer-events="all"/> <!-- Make background catch pan events -->
+
+                     <!-- Links Layer (ensure links are behind nodes if needed, or adjust z-index conceptually) -->
+                     <g class="links-layer">
+                        <!-- Primary Connections -->
+                        <g class="links" id="main-links">
+                             <!-- Define paths using M (moveto) L (lineto) C (curveto) Q (quadratic Bézier) -->
+                             <!-- From M0 to M1 -->
+                             <path class="link prereq-link m1" d="M 870,950 Q 750,950 600,750 Q 500,625 500,655" marker-end="url(#arrow-blue)" data-from="0" data-to="1"></path>
+                             <!-- From M0 to M2 -->
+                             <path class="link prereq-link m2" d="M 1030,950 Q 1150,950 1300,750 Q 1400,625 1400,655" marker-end="url(#arrow-blue)" data-from="0" data-to="2"></path>
+                              <!-- From M0 to M3 -->
+                             <path class="link prereq-link m3" d="M 1030,950 Q 1150,950 1300,1150 Q 1400,1275 1400,1245" marker-end="url(#arrow-blue)" data-from="0" data-to="3"></path>
+                             <!-- From M0 to M7 -->
+                             <path class="link prereq-link m7" d="M 870,950 Q 750,950 600,1150 Q 500,1275 500,1245" marker-end="url(#arrow-blue)" data-from="0" data-to="7"></path>
+
+                             <!-- From M1 to M4 -->
+                             <path class="link prereq-link m4" d="M 430,600 Q 350,550 300,410" marker-end="url(#arrow-blue)" data-from="1" data-to="4"></path>
+                             <!-- From M2 to M5 -->
+                              <path class="link prereq-link m5" d="M 1470,600 Q 1550,550 1600,410" marker-end="url(#arrow-blue)" data-from="2" data-to="5"></path>
+                              <!-- From M3 to M6 -->
+                              <path class="link prereq-link m6" d="M 1470,1300 Q 1550,1350 1600,1490" marker-end="url(#arrow-blue)" data-from="3" data-to="6"></path>
+                        </g>
+
+                        <!-- Submodule Links (placed within their containers later) -->
+                     </g>
+
+                    <!-- Nodes Layer -->
+                    <g class="nodes-layer">
+                        <!-- Center Module (M0) -->
+                        <g class="node-group module-group" id="module-0" data-module="0" transform="translate(950, 950)">
+                            <title>Module 0: Foundations of Drug Discovery</title>
+                            <rect class="module-node m0" x="-80" y="-60" width="160" height="120" rx="16" ry="16"></rect>
+                            <text class="module-node-text" y="-15" dy="0.1em">M0</text>
+                            <text class="module-node-label" y="20" dy="0.1em">Foundations</text>
+                        </g>
+
+                        <!-- Primary Modules -->
+                        <g class="nodes" id="primary-modules">
+                            <g class="node-group module-group" id="module-1" data-module="1" transform="translate(500, 600)">
+                                <title>Module 1: Ligand-Based Virtual Screening (LBVS)</title>
+                                <rect class="module-node m1" x="-70" y="-55" width="140" height="110" rx="14" ry="14"></rect>
+                                <text class="module-node-text" y="-15" dy="0.1em">M1</text>
+                                <text class="module-node-label" y="20" dy="0.1em">LBVS</text>
+                            </g>
+                            <g class="node-group module-group" id="module-2" data-module="2" transform="translate(1400, 600)">
+                                <title>Module 2: Structure-Based Virtual Screening (SBVS)</title>
+                                <rect class="module-node m2" x="-70" y="-55" width="140" height="110" rx="14" ry="14"></rect>
+                                <text class="module-node-text" y="-15" dy="0.1em">M2</text>
+                                <text class="module-node-label" y="20" dy="0.1em">SBVS</text>
+                            </g>
+                            <g class="node-group module-group" id="module-3" data-module="3" transform="translate(1400, 1300)">
+                                <title>Module 3: Quantitative Structure-Activity Relationship (QSAR)</title>
+                                <rect class="module-node m3" x="-70" y="-55" width="140" height="110" rx="14" ry="14"></rect>
+                                <text class="module-node-text" y="-15" dy="0.1em">M3</text>
+                                <text class="module-node-label" y="20" dy="0.1em">QSAR</text>
+                            </g>
+                            <g class="node-group module-group" id="module-7" data-module="7" transform="translate(500, 1300)">
+                                <title>Module 7: Integration and Practical Applications</title>
+                                <rect class="module-node m7" x="-70" y="-55" width="140" height="110" rx="14" ry="14"></rect>
+                                <text class="module-node-text" y="-15" dy="0.1em">M7</text>
+                                <text class="module-node-label" y="20" dy="0.1em">Integration</text>
+                            </g>
+                        </g>
+
+                        <!-- Secondary Modules -->
+                        <g class="nodes" id="secondary-modules">
+                            <g class="node-group module-group" id="module-4" data-module="4" transform="translate(300, 300)">
+                                <title>Module 4: Machine Learning-Based Methods</title>
+                                <rect class="module-node m4" x="-70" y="-55" width="140" height="110" rx="14" ry="14"></rect>
+                                <text class="module-node-text" y="-15" dy="0.1em">M4</text>
+                                <text class="module-node-label" y="20" dy="0.1em">ML Methods</text>
+                            </g>
+                            <g class="node-group module-group" id="module-5" data-module="5" transform="translate(1600, 300)">
+                                <title>Module 5: Molecular Dynamics (MD) Simulation</title>
+                                <rect class="module-node m5" x="-70" y="-55" width="140" height="110" rx="14" ry="14"></rect>
+                                <text class="module-node-text" y="-15" dy="0.1em">M5</text>
+                                <text class="module-node-label" y="20" dy="0.1em">MD Simulation</text>
+                            </g>
+                            <g class="node-group module-group" id="module-6" data-module="6" transform="translate(1600, 1600)">
+                                <title>Module 6: ADME/Tox Predictions and Drug-Like Properties</title>
+                                <rect class="module-node m6" x="-70" y="-55" width="140" height="110" rx="14" ry="14"></rect>
+                                <text class="module-node-text" y="-15" dy="0.1em">M6</text>
+                                <text class="module-node-label" y="20" dy="0.1em">ADME/Tox</text>
+                            </g>
+                        </g>
+
+                        <!-- Submodule Containers -->
+                        <!-- M0 Submodules -->
+                        <g class="submodule-container hidden" id="submodules-0" data-parent="0">
+                             <g class="links">
+                                 <path class="link m0" d="M 950,890 Q 950,800 850,790" marker-end="url(#arrow-m0)"></path> <!-- To 0.1 -->
+                                 <path class="link m0" d="M 950,890 Q 850,850 800,750" marker-end="url(#arrow-m0)"></path> <!-- To 0.2 -->
+                                 <path class="link m0" d="M 950,890 Q 900,750 950,700" marker-end="url(#arrow-m0)"></path> <!-- To 0.3 -->
+                                 <path class="link m0" d="M 950,890 Q 1000,750 1050,750" marker-end="url(#arrow-m0)"></path> <!-- To 0.4 -->
+                                 <path class="link m0" d="M 950,890 Q 1050,850 1100,790" marker-end="url(#arrow-m0)"></path> <!-- To 0.5 -->
+                                 <path class="link m0" d="M 950,1010 Q 1050,1050 1100,1110" marker-end="url(#arrow-m0)"></path> <!-- To 0.6 -->
+                                 <path class="link m0" d="M 950,1010 Q 850,1050 800,1110" marker-end="url(#arrow-m0)"></path> <!-- To 0.7 -->
+                             </g>
+                            <g class="nodes">
+                                <g class="node-group" transform="translate(850, 790)"> <title>0.1 Drug Discovery Context</title> <rect class="submodule-node m0" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">0.1 Context</text> </g>
+                                <g class="node-group" transform="translate(800, 700)"> <title>0.2 Basic Chemistry</title> <rect class="submodule-node m0" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">0.2 Chemistry</text> </g>
+                                <g class="node-group" transform="translate(950, 670)"> <title>0.3 Targets & Ligands</title> <rect class="submodule-node m0" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">0.3 Targets</text> </g>
+                                <g class="node-group" transform="translate(1100, 700)"> <title>0.4 Interactions</title> <rect class="submodule-node m0" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">0.4 Interactions</text> </g>
+                                <g class="node-group" transform="translate(1150, 790)"> <title>0.5 Binding Basics</title> <rect class="submodule-node m0" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">0.5 Binding</text> </g>
+                                <g class="node-group" transform="translate(1100, 1110)"> <title>0.6 Mol. Rep.</title> <rect class="submodule-node m0" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">0.6 Mol. Rep.</text> </g>
+                                <g class="node-group" transform="translate(800, 1110)"> <title>0.7 Comp. Basics</title> <rect class="submodule-node m0" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">0.7 Computing</text> </g>
+                            </g>
+                        </g>
+
+                         <!-- M1 Submodules -->
+                        <g class="submodule-container hidden" id="submodules-1" data-parent="1">
+                             <g class="links">
+                                 <path class="link m1" d="M 500,545 Q 450,480 380,480" marker-end="url(#arrow-blue)"></path> <!-- To 1.1 -->
+                                 <path class="link m1" d="M 500,545 Q 400,450 360,400" marker-end="url(#arrow-blue)"></path> <!-- To 1.2 -->
+                                 <path class="link m1" d="M 500,545 Q 480,400 480,350" marker-end="url(#arrow-blue)"></path> <!-- To 1.3 -->
+                                 <path class="link m1" d="M 500,545 Q 520,400 590,400" marker-end="url(#arrow-blue)"></path> <!-- To 1.4 -->
+                                 <path class="link m1" d="M 500,545 Q 600,450 640,480" marker-end="url(#arrow-blue)"></path> <!-- To 1.5 -->
+                                 <path class="link m1" d="M 500,655 Q 550,700 600,730" marker-end="url(#arrow-blue)"></path> <!-- To 1.6 -->
+                             </g>
+                            <g class="nodes">
+                                <g class="node-group" transform="translate(380, 480)"> <title>1.1 LBVS Fundamentals</title> <rect class="submodule-node m1" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">1.1 Basics</text> </g>
+                                <g class="node-group" transform="translate(360, 370)"> <title>1.2 Molecular Descriptors</title> <rect class="submodule-node m1" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">1.2 Descriptors</text> </g>
+                                <g class="node-group" transform="translate(480, 320)"> <title>1.3 Molecular Fingerprints</title> <rect class="submodule-node m1" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">1.3 Fingerprints</text> </g>
+                                <g class="node-group" transform="translate(620, 370)"> <title>1.4 Pharmacophore-Based</title> <rect class="submodule-node m1" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">1.4 Pharmacophore</text> </g>
+                                <g class="node-group" transform="translate(640, 480)"> <title>1.5 Shape-Based</title> <rect class="submodule-node m1" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">1.5 Shape</text> </g>
+                                <g class="node-group" transform="translate(600, 730)"> <title>1.6 LBVS Practical Apps</title> <rect class="submodule-node m1" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">1.6 Applications</text> </g>
+                            </g>
+                        </g>
+
+                         <!-- M2 Submodules -->
+                        <g class="submodule-container hidden" id="submodules-2" data-parent="2">
+                             <g class="links">
+                                 <path class="link m2" d="M 1400,545 Q 1350,480 1280,480" marker-end="url(#arrow-blue)"></path> <!-- To 2.1 -->
+                                 <path class="link m2" d="M 1400,545 Q 1300,450 1260,400" marker-end="url(#arrow-blue)"></path> <!-- To 2.2 -->
+                                 <path class="link m2" d="M 1400,545 Q 1380,400 1380,350" marker-end="url(#arrow-blue)"></path> <!-- To 2.3 -->
+                                 <path class="link m2" d="M 1400,545 Q 1420,400 1490,400" marker-end="url(#arrow-blue)"></path> <!-- To 2.4 -->
+                                 <path class="link m2" d="M 1400,545 Q 1500,450 1540,480" marker-end="url(#arrow-blue)"></path> <!-- To 2.5 -->
+                                 <path class="link m2" d="M 1400,655 Q 1450,700 1500,730" marker-end="url(#arrow-blue)"></path> <!-- To 2.6 -->
+                             </g>
+                            <g class="nodes">
+                                <g class="node-group" transform="translate(1280, 480)"> <title>2.1 Structural Biology Basics</title> <rect class="submodule-node m2" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">2.1 Struct Bio</text> </g>
+                                <g class="node-group" transform="translate(1260, 370)"> <title>2.2 Interaction Analysis</title> <rect class="submodule-node m2" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">2.2 Interactions</text> </g>
+                                <g class="node-group" transform="translate(1380, 320)"> <title>2.3 Docking Preparation</title> <rect class="submodule-node m2" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">2.3 Prep</text> </g>
+                                <g class="node-group" transform="translate(1520, 370)"> <title>2.4 Docking Algorithms</title> <rect class="submodule-node m2" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">2.4 Algorithms</text> </g>
+                                <g class="node-group" transform="translate(1540, 480)"> <title>2.5 Scoring Functions</title> <rect class="submodule-node m2" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">2.5 Scoring</text> </g>
+                                <g class="node-group" transform="translate(1500, 730)"> <title>2.6 SBVS Implementation</title> <rect class="submodule-node m2" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">2.6 Implement</text> </g>
+                            </g>
+                        </g>
+
+                         <!-- M3 Submodules -->
+                        <g class="submodule-container hidden" id="submodules-3" data-parent="3">
+                            <g class="links">
+                                <path class="link m3" d="M 1400,1355 Q 1350,1420 1280,1420" marker-end="url(#arrow-blue)"></path> <!-- To 3.1 -->
+                                <path class="link m3" d="M 1400,1355 Q 1300,1450 1260,1500" marker-end="url(#arrow-blue)"></path> <!-- To 3.2 -->
+                                <path class="link m3" d="M 1400,1355 Q 1380,1500 1380,1550" marker-end="url(#arrow-blue)"></path> <!-- To 3.3 -->
+                                <path class="link m3" d="M 1400,1355 Q 1420,1500 1490,1500" marker-end="url(#arrow-blue)"></path> <!-- To 3.4 -->
+                                <path class="link m3" d="M 1400,1355 Q 1500,1450 1540,1420" marker-end="url(#arrow-blue)"></path> <!-- To 3.5 -->
+                                <path class="link m3" d="M 1400,1245 Q 1450,1200 1500,1170" marker-end="url(#arrow-blue)"></path> <!-- To 3.6 -->
+                            </g>
+                            <g class="nodes">
+                                <g class="node-group" transform="translate(1280, 1420)"> <title>3.1 QSAR Fundamentals</title> <rect class="submodule-node m3" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">3.1 Basics</text> </g>
+                                <g class="node-group" transform="translate(1260, 1530)"> <title>3.2 MedChem Principles</title> <rect class="submodule-node m3" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">3.2 MedChem</text> </g>
+                                <g class="node-group" transform="translate(1380, 1580)"> <title>3.3 QSAR Descriptors</title> <rect class="submodule-node m3" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">3.3 Descriptors</text> </g>
+                                <g class="node-group" transform="translate(1520, 1530)"> <title>3.4 Modeling Techniques</title> <rect class="submodule-node m3" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">3.4 Modeling</text> </g>
+                                <g class="node-group" transform="translate(1540, 1420)"> <title>3.5 Validation</title> <rect class="submodule-node m3" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">3.5 Validation</text> </g>
+                                <g class="node-group" transform="translate(1500, 1170)"> <title>3.6 QSAR Applications</title> <rect class="submodule-node m3" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">3.6 Applications</text> </g>
+                            </g>
+                        </g>
+
+                         <!-- M4 Submodules -->
+                        <g class="submodule-container hidden" id="submodules-4" data-parent="4">
+                            <g class="links">
+                                <path class="link m4" d="M 300,245 Q 250,200 180,200" marker-end="url(#arrow-blue)"></path> <!-- To 4.1 -->
+                                <path class="link m4" d="M 300,245 Q 200,180 160,130" marker-end="url(#arrow-blue)"></path> <!-- To 4.2 -->
+                                <path class="link m4" d="M 300,245 Q 300,150 300,100" marker-end="url(#arrow-blue)"></path> <!-- To 4.3 -->
+                                <path class="link m4" d="M 300,245 Q 400,180 440,130" marker-end="url(#arrow-blue)"></path> <!-- To 4.4 -->
+                                <path class="link m4" d="M 300,245 Q 350,200 420,200" marker-end="url(#arrow-blue)"></path> <!-- To 4.5 -->
+                            </g>
+                           <g class="nodes">
+                               <g class="node-group" transform="translate(180, 200)"> <title>4.1 ML Foundations</title> <rect class="submodule-node m4" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">4.1 Basics</text> </g>
+                               <g class="node-group" transform="translate(160, 100)"> <title>4.2 Feature Representation</title> <rect class="submodule-node m4" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">4.2 Features</text> </g>
+                               <g class="node-group" transform="translate(300, 70)"> <title>4.3 ML Algorithms</title> <rect class="submodule-node m4" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">4.3 Algorithms</text> </g>
+                               <g class="node-group" transform="translate(440, 100)"> <title>4.4 Advanced ML</title> <rect class="submodule-node m4" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">4.4 Advanced</text> </g>
+                               <g class="node-group" transform="translate(420, 200)"> <title>4.5 ML Implementation</title> <rect class="submodule-node m4" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">4.5 Implement</text> </g>
+                            </g>
+                        </g>
+
+                         <!-- M5 Submodules -->
+                        <g class="submodule-container hidden" id="submodules-5" data-parent="5">
+                             <g class="links">
+                                 <path class="link m5" d="M 1600,245 Q 1550,180 1480,180" marker-end="url(#arrow-blue)"></path> <!-- To 5.1 -->
+                                 <path class="link m5" d="M 1600,245 Q 1480,150 1460,100" marker-end="url(#arrow-blue)"></path> <!-- To 5.2 -->
+                                 <path class="link m5" d="M 1600,245 Q 1580,100 1600,50" marker-end="url(#arrow-blue)"></path> <!-- To 5.3 -->
+                                 <path class="link m5" d="M 1600,245 Q 1620,100 1740,100" marker-end="url(#arrow-blue)"></path> <!-- To 5.4 -->
+                                 <path class="link m5" d="M 1600,245 Q 1650,180 1720,180" marker-end="url(#arrow-blue)"></path> <!-- To 5.5 -->
+                                 <path class="link m5" d="M 1600,355 Q 1650,400 1720,420" marker-end="url(#arrow-blue)"></path> <!-- To 5.6 -->
+                                 <path class="link m5" d="M 1600,355 Q 1580,450 1600,500" marker-end="url(#arrow-blue)"></path> <!-- To 5.7 -->
+                                 <path class="link m5" d="M 1600,355 Q 1550,400 1480,420" marker-end="url(#arrow-blue)"></path> <!-- To 5.8 -->
+                             </g>
+                           <g class="nodes">
+                                <g class="node-group" transform="translate(1480, 180)"> <title>5.1 PhysChem Basics</title> <rect class="submodule-node m5" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">5.1 PhysChem</text> </g>
+                                <g class="node-group" transform="translate(1460, 70)"> <title>5.2 MD Fundamentals</title> <rect class="submodule-node m5" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">5.2 Basics</text> </g>
+                                <g class="node-group" transform="translate(1600, 20)"> <title>5.3 Solvation Models</title> <rect class="submodule-node m5" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">5.3 Solvation</text> </g>
+                                <g class="node-group" transform="translate(1740, 70)"> <title>5.4 MD System Setup</title> <rect class="submodule-node m5" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">5.4 Setup</text> </g>
+                                <g class="node-group" transform="translate(1720, 180)"> <title>5.5 Production MD</title> <rect class="submodule-node m5" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">5.5 Production</text> </g>
+                                <g class="node-group" transform="translate(1720, 420)"> <title>5.6 Enhanced Sampling</title> <rect class="submodule-node m5" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">5.6 Sampling</text> </g>
+                                <g class="node-group" transform="translate(1600, 500)"> <title>5.7 MD Analysis</title> <rect class="submodule-node m5" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">5.7 Analysis</text> </g>
+                                <g class="node-group" transform="translate(1480, 420)"> <title>5.8 MD Applications</title> <rect class="submodule-node m5" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">5.8 Applications</text> </g>
+                           </g>
+                        </g>
+
+                        <!-- M6 Submodules -->
+                        <g class="submodule-container hidden" id="submodules-6" data-parent="6">
+                            <g class="links">
+                                <path class="link m6" d="M 1600,1655 Q 1550,1700 1480,1720" marker-end="url(#arrow-blue)"></path> <!-- To 6.1 -->
+                                <path class="link m6" d="M 1600,1655 Q 1500,1750 1460,1800" marker-end="url(#arrow-blue)"></path> <!-- To 6.2 -->
+                                <path class="link m6" d="M 1600,1655 Q 1700,1750 1740,1800" marker-end="url(#arrow-blue)"></path> <!-- To 6.3 -->
+                                <path class="link m6" d="M 1600,1655 Q 1650,1700 1720,1720" marker-end="url(#arrow-blue)"></path> <!-- To 6.4 -->
+                            </g>
+                            <g class="nodes">
+                                <g class="node-group" transform="translate(1480, 1720)"> <title>6.1 ADME Fundamentals</title> <rect class="submodule-node m6" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">6.1 ADME</text> </g>
+                                <g class="node-group" transform="translate(1460, 1830)"> <title>6.2 Chemical Basis of ADME</title> <rect class="submodule-node m6" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">6.2 Basis</text> </g>
+                                <g class="node-group" transform="translate(1740, 1830)"> <title>6.3 Toxicity Prediction</title> <rect class="submodule-node m6" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">6.3 Toxicity</text> </g>
+                                <g class="node-group" transform="translate(1720, 1720)"> <title>6.4 Drug Optimization</title> <rect class="submodule-node m6" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">6.4 Optimization</text> </g>
+                            </g>
+                        </g>
+
+                        <!-- M7 Submodules -->
+                        <g class="submodule-container hidden" id="submodules-7" data-parent="7">
+                            <g class="links">
+                                <path class="link m7" d="M 500,1355 Q 450,1400 380,1420" marker-end="url(#arrow-blue)"></path> <!-- To 7.1 -->
+                                <path class="link m7" d="M 500,1355 Q 400,1450 360,1500" marker-end="url(#arrow-blue)"></path> <!-- To 7.2 -->
+                                <path class="link m7" d="M 500,1355 Q 600,1450 640,1500" marker-end="url(#arrow-blue)"></path> <!-- To 7.3 -->
+                                <path class="link m7" d="M 500,1355 Q 550,1400 620,1420" marker-end="url(#arrow-blue)"></path> <!-- To 7.4 -->
+                            </g>
+                             <g class="nodes">
+                                <g class="node-group" transform="translate(380, 1420)"> <title>7.1 Integrated Approaches</title> <rect class="submodule-node m7" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">7.1 Integration</text> </g>
+                                <g class="node-group" transform="translate(360, 1530)"> <title>7.2 Case Studies</title> <rect class="submodule-node m7" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">7.2 Case Studies</text> </g>
+                                <g class="node-group" transform="translate(640, 1530)"> <title>7.3 Practical Considerations</title> <rect class="submodule-node m7" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">7.3 Practical</text> </g>
+                                <g class="node-group" transform="translate(620, 1420)"> <title>7.4 Advanced Topics</title> <rect class="submodule-node m7" x="-60" y="-25" width="120" height="50"></rect> <text class="submodule-node-text" dy="5">7.4 Advanced</text> </g>
+                             </g>
+                        </g>
+
+                    </g> <!-- End Nodes Layer -->
+                </svg>
+            </div>
+
+            <!-- Tooltip (Positioned absolutely relative to map-container) -->
+            <div class="tooltip" id="tooltip"></div>
+
+            <!-- Legend Panel (Positioned absolutely relative to map-container) -->
+            <div class="legend" id="legend">
+                <h3>
+                    <span><i class="fas fa-map-signs"></i> Knowledge Map Guide</span> <!-- Changed icon -->
+                    <button id="close-legend" aria-label="Close Legend"><i class="fas fa-times"></i></button>
+                </h3>
+                 <div class="legend-content">
+                     <div class="legend-item">
+                         <div class="legend-color module-foundation"></div>
+                         <div class="legend-text">Foundation Module (M0)</div>
+                     </div>
+                     <div class="legend-item">
+                         <div class="legend-color module-advanced"></div>
+                         <div class="legend-text">Advanced Modules (M1-M7)</div>
+                     </div>
+                     <div class="legend-item">
+                         <div class="legend-color submodule-foundation"></div>
+                         <div class="legend-text">Foundation Topics (Mx.y)</div>
+                     </div>
+                     <div class="legend-item">
+                         <div class="legend-color submodule-advanced"></div>
+                         <div class="legend-text">Advanced Topics (Mx.y)</div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- Details Panel (Positioned absolutely relative to map-container) -->
+            <div class="details-panel" id="details-panel">
+                <div class="details-header">
+                    <h3 id="details-title"><i class="fas fa-info-circle"></i> Module Details</h3>
+                    <button class="details-close" id="close-details" aria-label="Close Details"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="details-content" id="details-content">
+                    <p>Select a module on the map to see its details here.</p>
+                </div>
+                <div class="details-footer">
+                    <button class="explore-btn" id="explore-module">
+                        Explore Module <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Zoom Controls (Positioned absolutely relative to map-container) -->
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoom-in" aria-label="Zoom In"><i class="fas fa-plus"></i></button>
+                <button class="zoom-btn" id="zoom-out" aria-label="Zoom Out"><i class="fas fa-minus"></i></button>
+                <button class="zoom-btn" id="zoom-reset" aria-label="Reset Zoom"><i class="fas fa-expand"></i></button>
+            </div>
+
+        </div> <!-- End map-container -->
+    </div> <!-- End container -->
+
+    <div class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <svg viewBox="0 0 120 40" width="120" height="40">
+                    <rect width="40" height="40" fill="#003D7C" rx="6"></rect>
+                    <path d="M10 10 L30 10 L30 14 L17 14 L17 19 L28 19 L28 23 L17 23 L17 30 L10 30 Z" fill="#ffffff"/>
+                    <text x="48" y="21" font-family="Poppins, sans-serif" font-size="14" font-weight="700" fill="#ffffff">NUS</text> <!-- Adjusted position -->
+                    <text x="48" y="34" font-family="Inter, sans-serif" font-size="10" font-weight="400" fill="#b7bec9">Pharmacy</text> <!-- Adjusted position -->
+                </svg>
+            </div>
+            <div class="footer-links">
+                <div class="footer-link-group">
+                    <h4>Resources</h4>
+                    <ul class="footer-link-list">
+                        <li><a href="#">Course Materials</a></li>
+                        <li><a href="#">Research Publications</a></li>
+                        <li><a href="#">Software Tools</a></li>
+                        <li><a href="#">Learning Guides</a></li>
+                    </ul>
+                </div>
+                <div class="footer-link-group">
+                    <h4>Department</h4>
+                    <ul class="footer-link-list">
+                        <li><a href="#">About Pharmacy</a></li>
+                        <li><a href="#">Faculty & Staff</a></li>
+                        <li><a href="#">Research Areas</a></li>
+                         <li><a href="#">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-link-group">
+                    <h4>NUS Links</h4>
+                    <ul class="footer-link-list">
+                        <li><a href="#">NUS Home</a></li>
+                        <li><a href="#">Admissions</a></li>
+                        <li><a href="#">Faculties</a></li>
+                        <li><a href="#">News & Events</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; <script>document.write(new Date().getFullYear());</script> National University of Singapore | Department of Pharmacy</p>
+                <p><a href="#">Legal</a> &bull; <a href="#">Privacy</a> &bull; <a href="#">Non-discrimination</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Badge -->
+    <div class="feedback-badge" id="feedback-badge">
+        <i class="fas fa-comment-dots"></i> Provide Feedback <!-- Changed icon -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Element Selectors ---
+            const svg = document.getElementById('knowledge-map');
+            const svgContainer = document.getElementById('svg-container');
+            const moduleGroups = document.querySelectorAll('.module-group');
+            const submoduleContainers = document.querySelectorAll('.submodule-container');
+            const tooltip = document.getElementById('tooltip');
+            const legendToggle = document.getElementById('toggle-legends');
+            const legend = document.getElementById('legend');
+            const closeLegend = document.getElementById('close-legend');
+            const detailsPanel = document.getElementById('details-panel');
+            const detailsTitle = document.getElementById('details-title');
+            const detailsContent = document.getElementById('details-content');
+            const closeDetails = document.getElementById('close-details');
+            const resetViewBtn = document.getElementById('reset-view');
+            const zoomInBtn = document.getElementById('zoom-in');
+            const zoomOutBtn = document.getElementById('zoom-out');
+            const zoomResetBtn = document.getElementById('zoom-reset');
+            const links = document.querySelectorAll('.link');
+            const mainLinks = document.querySelectorAll('#main-links .link'); // Specific main links
+            const moduleNav = document.getElementById('module-nav');
+            const moduleNavHeader = document.getElementById('module-nav-header');
+            const moduleNavToggle = document.getElementById('module-nav-toggle'); // The chevron icon
+            const moduleItems = document.querySelectorAll('.module-item');
+            const searchBar = document.getElementById('module-search');
+            const exploreBtn = document.getElementById('explore-module');
+            const toggleModuleNavBtn = document.getElementById('toggle-module-nav-btn'); // Button in controls
+            const feedbackBadge = document.getElementById('feedback-badge');
+            const body = document.body;
+
+            // --- State Variables ---
+            let activeModuleId = null; // Module selected by click
+            let currentlyHoveredModuleId = null; // Module currently intended to be shown via hover
+            let hoverTimeoutId = null; // Timer for delaying submodule hide
+            const HOVER_DELAY_MS = 150; // Time in ms to wait before hiding on mouseleave
+
+            // --- Panning & Zooming State ---
+            let currentScale = 1;
+            let currentTranslate = { x: 0, y: 0 };
+            let isDragging = false;
+            let dragStart = { x: 0, y: 0 };
+            let initialViewBox = svg.getAttribute('viewBox') || "0 0 1900 1900"; // Store initial viewbox
+
+             // --- Data ---
+             // (Keep moduleDetails and submoduleDetails data - omitted for brevity, assume it's here)
+             const moduleDetails = { /* As provided before */
+                0: { title: "Foundations of Drug Discovery", description: "This essential module provides the foundational knowledge...", topics: ["Drug discovery process", "Molecular representation", "Ligand-protein interactions", "Biological targets", "Computational chemistry basics", "CADD workflows"] },
+                1: { title: "Ligand-Based Virtual Screening", description: "Learn methods to identify potential drug candidates based on similarities...", topics: ["Molecular fingerprints", "Similarity metrics", "Pharmacophore models", "Shape-based screening", "2D and 3D similarity searching", "Virtual library screening"] },
+                2: { title: "Structure-Based Virtual Screening", description: "Methods to identify potential drug candidates based on their ability to bind...", topics: ["Molecular docking", "Binding site analysis", "Scoring functions", "Pose prediction", "Structure-based pharmacophores", "Protein preparation"] },
+                3: { title: "Quantitative Structure-Activity Relationship", description: "Learn techniques to mathematically relate chemical structures...", topics: ["QSAR modeling principles", "Descriptor selection", "Model validation", "Activity prediction", "Structure-property relationships", "Medicinal chemistry applications"] },
+                4: { title: "Machine Learning Methods", description: "Advanced computational methods applying artificial intelligence...", topics: ["ML algorithms for CADD", "Feature representation", "Deep learning in drug discovery", "Active learning strategies", "Neural networks", "Predictive modeling"] },
+                5: { title: "Molecular Dynamics Simulation", description: "Explore the dynamic behavior of biomolecular systems...", topics: ["Force fields", "System preparation", "Trajectory analysis", "Enhanced sampling methods", "Free energy calculations", "Protein-ligand dynamics"] },
+                6: { title: "ADME/Tox Predictions", description: "Methods to predict drug-like properties and potential toxicity...", topics: ["Absorption and bioavailability", "Distribution and metabolism", "Excretion models", "Toxicity prediction", "Drug-likeness rules", "Property optimization"] },
+                7: { title: "Integration & Applications", description: "Learn to combine multiple computational approaches...", topics: ["Multi-method workflows", "Case studies in drug discovery", "Best practices", "Future directions in CADD", "Hit-to-lead optimization", "Practical limitations and solutions"] }
+            };
+             const submoduleDetails = { /* Placeholder - Add details as needed */
+                "0.1": { title: "Drug Discovery Context", description: "Overview of drug discovery process and role of computational methods" },
+                "0.2": { title: "Basic Chemistry", description: "Essential chemical concepts for drug-target interactions" },
+                "0.3": { title: "Targets & Ligands", description: "Understanding protein targets and small molecules" },
+                "0.4": { title: "Molecular Interactions", description: "Types of forces involved in binding" },
+                "0.5": { title: "Binding Basics", description: "Fundamentals of protein-ligand binding" },
+                "0.6": { title: "Molecular Representation", description: "Representing molecules computationally (SMILES, SDF)" },
+                "0.7": { title: "Computing Basics", description: "Introduction to relevant computational tools/platforms" },
+                "1.1": { title: "LBVS Fundamentals", description: "Core concepts of ligand-based screening" },
+                "1.2": { title: "Molecular Descriptors", description: "Numerical representation of molecular properties" },
+                "1.3": { title: "Molecular Fingerprints", description: "Bitstring representations for similarity" },
+                "1.4": { title: "Pharmacophore-Based", description: "Using 3D spatial arrangement of features" },
+                "1.5": { title: "Shape-Based", description: "Comparing molecular shapes" },
+                "1.6": { title: "LBVS Applications", description: "Practical uses and case studies" },
+                // Add details for M2-M7 submodules...
+                 "2.1": { title: "Structural Biology Basics", description: "Protein structure fundamentals (PDB, etc.)" },
+                 "2.2": { title: "Interaction Analysis", description: "Identifying key interactions in complexes" },
+                 "2.3": { title: "Docking Preparation", description: "Preparing protein and ligand files" },
+                 "2.4": { title: "Docking Algorithms", description: "Search algorithms for ligand poses" },
+                 "2.5": { title: "Scoring Functions", description: "Evaluating predicted binding poses/affinities" },
+                 "2.6": { title: "SBVS Implementation", description: "Workflow for structure-based screening" },
+                 "3.1": { title: "QSAR Fundamentals", description: "Theories and assumptions behind QSAR" },
+                 "3.2": { title: "MedChem Principles", description: "Relevant medicinal chemistry concepts" },
+                 "3.3": { title: "QSAR Descriptors", description: "Descriptors specific to QSAR models" },
+                 "3.4": { title: "Modeling Techniques", description: "Linear and non-linear QSAR methods" },
+                 "3.5": { title: "Validation", description: "Internal and external validation metrics" },
+                 "3.6": { title: "QSAR Applications", description: "Using models for prediction and design" },
+                 "4.1": { title: "ML Foundations", description: "Basic machine learning concepts for CADD" },
+                 "4.2": { title: "Feature Representation", description: "Encoding molecules for ML models" },
+                 "4.3": { title: "ML Algorithms", description: "SVM, Random Forest, Neural Networks etc." },
+                 "4.4": { title: "Advanced ML", description: "Deep Learning, generative models" },
+                 "4.5": { title: "ML Implementation", description: "Building and applying ML models in CADD" },
+                 "5.1": { title: "PhysChem Basics", description: "Thermodynamics and kinetics relevant to MD" },
+                 "5.2": { title: "MD Fundamentals", description: "Force fields, integrators, periodic boundaries" },
+                 "5.3": { title: "Solvation Models", description: "Explicit and implicit solvent models" },
+                 "5.4": { title: "MD System Setup", description: "Building the simulation box, parameterization" },
+                 "5.5": { title: "Production MD", description: "Running equilibration and production runs" },
+                 "5.6": { title: "Enhanced Sampling", description: "Metadynamics, umbrella sampling etc." },
+                 "5.7": { title: "MD Analysis", description: "Analyzing trajectories (RMSD, RMSF, interactions)" },
+                 "5.8": { title: "MD Applications", description: "Binding free energy, conformational changes" },
+                 "6.1": { title: "ADME Fundamentals", description: "Absorption, Distribution, Metabolism, Excretion concepts" },
+                 "6.2": { title: "Chemical Basis", description: "How structure influences ADME properties" },
+                 "6.3": { title: "Toxicity Prediction", description: "Computational toxicology (Tox21, etc.)" },
+                 "6.4": { title: "Drug Optimization", description: "Strategies for improving ADME/Tox profiles" },
+                 "7.1": { title: "Integrated Approaches", description: "Combining LBVS, SBVS, MD, ML etc." },
+                 "7.2": { title: "Case Studies", description: "Real-world drug discovery examples using CADD" },
+                 "7.3": { title: "Practical Considerations", description: "Software, hardware, data challenges" },
+                 "7.4": { title: "Advanced Topics", description: "Emerging areas (AI, quantum computing)" },
+            };
+
+            // --- Initialization ---
+            function initializeMap() {
+                // Hide all submodule containers initially
+                submoduleContainers.forEach(container => {
+                    container.classList.add('hidden');
+                    container.style.opacity = 0;
+                    container.style.pointerEvents = 'none';
+                    container.style.visibility = 'hidden';
+                });
+                // Set initial cursor
+                svgContainer.style.cursor = 'grab';
+                console.log("Knowledge Map Initialized.");
+            }
+
+            // --- Tooltip Functions ---
+            function showTooltip(event, element) {
+                const titleElement = element.querySelector('title');
+                if (!titleElement) return;
+
+                let content = '';
+                const titleText = titleElement.textContent.trim(); // Trim whitespace
+                const moduleMatch = titleText.match(/Module (\d+): (.*)/);
+                const submoduleMatch = titleText.match(/(\d+\.\d+)\s+(.*)/); // Regex allows optional period and space
+
+                if (moduleMatch) {
+                    content = `<h4>${moduleMatch[2]}</h4><p>Module ${moduleMatch[1]}</p>`;
+                } else if (submoduleMatch) {
+                    const subDetail = submoduleDetails[submoduleMatch[1]];
+                    const subTitle = submoduleMatch[2] || (subDetail ? subDetail.title : `Topic ${submoduleMatch[1]}`);
+                    content = `<h4>${subTitle}</h4><p>Topic ${submoduleMatch[1]}</p>`;
+                    if (subDetail && subDetail.description) {
+                        content += `<p style="font-size: 0.85em; opacity: 0.8;">${subDetail.description}</p>`;
+                    }
+                } else {
+                    content = `<p>${titleText}</p>`; // Fallback
+                }
+
+                tooltip.innerHTML = content;
+
+                // Position tooltip near the cursor, considering scroll and boundaries
+                const containerRect = svgContainer.getBoundingClientRect();
+                const scrollX = window.scrollX || document.documentElement.scrollLeft;
+                const scrollY = window.scrollY || document.documentElement.scrollTop;
+
+                // Calculate position relative to the viewport first
+                let viewportX = event.clientX + 15;
+                let viewportY = event.clientY + 15; // Position below/right of cursor
+
+                tooltip.style.left = `0px`; // Set initial position for size calculation
+                tooltip.style.top = `0px`;
+                tooltip.classList.add('active'); // Make visible to calculate size
+
+                const tooltipRect = tooltip.getBoundingClientRect();
+
+                 // Adjust if tooltip goes off-screen horizontally
+                 if (viewportX + tooltipRect.width > window.innerWidth - 10) { // 10px buffer
+                     viewportX = event.clientX - tooltipRect.width - 15; // Move left of cursor
+                 }
+                 // Adjust if tooltip goes off-screen vertically
+                 if (viewportY + tooltipRect.height > window.innerHeight - 10) { // 10px buffer
+                      viewportY = event.clientY - tooltipRect.height - 15; // Move above cursor
+                 }
+
+                 // Convert viewport coordinates to absolute page coordinates for positioning
+                 let finalX = viewportX + scrollX;
+                 let finalY = viewportY + scrollY;
+
+                 // Final position relative to the offset parent (likely map-container or body)
+                 const offsetParentRect = tooltip.offsetParent.getBoundingClientRect();
+                 finalX -= (offsetParentRect.left + scrollX);
+                 finalY -= (offsetParentRect.top + scrollY);
+
+
+                tooltip.style.left = `${Math.max(5, finalX)}px`; // Ensure min 5px from edge
+                tooltip.style.top = `${Math.max(5, finalY)}px`;
+            }
+
+            function hideTooltip() {
+                tooltip.classList.remove('active');
+            }
+
+            // --- Submodule Visibility Functions ---
+            function showSubmodules(moduleId) {
+                clearTimeout(hoverTimeoutId); // Cancel any pending hide
+                currentlyHoveredModuleId = moduleId; // Set the intended active hover
+
+                // Hide other potentially visible submodules immediately
+                submoduleContainers.forEach(container => {
+                    const parentId = container.getAttribute('data-parent');
+                    if (parentId !== moduleId && !container.classList.contains('hidden')) {
+                        container.classList.add('hidden');
+                        container.style.opacity = 0;
+                        container.style.pointerEvents = 'none';
+                         container.style.visibility = 'hidden';
+                        document.getElementById(`module-${parentId}`)?.classList.remove('active');
+                    }
+                });
+
+                const targetContainer = document.getElementById(`submodules-${moduleId}`);
+                const targetModule = document.getElementById(`module-${moduleId}`);
+
+                if (!targetContainer || !targetModule) return;
+
+                targetModule.classList.add('active');
+                targetContainer.classList.remove('hidden');
+                 targetContainer.style.visibility = 'visible'; // Make visible before transition
+
+                // Use timeout to allow display property change before starting transition
+                requestAnimationFrame(() => { // Better than setTimeout(0)
+                    if (currentlyHoveredModuleId === moduleId) { // Check if still relevant
+                        targetContainer.style.opacity = 1;
+                        targetContainer.style.pointerEvents = 'auto';
+                        highlightConnections(moduleId, true); // Highlight associated connections
+                    }
+                });
+            }
+
+            function hideSubmodules(moduleId) {
+                clearTimeout(hoverTimeoutId); // Clear any existing timeout
+                hoverTimeoutId = setTimeout(() => {
+                    // Only hide if the mouse isn't currently intending to hover this module
+                    if (currentlyHoveredModuleId === moduleId) {
+                        currentlyHoveredModuleId = null; // Clear the intended hover state
+
+                        const targetContainer = document.getElementById(`submodules-${moduleId}`);
+                        const targetModule = document.getElementById(`module-${moduleId}`);
+
+                        if (targetContainer) {
+                            targetContainer.style.opacity = 0;
+                            targetContainer.style.pointerEvents = 'none';
+                             targetContainer.style.visibility = 'hidden';
+                            // Add hidden class after transition ends for performance
+                            targetContainer.addEventListener('transitionend', () => {
+                                // Double check state before adding class, in case show was triggered again
+                                if (targetContainer.style.opacity === '0') {
+                                     targetContainer.classList.add('hidden');
+                                }
+                            }, { once: true });
+                        }
+                        if (targetModule) {
+                            targetModule.classList.remove('active');
+                        }
+                        highlightConnections(null); // Reset all highlights if nothing else is active
+                    }
+                }, HOVER_DELAY_MS);
+            }
+
+             // --- Highlighting Function ---
+            function highlightConnections(moduleId, isHovering = false) {
+                 const allElements = svg.querySelectorAll('.node-group, .link');
+
+                 // Determine if a module is actively selected (clicked)
+                 const clickedModuleId = activeModuleId;
+
+                 allElements.forEach(el => el.classList.remove('highlighted', 'faded')); // Clear previous states
+
+                 if (moduleId === null && clickedModuleId === null) {
+                      // No hover, no click = reset everything
+                      return;
+                 }
+
+                 // Determine the primary module ID to focus on (hover takes precedence visually)
+                 const focusModuleId = isHovering ? moduleId : clickedModuleId;
+
+                 if (focusModuleId === null) return; // Should not happen if called correctly, but safe check
+
+                 // Fade everything initially
+                 allElements.forEach(el => el.classList.add('faded'));
+
+                 // Unfade the focus module, its submodules/links, and connected main links
+                 const moduleElement = document.getElementById(`module-${focusModuleId}`);
+                 const submoduleContainer = document.getElementById(`submodules-${focusModuleId}`);
+
+                 if (moduleElement) {
+                     moduleElement.classList.remove('faded');
+                     moduleElement.classList.add('highlighted');
+                 }
+                 // Only unfade submodules if they are supposed to be visible (i.e., during hover)
+                 if (submoduleContainer && isHovering && !submoduleContainer.classList.contains('hidden')) {
+                     submoduleContainer.classList.remove('faded');
+                     submoduleContainer.querySelectorAll('.node-group, .link').forEach(subEl => {
+                         subEl.classList.remove('faded');
+                     });
+                 }
+
+                 // Highlight main prerequisite links connected to the focus module
+                 mainLinks.forEach(link => {
+                     const from = link.getAttribute('data-from');
+                     const to = link.getAttribute('data-to');
+                     if (from === focusModuleId || to === focusModuleId) {
+                         link.classList.remove('faded');
+                         link.classList.add('highlighted');
+                     }
+                 });
+
+                 // If a module was clicked, ensure it stays visually distinct even if not hovered
+                 if (clickedModuleId !== null) {
+                      const clickedModuleElement = document.getElementById(`module-${clickedModuleId}`);
+                      if (clickedModuleElement) {
+                           clickedModuleElement.classList.remove('faded'); // Ensure clicked module is never faded
+                           // Add .selected class styling from CSS
+                      }
+                       // Also highlight links connected to the clicked module if nothing is hovered
+                       if (!isHovering) {
+                            mainLinks.forEach(link => {
+                                const from = link.getAttribute('data-from');
+                                const to = link.getAttribute('data-to');
+                                if (from === clickedModuleId || to === clickedModuleId) {
+                                    link.classList.remove('faded');
+                                    link.classList.add('highlighted');
+                                }
+                            });
+                       }
+                 }
+            }
+
+
+            // --- Module Selection (Click) ---
+            function selectModule(moduleId) {
+                const isAlreadyActive = activeModuleId === moduleId;
+                const previouslyActiveModuleId = activeModuleId;
+
+                // Deselect previous clicked module visually
+                if (previouslyActiveModuleId !== null && previouslyActiveModuleId !== moduleId) {
+                    document.querySelector(`.module-item[data-module="${previouslyActiveModuleId}"]`)?.classList.remove('active');
+                    document.getElementById(`module-${previouslyActiveModuleId}`)?.classList.remove('selected');
+                }
+
+                // Toggle current selection state
+                if (isAlreadyActive) {
+                    // Deselecting the current module
+                    activeModuleId = null;
+                    detailsPanel.classList.remove('active');
+                     body.classList.remove('modal-open'); // For mobile modal backdrop
+                    document.querySelector(`.module-item[data-module="${moduleId}"]`)?.classList.remove('active');
+                    document.getElementById(`module-${moduleId}`)?.classList.remove('selected');
+                     highlightConnections(null); // Reset highlights only if nothing is hovered
+                } else {
+                    // Selecting a new module
+                    activeModuleId = moduleId;
+                    showModuleDetails(moduleId); // Populate content first
+                    detailsPanel.classList.add('active'); // Then show panel
+                     body.classList.add('modal-open'); // For mobile modal backdrop
+                    document.querySelector(`.module-item[data-module="${moduleId}"]`)?.classList.add('active');
+                    document.getElementById(`module-${moduleId}`)?.classList.add('selected');
+                     highlightConnections(moduleId, false); // Highlight based on click
+                }
+            }
+
+            // --- Show Module Details ---
+            function showModuleDetails(moduleId) {
+                const details = moduleDetails[moduleId];
+                if (!details) {
+                    console.error("Details not found for module:", moduleId);
+                    detailsTitle.innerHTML = `<i class="fas fa-exclamation-circle" style="color: var(--nus-orange);"></i> Module ${moduleId}: Details Unavailable`;
+                    detailsContent.innerHTML = '<p>Information for this module could not be loaded.</p>';
+                    exploreBtn.style.display = 'none'; // Hide button if no details
+                    return;
+                }
+
+                const iconClass = moduleId === '0' ? 'fa-flask' : 'fa-layer-group'; // Example icons
+                const iconColor = moduleId === '0' ? 'var(--nus-orange)' : 'var(--nus-blue)';
+                detailsTitle.innerHTML = `<i class="fas ${iconClass}" style="color: ${iconColor};"></i> Module ${moduleId}: ${details.title}`;
+
+                let content = `<p>${details.description}</p>`;
+                if (details.topics && details.topics.length > 0) {
+                    content += '<p style="margin-top: 1rem;"><strong>Key Topics:</strong></p>';
+                    content += '<div class="topic-list">';
+                    details.topics.forEach(topic => {
+                        content += `<div class="topic-item">${topic}</div>`;
+                    });
+                    content += '</div>';
+                } else {
+                    content += '<p style="margin-top: 1rem; font-style: italic;">No specific topics listed for this module.</p>';
+                }
+
+                detailsContent.innerHTML = content;
+                 exploreBtn.style.display = 'inline-flex'; // Show button
+                exploreBtn.onclick = () => { // Set the action for the explore button
+                    alert(`Explore Module ${moduleId}: ${details.title}\n(Navigation to full module page would happen here)`);
+                    // window.location.href = `/modules/${moduleId}`; // Example navigation
+                };
+            }
+
+            // --- Reset View ---
+            function resetView() {
+                // Reset zoom and pan
+                currentScale = 1;
+                currentTranslate = { x: 0, y: 0 };
+                svg.setAttribute('viewBox', initialViewBox); // Use stored initial viewbox
+                svgContainer.style.cursor = 'grab';
+
+                // Reset hover/selection states
+                currentlyHoveredModuleId = null;
+                activeModuleId = null;
+                clearTimeout(hoverTimeoutId);
+
+                // Hide all submodules
+                submoduleContainers.forEach(container => {
+                    container.style.opacity = 0;
+                    container.style.pointerEvents = 'none';
+                    container.style.visibility = 'hidden';
+                    container.classList.add('hidden');
+                });
+
+                // Reset styles for all nodes and links
+                const allElements = svg.querySelectorAll('.node-group, .link');
+                allElements.forEach(el => {
+                    el.classList.remove('active', 'selected', 'highlighted', 'faded');
+                    el.style.filter = "";
+                    el.style.opacity = "";
+                });
+
+                // Reset UI elements
+                moduleItems.forEach(item => item.classList.remove('active'));
+                detailsPanel.classList.remove('active');
+                legend.classList.remove('active');
+                 body.classList.remove('modal-open'); // Close mobile modal backdrop if open
+                legendToggle.innerHTML = '<i class="fas fa-info-circle"></i> <span>Legend</span>';
+                moduleNav.classList.remove('expanded');
+                moduleNavToggle.className = 'fas fa-chevron-down';
+                toggleModuleNavBtn.innerHTML = '<i class="fas fa-th-list"></i> <span>Module List</span>';
+                 toggleModuleNavBtn.classList.remove('active'); // Deactivate button visually
+                 legendToggle.classList.remove('active'); // Deactivate button visually
+                searchBar.value = '';
+            }
+
+            // --- Zoom Functions ---
+             function updateZoom() {
+                 const vb = initialViewBox.split(' ').map(Number);
+                 const initialWidth = vb[2];
+                 const initialHeight = vb[3];
+
+                 const newWidth = initialWidth / currentScale;
+                 const newHeight = initialHeight / currentScale;
+
+                 // Center point of the initial viewbox
+                 const initialCenterX = vb[0] + initialWidth / 2;
+                 const initialCenterY = vb[1] + initialHeight / 2;
+
+                 // New top-left corner, adjusted by translation
+                 // Translation is relative to the initial center, scaled appropriately
+                 const newX = initialCenterX + currentTranslate.x / currentScale - newWidth / 2;
+                 const newY = initialCenterY + currentTranslate.y / currentScale - newHeight / 2;
+
+                 svg.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`);
+             }
+
+             function zoom(factor, centerX, centerY) {
+                 const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+                 const currentX = vb[0];
+                 const currentY = vb[1];
+                 const currentWidth = vb[2];
+                 const currentHeight = vb[3];
+
+                 // SVG coordinates of the mouse pointer
+                 const pointerX = currentX + (centerX / svgContainer.clientWidth) * currentWidth;
+                 const pointerY = currentY + (centerY / svgContainer.clientHeight) * currentHeight;
+
+                 const newScale = Math.max(0.5, Math.min(3, currentScale * factor));
+                 const scaleChange = newScale / currentScale;
+
+                 // Calculate new dimensions
+                 const newWidth = currentWidth / scaleChange;
+                 const newHeight = currentHeight / scaleChange;
+
+                 // Calculate new top-left corner to keep pointer fixed
+                 const newX = pointerX - (centerX / svgContainer.clientWidth) * newWidth;
+                 const newY = pointerY - (centerY / svgContainer.clientHeight) * newHeight;
+
+                 // Calculate the equivalent translation change based on the scale change around the center
+                 const initialCenterX = initialViewBox.split(' ').map(Number)[0] + initialViewBox.split(' ').map(Number)[2] / 2;
+                 const initialCenterY = initialViewBox.split(' ').map(Number)[1] + initialViewBox.split(' ').map(Number)[3] / 2;
+
+                 // Update the internal translation state - this needs careful calculation
+                 // The viewbox change implies a change in the translation relative to the initial center
+                 currentTranslate.x = (newX + newWidth / 2 - initialCenterX) * newScale;
+                 currentTranslate.y = (newY + newHeight / 2 - initialCenterY) * newScale;
+
+                 currentScale = newScale;
+                 svg.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`); // Apply directly
+                 // updateZoom(); // Update based on new scale and translation
+             }
+
+
+            function zoomIn() { zoom(1.25, svgContainer.clientWidth / 2, svgContainer.clientHeight / 2); }
+            function zoomOut() { zoom(0.8, svgContainer.clientWidth / 2, svgContainer.clientHeight / 2); }
+            function zoomReset() { resetView(); } // ResetView handles zoom reset now
+
+            // --- Drag Functions ---
+            function startDrag(e) {
+                 // Allow dragging only on the background or SVG element itself
+                  if (e.target !== svgContainer && e.target !== svg && !e.target.closest('rect[fill="url(#grid-pattern)"]')) {
+                      isDragging = false;
+                      return;
+                  }
+                  if (e.button !== 0) return; // Only left mouse button
+                isDragging = true;
+                dragStart = { x: e.clientX, y: e.clientY };
+                svgContainer.style.cursor = 'grabbing';
+                 svgContainer.classList.add('dragging'); // Add class for potential styling
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+
+                 const dxScreen = e.clientX - dragStart.x;
+                 const dyScreen = e.clientY - dragStart.y;
+
+                 // Convert screen delta to SVG coordinate delta at the current scale
+                 // The translation amount depends on the current viewbox width/height relative to screen size
+                 const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+                 const svgDeltaX = -(dxScreen / svgContainer.clientWidth) * vb[2];
+                 const svgDeltaY = -(dyScreen / svgContainer.clientHeight) * vb[3];
+
+                 // Update translation state (relative to the initial center)
+                 // Need to scale the SVG delta by the current scale factor
+                 currentTranslate.x += svgDeltaX * currentScale;
+                 currentTranslate.y += svgDeltaY * currentScale;
+
+                dragStart = { x: e.clientX, y: e.clientY };
+                updateZoom(); // Apply the translation via updating the viewbox
+            }
+
+            function endDrag() {
+                 if (!isDragging) return;
+                isDragging = false;
+                svgContainer.style.cursor = 'grab';
+                 svgContainer.classList.remove('dragging');
+            }
+
+            // --- Search Function ---
+            function searchModules() {
+                const searchQuery = searchBar.value.toLowerCase().trim();
+                const allNodes = svg.querySelectorAll('.module-group, .submodule-container .node-group');
+                const allLinks = svg.querySelectorAll('.link');
+
+                // Reset previous search highlights first
+                allNodes.forEach(node => {
+                    node.style.opacity = ""; // Reset to CSS default
+                    node.style.filter = "";
+                });
+                allLinks.forEach(link => {
+                    link.style.opacity = ""; // Reset to CSS default
+                });
+
+                if (!searchQuery) {
+                    return; // Exit if search is empty
+                }
+
+                let foundMatch = false;
+
+                // Fade everything slightly to make matches stand out
+                allNodes.forEach(node => node.style.opacity = "0.3");
+                allLinks.forEach(link => link.style.opacity = "0.1");
+
+                // Check main modules
+                moduleGroups.forEach(node => {
+                    const moduleId = node.getAttribute('data-module');
+                    const details = moduleDetails[moduleId];
+                    if (!details) return;
+
+                    const moduleTitle = details.title.toLowerCase();
+                    const moduleTopics = details.topics ? details.topics.join(' ').toLowerCase() : '';
+                    const moduleCode = `m${moduleId}`;
+
+                    if (moduleTitle.includes(searchQuery) || moduleTopics.includes(searchQuery) || moduleCode.includes(searchQuery)) {
+                        node.style.opacity = "1";
+                        node.style.filter = "drop-shadow(0px 0px 8px var(--nus-orange))";
+                        foundMatch = true;
+                        // Highlight connected main links
+                        mainLinks.forEach(link => {
+                            const from = link.getAttribute('data-from');
+                            const to = link.getAttribute('data-to');
+                            if (from === moduleId || to === moduleId) {
+                                link.style.opacity = "0.8"; // Make connected links more visible
+                            }
+                        });
+                    }
+                });
+
+                // Check submodules
+                document.querySelectorAll('.submodule-container .node-group').forEach(subNode => {
+                    const titleElem = subNode.querySelector('title');
+                    if (titleElem) {
+                        const titleText = titleElem.textContent.toLowerCase();
+                        const submoduleCodeMatch = titleText.match(/^(\d+\.\d+)/); // Match code like "1.1"
+                        const submoduleCode = submoduleCodeMatch ? submoduleCodeMatch[1] : '';
+
+                        if (titleText.includes(searchQuery) || (submoduleCode && submoduleCode.includes(searchQuery))) {
+                            subNode.style.opacity = "1";
+                            foundMatch = true;
+                            // Also highlight its parent module if not already highlighted by title/topic match
+                            const parentId = subNode.closest('.submodule-container')?.getAttribute('data-parent');
+                            if (parentId) {
+                                const parentNode = document.getElementById(`module-${parentId}`);
+                                if (parentNode && parentNode.style.opacity !== "1") { // Avoid overriding main match highlight
+                                    parentNode.style.opacity = "0.7"; // Slightly less prominent than direct match
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Optional: Indicate if no match found
+                // if (!foundMatch) { ... }
+            }
+
+
+            // --- UI Toggles ---
+            function toggleModuleNav() {
+                const isExpanded = moduleNav.classList.toggle('expanded');
+                moduleNavToggle.className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+                 toggleModuleNavBtn.classList.toggle('active', isExpanded);
+                 toggleModuleNavBtn.innerHTML = isExpanded ?
+                      '<i class="fas fa-times-circle"></i> <span>Hide List</span>' :
+                      '<i class="fas fa-th-list"></i> <span>Module List</span>';
+            }
+
+             function toggleLegend() {
+                 const isActive = legend.classList.toggle('active');
+                 legendToggle.innerHTML = isActive ?
+                     '<i class="fas fa-times-circle"></i> <span>Hide Legend</span>' :
+                     '<i class="fas fa-info-circle"></i> <span>Legend</span>';
+                  legendToggle.classList.toggle('active', isActive);
+                  // Handle modal backdrop for mobile
+                  if (window.innerWidth <= 768) {
+                      body.classList.toggle('modal-open', isActive);
+                  }
+             }
+
+            // --- EVENT LISTENERS ---
+
+            // Module Nodes (Main Circles/Rects)
+            moduleGroups.forEach(node => {
+                const moduleId = node.getAttribute('data-module');
+                if (!moduleId) return;
+
+                node.addEventListener('mouseenter', (e) => {
+                    if (!isDragging) {
+                        showTooltip(e, node);
+                        showSubmodules(moduleId);
+                    }
+                });
+                node.addEventListener('mouseleave', () => {
+                    if (!isDragging) {
+                        hideTooltip();
+                        hideSubmodules(moduleId);
+                    }
+                });
+                node.addEventListener('mousemove', (e) => {
+                    if (!isDragging && tooltip.classList.contains('active')) {
+                        showTooltip(e, node); // Update tooltip position
+                    }
+                });
+                node.addEventListener('click', (e) => {
+                    if (isDragging) return;
+                    e.stopPropagation();
+                    selectModule(moduleId);
+                });
+            });
+
+            // Submodule Containers (to keep submodules visible when hovering over them)
+            submoduleContainers.forEach(container => {
+                const parentId = container.getAttribute('data-parent');
+                if (!parentId) return;
+
+                container.addEventListener('mouseenter', () => {
+                    if (!isDragging) {
+                        clearTimeout(hoverTimeoutId); // Cancel hide timeout for parent
+                        currentlyHoveredModuleId = parentId; // Reaffirm hover intention
+                    }
+                });
+                container.addEventListener('mouseleave', () => {
+                    if (!isDragging) {
+                        hideSubmodules(parentId); // Start hide process for parent
+                    }
+                });
+            });
+
+            // Submodule Nodes (Inner Rects/Groups)
+            document.querySelectorAll('.submodule-container .node-group').forEach(node => {
+                node.addEventListener('mouseenter', (e) => {
+                     if (!isDragging) {
+                         showTooltip(e, node);
+                         e.stopPropagation();
+                     }
+                });
+                node.addEventListener('mouseleave', (e) => {
+                     if (!isDragging) {
+                         hideTooltip();
+                         e.stopPropagation();
+                     }
+                });
+                node.addEventListener('mousemove', (e) => {
+                     if (!isDragging && tooltip.classList.contains('active')) {
+                         showTooltip(e, node);
+                     }
+                     e.stopPropagation();
+                });
+                node.addEventListener('click', (e) => {
+                    if (isDragging) return;
+                    e.stopPropagation();
+                     showTooltip(e, node); // Show info tooltip on click
+                     // Could implement modal popup here later
+                });
+            });
+
+             // --- UI Element Listeners ---
+             legendToggle.addEventListener('click', toggleLegend);
+             closeLegend.addEventListener('click', toggleLegend); // Use toggle to close as well
+
+             closeDetails.addEventListener('click', () => {
+                  detailsPanel.classList.remove('active');
+                  body.classList.remove('modal-open');
+                  // Deselect the module visually
+                  if (activeModuleId !== null) {
+                       document.querySelector(`.module-item[data-module="${activeModuleId}"]`)?.classList.remove('active');
+                       document.getElementById(`module-${activeModuleId}`)?.classList.remove('selected');
+                        const wasHovered = currentlyHoveredModuleId === activeModuleId;
+                       activeModuleId = null;
+                        // Reset highlights if the closed module wasn't also being hovered
+                        if (!wasHovered) {
+                           highlightConnections(null);
+                        }
+                  }
+             });
+
+            resetViewBtn.addEventListener('click', resetView);
+            zoomInBtn.addEventListener('click', zoomIn);
+            zoomOutBtn.addEventListener('click', zoomOut);
+            zoomResetBtn.addEventListener('click', zoomReset);
+
+             // Module Navigation Listeners
+             moduleNavHeader.addEventListener('click', toggleModuleNav);
+             toggleModuleNavBtn.addEventListener('click', toggleModuleNav); // Control button also toggles
+
+
+            // Module List Item Click
+            moduleItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const moduleId = this.getAttribute('data-module');
+                    selectModule(moduleId); // Select the module (shows details)
+
+                    // Center view on the selected module
+                    const targetNode = document.getElementById(`module-${moduleId}`);
+                    if (targetNode) {
+                        const transform = targetNode.getAttribute('transform');
+                        const match = transform?.match(/translate\(([^,]+),\s*([^)]+)\)/);
+                        if (match) {
+                            const targetX = parseFloat(match[1]);
+                            const targetY = parseFloat(match[2]);
+
+                             // Calculate desired center in SVG coordinates
+                             const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+                             const viewboxWidth = vb[2];
+                             const viewboxHeight = vb[3];
+
+                             // Calculate required viewbox top-left to center the target
+                              const newX = targetX - viewboxWidth / 2;
+                              const newY = targetY - viewboxHeight / 2;
+
+                              // Update translation state based on the difference from current viewbox center
+                              const currentCenterX = vb[0] + viewboxWidth / 2;
+                              const currentCenterY = vb[1] + viewboxHeight / 2;
+                              const deltaX = (targetX - currentCenterX) * currentScale;
+                              const deltaY = (targetY - currentCenterY) * currentScale;
+
+                              currentTranslate.x += deltaX;
+                              currentTranslate.y += deltaY;
+
+                            updateZoom(); // Update viewbox based on new translation
+                        }
+                    }
+
+                    // Collapse nav on mobile after selection
+                    if (window.innerWidth <= 768 && moduleNav.classList.contains('expanded')) {
+                        toggleModuleNav();
+                    }
+                });
+            });
+
+            // Search Functionality
+            searchBar.addEventListener('input', searchModules);
+            searchBar.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    searchModules(); // Trigger search on Enter too
+                }
+                if (e.key === 'Escape') {
+                    this.value = '';
+                    searchModules(); // Reset search highlights
+                }
+            });
+
+            // Feedback Badge
+            feedbackBadge.addEventListener('click', function() {
+                alert('Thank you for your interest in providing feedback!\nPlease contact [Your Feedback Email/Link] or use the official NUS channels.');
+            });
+
+            // --- Global Event Listeners (Drag, Resize) ---
+            svgContainer.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag); // Use document to capture drag outside container
+            document.addEventListener('mouseup', endDrag); // Use document to capture mouseup outside container
+            // svgContainer.addEventListener('mouseleave', endDrag); // Handled by document mouseup
+
+
+            // Prevent context menu on SVG
+            svgContainer.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            // Mouse Wheel Zoom
+            svgContainer.addEventListener('wheel', (e) => {
+                 if (e.target === svgContainer || svgContainer.contains(e.target)) {
+                     e.preventDefault();
+                     const zoomFactor = e.deltaY < 0 ? 1.25 : 0.8; // Zoom in or out
+                     zoom(zoomFactor, e.clientX - svgContainer.getBoundingClientRect().left, e.clientY - svgContainer.getBoundingClientRect().top);
+                 }
+            }, { passive: false });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                // Optionally close mobile overlays or adjust layouts
+                if (window.innerWidth > 768) {
+                     // Ensure modal styles/classes are removed if screen becomes large
+                      body.classList.remove('modal-open');
+                     if (legend.classList.contains('active') || detailsPanel.classList.contains('active')) {
+                          // You might want to reposition them if they were modals before
+                     }
+                } else {
+                     // Collapse module nav if it was expanded
+                      if (moduleNav.classList.contains('expanded')) {
+                           toggleModuleNav();
+                      }
+                }
+            });
+
+            // --- Kick-off ---
+            initializeMap();
+
+        }); // End DOMContentLoaded
+    </script>
+</body>
+</html>
