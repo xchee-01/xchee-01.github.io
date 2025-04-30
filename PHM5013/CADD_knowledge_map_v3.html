@@ -1962,9 +1962,42 @@
                 tooltip.classList.remove('active');
             }
             
-            // Function to show submodules on hover
+            // Track current module being shown to prevent glitches with rapid hover changes
+            let currentHoveredModule = null;
+            let hoverTimeout = null;
+            
+            // Function to show submodules on hover with debouncing
             function showSubmodules(moduleId) {
+                // Clear any pending timeout to prevent glitches
+                if (hoverTimeout) {
+                    clearTimeout(hoverTimeout);
+                    hoverTimeout = null;
+                }
+                
+                // If already showing this module, no need to do anything
+                if (currentHoveredModule === moduleId) {
+                    return;
+                }
+                
+                // If showing a different module, hide it first
+                if (currentHoveredModule !== null && currentHoveredModule !== moduleId) {
+                    hideSubmodules(currentHoveredModule, false);
+                }
+                
+                currentHoveredModule = moduleId;
+                
                 const targetContainer = document.getElementById(`submodules-${moduleId}`);
+                if (!targetContainer) return;
+                
+                // Prevent animation conflicts by ensuring clean state
+                targetContainer.querySelectorAll('.node-group').forEach(node => {
+                    node.style.transform = 'scale(0.8) translate(0, 0)';
+                    node.style.opacity = '0';
+                });
+                
+                targetContainer.querySelectorAll('.link').forEach(link => {
+                    link.style.opacity = '0';
+                });
                 
                 // Show the submodules container
                 targetContainer.classList.remove('hidden');
@@ -1975,14 +2008,35 @@
                 // Highlight connections
                 highlightConnections(moduleId);
                 
-                // Apply subtle pulse animation
-                const moduleNode = document.getElementById(`module-${moduleId}`);
-                moduleNode.style.animation = 'pulse 1.5s ease-in-out';
+                // Allow CSS transitions to take effect
+                setTimeout(() => {
+                    if (currentHoveredModule === moduleId) {  // Only proceed if still hovering
+                        targetContainer.querySelectorAll('.link').forEach(link => {
+                            link.style.opacity = '0.7';
+                        });
+                    }
+                }, 50);
             }
             
-            // Function to hide submodules on mouse leave
-            function hideSubmodules(moduleId) {
+            // Function to hide submodules on mouse leave with optional delay
+            function hideSubmodules(moduleId, withDelay = true) {
+                if (withDelay) {
+                    // Add a small delay to prevent flickering when moving between elements
+                    hoverTimeout = setTimeout(() => {
+                        performHide(moduleId);
+                    }, 50);
+                } else {
+                    performHide(moduleId);
+                }
+            }
+            
+            function performHide(moduleId) {
+                if (currentHoveredModule === moduleId) {
+                    currentHoveredModule = null;
+                }
+                
                 const targetContainer = document.getElementById(`submodules-${moduleId}`);
+                if (!targetContainer) return;
                 
                 // Hide the submodules container
                 targetContainer.classList.add('hidden');
@@ -1995,10 +2049,6 @@
                     link.classList.remove('highlighted');
                     link.classList.remove('faded');
                 });
-                
-                // Reset animation
-                const moduleNode = document.getElementById(`module-${moduleId}`);
-                moduleNode.style.animation = '';
             }
             
             // Function to handle module selection (clicking)
@@ -2045,7 +2095,7 @@
                 });
             }
             
-            // Function to improve the fan layout of submodules
+            // Function to improve the fan layout of submodules with proper animation control
             function improveSubmoduleFanning() {
                 // For each module's submodules, create a nicer fan layout
                 const submoduleGroups = document.querySelectorAll('.submodule-container');
@@ -2058,36 +2108,45 @@
                     // Skip if no submodules
                     if (submodules.length === 0) return;
                     
-                    // Add transition for smooth animation
-                    submodules.forEach(node => {
-                        if (!node.style.transition) {
-                            node.style.transition = 'transform 0.4s ease-out';
-                        }
-                    });
-                    
-                    links.forEach(link => {
-                        if (!link.style.transition) {
-                            link.style.transition = 'opacity 0.4s ease-out';
-                        }
-                    });
-                    
-                    // Add hover effect directly in JS for better fan control
-                    group.addEventListener('transitionrun', () => {
-                        // This will run when the container starts becoming visible (not hidden)
+                    // Enhanced fan animation using CSS transforms
+                    group.addEventListener('transitionstart', () => {
+                        // This will run when the container starts transitioning
                         if (!group.classList.contains('hidden')) {
-                            // Enhance fan effect with slight delay between each node
-                            submodules.forEach((node, i) => {
-                                setTimeout(() => {
-                                    node.style.opacity = '1';
-                                    node.style.transform = 'scale(1.1)';
-                                }, i * 50);
-                            });
+                            const moduleId = group.getAttribute('data-parent');
                             
-                            // Make links appear with slight delay
-                            links.forEach((link, i) => {
+                            // Get the parent module's position for fan calculation
+                            const parentModule = document.getElementById(`module-${moduleId}`);
+                            if (!parentModule) return;
+                            
+                            const parentTransform = parentModule.getAttribute('transform');
+                            let parentX = 0, parentY = 0;
+                            
+                            if (parentTransform) {
+                                const match = parentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+                                if (match) {
+                                    parentX = parseFloat(match[1]);
+                                    parentY = parseFloat(match[2]);
+                                }
+                            }
+                            
+                            // Apply staggered fan animation to each submodule
+                            submodules.forEach((node, i) => {
+                                // Calculate current position
+                                const transform = node.getAttribute('transform');
+                                if (!transform) return;
+                                
+                                const match = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+                                if (!match) return;
+                                
+                                const currentX = parseFloat(match[1]);
+                                const currentY = parseFloat(match[2]);
+                                
+                                // Schedule animation with delay proportional to index
                                 setTimeout(() => {
-                                    link.style.opacity = '1';
-                                }, i * 30);
+                                    if (group.classList.contains('hidden')) return;
+                                    node.style.opacity = '1';
+                                    node.style.transform = 'scale(1) translate(0, 0)';
+                                }, i * 40);
                             });
                         }
                     });
@@ -2421,6 +2480,20 @@
                     moduleNav.classList.remove('expanded');
                     moduleNavToggle.className = 'fas fa-chevron-down';
                 }
+            });
+            
+            // Initialize with improved event handling for reliable animations
+            document.addEventListener('DOMContentLoaded', () => {
+                // Set up proper fan animation
+                improveSubmoduleFanning();
+                
+                // Prevent any hover lingering effects when cursor leaves the SVG
+                svgContainer.addEventListener('mouseleave', () => {
+                    if (currentHoveredModule !== null) {
+                        hideSubmodules(currentHoveredModule, false);
+                        currentHoveredModule = null;
+                    }
+                });
             });
             
             // Initialize with an entrance animation
