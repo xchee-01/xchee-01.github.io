@@ -4,28 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Improved CADD Knowledge Map</title>
-    <!-- Use link for fonts for better performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
     <style>
-        /* Typography (Moved @import to <link> in <head>) */
+        /* Typography */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
         :root {
-            /* NUS Color Palette - Deeper shades */
-            --nus-orange: #E06600; /* Deeper orange */
-            --nus-orange-light: #F07C30; /* Slightly deeper */
-            --nus-orange-dark: #B04F00; /* Even deeper */
-
-            --nus-blue: #003D7C; /* Official NUS blue */
-            --nus-blue-light: #0055A0; /* Slightly deeper than original */
-            --nus-blue-dark: #002855; /* Deeper blue */
-
+            /* Color Scheme - Midnight Blue and Orange */
+            --blue-dark: #002347; /* Dark blue */
+            --blue-medium: #003366; /* Medium blue */
+            --blue-light: #003F7D; /* Lighter blue */
+            
+            --orange-light: #FF8E00; /* Light orange */
+            --orange-medium: #FD7702; /* Medium orange */
+            --orange-dark: #FF5003; /* Dark orange */
+            
             /* Extended Palette */
             --accent-teal: #008196;
             --accent-green: #00A651;
             --accent-purple: #6F42C1;
-
+            
             /* Neutral Colors */
             --white: #ffffff;
             --gray-50: #f8fafc;
@@ -38,12 +36,12 @@
             --gray-700: #334155;
             --gray-800: #1e293b;
             --gray-900: #0f172a;
-
+            
             /* Shadows */
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
             --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.05);
             --shadow-lg: 0 10px 15px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.07);
-
+            
             /* Animation */
             --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
             --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -109,8 +107,7 @@
             max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
-            position: relative; /* Needed for absolute positioning of panel/tooltip */
-            width: 100%; /* Ensure it takes width for children */
+            position: relative;
         }
 
         .map-controls {
@@ -143,14 +140,19 @@
             border-radius: 50%;
         }
 
-        .legend-color.foundation {
-            background: linear-gradient(135deg, var(--nus-orange-light), var(--nus-orange));
-            box-shadow: 0 0 0 1px var(--nus-orange-dark);
+        .legend-color.main-center {
+            background: linear-gradient(135deg, var(--blue-light), var(--blue-medium));
+            box-shadow: 0 0 0 1px var(--blue-medium);
         }
 
-        .legend-color.advanced {
-            background: linear-gradient(135deg, var(--nus-blue-light), var(--nus-blue));
-            box-shadow: 0 0 0 1px var(--nus-blue-dark);
+        .legend-color.main-outer {
+            background: linear-gradient(135deg, var(--blue-medium), var(--blue-dark));
+            box-shadow: 0 0 0 1px var(--blue-dark);
+        }
+
+        .legend-color.submodule-light {
+            background: linear-gradient(135deg, var(--orange-light), var(--orange-dark));
+            box-shadow: 0 0 0 1px var(--orange-medium);
         }
 
         .controls {
@@ -175,14 +177,11 @@
             box-shadow: var(--shadow-sm);
         }
 
-        .control-btn:hover,
-        .control-btn:focus-visible { /* Added focus style */
+        .control-btn:hover {
             background-color: var(--nus-blue);
             color: white;
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
-            outline: 2px solid var(--nus-blue-dark); /* Focus indicator */
-            outline-offset: 2px;
         }
 
         .control-btn i {
@@ -194,71 +193,57 @@
             background-color: var(--white);
             border-radius: 12px;
             box-shadow: var(--shadow-lg);
-            padding: 1.5rem; /* Adjust padding if needed */
+            padding: 1.5rem;
             width: 100%;
             height: 700px;
-            position: relative; /* Relative for absolute children like panel/zoom */
-            overflow: hidden; /* Crucial: hides overflow from stage */
+            position: relative;
+            overflow: hidden;
             border: 1px solid var(--gray-200);
         }
 
-        .map-container { /* Outer container, remains static */
+        .map-container {
             width: 100%;
             height: 100%;
             position: relative;
             cursor: grab;
             user-select: none;
-            overflow: hidden; /* Double ensure clipping */
+            overflow: hidden;
         }
 
         .map-container.grabbing {
             cursor: grabbing;
         }
 
-        /* NEW: Map Stage - this is the element that gets transformed */
-        #map-stage {
-            position: absolute; /* Positioned within map-container */
+        /* Stage Container - New for transform efficiency */
+        .stage-container {
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100%; /* Takes initial size from parent */
+            width: 100%;
             height: 100%;
-            transform-origin: 0 0; /* Zoom/Pan relative to top-left */
-            transition: transform var(--transition-normal); /* Smooth transform */
-            will-change: transform; /* Performance hint */
+            transform-origin: 0 0;
         }
 
-        /* Grid Background - Now relative to stage might be better */
+        /* Grid Background */
         .grid-background {
-            width: 200%; /* Make larger than stage to cover during pan */
-            height: 200%;
+            width: 100%;
+            height: 100%;
             position: absolute;
-            top: -50%; /* Center it roughly */
-            left: -50%;
-            background-image:
+            top: 0;
+            left: 0;
+            background-image: 
                 linear-gradient(to right, rgba(226, 232, 240, 0.5) 1px, transparent 1px),
                 linear-gradient(to bottom, rgba(226, 232, 240, 0.5) 1px, transparent 1px);
-            background-size: calc(40px * var(--current-scale, 1)); /* Adjust grid size with zoom */
+            background-size: 40px 40px;
             pointer-events: none;
-            z-index: 1; /* Below nodes and connections */
         }
 
         /* Node Styles */
         .node {
-            position: absolute; /* Positioned absolutely within #map-stage */
-            /* transform-origin: center; NO LONGER NEEDED - stage is transformed */
-            /* transition: transform var(--transition-normal); NO LONGER NEEDED */
-            z-index: 10; /* Above grid and connections */
-            cursor: pointer; /* Indicate interactivity */
-            outline: none; /* Remove default focus outline if custom is added */
+            position: absolute;
+            transform-origin: center;
+            z-index: 10;
         }
-
-        /* Add focus style for accessibility */
-        .node:focus-visible .node-circle {
-             outline: 3px solid var(--accent-purple);
-             outline-offset: 3px;
-             box-shadow: var(--shadow-lg), 0 0 0 3px var(--accent-purple); /* Enhance shadow on focus */
-        }
-
 
         .node-circle {
             border-radius: 50%;
@@ -270,7 +255,7 @@
             font-family: 'Poppins', sans-serif;
             box-shadow: var(--shadow-md);
             transition: all var(--transition-normal);
-            position: relative; /* Needed for label positioning context */
+            position: relative;
         }
 
         /* Foundation Module */
@@ -285,23 +270,26 @@
             border: 2px solid var(--nus-blue-dark);
         }
 
-        /* Node Label - Improved Positioning */
+        /* Node Label */
         .node-label {
             position: absolute;
             font-size: 0.9rem;
             color: var(--gray-800);
             font-weight: 500;
             white-space: nowrap;
-            pointer-events: none; /* Allow clicks to pass through to node */
-            transition: opacity var(--transition-normal), visibility var(--transition-normal); /* Added visibility */
-            text-align: center;
-            padding: 2px 4px; /* Optional background/padding */
-           /* background-color: rgba(255, 255, 255, 0.6); Optional */
-           /* border-radius: 4px; Optional */
-            z-index: 11; /* Above node circle */
+            pointer-events: none;
+            transition: all var(--transition-normal);
+            transform: translate(-50%, -50%);
         }
 
-        /* Connections Container - Positioned within stage */
+        /* Focus styles for accessibility */
+        .node:focus-visible {
+            outline: 3px solid var(--accent-teal);
+            outline-offset: 4px;
+            border-radius: 50%;
+        }
+
+        /* Connections Container */
         .connections-container {
             position: absolute;
             top: 0;
@@ -309,13 +297,12 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 5; /* Below nodes, above grid */
-            /* transform: ... NO LONGER NEEDED - Inherits from stage */
+            z-index: 5;
         }
 
         /* Details Panel */
         .details-panel {
-            position: absolute; /* Relative to .container or .map-wrapper */
+            position: absolute;
             top: 20px;
             right: 20px;
             width: 300px;
@@ -326,15 +313,13 @@
             overflow: hidden;
             transform: translateX(110%);
             opacity: 0;
-            visibility: hidden; /* Use visibility for better A11y */
-            transition: transform var(--transition-normal), opacity var(--transition-normal), visibility var(--transition-normal);
+            transition: all var(--transition-normal);
             z-index: 50;
         }
 
         .details-panel.active {
             transform: translateX(0);
             opacity: 1;
-            visibility: visible; /* Show when active */
         }
 
         .details-header {
@@ -361,20 +346,14 @@
             font-size: 1.1rem;
             opacity: 0.8;
             transition: opacity var(--transition-fast);
-            padding: 5px; /* Easier click target */
         }
 
-        .details-close:hover,
-        .details-close:focus-visible { /* Added focus style */
+        .details-close:hover {
             opacity: 1;
-            outline: 2px solid white;
-             outline-offset: 2px;
         }
 
         .details-content {
             padding: 1.25rem;
-            max-height: 400px; /* Prevent panel becoming too tall */
-            overflow-y: auto; /* Add scroll if content overflows */
         }
 
         .details-content p {
@@ -401,54 +380,10 @@
             transition: all var(--transition-fast);
         }
 
-        /* Tooltip */
-        .tooltip {
-            position: absolute; /* Relative to .container or .map-wrapper */
-            display: block; /* Use opacity/visibility to hide/show */
-            opacity: 0;
-            visibility: hidden;
-            background-color: var(--gray-800);
+        .topic-tag:hover {
+            background-color: var(--nus-blue-light);
             color: white;
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            max-width: 250px;
-            box-shadow: var(--shadow-lg);
-            z-index: 100;
-            pointer-events: none;
-            transform: translate(-50%, -100%) translateY(-10px);
-            transition: opacity var(--transition-fast), visibility var(--transition-fast);
-        }
-
-        .tooltip.visible { /* Class to show tooltip */
-             opacity: 1;
-             visibility: visible;
-        }
-
-        .tooltip::after {
-            content: '';
-            position: absolute;
-            left: 50%;
-            bottom: -5px;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-top: 6px solid var(--gray-800);
-        }
-
-        .tooltip h4 {
-            margin-bottom: 0.25rem;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .tooltip p {
-            margin: 0;
-            opacity: 0.9;
-            font-size: 0.8rem;
+            transform: translateY(-2px);
         }
 
         /* Zoom Controls */
@@ -477,13 +412,52 @@
             transition: all var(--transition-fast);
         }
 
-        .zoom-btn:hover,
-        .zoom-btn:focus-visible { /* Added focus style */
+        .zoom-btn:hover {
             transform: scale(1.1);
             background: var(--nus-blue);
             color: white;
-            outline: 2px solid var(--nus-blue-dark);
-             outline-offset: 1px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            display: none;
+            background-color: var(--gray-800);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            max-width: 250px;
+            box-shadow: var(--shadow-lg);
+            z-index: 100;
+            pointer-events: none;
+            transform: translate(-50%, -100%) translateY(-10px);
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -5px;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid var(--gray-800);
+        }
+
+        .tooltip h4 {
+            margin-bottom: 0.25rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .tooltip p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.8rem;
         }
 
         /* Responsive adjustments */
@@ -498,91 +472,98 @@
                 padding: 1rem;
             }
             .map-wrapper {
-                height: 500px; /* Adjust height */
+                height: 500px;
                 padding: 1rem;
             }
-            /* Make details panel more modal-like on small screens */
             .details-panel {
-                width: calc(100% - 40px); /* Adjust width */
-                max-width: 350px; /* Max width */
+                width: 90%;
+                max-width: 300px;
                 top: 50%;
                 left: 50%;
-                right: auto; /* Override desktop style */
-                transform: translate(-50%, -50%) scale(0.9) translateX(0); /* Center transform origin */
-                visibility: hidden;
-                opacity: 0;
+                right: auto;
+                transform: translate(-50%, -50%) scale(0.9);
             }
             .details-panel.active {
-                transform: translate(-50%, -50%) scale(1); /* Center active state */
-                visibility: visible;
-                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
             }
             .legend {
                 justify-content: center;
             }
-             .map-controls {
-                 flex-direction: column; /* Stack controls vertically */
-                 align-items: stretch;
-                 gap: 1rem;
-             }
-            .controls {
-                justify-content: center; /* Center buttons */
-            }
+        }
+
+        /* Skip to content for accessibility */
+        .skip-to-content {
+            position: absolute;
+            left: -9999px;
+            z-index: 999;
+            padding: 1em;
+            background-color: var(--white);
+            color: var(--nus-blue);
+            text-decoration: none;
+            border-radius: 0 0 0.25em 0.25em;
+        }
+        
+        .skip-to-content:focus {
+            left: 50%;
+            transform: translateX(-50%);
         }
     </style>
 </head>
 <body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    
     <div class="header">
         <h1>Computer-Aided Drug Discovery Knowledge Map</h1>
         <p>Interactive visualization of the CADD curriculum structure</p>
     </div>
 
-    <div class="container">
+    <div class="container" id="main-content">
         <div class="map-controls">
             <div class="legend">
                 <div class="legend-item">
-                    <div class="legend-color foundation"></div>
-                    <span>Foundation Module</span>
+                    <div class="legend-color main-center"></div>
+                    <span>Central Module</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color advanced"></div>
-                    <span>Advanced Modules</span>
+                    <div class="legend-color main-outer"></div>
+                    <span>Main Modules</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color submodule-light"></div>
+                    <span>Submodules</span>
                 </div>
             </div>
             <div class="controls">
-                <button class="control-btn" id="reset-view">
+                <button class="control-btn" id="reset-view" aria-label="Reset view">
                     <i class="fas fa-sync-alt"></i>
                     <span>Reset View</span>
                 </button>
-                <button class="control-btn" id="toggle-labels">
+                <button class="control-btn" id="toggle-labels" aria-label="Toggle module labels">
                     <i class="fas fa-tag"></i>
-                    <span>Hide Labels</span> <!-- Initial state -->
+                    <span>Toggle Labels</span>
                 </button>
             </div>
         </div>
 
         <div class="map-wrapper">
             <div class="map-container" id="map">
-                 {/* <!-- NEW: Stage for panning/zooming --> */}
-                <div id="map-stage">
-                    <div class="grid-background"></div>
-                    {/* <!-- Connections container now inside stage --> */}
-                    <div class="connections-container" id="connections-container" aria-hidden="true"></div>
-                    {/* <!-- Nodes will be added here by JavaScript (inside stage) --> */}
+                <!-- Grid background removed -->
+                <!-- Stage container for efficient transforms -->
+                <div class="stage-container" id="stage-container">
+                    <div class="connections-container" id="connections-container"></div>
+                    <!-- Nodes will be added here by JavaScript -->
                 </div>
             </div>
-            {/* <!-- Tooltip moved outside map-container to avoid clipping --> */}
             <div class="tooltip" id="tooltip" role="tooltip"></div>
             <div class="zoom-controls">
-                <button class="zoom-btn" id="zoom-in" aria-label="Zoom In"><i class="fas fa-plus"></i></button>
-                <button class="zoom-btn" id="zoom-out" aria-label="Zoom Out"><i class="fas fa-minus"></i></button>
-                <button class="zoom-btn" id="zoom-reset" aria-label="Reset Zoom"><i class="fas fa-expand"></i></button>
+                <button class="zoom-btn" id="zoom-in" aria-label="Zoom in"><i class="fas fa-plus"></i></button>
+                <button class="zoom-btn" id="zoom-out" aria-label="Zoom out"><i class="fas fa-minus"></i></button>
+                <button class="zoom-btn" id="zoom-reset" aria-label="Reset zoom"><i class="fas fa-expand"></i></button>
             </div>
-             {/* <!-- Details panel outside map-container --> */}
-            <div class="details-panel" id="details-panel" aria-labelledby="details-title" aria-modal="true">
+            <div class="details-panel" id="details-panel" aria-live="polite" role="dialog" aria-modal="true" aria-labelledby="details-title">
                 <div class="details-header">
                     <h3 id="details-title">Module Details</h3>
-                    <button class="details-close" id="close-details" aria-label="Close Details Panel"><i class="fas fa-times"></i></button>
+                    <button class="details-close" id="close-details" aria-label="Close details panel"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="details-content" id="details-content">
                     <p>Select a module to view details.</p>
@@ -594,8 +575,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Main elements
-            const mapContainer = document.getElementById('map');
-            const mapStage = document.getElementById('map-stage'); // New stage element
+            const map = document.getElementById('map');
+            const stageContainer = document.getElementById('stage-container');
             const connectionsContainer = document.getElementById('connections-container');
             const tooltip = document.getElementById('tooltip');
             const detailsPanel = document.getElementById('details-panel');
@@ -607,79 +588,381 @@
             const zoomInBtn = document.getElementById('zoom-in');
             const zoomOutBtn = document.getElementById('zoom-out');
             const zoomResetBtn = document.getElementById('zoom-reset');
-            const gridBackground = document.querySelector('.grid-background'); // For scaling grid
 
             // Map state
-            let activeNodeElement = null; // Store the element itself
-            let lastFocusedElement = null; // For returning focus from panel
+            let activeNodeId = null;
             let scale = 1;
             let translateX = 0;
             let translateY = 0;
             let isDragging = false;
             let startX, startY;
             let labelsVisible = true;
-            let resizeTimeout; // For debouncing resize
-
-            // Module data (percentages relative to map container)
-            const moduleData = [
-                 { id: 'm0', name: 'Foundations of Drug Discovery', shortName: 'Foundations', type: 'foundation', x: 50, y: 50, size: 70 },
-                 { id: 'm1', name: 'Ligand-Based Virtual Screening', shortName: 'LBVS', type: 'advanced', x: 25, y: 30, size: 60, label: { position: 'bottom' } },
-                 { id: 'm2', name: 'Structure-Based Virtual Screening', shortName: 'SBVS', type: 'advanced', x: 75, y: 30, size: 60, label: { position: 'right' } },
-                 { id: 'm3', name: 'Quantitative Structure-Activity Relationship', shortName: 'QSAR', type: 'advanced', x: 75, y: 70, size: 60, label: { position: 'right' } },
-                 { id: 'm4', name: 'Machine Learning Methods', shortName: 'ML Methods', type: 'advanced', x: 15, y: 15, size: 55, label: { position: 'left' } },
-                 { id: 'm5', name: 'Molecular Dynamics Simulation', shortName: 'MD Simulation', type: 'advanced', x: 85, y: 15, size: 55, label: { position: 'right' } },
-                 { id: 'm6', name: 'ADME/Tox Predictions', shortName: 'ADME/Tox', type: 'advanced', x: 85, y: 85, size: 55, label: { position: 'right' } },
-                 { id: 'm7', name: 'Integration & Applications', shortName: 'Integration', type: 'advanced', x: 25, y: 70, size: 60, label: { position: 'left' } }
-            ];
-
-            // Connection data (paths between module IDs)
-            const connectionPaths = [
-                { path: "m0-m1-m4", color: "var(--nus-blue)" },
-                { path: "m0-m2-m5", color: "var(--nus-blue)" },
-                { path: "m0-m3-m6", color: "var(--nus-blue)" },
-                { path: "m0-m7", color: "var(--nus-blue)" }
-            ];
-
-            // Module details data (can be loaded from JSON)
-            const moduleDetails = {
-                'm0': { description: 'This essential module provides the foundational knowledge required for advanced CADD techniques...', topics: ['Drug discovery process', 'Molecular representation', 'Ligand-protein interactions', 'Biological targets', 'Computational chemistry basics', 'CADD workflows'] },
-                'm1': { description: 'Learn methods to identify potential drug candidates based on similarities to known active compounds...', topics: ['Molecular fingerprints', 'Similarity metrics', 'Pharmacophore models', 'Shape-based screening', '2D and 3D similarity searching', 'Virtual library screening'] },
-                'm2': { description: 'Methods to identify potential drug candidates based on their ability to bind to a target protein structure...', topics: ['Molecular docking', 'Binding site analysis', 'Scoring functions', 'Pose prediction', 'Structure-based pharmacophores', 'Protein preparation'] },
-                'm3': { description: 'Learn techniques to mathematically relate chemical structures to their biological activities...', topics: ['QSAR modeling principles', 'Descriptor selection', 'Model validation', 'Activity prediction', 'Structure-property relationships', 'Medicinal chemistry applications'] },
-                'm4': { description: 'Advanced computational methods applying artificial intelligence and statistical learning...', topics: ['ML algorithms for CADD', 'Feature representation', 'Deep learning in drug discovery', 'Active learning strategies', 'Neural networks', 'Predictive modeling'] },
-                'm5': { description: 'Explore the dynamic behavior of biomolecular systems through computer simulations...', topics: ['Force fields', 'System preparation', 'Trajectory analysis', 'Enhanced sampling methods', 'Free energy calculations', 'Protein-ligand dynamics'] },
-                'm6': { description: 'Methods to predict drug-like properties and potential toxicity issues early in the drug discovery process.', topics: ['Absorption and bioavailability', 'Distribution and metabolism', 'Excretion models', 'Toxicity prediction', 'Drug-likeness rules', 'Property optimization'] },
-                'm7': { description: 'Learn to combine multiple computational approaches into effective drug discovery workflows...', topics: ['Multi-method workflows', 'Case studies in drug discovery', 'Best practices', 'Future directions in CADD', 'Hit-to-lead optimization', 'Practical limitations and solutions'] }
-            };
-
-            // --- Initialization ---
-            function initializeMap() {
-                createNodes();
-                positionNodes(); // Initial positioning
-                drawConnections(); // Initial connection draw
-                applyTransform(); // Apply initial transform (if any needed)
+            
+            // Debounce function for performance optimization
+            function debounce(func, wait) {
+                let timeout;
+                return function(...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
             }
 
-            // --- Node Creation ---
+            // Module data with main modules and submodules
+            const moduleData = [
+                // Central main module
+                { 
+                    id: 'm0', 
+                    name: 'Foundations of Drug Discovery', 
+                    shortName: 'Foundations',
+                    type: 'main-center', 
+                    x: 50, 
+                    y: 50, 
+                    size: 75,
+                    isMain: true
+                },
+                
+                // Main outer modules
+                { 
+                    id: 'm1', 
+                    name: 'Ligand-Based Methods', 
+                    shortName: 'Ligand-Based',
+                    type: 'main-outer', 
+                    x: 25, 
+                    y: 30, 
+                    size: 60,
+                    isMain: true,
+                    label: { position: 'bottom' }
+                },
+                { 
+                    id: 'm2', 
+                    name: 'Structure-Based Methods', 
+                    shortName: 'Structure-Based',
+                    type: 'main-outer', 
+                    x: 75, 
+                    y: 30, 
+                    size: 60,
+                    isMain: true,
+                    label: { position: 'right' }
+                },
+                { 
+                    id: 'm3', 
+                    name: 'Computational Analysis', 
+                    shortName: 'Analysis',
+                    type: 'main-outer', 
+                    x: 75, 
+                    y: 70, 
+                    size: 60,
+                    isMain: true,
+                    label: { position: 'right' }
+                },
+                { 
+                    id: 'm4', 
+                    name: 'Drug Properties', 
+                    shortName: 'Properties',
+                    type: 'main-outer', 
+                    x: 25, 
+                    y: 70, 
+                    size: 60,
+                    isMain: true,
+                    label: { position: 'left' }
+                },
+                
+                // Submodules for Ligand-Based Methods (m1)
+                { 
+                    id: 's1a', 
+                    name: 'Molecular Fingerprints', 
+                    shortName: 'Fingerprints',
+                    type: 'submodule-light', 
+                    parentId: 'm1',
+                    orbitRadius: 110,
+                    orbitAngle: 315,
+                    size: 40,
+                    label: { position: 'left' }
+                },
+                { 
+                    id: 's1b', 
+                    name: 'Similarity Searching', 
+                    shortName: 'Similarity',
+                    type: 'submodule-dark', 
+                    parentId: 'm1',
+                    orbitRadius: 110,
+                    orbitAngle: 15,
+                    size: 40,
+                    label: { position: 'right' }
+                },
+                { 
+                    id: 's1c', 
+                    name: 'Pharmacophore Modeling', 
+                    shortName: 'Pharmacophore',
+                    type: 'submodule-light', 
+                    parentId: 'm1',
+                    orbitRadius: 110,
+                    orbitAngle: 235,
+                    size: 40,
+                    label: { position: 'left' }
+                },
+                
+                // Submodules for Structure-Based Methods (m2)
+                { 
+                    id: 's2a', 
+                    name: 'Molecular Docking', 
+                    shortName: 'Docking',
+                    type: 'submodule-dark', 
+                    parentId: 'm2',
+                    orbitRadius: 110,
+                    orbitAngle: 165,
+                    size: 40,
+                    label: { position: 'left' }
+                },
+                { 
+                    id: 's2b', 
+                    name: 'Virtual Screening', 
+                    shortName: 'Screening',
+                    type: 'submodule-light', 
+                    parentId: 'm2',
+                    orbitRadius: 110,
+                    orbitAngle: 225,
+                    size: 40,
+                    label: { position: 'bottom' }
+                },
+                { 
+                    id: 's2c', 
+                    name: 'Binding Site Analysis', 
+                    shortName: 'Binding Site',
+                    type: 'submodule-dark', 
+                    parentId: 'm2',
+                    orbitRadius: 110,
+                    orbitAngle: 325,
+                    size: 40,
+                    label: { position: 'right' }
+                },
+                
+                // Submodules for Computational Analysis (m3)
+                { 
+                    id: 's3a', 
+                    name: 'QSAR Modeling', 
+                    shortName: 'QSAR',
+                    type: 'submodule-light', 
+                    parentId: 'm3',
+                    orbitRadius: 110,
+                    orbitAngle: 125,
+                    size: 40,
+                    label: { position: 'top' }
+                },
+                { 
+                    id: 's3b', 
+                    name: 'Machine Learning', 
+                    shortName: 'ML',
+                    type: 'submodule-dark', 
+                    parentId: 'm3',
+                    orbitRadius: 110,
+                    orbitAngle: 165,
+                    size: 40,
+                    label: { position: 'left' }
+                },
+                { 
+                    id: 's3c', 
+                    name: 'Molecular Dynamics', 
+                    shortName: 'MD',
+                    type: 'submodule-light', 
+                    parentId: 'm3',
+                    orbitRadius: 110,
+                    orbitAngle: 205,
+                    size: 40,
+                    label: { position: 'bottom' }
+                },
+                
+                // Submodules for Drug Properties (m4)
+                { 
+                    id: 's4a', 
+                    name: 'ADME Prediction', 
+                    shortName: 'ADME',
+                    type: 'submodule-dark', 
+                    parentId: 'm4',
+                    orbitRadius: 110,
+                    orbitAngle: 25,
+                    size: 40,
+                    label: { position: 'right' }
+                },
+                { 
+                    id: 's4b', 
+                    name: 'Toxicity Prediction', 
+                    shortName: 'Toxicity',
+                    type: 'submodule-light', 
+                    parentId: 'm4',
+                    orbitRadius: 110,
+                    orbitAngle: 335,
+                    size: 40,
+                    label: { position: 'right' }
+                },
+                { 
+                    id: 's4c', 
+                    name: 'Drug-likeness', 
+                    shortName: 'Drug-likeness',
+                    type: 'submodule-dark', 
+                    parentId: 'm4',
+                    orbitRadius: 110,
+                    orbitAngle: 295,
+                    size: 40,
+                    label: { position: 'left' }
+                }
+            ];
+
+            // Connection data (from module to module)
+            const connectionPaths = [
+                // Main connections from center to main modules
+                { path: "m0-m1", color: "var(--blue-medium)" },
+                { path: "m0-m2", color: "var(--blue-medium)" },
+                { path: "m0-m3", color: "var(--blue-medium)" },
+                { path: "m0-m4", color: "var(--blue-medium)" },
+                
+                // Connections from main modules to their submodules
+                // Ligand-Based
+                { path: "m1-s1a", color: "var(--orange-medium)" },
+                { path: "m1-s1b", color: "var(--orange-medium)" },
+                { path: "m1-s1c", color: "var(--orange-medium)" },
+                
+                // Structure-Based
+                { path: "m2-s2a", color: "var(--orange-medium)" },
+                { path: "m2-s2b", color: "var(--orange-medium)" },
+                { path: "m2-s2c", color: "var(--orange-medium)" },
+                
+                // Computational Analysis
+                { path: "m3-s3a", color: "var(--orange-medium)" },
+                { path: "m3-s3b", color: "var(--orange-medium)" },
+                { path: "m3-s3c", color: "var(--orange-medium)" },
+                
+                // Drug Properties
+                { path: "m4-s4a", color: "var(--orange-medium)" },
+                { path: "m4-s4b", color: "var(--orange-medium)" },
+                { path: "m4-s4c", color: "var(--orange-medium)" }
+            ];
+
+            // Module details data
+            const moduleDetails = {
+                // Main modules
+                'm0': {
+                    description: 'This essential module provides the foundational knowledge required for all CADD techniques. It covers basic principles of drug discovery, molecular interactions, and computational methods.',
+                    topics: ['Drug discovery process', 'Molecular representation', 'Ligand-protein interactions', 'Biological targets', 'Computational chemistry basics', 'CADD workflows']
+                },
+                'm1': {
+                    description: 'Focuses on identifying potential drug candidates based on similarities to known active compounds, without requiring target structure information.',
+                    topics: ['Molecular fingerprints', 'Similarity assessment', 'Pharmacophore modeling', 'Shape-based analysis', 'Library screening', 'Chemical space exploration']
+                },
+                'm2': {
+                    description: 'Explores methods to identify drug candidates based on their ability to interact with a target protein structure using docking and related techniques.',
+                    topics: ['Molecular docking', 'Scoring methods', 'Binding site analysis', 'Structure preparation', 'Virtual screening', 'Fragment-based approaches']
+                },
+                'm3': {
+                    description: 'Advanced computational methods for analyzing molecular properties, interactions, and system dynamics in the drug discovery process.',
+                    topics: ['QSAR modeling', 'Machine learning', 'Statistical analysis', 'Molecular dynamics', 'System modeling', 'Property prediction']
+                },
+                'm4': {
+                    description: 'Methods to predict, analyze and optimize key drug properties that affect absorption, metabolism, toxicity, and overall effectiveness.',
+                    topics: ['ADME properties', 'Toxicity prediction', 'Drug-likeness rules', 'Property optimization', 'Pharmacokinetics', 'Safety assessment']
+                },
+                
+                // Submodules for m1 - Ligand-Based
+                's1a': {
+                    description: 'Methods to represent molecule structures as bit strings or numerical values for efficient similarity comparisons.',
+                    topics: ['Structural keys', 'Path-based fingerprints', 'Circular fingerprints', 'ECFP/FCFP', 'Hashed fingerprints', 'Molecular descriptors']
+                },
+                's1b': {
+                    description: 'Techniques to identify compounds with similar properties to known active molecules using various similarity metrics.',
+                    topics: ['Tanimoto coefficient', 'Euclidean distance', 'Cosine similarity', 'Nearest neighbor searches', 'Similarity thresholds', 'Diverse subset selection']
+                },
+                's1c': {
+                    description: 'Development of 3D templates representing key features required for molecular recognition and biological activity.',
+                    topics: ['Feature identification', '3D constraints', 'H-bond donors/acceptors', 'Hydrophobic features', 'Aromatic centers', 'Excluded volumes']
+                },
+                
+                // Submodules for m2 - Structure-Based
+                's2a': {
+                    description: 'Computational methods to predict the optimal binding modes of ligands within the active site of a receptor.',
+                    topics: ['Search algorithms', 'Scoring functions', 'Pose prediction', 'Flexible docking', 'Ensemble docking', 'Covalent docking']
+                },
+                's2b': {
+                    description: 'Techniques to rapidly evaluate large compound libraries against target proteins to identify potential hits.',
+                    topics: ['High-throughput docking', 'Enrichment factors', 'Hit selection', 'Consensus scoring', 'Library preparation', 'Result analysis']
+                },
+                's2c': {
+                    description: 'Methods to identify and characterize binding sites and interaction patterns in protein structures.',
+                    topics: ['Cavity detection', 'Hotspot identification', 'Interaction patterns', 'Binding site conservation', 'Allosteric sites', 'Fragment mapping']
+                },
+                
+                // Submodules for m3 - Computational Analysis
+                's3a': {
+                    description: 'Mathematical models that relate chemical structures to their biological activities using various molecular descriptors.',
+                    topics: ['Descriptor selection', 'Model development', 'Statistical methods', 'Validation techniques', 'Applicability domain', 'Activity prediction']
+                },
+                's3b': {
+                    description: 'Application of artificial intelligence methods to drug discovery challenges, including property prediction and pattern recognition.',
+                    topics: ['Neural networks', 'Random forests', 'Support vector machines', 'Deep learning', 'Transfer learning', 'Feature selection']
+                },
+                's3c': {
+                    description: 'Computer simulations that model atomic movements over time to understand molecular flexibility, interactions, and thermodynamics.',
+                    topics: ['Force fields', 'System preparation', 'Trajectory analysis', 'Free energy calculations', 'Enhanced sampling', 'Binding kinetics']
+                },
+                
+                // Submodules for m4 - Drug Properties
+                's4a': {
+                    description: 'Methods to predict how drug candidates will be absorbed, distributed, metabolized, and excreted in the body.',
+                    topics: ['Absorption models', 'Blood-brain barrier permeability', 'Metabolic stability', 'CYP450 interactions', 'Plasma protein binding', 'Clearance prediction']
+                },
+                's4b': {
+                    description: 'Computational approaches to predict potential toxicity issues of drug candidates early in development.',
+                    topics: ['Structural alerts', 'Hepatotoxicity', 'Cardiotoxicity', 'Mutagenicity', 'hERG inhibition', 'Organ toxicity models']
+                },
+                's4c': {
+                    description: 'Assessment of compounds based on physicochemical properties that influence their potential success as drugs.',
+                    topics: ['Lipinski rules', 'Veber rules', 'PAINS filters', 'Synthetic accessibility', 'Property optimization', 'Multi-parameter optimization']
+                }
+            };
+
+            // Store node elements and positions for efficiency
+            const nodeElements = {};
+            const nodePositions = {};
+
+            // Initialize the map
+            function initializeMap() {
+                // Create nodes
+                createNodes();
+                
+                // Draw connections
+                drawConnections();
+            }
+
+            // Create nodes with relative positioning
             function createNodes() {
-                 mapStage.innerHTML = ''; // Clear previous nodes if any
-                 mapStage.appendChild(gridBackground); // Re-add grid
-                 mapStage.appendChild(connectionsContainer); // Re-add connections container
+                // Clear existing nodes
+                const existingNodes = stageContainer.querySelectorAll('.node');
+                existingNodes.forEach(node => node.remove());
+                
+                // Calculate map dimensions
+                const mapWidth = map.clientWidth;
+                const mapHeight = map.clientHeight;
 
                 moduleData.forEach(module => {
+                    // Convert relative coordinates to actual pixels
+                    const x = (module.x / 100) * mapWidth;
+                    const y = (module.y / 100) * mapHeight;
+                    
+                    // Store position for later use
+                    nodePositions[module.id] = { x, y, size: module.size };
+
+                    // Create node container
                     const nodeElement = document.createElement('div');
                     nodeElement.className = `node ${module.type}`;
                     nodeElement.id = module.id;
                     nodeElement.dataset.name = module.name;
-                    nodeElement.dataset.shortname = module.shortName; // Store shortname
-                    nodeElement.dataset.size = module.size; // Store size
-                    nodeElement.dataset.labelPos = module.label?.position; // Store label pref
-
-                    // Accessibility Attributes
+                    nodeElement.style.left = `${x - module.size / 2}px`;
+                    nodeElement.style.top = `${y - module.size / 2}px`;
+                    
+                    // Add tabindex for keyboard navigation
                     nodeElement.setAttribute('tabindex', '0');
                     nodeElement.setAttribute('role', 'button');
-                    nodeElement.setAttribute('aria-label', `Module ${module.name}. Press Enter or Space to view details.`);
-
+                    nodeElement.setAttribute('aria-label', `${module.name} module`);
+                    
                     // Create circle
                     const circle = document.createElement('div');
                     circle.className = 'node-circle';
@@ -692,417 +975,416 @@
                     const label = document.createElement('div');
                     label.className = 'node-label';
                     label.textContent = module.shortName;
-                    // Label visibility handled by CSS/toggle function
-                    if (!labelsVisible) {
-                         label.style.opacity = '0';
-                         label.style.visibility = 'hidden';
-                    }
-                    nodeElement.appendChild(label);
-
-                    // Add event listeners
-                    nodeElement.addEventListener('mouseenter', handleNodePointerEnter);
-                    nodeElement.addEventListener('mouseleave', handleNodePointerLeave);
-                    nodeElement.addEventListener('focus', handleNodeFocus);
-                    nodeElement.addEventListener('blur', handleNodeBlur);
-                    nodeElement.addEventListener('click', handleNodeSelect);
-                    nodeElement.addEventListener('keydown', handleNodeKeydown);
-
-                    // Add node to the stage
-                    mapStage.appendChild(nodeElement);
-                });
-            }
-
-             // --- Node and Label Positioning (Called on init and resize) ---
-             function positionNodes() {
-                const mapWidth = mapContainer.clientWidth;
-                const mapHeight = mapContainer.clientHeight;
-
-                const nodes = mapStage.querySelectorAll('.node');
-                nodes.forEach(nodeElement => {
-                    const module = moduleData.find(m => m.id === nodeElement.id);
-                    if (!module) return;
-
-                    // Calculate pixel position based on percentages and current map size
-                    const moduleSize = parseFloat(nodeElement.dataset.size);
-                    const x = (module.x / 100) * mapWidth - moduleSize / 2; // Center horizontally
-                    const y = (module.y / 100) * mapHeight - moduleSize / 2; // Center vertically
-
-                    nodeElement.style.left = `${x}px`;
-                    nodeElement.style.top = `${y}px`;
-
-                    // Position Label (Improved Logic)
-                    const label = nodeElement.querySelector('.node-label');
-                    const labelPositionPref = nodeElement.dataset.labelPos;
-
-                    // Determine fallback position based on quadrant if no preference
-                    const fallbackPosition = module.x < 30 ? 'left' :
-                                             module.x > 70 ? 'right' :
-                                             module.y < 50 ? 'top' : 'bottom';
-                    const labelPosition = labelPositionPref || fallbackPosition;
-
-                    // Reset inline styles potentially set before
-                    label.style.left = '';
-                    label.style.right = '';
-                    label.style.top = '';
-                    label.style.bottom = '';
-                    label.style.transform = '';
-                    label.style.textAlign = 'center'; // Default
-
-                    const offset = 8; // Space between node and label
-
+                    
+                    // Position label based on specified position or fallback to position in map
+                    const labelPosition = module.label?.position || 
+                        (module.x < 30 ? 'left' : 
+                         module.x > 70 ? 'right' : 
+                         module.y < 30 ? 'top' : 'bottom');
+                    
+                    // Set label position with transform for better positioning
                     switch(labelPosition) {
                         case 'left':
+                            label.style.right = `${module.size}px`;
                             label.style.top = `50%`;
-                            label.style.right = `${moduleSize / 2 + offset}px`; // Position right edge relative to node center
-                            label.style.transform = `translateY(-50%)`; // Vertically center
-                            label.style.textAlign = 'right';
+                            label.style.transform = 'translate(0, -50%)';
                             break;
                         case 'right':
+                            label.style.left = `${module.size}px`;
                             label.style.top = `50%`;
-                            label.style.left = `${moduleSize / 2 + offset}px`; // Position left edge relative to node center
-                            label.style.transform = `translateY(-50%)`; // Vertically center
-                            label.style.textAlign = 'left';
+                            label.style.transform = 'translate(0, -50%)';
                             break;
                         case 'top':
+                            label.style.top = `-10px`;
                             label.style.left = `50%`;
-                            label.style.bottom = `${moduleSize / 2 + offset}px`; // Position bottom edge relative to node center
-                            label.style.transform = 'translateX(-50%)'; // Horizontally center
+                            label.style.transform = 'translate(-50%, -100%)';
                             break;
                         case 'bottom':
                         default:
+                            label.style.top = `${module.size + 10}px`;
                             label.style.left = `50%`;
-                            label.style.top = `${moduleSize / 2 + offset}px`; // Position top edge relative to node center
-                            label.style.transform = 'translateX(-50%)'; // Horizontally center
+                            label.style.transform = 'translateX(-50%)';
                             break;
                     }
+                    
+                    nodeElement.appendChild(label);
+
+                    // Add event listeners
+                    nodeElement.addEventListener('mouseenter', showTooltip);
+                    nodeElement.addEventListener('mouseleave', hideTooltip);
+                    nodeElement.addEventListener('click', selectNode);
+                    nodeElement.addEventListener('focus', showTooltip);
+                    nodeElement.addEventListener('blur', hideTooltip);
+                    // Add keyboard support
+                    nodeElement.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            selectNode(e);
+                        }
+                    });
+
+                    // Store node element for later reference
+                    nodeElements[module.id] = nodeElement;
+                    
+                    // Add to stage container
+                    stageContainer.appendChild(nodeElement);
                 });
-             }
+            }
 
+            // Calculate curve path points between modules
+            function getCurvedPath(startPoint, endPoint, isSubmoduleConnection = false) {
+                // Calculate midpoint
+                const midX = (startPoint.x + endPoint.x) / 2;
+                const midY = (startPoint.y + endPoint.y) / 2;
+                
+                // Create perpendicular offset for better curves
+                const dx = endPoint.x - startPoint.x;
+                const dy = endPoint.y - startPoint.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                // Calculate perpendicular offset (orthogonal to line)
+                // Use Catmull-Rom spline approach for smoother curves
+                // Adjust curve strength based on connection type
+                const curveFactor = isSubmoduleConnection ? 0.1 : 0.2;
+                const perpX = -dy / dist * dist * curveFactor;
+                const perpY = dx / dist * dist * curveFactor;
+                
+                const ctrlX = midX + perpX;
+                const ctrlY = midY + perpY;
+                
+                return { 
+                    midX, midY,
+                    ctrlX, ctrlY
+                };
+            }
 
-            // --- Draw Connections (Called on init and resize) ---
+            // Draw connections between nodes
             function drawConnections() {
-                connectionsContainer.innerHTML = ''; // Clear existing
-
+                // Check if connections container exists in the DOM
+                if (!connectionsContainer.parentNode) return;
+                
+                // Clear existing connections
+                connectionsContainer.innerHTML = '';
+                
+                // Create SVG element for connections
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.setAttribute('width', '100%'); // Relative to stage size
+                svg.setAttribute('width', '100%');
                 svg.setAttribute('height', '100%');
                 svg.style.position = 'absolute';
                 svg.style.top = '0';
                 svg.style.left = '0';
-                // pointerEvents: none; is inherited from container CSS
-
+                svg.style.pointerEvents = 'none';
+                
+                // Create different groups for main and sub connections for layering
+                const mainPathGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                const subPathGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                svg.appendChild(mainPathGroup);
+                svg.appendChild(subPathGroup);
+                
+                // Draw connection paths
                 connectionPaths.forEach(conn => {
                     const moduleIds = conn.path.split('-');
-                    if (moduleIds.length < 2) return;
-
-                    const points = [];
-                    for (const moduleId of moduleIds) {
-                        const nodeElement = document.getElementById(moduleId);
-                        if (nodeElement) {
-                            // Get position relative to the stage (using offsetLeft/Top)
-                            const x = nodeElement.offsetLeft + nodeElement.offsetWidth / 2;
-                            const y = nodeElement.offsetTop + nodeElement.offsetHeight / 2;
-                            points.push({ x, y });
-                        } else {
-                            console.warn(`Node element not found for ID: ${moduleId} in connection path.`);
-                            points.length = 0; // Invalidate path if a node is missing
-                            break;
+                    
+                    if (moduleIds.length >= 2) {
+                        const points = [];
+                        
+                        // Get center point of each module
+                        for (const moduleId of moduleIds) {
+                            const pos = nodePositions[moduleId];
+                            if (pos) {
+                                points.push({ 
+                                    x: pos.x, 
+                                    y: pos.y,
+                                    id: moduleId
+                                });
+                            }
                         }
-                    }
-
-                    if (points.length >= 2) {
-                        let pathD = `M ${points[0].x} ${points[0].y}`;
-                        for (let i = 1; i < points.length; i++) {
-                            const prevPoint = points[i-1];
-                            const currPoint = points[i];
-                            const midX = (prevPoint.x + currPoint.x) / 2;
-                            const midY = (prevPoint.y + currPoint.y) / 2;
-                            const dx = currPoint.x - prevPoint.x;
-                            const dy = currPoint.y - prevPoint.y;
-                            // Simple perpendicular offset for control point
-                            const ctrlOffsetX = dy * 0.25; // Adjust multiplier for curve intensity
-                            const ctrlOffsetY = -dx * 0.25;
-                            const ctrlX = midX + ctrlOffsetX;
-                            const ctrlY = midY + ctrlOffsetY;
-
-                            pathD += ` Q ${ctrlX} ${ctrlY} ${currPoint.x} ${currPoint.y}`;
+                        
+                        if (points.length >= 2) {
+                            let pathD = `M ${points[0].x} ${points[0].y}`;
+                            
+                            // Determine if this is a submodule connection
+                            const isSubmoduleConnection = moduleIds.some(id => id.startsWith('s'));
+                            
+                            // For each segment, create a curved path
+                            for (let i = 1; i < points.length; i++) {
+                                const prevPoint = points[i-1];
+                                const currPoint = points[i];
+                                
+                                // Get curved path points with connection type info
+                                const curve = getCurvedPath(prevPoint, currPoint, isSubmoduleConnection);
+                                
+                                // Use quadratic curve for better path aesthetics
+                                pathD += ` Q ${curve.ctrlX} ${curve.ctrlY} ${currPoint.x} ${currPoint.y}`;
+                            }
+                            
+                            // Create the path element
+                            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                            path.setAttribute('d', pathD);
+                            path.setAttribute('stroke', conn.color);
+                            path.setAttribute('stroke-width', isSubmoduleConnection ? '1.5' : '2');
+                            path.setAttribute('fill', 'none');
+                            path.setAttribute('stroke-linejoin', 'round');
+                            path.setAttribute('stroke-linecap', 'round');
+                            path.setAttribute('stroke-opacity', isSubmoduleConnection ? '0.8' : '0.9');
+                            
+                            // Add ARIA description for screen readers
+                            path.setAttribute('aria-hidden', 'true');
+                            
+                            // Add path to appropriate group
+                            if (isSubmoduleConnection) {
+                                subPathGroup.appendChild(path);
+                            } else {
+                                mainPathGroup.appendChild(path);
+                            }
+                            
+                            // For screen readers, create a hidden description of the connection
+                            const desc = document.createElementNS('http://www.w3.org/2000/svg', 'desc');
+                            const moduleNames = moduleIds.map(id => {
+                                const module = moduleData.find(m => m.id === id);
+                                return module ? module.name : id;
+                            });
+                            desc.textContent = `Connection from ${moduleNames.join(' to ')}`;
+                            path.appendChild(desc);
                         }
-
-                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        path.setAttribute('d', pathD);
-                        path.setAttribute('stroke', conn.color);
-                        path.setAttribute('stroke-width', '2'); // Consider scaling stroke width: / scale
-                        path.setAttribute('fill', 'none');
-                        path.setAttribute('stroke-linejoin', 'round');
-                        path.setAttribute('stroke-linecap', 'round');
-                        path.style.opacity = '0.7';
-                        svg.appendChild(path);
                     }
                 });
-
+                
                 connectionsContainer.appendChild(svg);
             }
 
-            // --- Tooltip Handling (Mouse + Focus) ---
-            function showTooltip(targetElement) {
-                const moduleId = targetElement.id;
-                const moduleName = targetElement.dataset.name;
-
-                if (!moduleId || !moduleName) return;
-
-                tooltip.innerHTML = `<h4>${moduleId.toUpperCase()}: ${moduleName}</h4><p>Click or press Enter/Space for details</p>`;
-                tooltip.classList.add('visible');
-
-                // Position relative to the viewport, then adjust for container offset
-                const nodeRect = targetElement.getBoundingClientRect(); // Position in viewport
-                const containerRect = mapContainer.getBoundingClientRect(); // Container position in viewport
-
-                // Calculate position relative to the mapContainer's top-left corner
-                const left = nodeRect.left + nodeRect.width / 2 - containerRect.left;
-                const top = nodeRect.top - containerRect.top;
-
-                tooltip.style.left = `${left}px`;
-                tooltip.style.top = `${top}px`;
-            }
-
-            function hideTooltip() {
-                tooltip.classList.remove('visible');
-            }
-
-            // --- Node Interaction Handlers ---
-            function handleNodePointerEnter(e) { showTooltip(e.currentTarget); }
-            function handleNodePointerLeave() { hideTooltip(); }
-            function handleNodeFocus(e) { showTooltip(e.currentTarget); }
-            function handleNodeBlur() { hideTooltip(); }
-            function handleNodeSelect(e) { selectNode(e.currentTarget); }
-            function handleNodeKeydown(e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault(); // Prevent spacebar scroll
-                    selectNode(e.currentTarget);
+            // Show tooltip on hover or focus
+            function showTooltip(e) {
+                const element = e.currentTarget;
+                const moduleId = element.id;
+                const moduleName = element.dataset.name;
+                
+                if (moduleId && moduleName) {
+                    const content = `<h4>${moduleId.toUpperCase()}: ${moduleName}</h4>
+                                     <p>Click for more details</p>`;
+                    
+                    tooltip.innerHTML = content;
+                    tooltip.style.display = 'block';
+                    
+                    // Position tooltip based on node position
+                    const rect = element.getBoundingClientRect();
+                    const mapRect = map.getBoundingClientRect();
+                    
+                    const left = rect.left + rect.width / 2 - mapRect.left;
+                    const top = rect.top - mapRect.top;
+                    
+                    tooltip.style.left = `${left}px`;
+                    tooltip.style.top = `${top}px`;
                 }
             }
 
-            // --- Node Selection & Details Panel ---
-            function selectNode(nodeElement) {
-                const nodeId = nodeElement.id;
+            // Hide tooltip
+            function hideTooltip() {
+                tooltip.style.display = 'none';
+            }
 
-                // If clicking the already active node, deactivate and close panel
-                if (activeNodeElement === nodeElement) {
-                    activeNodeElement.classList.remove('active-node-style'); // Add a CSS class if needed
-                    activeNodeElement = null;
-                    closeDetailsPanel();
+            // Select node to show details
+            function selectNode(e) {
+                const nodeId = e.currentTarget.id;
+                
+                // Toggle active state if clicking the same node
+                if (activeNodeId === nodeId) {
+                    document.getElementById(activeNodeId).classList.remove('active');
+                    activeNodeId = null;
+                    detailsPanel.classList.remove('active');
                     return;
                 }
-
-                // Deactivate previously active node
-                if (activeNodeElement) {
-                    activeNodeElement.classList.remove('active-node-style');
+                
+                // Clear previous active state
+                if (activeNodeId) {
+                    document.getElementById(activeNodeId).classList.remove('active');
                 }
-
-                // Activate new node
-                activeNodeElement = nodeElement;
-                activeNodeElement.classList.add('active-node-style'); // Add a CSS class if needed
-
+                
+                // Set new active node
+                activeNodeId = nodeId;
+                document.getElementById(activeNodeId).classList.add('active');
+                
                 // Show details
                 showModuleDetails(nodeId);
             }
 
+            // Show module details in panel
             function showModuleDetails(moduleId) {
                 const module = moduleData.find(m => m.id === moduleId);
                 const details = moduleDetails[moduleId];
-
+                
                 if (!module || !details) return;
-
-                // Store the element that triggered the panel opening
-                lastFocusedElement = activeNodeElement || document.activeElement;
-
+                
                 detailsTitle.textContent = `${moduleId.toUpperCase()}: ${module.name}`;
+                
                 let content = `<p>${details.description}</p>`;
-                if (details.topics?.length > 0) {
-                    content += `<p><strong>Key Topics:</strong></p><div class="topic-tags">`;
+                if (details.topics && details.topics.length > 0) {
+                    content += `<p><strong>Key Topics:</strong></p>`;
+                    content += `<div class="topic-tags">`;
                     details.topics.forEach(topic => {
                         content += `<div class="topic-tag">${topic}</div>`;
                     });
                     content += `</div>`;
                 }
+                
                 detailsContent.innerHTML = content;
-                detailsContent.scrollTop = 0; // Scroll content to top
                 detailsPanel.classList.add('active');
-
-                // Focus management: Move focus into the panel (e.g., to the close button)
-                requestAnimationFrame(() => { // Ensure panel is visible before focusing
-                     closeDetails.focus();
-                });
+                
+                // Set focus to the details panel for accessibility
+                setTimeout(() => {
+                    closeDetails.focus();
+                }, 100);
             }
 
-            function closeDetailsPanel() {
-                 detailsPanel.classList.remove('active');
-
-                // Deactivate node visual state if any
-                if (activeNodeElement) {
-                    activeNodeElement.classList.remove('active-node-style');
-                    activeNodeElement = null; // Clear active node reference
-                }
-
-                 // Focus management: Return focus to the element that opened the panel
-                 if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
-                     lastFocusedElement.focus();
-                 }
-                 lastFocusedElement = null; // Clear reference
-            }
-
-
-            // --- Label Toggle ---
+            // Toggle labels visibility
             function toggleLabels() {
                 labelsVisible = !labelsVisible;
-                const labels = mapStage.querySelectorAll('.node-label');
+                const labels = document.querySelectorAll('.node-label');
                 labels.forEach(label => {
                     label.style.opacity = labelsVisible ? '1' : '0';
                     label.style.visibility = labelsVisible ? 'visible' : 'hidden';
                 });
-
-                toggleLabelsBtn.innerHTML = labelsVisible ?
-                    '<i class="fas fa-tag"></i><span>Hide Labels</span>' :
+                
+                toggleLabelsBtn.innerHTML = labelsVisible ? 
+                    '<i class="fas fa-tag"></i><span>Hide Labels</span>' : 
                     '<i class="fas fa-tag"></i><span>Show Labels</span>';
+                
+                // Update button aria-label for screen readers
+                toggleLabelsBtn.setAttribute('aria-label', 
+                    labelsVisible ? 'Hide module labels' : 'Show module labels');
             }
 
-            // --- Panning ---
+            // Pan the map
             function startDrag(e) {
-                // Only drag if clicking directly on the map container or stage background
-                if (e.target === mapContainer || e.target === mapStage || e.target === gridBackground) {
+                if (e.target === map || e.target.classList.contains('map-container') || e.target.classList.contains('grid-background')) {
                     isDragging = true;
-                    mapContainer.classList.add('grabbing');
-                    startX = e.clientX - translateX; // Store initial offset relative to translation
-                    startY = e.clientY - translateY;
-                    mapContainer.style.cursor = 'grabbing'; // Immediate feedback
-                    e.preventDefault(); // Prevent text selection etc.
+                    map.classList.add('grabbing');
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    e.preventDefault();
                 }
             }
 
             function drag(e) {
                 if (!isDragging) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                translateX += dx;
+                translateY += dy;
+                
+                applyTransform();
+                
+                startX = e.clientX;
+                startY = e.clientY;
                 e.preventDefault();
-                translateX = e.clientX - startX;
-                translateY = e.clientY - startY;
-                applyTransform();
             }
 
-            function endDrag(e) {
-                 if (isDragging) {
-                     isDragging = false;
-                     mapContainer.classList.remove('grabbing');
-                     mapContainer.style.cursor = 'grab';
-                 }
+            function endDrag() {
+                if (isDragging) {
+                    isDragging = false;
+                    map.classList.remove('grabbing');
+                    
+                    // After drag ends, redraw connections with final positions
+                    debounce(drawConnections, 100)();
+                }
             }
 
-
-            // --- Zooming ---
-            function zoom(factor, clientX, clientY) {
-                // Get mouse position relative to the map container
-                 const mapRect = mapContainer.getBoundingClientRect();
-                 const mouseX = clientX - mapRect.left;
-                 const mouseY = clientY - mapRect.top;
-
-                // Calculate the point in the stage coordinate system under the mouse
-                 const stageX = (mouseX - translateX) / scale;
-                 const stageY = (mouseY - translateY) / scale;
-
-                // Calculate new scale
-                const newScale = Math.max(0.2, Math.min(scale * factor, 5)); // Constrain scale
-
-                // Calculate new translation to keep the point under the mouse fixed
-                translateX = mouseX - stageX * newScale;
-                translateY = mouseY - stageY * newScale;
-
-                scale = newScale;
-
-                applyTransform();
-            }
-
-             function handleWheelZoom(e) {
-                 e.preventDefault(); // Prevent page scroll
-                 const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15; // Zoom factor
-                 zoom(factor, e.clientX, e.clientY);
-             }
-
+            // Zoom the map
             function zoomIn() {
-                 const mapRect = mapContainer.getBoundingClientRect();
-                 zoom(1.3, mapRect.left + mapRect.width / 2, mapRect.top + mapRect.height / 2); // Zoom towards center
-             }
+                scale = Math.min(scale * 1.2, 3);
+                applyTransform();
+            }
 
             function zoomOut() {
-                 const mapRect = mapContainer.getBoundingClientRect();
-                 zoom(1 / 1.3, mapRect.left + mapRect.width / 2, mapRect.top + mapRect.height / 2); // Zoom out from center
-             }
+                scale = Math.max(scale * 0.8, 0.3);
+                applyTransform();
+            }
 
-             function resetZoomPan() { // Renamed from resetZoom
+            function resetZoom() {
                 scale = 1;
                 translateX = 0;
                 translateY = 0;
                 applyTransform();
             }
 
-
-            // --- Apply Transform ---
+            // Apply transformation efficiently to the stage container
             function applyTransform() {
-                 // Apply transform ONLY to the stage element
-                 mapStage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-
-                 // Optional: Scale grid background size visually
-                 gridBackground.style.setProperty('--current-scale', scale);
-
-                 // DO NOT redraw connections here for performance
+                const transformValue = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                stageContainer.style.transform = transformValue;
+                
+                // Use efficient CSS transforms
+                if (isDragging) {
+                    // During dragging, only update transform without redrawing
+                    return;
+                }
+                
+                // After transform is complete, redraw connections (debounced)
+                debounce(drawConnections, 100)();
             }
 
-            // --- Reset View ---
+            // Reset view
             function resetView() {
-                resetZoomPan(); // Reset zoom and pan
-
-                 // Reset active node state and close panel
-                if (activeNodeElement) {
-                     activeNodeElement.classList.remove('active-node-style');
-                     activeNodeElement = null;
+                // Reset zoom and pan
+                resetZoom();
+                
+                // Reset active node
+                if (activeNodeId) {
+                    document.getElementById(activeNodeId).classList.remove('active');
+                    activeNodeId = null;
                 }
-                 closeDetailsPanel(); // Handles focus return
+                
+                // Hide details panel
+                detailsPanel.classList.remove('active');
+                
+                // Redraw with correct positions
+                createNodes();
+                drawConnections();
             }
 
-            // --- Resize Handling (Debounced) ---
-             function handleResize() {
-                 clearTimeout(resizeTimeout);
-                 resizeTimeout = setTimeout(() => {
-                    console.log("Resizing map...");
-                    positionNodes(); // Reposition nodes based on new container size
-                    drawConnections(); // Redraw connections based on new node positions
-                 }, 250); // Debounce delay in ms
-             }
-
-            // --- Global Keydown Listener (for Escape key) ---
-            function handleGlobalKeydown(e) {
-                if (e.key === 'Escape' && detailsPanel.classList.contains('active')) {
-                     closeDetailsPanel();
-                }
+            // Handle resize - recalculate node positions and redraw
+            function handleResize() {
+                createNodes();
+                drawConnections();
             }
 
-            // --- Event Listeners Setup ---
-            mapContainer.addEventListener('mousedown', startDrag);
-            document.addEventListener('mousemove', drag); // Listen on document for dragging outside map
-            document.addEventListener('mouseup', endDrag); // Listen on document
-            // mapContainer.addEventListener('mouseleave', endDrag); // Can cause issues if mouse released outside window
-            mapContainer.addEventListener('wheel', handleWheelZoom, { passive: false }); // Use wheel for zoom
-
+            // Event listeners
+            map.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('mouseleave', endDrag);
+            
             resetViewBtn.addEventListener('click', resetView);
             toggleLabelsBtn.addEventListener('click', toggleLabels);
             zoomInBtn.addEventListener('click', zoomIn);
             zoomOutBtn.addEventListener('click', zoomOut);
-            zoomResetBtn.addEventListener('click', resetZoomPan); // Use the reset function
-            closeDetails.addEventListener('click', closeDetailsPanel);
+            zoomResetBtn.addEventListener('click', resetZoom);
+            closeDetails.addEventListener('click', () => {
+                detailsPanel.classList.remove('active');
+                if (activeNodeId) {
+                    document.getElementById(activeNodeId).classList.remove('active');
+                    activeNodeId = null;
+                }
+                
+                // Return focus to the previously active node
+                if (activeNodeId) {
+                    document.getElementById(activeNodeId).focus();
+                }
+            });
 
-            window.addEventListener('resize', handleResize);
-            document.addEventListener('keydown', handleGlobalKeydown); // Listen for Escape key
+            // Keyboard listener for details panel - trap focus inside
+            detailsPanel.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeDetails.click();
+                }
+            });
 
-            // --- Initialize ---
+            // Handle window resize - debounced for performance
+            window.addEventListener('resize', debounce(handleResize, 250));
+
+            // Initialize the map
             initializeMap();
-            mapContainer.style.cursor = 'grab'; // Set initial cursor
         });
     </script>
 </body>
