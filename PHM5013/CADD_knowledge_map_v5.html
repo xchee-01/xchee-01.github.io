@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improved CADD Knowledge Map</title>
+    <!-- Use link for fonts for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Typography (Moved @import to <link> in <head>) */
+        :root {
+            /* NUS Color Palette - Deeper shades */
+            --nus-orange: #E06600; /* Deeper orange */
+            --nus-orange-light: #F07C30; /* Slightly deeper */
+            --nus-orange-dark: #B04F00; /* Even deeper */
+
+            --nus-blue: #003D7C; /* Official NUS blue */
+            --nus-blue-light: #0055A0; /* Slightly deeper than original */
+            --nus-blue-dark: #002855; /* Deeper blue */
+
+            /* Extended Palette */
+            --accent-teal: #008196;
+            --accent-green: #00A651;
+            --accent-purple: #6F42C1;
+
+            /* Neutral Colors */
+            --white: #ffffff;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.07);
+
+            /* Animation */
+            --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--gray-50);
+            color: var(--gray-800);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Section */
+        .header {
+            background: linear-gradient(135deg, var(--nus-blue-light) 0%, var(--nus-blue) 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.07'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            z-index: -1;
+        }
+
+        .header h1 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 2.25rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative; /* Needed for absolute positioning of panel/tooltip */
+            width: 100%; /* Ensure it takes width for children */
+        }
+
+        .map-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .legend {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--gray-700);
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .legend-color.foundation {
+            background: linear-gradient(135deg, var(--nus-orange-light), var(--nus-orange));
+            box-shadow: 0 0 0 1px var(--nus-orange-dark);
+        }
+
+        .legend-color.advanced {
+            background: linear-gradient(135deg, var(--nus-blue-light), var(--nus-blue));
+            box-shadow: 0 0 0 1px var(--nus-blue-dark);
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .control-btn {
+            background-color: var(--white);
+            color: var(--nus-blue);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-family: inherit;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all var(--transition-fast);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .control-btn:hover,
+        .control-btn:focus-visible { /* Added focus style */
+            background-color: var(--nus-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            outline: 2px solid var(--nus-blue-dark); /* Focus indicator */
+            outline-offset: 2px;
+        }
+
+        .control-btn i {
+            font-size: 1rem;
+        }
+
+        /* Map Container */
+        .map-wrapper {
+            background-color: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 1.5rem; /* Adjust padding if needed */
+            width: 100%;
+            height: 700px;
+            position: relative; /* Relative for absolute children like panel/zoom */
+            overflow: hidden; /* Crucial: hides overflow from stage */
+            border: 1px solid var(--gray-200);
+        }
+
+        .map-container { /* Outer container, remains static */
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: grab;
+            user-select: none;
+            overflow: hidden; /* Double ensure clipping */
+        }
+
+        .map-container.grabbing {
+            cursor: grabbing;
+        }
+
+        /* NEW: Map Stage - this is the element that gets transformed */
+        #map-stage {
+            position: absolute; /* Positioned within map-container */
+            top: 0;
+            left: 0;
+            width: 100%; /* Takes initial size from parent */
+            height: 100%;
+            transform-origin: 0 0; /* Zoom/Pan relative to top-left */
+            transition: transform var(--transition-normal); /* Smooth transform */
+            will-change: transform; /* Performance hint */
+        }
+
+        /* Grid Background - Now relative to stage might be better */
+        .grid-background {
+            width: 200%; /* Make larger than stage to cover during pan */
+            height: 200%;
+            position: absolute;
+            top: -50%; /* Center it roughly */
+            left: -50%;
+            background-image:
+                linear-gradient(to right, rgba(226, 232, 240, 0.5) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(226, 232, 240, 0.5) 1px, transparent 1px);
+            background-size: calc(40px * var(--current-scale, 1)); /* Adjust grid size with zoom */
+            pointer-events: none;
+            z-index: 1; /* Below nodes and connections */
+        }
+
+        /* Node Styles */
+        .node {
+            position: absolute; /* Positioned absolutely within #map-stage */
+            /* transform-origin: center; NO LONGER NEEDED - stage is transformed */
+            /* transition: transform var(--transition-normal); NO LONGER NEEDED */
+            z-index: 10; /* Above grid and connections */
+            cursor: pointer; /* Indicate interactivity */
+            outline: none; /* Remove default focus outline if custom is added */
+        }
+
+        /* Add focus style for accessibility */
+        .node:focus-visible .node-circle {
+             outline: 3px solid var(--accent-purple);
+             outline-offset: 3px;
+             box-shadow: var(--shadow-lg), 0 0 0 3px var(--accent-purple); /* Enhance shadow on focus */
+        }
+
+
+        .node-circle {
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-normal);
+            position: relative; /* Needed for label positioning context */
+        }
+
+        /* Foundation Module */
+        .node.foundation .node-circle {
+            background: linear-gradient(135deg, var(--nus-orange-light), var(--nus-orange));
+            border: 2px solid var(--nus-orange-dark);
+        }
+
+        /* Advanced Modules */
+        .node.advanced .node-circle {
+            background: linear-gradient(135deg, var(--nus-blue-light), var(--nus-blue));
+            border: 2px solid var(--nus-blue-dark);
+        }
+
+        /* Node Label - Improved Positioning */
+        .node-label {
+            position: absolute;
+            font-size: 0.9rem;
+            color: var(--gray-800);
+            font-weight: 500;
+            white-space: nowrap;
+            pointer-events: none; /* Allow clicks to pass through to node */
+            transition: opacity var(--transition-normal), visibility var(--transition-normal); /* Added visibility */
+            text-align: center;
+            padding: 2px 4px; /* Optional background/padding */
+           /* background-color: rgba(255, 255, 255, 0.6); Optional */
+           /* border-radius: 4px; Optional */
+            z-index: 11; /* Above node circle */
+        }
+
+        /* Connections Container - Positioned within stage */
+        .connections-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5; /* Below nodes, above grid */
+            /* transform: ... NO LONGER NEEDED - Inherits from stage */
+        }
+
+        /* Details Panel */
+        .details-panel {
+            position: absolute; /* Relative to .container or .map-wrapper */
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+            transform: translateX(110%);
+            opacity: 0;
+            visibility: hidden; /* Use visibility for better A11y */
+            transition: transform var(--transition-normal), opacity var(--transition-normal), visibility var(--transition-normal);
+            z-index: 50;
+        }
+
+        .details-panel.active {
+            transform: translateX(0);
+            opacity: 1;
+            visibility: visible; /* Show when active */
+        }
+
+        .details-header {
+            padding: 1rem 1.25rem;
+            background: linear-gradient(to right, var(--nus-blue-light), var(--nus-blue));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .details-header h3 {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .details-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            opacity: 0.8;
+            transition: opacity var(--transition-fast);
+            padding: 5px; /* Easier click target */
+        }
+
+        .details-close:hover,
+        .details-close:focus-visible { /* Added focus style */
+            opacity: 1;
+            outline: 2px solid white;
+             outline-offset: 2px;
+        }
+
+        .details-content {
+            padding: 1.25rem;
+            max-height: 400px; /* Prevent panel becoming too tall */
+            overflow-y: auto; /* Add scroll if content overflows */
+        }
+
+        .details-content p {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--gray-700);
+            line-height: 1.6;
+        }
+
+        .topic-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .topic-tag {
+            background-color: var(--gray-100);
+            color: var(--gray-700);
+            font-size: 0.75rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 100px;
+            border: 1px solid var(--gray-200);
+            transition: all var(--transition-fast);
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute; /* Relative to .container or .map-wrapper */
+            display: block; /* Use opacity/visibility to hide/show */
+            opacity: 0;
+            visibility: hidden;
+            background-color: var(--gray-800);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            max-width: 250px;
+            box-shadow: var(--shadow-lg);
+            z-index: 100;
+            pointer-events: none;
+            transform: translate(-50%, -100%) translateY(-10px);
+            transition: opacity var(--transition-fast), visibility var(--transition-fast);
+        }
+
+        .tooltip.visible { /* Class to show tooltip */
+             opacity: 1;
+             visibility: visible;
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -5px;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid var(--gray-800);
+        }
+
+        .tooltip h4 {
+            margin-bottom: 0.25rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .tooltip p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.8rem;
+        }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 50;
+        }
+
+        .zoom-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            color: var(--nus-blue);
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .zoom-btn:hover,
+        .zoom-btn:focus-visible { /* Added focus style */
+            transform: scale(1.1);
+            background: var(--nus-blue);
+            color: white;
+            outline: 2px solid var(--nus-blue-dark);
+             outline-offset: 1px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.75rem;
+            }
+            .header p {
+                font-size: 0.95rem;
+            }
+            .container {
+                padding: 1rem;
+            }
+            .map-wrapper {
+                height: 500px; /* Adjust height */
+                padding: 1rem;
+            }
+            /* Make details panel more modal-like on small screens */
+            .details-panel {
+                width: calc(100% - 40px); /* Adjust width */
+                max-width: 350px; /* Max width */
+                top: 50%;
+                left: 50%;
+                right: auto; /* Override desktop style */
+                transform: translate(-50%, -50%) scale(0.9) translateX(0); /* Center transform origin */
+                visibility: hidden;
+                opacity: 0;
+            }
+            .details-panel.active {
+                transform: translate(-50%, -50%) scale(1); /* Center active state */
+                visibility: visible;
+                opacity: 1;
+            }
+            .legend {
+                justify-content: center;
+            }
+             .map-controls {
+                 flex-direction: column; /* Stack controls vertically */
+                 align-items: stretch;
+                 gap: 1rem;
+             }
+            .controls {
+                justify-content: center; /* Center buttons */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Computer-Aided Drug Discovery Knowledge Map</h1>
+        <p>Interactive visualization of the CADD curriculum structure</p>
+    </div>
+
+    <div class="container">
+        <div class="map-controls">
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color foundation"></div>
+                    <span>Foundation Module</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color advanced"></div>
+                    <span>Advanced Modules</span>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="control-btn" id="reset-view">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Reset View</span>
+                </button>
+                <button class="control-btn" id="toggle-labels">
+                    <i class="fas fa-tag"></i>
+                    <span>Hide Labels</span> <!-- Initial state -->
+                </button>
+            </div>
+        </div>
+
+        <div class="map-wrapper">
+            <div class="map-container" id="map">
+                 {/* <!-- NEW: Stage for panning/zooming --> */}
+                <div id="map-stage">
+                    <div class="grid-background"></div>
+                    {/* <!-- Connections container now inside stage --> */}
+                    <div class="connections-container" id="connections-container" aria-hidden="true"></div>
+                    {/* <!-- Nodes will be added here by JavaScript (inside stage) --> */}
+                </div>
+            </div>
+            {/* <!-- Tooltip moved outside map-container to avoid clipping --> */}
+            <div class="tooltip" id="tooltip" role="tooltip"></div>
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoom-in" aria-label="Zoom In"><i class="fas fa-plus"></i></button>
+                <button class="zoom-btn" id="zoom-out" aria-label="Zoom Out"><i class="fas fa-minus"></i></button>
+                <button class="zoom-btn" id="zoom-reset" aria-label="Reset Zoom"><i class="fas fa-expand"></i></button>
+            </div>
+             {/* <!-- Details panel outside map-container --> */}
+            <div class="details-panel" id="details-panel" aria-labelledby="details-title" aria-modal="true">
+                <div class="details-header">
+                    <h3 id="details-title">Module Details</h3>
+                    <button class="details-close" id="close-details" aria-label="Close Details Panel"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="details-content" id="details-content">
+                    <p>Select a module to view details.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Main elements
+            const mapContainer = document.getElementById('map');
+            const mapStage = document.getElementById('map-stage'); // New stage element
+            const connectionsContainer = document.getElementById('connections-container');
+            const tooltip = document.getElementById('tooltip');
+            const detailsPanel = document.getElementById('details-panel');
+            const detailsTitle = document.getElementById('details-title');
+            const detailsContent = document.getElementById('details-content');
+            const closeDetails = document.getElementById('close-details');
+            const resetViewBtn = document.getElementById('reset-view');
+            const toggleLabelsBtn = document.getElementById('toggle-labels');
+            const zoomInBtn = document.getElementById('zoom-in');
+            const zoomOutBtn = document.getElementById('zoom-out');
+            const zoomResetBtn = document.getElementById('zoom-reset');
+            const gridBackground = document.querySelector('.grid-background'); // For scaling grid
+
+            // Map state
+            let activeNodeElement = null; // Store the element itself
+            let lastFocusedElement = null; // For returning focus from panel
+            let scale = 1;
+            let translateX = 0;
+            let translateY = 0;
+            let isDragging = false;
+            let startX, startY;
+            let labelsVisible = true;
+            let resizeTimeout; // For debouncing resize
+
+            // Module data (percentages relative to map container)
+            const moduleData = [
+                 { id: 'm0', name: 'Foundations of Drug Discovery', shortName: 'Foundations', type: 'foundation', x: 50, y: 50, size: 70 },
+                 { id: 'm1', name: 'Ligand-Based Virtual Screening', shortName: 'LBVS', type: 'advanced', x: 25, y: 30, size: 60, label: { position: 'bottom' } },
+                 { id: 'm2', name: 'Structure-Based Virtual Screening', shortName: 'SBVS', type: 'advanced', x: 75, y: 30, size: 60, label: { position: 'right' } },
+                 { id: 'm3', name: 'Quantitative Structure-Activity Relationship', shortName: 'QSAR', type: 'advanced', x: 75, y: 70, size: 60, label: { position: 'right' } },
+                 { id: 'm4', name: 'Machine Learning Methods', shortName: 'ML Methods', type: 'advanced', x: 15, y: 15, size: 55, label: { position: 'left' } },
+                 { id: 'm5', name: 'Molecular Dynamics Simulation', shortName: 'MD Simulation', type: 'advanced', x: 85, y: 15, size: 55, label: { position: 'right' } },
+                 { id: 'm6', name: 'ADME/Tox Predictions', shortName: 'ADME/Tox', type: 'advanced', x: 85, y: 85, size: 55, label: { position: 'right' } },
+                 { id: 'm7', name: 'Integration & Applications', shortName: 'Integration', type: 'advanced', x: 25, y: 70, size: 60, label: { position: 'left' } }
+            ];
+
+            // Connection data (paths between module IDs)
+            const connectionPaths = [
+                { path: "m0-m1-m4", color: "var(--nus-blue)" },
+                { path: "m0-m2-m5", color: "var(--nus-blue)" },
+                { path: "m0-m3-m6", color: "var(--nus-blue)" },
+                { path: "m0-m7", color: "var(--nus-blue)" }
+            ];
+
+            // Module details data (can be loaded from JSON)
+            const moduleDetails = {
+                'm0': { description: 'This essential module provides the foundational knowledge required for advanced CADD techniques...', topics: ['Drug discovery process', 'Molecular representation', 'Ligand-protein interactions', 'Biological targets', 'Computational chemistry basics', 'CADD workflows'] },
+                'm1': { description: 'Learn methods to identify potential drug candidates based on similarities to known active compounds...', topics: ['Molecular fingerprints', 'Similarity metrics', 'Pharmacophore models', 'Shape-based screening', '2D and 3D similarity searching', 'Virtual library screening'] },
+                'm2': { description: 'Methods to identify potential drug candidates based on their ability to bind to a target protein structure...', topics: ['Molecular docking', 'Binding site analysis', 'Scoring functions', 'Pose prediction', 'Structure-based pharmacophores', 'Protein preparation'] },
+                'm3': { description: 'Learn techniques to mathematically relate chemical structures to their biological activities...', topics: ['QSAR modeling principles', 'Descriptor selection', 'Model validation', 'Activity prediction', 'Structure-property relationships', 'Medicinal chemistry applications'] },
+                'm4': { description: 'Advanced computational methods applying artificial intelligence and statistical learning...', topics: ['ML algorithms for CADD', 'Feature representation', 'Deep learning in drug discovery', 'Active learning strategies', 'Neural networks', 'Predictive modeling'] },
+                'm5': { description: 'Explore the dynamic behavior of biomolecular systems through computer simulations...', topics: ['Force fields', 'System preparation', 'Trajectory analysis', 'Enhanced sampling methods', 'Free energy calculations', 'Protein-ligand dynamics'] },
+                'm6': { description: 'Methods to predict drug-like properties and potential toxicity issues early in the drug discovery process.', topics: ['Absorption and bioavailability', 'Distribution and metabolism', 'Excretion models', 'Toxicity prediction', 'Drug-likeness rules', 'Property optimization'] },
+                'm7': { description: 'Learn to combine multiple computational approaches into effective drug discovery workflows...', topics: ['Multi-method workflows', 'Case studies in drug discovery', 'Best practices', 'Future directions in CADD', 'Hit-to-lead optimization', 'Practical limitations and solutions'] }
+            };
+
+            // --- Initialization ---
+            function initializeMap() {
+                createNodes();
+                positionNodes(); // Initial positioning
+                drawConnections(); // Initial connection draw
+                applyTransform(); // Apply initial transform (if any needed)
+            }
+
+            // --- Node Creation ---
+            function createNodes() {
+                 mapStage.innerHTML = ''; // Clear previous nodes if any
+                 mapStage.appendChild(gridBackground); // Re-add grid
+                 mapStage.appendChild(connectionsContainer); // Re-add connections container
+
+                moduleData.forEach(module => {
+                    const nodeElement = document.createElement('div');
+                    nodeElement.className = `node ${module.type}`;
+                    nodeElement.id = module.id;
+                    nodeElement.dataset.name = module.name;
+                    nodeElement.dataset.shortname = module.shortName; // Store shortname
+                    nodeElement.dataset.size = module.size; // Store size
+                    nodeElement.dataset.labelPos = module.label?.position; // Store label pref
+
+                    // Accessibility Attributes
+                    nodeElement.setAttribute('tabindex', '0');
+                    nodeElement.setAttribute('role', 'button');
+                    nodeElement.setAttribute('aria-label', `Module ${module.name}. Press Enter or Space to view details.`);
+
+                    // Create circle
+                    const circle = document.createElement('div');
+                    circle.className = 'node-circle';
+                    circle.style.width = `${module.size}px`;
+                    circle.style.height = `${module.size}px`;
+                    circle.innerHTML = module.id.toUpperCase();
+                    nodeElement.appendChild(circle);
+
+                    // Create label
+                    const label = document.createElement('div');
+                    label.className = 'node-label';
+                    label.textContent = module.shortName;
+                    // Label visibility handled by CSS/toggle function
+                    if (!labelsVisible) {
+                         label.style.opacity = '0';
+                         label.style.visibility = 'hidden';
+                    }
+                    nodeElement.appendChild(label);
+
+                    // Add event listeners
+                    nodeElement.addEventListener('mouseenter', handleNodePointerEnter);
+                    nodeElement.addEventListener('mouseleave', handleNodePointerLeave);
+                    nodeElement.addEventListener('focus', handleNodeFocus);
+                    nodeElement.addEventListener('blur', handleNodeBlur);
+                    nodeElement.addEventListener('click', handleNodeSelect);
+                    nodeElement.addEventListener('keydown', handleNodeKeydown);
+
+                    // Add node to the stage
+                    mapStage.appendChild(nodeElement);
+                });
+            }
+
+             // --- Node and Label Positioning (Called on init and resize) ---
+             function positionNodes() {
+                const mapWidth = mapContainer.clientWidth;
+                const mapHeight = mapContainer.clientHeight;
+
+                const nodes = mapStage.querySelectorAll('.node');
+                nodes.forEach(nodeElement => {
+                    const module = moduleData.find(m => m.id === nodeElement.id);
+                    if (!module) return;
+
+                    // Calculate pixel position based on percentages and current map size
+                    const moduleSize = parseFloat(nodeElement.dataset.size);
+                    const x = (module.x / 100) * mapWidth - moduleSize / 2; // Center horizontally
+                    const y = (module.y / 100) * mapHeight - moduleSize / 2; // Center vertically
+
+                    nodeElement.style.left = `${x}px`;
+                    nodeElement.style.top = `${y}px`;
+
+                    // Position Label (Improved Logic)
+                    const label = nodeElement.querySelector('.node-label');
+                    const labelPositionPref = nodeElement.dataset.labelPos;
+
+                    // Determine fallback position based on quadrant if no preference
+                    const fallbackPosition = module.x < 30 ? 'left' :
+                                             module.x > 70 ? 'right' :
+                                             module.y < 50 ? 'top' : 'bottom';
+                    const labelPosition = labelPositionPref || fallbackPosition;
+
+                    // Reset inline styles potentially set before
+                    label.style.left = '';
+                    label.style.right = '';
+                    label.style.top = '';
+                    label.style.bottom = '';
+                    label.style.transform = '';
+                    label.style.textAlign = 'center'; // Default
+
+                    const offset = 8; // Space between node and label
+
+                    switch(labelPosition) {
+                        case 'left':
+                            label.style.top = `50%`;
+                            label.style.right = `${moduleSize / 2 + offset}px`; // Position right edge relative to node center
+                            label.style.transform = `translateY(-50%)`; // Vertically center
+                            label.style.textAlign = 'right';
+                            break;
+                        case 'right':
+                            label.style.top = `50%`;
+                            label.style.left = `${moduleSize / 2 + offset}px`; // Position left edge relative to node center
+                            label.style.transform = `translateY(-50%)`; // Vertically center
+                            label.style.textAlign = 'left';
+                            break;
+                        case 'top':
+                            label.style.left = `50%`;
+                            label.style.bottom = `${moduleSize / 2 + offset}px`; // Position bottom edge relative to node center
+                            label.style.transform = 'translateX(-50%)'; // Horizontally center
+                            break;
+                        case 'bottom':
+                        default:
+                            label.style.left = `50%`;
+                            label.style.top = `${moduleSize / 2 + offset}px`; // Position top edge relative to node center
+                            label.style.transform = 'translateX(-50%)'; // Horizontally center
+                            break;
+                    }
+                });
+             }
+
+
+            // --- Draw Connections (Called on init and resize) ---
+            function drawConnections() {
+                connectionsContainer.innerHTML = ''; // Clear existing
+
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', '100%'); // Relative to stage size
+                svg.setAttribute('height', '100%');
+                svg.style.position = 'absolute';
+                svg.style.top = '0';
+                svg.style.left = '0';
+                // pointerEvents: none; is inherited from container CSS
+
+                connectionPaths.forEach(conn => {
+                    const moduleIds = conn.path.split('-');
+                    if (moduleIds.length < 2) return;
+
+                    const points = [];
+                    for (const moduleId of moduleIds) {
+                        const nodeElement = document.getElementById(moduleId);
+                        if (nodeElement) {
+                            // Get position relative to the stage (using offsetLeft/Top)
+                            const x = nodeElement.offsetLeft + nodeElement.offsetWidth / 2;
+                            const y = nodeElement.offsetTop + nodeElement.offsetHeight / 2;
+                            points.push({ x, y });
+                        } else {
+                            console.warn(`Node element not found for ID: ${moduleId} in connection path.`);
+                            points.length = 0; // Invalidate path if a node is missing
+                            break;
+                        }
+                    }
+
+                    if (points.length >= 2) {
+                        let pathD = `M ${points[0].x} ${points[0].y}`;
+                        for (let i = 1; i < points.length; i++) {
+                            const prevPoint = points[i-1];
+                            const currPoint = points[i];
+                            const midX = (prevPoint.x + currPoint.x) / 2;
+                            const midY = (prevPoint.y + currPoint.y) / 2;
+                            const dx = currPoint.x - prevPoint.x;
+                            const dy = currPoint.y - prevPoint.y;
+                            // Simple perpendicular offset for control point
+                            const ctrlOffsetX = dy * 0.25; // Adjust multiplier for curve intensity
+                            const ctrlOffsetY = -dx * 0.25;
+                            const ctrlX = midX + ctrlOffsetX;
+                            const ctrlY = midY + ctrlOffsetY;
+
+                            pathD += ` Q ${ctrlX} ${ctrlY} ${currPoint.x} ${currPoint.y}`;
+                        }
+
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', pathD);
+                        path.setAttribute('stroke', conn.color);
+                        path.setAttribute('stroke-width', '2'); // Consider scaling stroke width: / scale
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('stroke-linejoin', 'round');
+                        path.setAttribute('stroke-linecap', 'round');
+                        path.style.opacity = '0.7';
+                        svg.appendChild(path);
+                    }
+                });
+
+                connectionsContainer.appendChild(svg);
+            }
+
+            // --- Tooltip Handling (Mouse + Focus) ---
+            function showTooltip(targetElement) {
+                const moduleId = targetElement.id;
+                const moduleName = targetElement.dataset.name;
+
+                if (!moduleId || !moduleName) return;
+
+                tooltip.innerHTML = `<h4>${moduleId.toUpperCase()}: ${moduleName}</h4><p>Click or press Enter/Space for details</p>`;
+                tooltip.classList.add('visible');
+
+                // Position relative to the viewport, then adjust for container offset
+                const nodeRect = targetElement.getBoundingClientRect(); // Position in viewport
+                const containerRect = mapContainer.getBoundingClientRect(); // Container position in viewport
+
+                // Calculate position relative to the mapContainer's top-left corner
+                const left = nodeRect.left + nodeRect.width / 2 - containerRect.left;
+                const top = nodeRect.top - containerRect.top;
+
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+            }
+
+            function hideTooltip() {
+                tooltip.classList.remove('visible');
+            }
+
+            // --- Node Interaction Handlers ---
+            function handleNodePointerEnter(e) { showTooltip(e.currentTarget); }
+            function handleNodePointerLeave() { hideTooltip(); }
+            function handleNodeFocus(e) { showTooltip(e.currentTarget); }
+            function handleNodeBlur() { hideTooltip(); }
+            function handleNodeSelect(e) { selectNode(e.currentTarget); }
+            function handleNodeKeydown(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault(); // Prevent spacebar scroll
+                    selectNode(e.currentTarget);
+                }
+            }
+
+            // --- Node Selection & Details Panel ---
+            function selectNode(nodeElement) {
+                const nodeId = nodeElement.id;
+
+                // If clicking the already active node, deactivate and close panel
+                if (activeNodeElement === nodeElement) {
+                    activeNodeElement.classList.remove('active-node-style'); // Add a CSS class if needed
+                    activeNodeElement = null;
+                    closeDetailsPanel();
+                    return;
+                }
+
+                // Deactivate previously active node
+                if (activeNodeElement) {
+                    activeNodeElement.classList.remove('active-node-style');
+                }
+
+                // Activate new node
+                activeNodeElement = nodeElement;
+                activeNodeElement.classList.add('active-node-style'); // Add a CSS class if needed
+
+                // Show details
+                showModuleDetails(nodeId);
+            }
+
+            function showModuleDetails(moduleId) {
+                const module = moduleData.find(m => m.id === moduleId);
+                const details = moduleDetails[moduleId];
+
+                if (!module || !details) return;
+
+                // Store the element that triggered the panel opening
+                lastFocusedElement = activeNodeElement || document.activeElement;
+
+                detailsTitle.textContent = `${moduleId.toUpperCase()}: ${module.name}`;
+                let content = `<p>${details.description}</p>`;
+                if (details.topics?.length > 0) {
+                    content += `<p><strong>Key Topics:</strong></p><div class="topic-tags">`;
+                    details.topics.forEach(topic => {
+                        content += `<div class="topic-tag">${topic}</div>`;
+                    });
+                    content += `</div>`;
+                }
+                detailsContent.innerHTML = content;
+                detailsContent.scrollTop = 0; // Scroll content to top
+                detailsPanel.classList.add('active');
+
+                // Focus management: Move focus into the panel (e.g., to the close button)
+                requestAnimationFrame(() => { // Ensure panel is visible before focusing
+                     closeDetails.focus();
+                });
+            }
+
+            function closeDetailsPanel() {
+                 detailsPanel.classList.remove('active');
+
+                // Deactivate node visual state if any
+                if (activeNodeElement) {
+                    activeNodeElement.classList.remove('active-node-style');
+                    activeNodeElement = null; // Clear active node reference
+                }
+
+                 // Focus management: Return focus to the element that opened the panel
+                 if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+                     lastFocusedElement.focus();
+                 }
+                 lastFocusedElement = null; // Clear reference
+            }
+
+
+            // --- Label Toggle ---
+            function toggleLabels() {
+                labelsVisible = !labelsVisible;
+                const labels = mapStage.querySelectorAll('.node-label');
+                labels.forEach(label => {
+                    label.style.opacity = labelsVisible ? '1' : '0';
+                    label.style.visibility = labelsVisible ? 'visible' : 'hidden';
+                });
+
+                toggleLabelsBtn.innerHTML = labelsVisible ?
+                    '<i class="fas fa-tag"></i><span>Hide Labels</span>' :
+                    '<i class="fas fa-tag"></i><span>Show Labels</span>';
+            }
+
+            // --- Panning ---
+            function startDrag(e) {
+                // Only drag if clicking directly on the map container or stage background
+                if (e.target === mapContainer || e.target === mapStage || e.target === gridBackground) {
+                    isDragging = true;
+                    mapContainer.classList.add('grabbing');
+                    startX = e.clientX - translateX; // Store initial offset relative to translation
+                    startY = e.clientY - translateY;
+                    mapContainer.style.cursor = 'grabbing'; // Immediate feedback
+                    e.preventDefault(); // Prevent text selection etc.
+                }
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                applyTransform();
+            }
+
+            function endDrag(e) {
+                 if (isDragging) {
+                     isDragging = false;
+                     mapContainer.classList.remove('grabbing');
+                     mapContainer.style.cursor = 'grab';
+                 }
+            }
+
+
+            // --- Zooming ---
+            function zoom(factor, clientX, clientY) {
+                // Get mouse position relative to the map container
+                 const mapRect = mapContainer.getBoundingClientRect();
+                 const mouseX = clientX - mapRect.left;
+                 const mouseY = clientY - mapRect.top;
+
+                // Calculate the point in the stage coordinate system under the mouse
+                 const stageX = (mouseX - translateX) / scale;
+                 const stageY = (mouseY - translateY) / scale;
+
+                // Calculate new scale
+                const newScale = Math.max(0.2, Math.min(scale * factor, 5)); // Constrain scale
+
+                // Calculate new translation to keep the point under the mouse fixed
+                translateX = mouseX - stageX * newScale;
+                translateY = mouseY - stageY * newScale;
+
+                scale = newScale;
+
+                applyTransform();
+            }
+
+             function handleWheelZoom(e) {
+                 e.preventDefault(); // Prevent page scroll
+                 const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15; // Zoom factor
+                 zoom(factor, e.clientX, e.clientY);
+             }
+
+            function zoomIn() {
+                 const mapRect = mapContainer.getBoundingClientRect();
+                 zoom(1.3, mapRect.left + mapRect.width / 2, mapRect.top + mapRect.height / 2); // Zoom towards center
+             }
+
+            function zoomOut() {
+                 const mapRect = mapContainer.getBoundingClientRect();
+                 zoom(1 / 1.3, mapRect.left + mapRect.width / 2, mapRect.top + mapRect.height / 2); // Zoom out from center
+             }
+
+             function resetZoomPan() { // Renamed from resetZoom
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+                applyTransform();
+            }
+
+
+            // --- Apply Transform ---
+            function applyTransform() {
+                 // Apply transform ONLY to the stage element
+                 mapStage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+
+                 // Optional: Scale grid background size visually
+                 gridBackground.style.setProperty('--current-scale', scale);
+
+                 // DO NOT redraw connections here for performance
+            }
+
+            // --- Reset View ---
+            function resetView() {
+                resetZoomPan(); // Reset zoom and pan
+
+                 // Reset active node state and close panel
+                if (activeNodeElement) {
+                     activeNodeElement.classList.remove('active-node-style');
+                     activeNodeElement = null;
+                }
+                 closeDetailsPanel(); // Handles focus return
+            }
+
+            // --- Resize Handling (Debounced) ---
+             function handleResize() {
+                 clearTimeout(resizeTimeout);
+                 resizeTimeout = setTimeout(() => {
+                    console.log("Resizing map...");
+                    positionNodes(); // Reposition nodes based on new container size
+                    drawConnections(); // Redraw connections based on new node positions
+                 }, 250); // Debounce delay in ms
+             }
+
+            // --- Global Keydown Listener (for Escape key) ---
+            function handleGlobalKeydown(e) {
+                if (e.key === 'Escape' && detailsPanel.classList.contains('active')) {
+                     closeDetailsPanel();
+                }
+            }
+
+            // --- Event Listeners Setup ---
+            mapContainer.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag); // Listen on document for dragging outside map
+            document.addEventListener('mouseup', endDrag); // Listen on document
+            // mapContainer.addEventListener('mouseleave', endDrag); // Can cause issues if mouse released outside window
+            mapContainer.addEventListener('wheel', handleWheelZoom, { passive: false }); // Use wheel for zoom
+
+            resetViewBtn.addEventListener('click', resetView);
+            toggleLabelsBtn.addEventListener('click', toggleLabels);
+            zoomInBtn.addEventListener('click', zoomIn);
+            zoomOutBtn.addEventListener('click', zoomOut);
+            zoomResetBtn.addEventListener('click', resetZoomPan); // Use the reset function
+            closeDetails.addEventListener('click', closeDetailsPanel);
+
+            window.addEventListener('resize', handleResize);
+            document.addEventListener('keydown', handleGlobalKeydown); // Listen for Escape key
+
+            // --- Initialize ---
+            initializeMap();
+            mapContainer.style.cursor = 'grab'; // Set initial cursor
+        });
+    </script>
+</body>
+</html>
