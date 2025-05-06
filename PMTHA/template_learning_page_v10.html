@@ -1249,6 +1249,7 @@ print(summary_text)</div>
     <canvas id="confetti-canvas"></canvas>
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
         // Replace with your deployed Google Apps Script Web App URL
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxedhPDv6htF5BgUvGrnERM2qsmIWxkLR0suckhVGvDfzExTKi2Q7fqYIjoKC6Om0fxpQ/exec';
@@ -1265,238 +1266,250 @@ print(summary_text)</div>
         const statusElement = document.getElementById('status');
         let pyodide = null;
 
-        // List required Python packages
         const requiredPackages = ['numpy', 'scipy', 'pandas'];
         
-        // NUS colors for confetti
         const nusBlue = '#003D7C';
         const nusOrange = '#EF7C00';
         const nusLightBlue = '#4D7CAE';
         
-        // DOM elements for celebration
         const modal = document.getElementById('celebrationModal');
         const celebrationMessage = document.getElementById('celebrationMessage');
         const confettiCanvas = document.getElementById('confetti-canvas');
         
         // =====================================================
-        // Student Engagement Tracking - Added Functionality
+        // Student Engagement Tracking - Modified Functionality
         // =====================================================
         
-        // Engagement tracking variables
         let sessionId;
-        let startTime;
-        let currentSection = "";
-        let lastUpdateTime;
-        let sectionTimes = {};
-        let lastSendTime;
-        const UPDATE_INTERVAL = 500; // Send data every 0.5 seconds
+        let pageStartTime; // Overall start time of the session on this page
+        let currentSectionId = "";
+        let currentSectionStartTime; // Timestamp when the current section was entered/focused
+        let engagementData = {
+            visits: [], // Array of {section, startTime, duration}
+            totals: {}  // Object of {sectionId: totalTimeInSeconds}
+        };
         let isActive = true;
         let maxScroll = 0;
-        
-        // Initialize engagement tracking
+        let lastActivityTime; // Tracks general user activity
+        // const UPDATE_INTERVAL = 5000; // Send data every 5 seconds (Adjust as needed)
+        const UPDATE_INTERVAL = 2000; // Send data every 2 seconds for more frequent updates during testing
+
+
         function initEngagementTracking() {
-            // Generate a unique session ID
             sessionId = generateSessionId();
-            
-            // Set start time (in Singapore time)
-            startTime = new Date();
-            lastUpdateTime = new Date();
-            lastSendTime = new Date();
-            
-            // Initial section detection
-            detectCurrentSection();
-            
-            // Set up scroll event listener to track scroll depth and section changes
+            pageStartTime = new Date();
+            currentSectionStartTime = pageStartTime; // Initial section (e.g., "intro") effectively starts at page load
+            lastActivityTime = pageStartTime;
+            engagementData = { visits: [], totals: {} }; // Reset on init
+
+            detectCurrentSection(); // Initial detection of section
+
             document.addEventListener('scroll', handleScroll);
-            
-            // Set up visibility change listener
             document.addEventListener('visibilitychange', handleVisibilityChange);
+            window.addEventListener('beforeunload', handleBeforeUnload); // Use a dedicated handler
             
-            // Set up beforeunload event to capture page exit
-            window.addEventListener('beforeunload', sendEngagementData);
-            
-            // Set up interval to send data periodically
-            setInterval(sendEngagementData, UPDATE_INTERVAL);
+            setInterval(sendEngagementDataToServer, UPDATE_INTERVAL);
             
             console.log("Engagement tracking initialized with session ID:", sessionId);
         }
         
-        // Generate a unique session ID
         function generateSessionId() {
             const username = getUsername();
             const timestamp = new Date().getTime();
             const random = Math.floor(Math.random() * 1000000);
             return `${username}_${timestamp}_${random}`;
         }
+
+        function recordSectionVisit(sectionId, visitStartTime, visitEndTime) {
+            if (!sectionId) return; // Do not record for empty sectionId (e.g., if scrolled past all content)
+
+            const durationMs = visitEndTime - visitStartTime;
+            const durationSec = Math.round(durationMs / 1000);
+
+            // Only record if duration is meaningful (e.g., >= 0.5 seconds)
+            if (durationSec >= 0.5) {
+                const formattedStartTime = formatDateSingaporeTime(visitStartTime);
+                engagementData.visits.push({
+                    section: sectionId,
+                    startTime: formattedStartTime,
+                    duration: durationSec
+                });
+                engagementData.totals[sectionId] = (engagementData.totals[sectionId] || 0) + durationSec;
+                console.log(`Recorded visit: ${sectionId}, Start: ${formattedStartTime}, Duration: ${durationSec}s`);
+            }
+        }
         
-        // Handle scroll events
+        function detectCurrentSection() {
+            if (!isActive) return; 
+
+            const headings = document.querySelectorAll('#learning-materials h2');
+            let newSectionId = ""; 
+            const yOffset = window.innerHeight * 0.4; // Section considered current if its title is in top 40% of viewport
+
+            for (const heading of headings) {
+                const rect = heading.getBoundingClientRect();
+                if (rect.top < yOffset && rect.bottom > 0) { // Element's top is above offset and element is still somewhat visible
+                    newSectionId = heading.id;
+                } else if (rect.top >= yOffset) {
+                    // If newSectionId has been set, and we encounter a heading below the threshold,
+                    // the previous one was the last valid one.
+                    break; 
+                }
+            }
+            
+            if (!newSectionId) {
+                const h1 = document.querySelector('#learning-materials h1');
+                if (h1) {
+                    const rect = h1.getBoundingClientRect();
+                    // A bit more lenient for H1, if it's visible at all near the top.
+                    if (rect.top < window.innerHeight * 0.8 && rect.bottom > 0) { 
+                         newSectionId = "intro"; 
+                    }
+                }
+            }
+
+            const now = new Date();
+            if (newSectionId !== currentSectionId) {
+                // If we were in a valid section previously, record the visit to it
+                if (currentSectionId) {
+                    recordSectionVisit(currentSectionId, currentSectionStartTime, now);
+                }
+                // Transition to the new section
+                currentSectionId = newSectionId;
+                currentSectionStartTime = now; // New section's visit starts now
+                
+                if (newSectionId) {
+                    console.log("Changed to section:", newSectionId, "at", formatDateSingaporeTime(now));
+                } else {
+                    console.log("Moved out of a specific section at", formatDateSingaporeTime(now));
+                }
+            }
+            lastActivityTime = now; 
+        }
+
         function handleScroll() {
             if (!isActive) return;
             
-            // Calculate scroll depth percentage
             const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             const currentScroll = document.documentElement.scrollTop;
-            const scrollPercentage = (currentScroll / scrollHeight) * 100;
-            
-            // Update max scroll depth
+            const scrollPercentage = scrollHeight > 0 ? (currentScroll / scrollHeight) * 100 : 0;
             maxScroll = Math.max(maxScroll, scrollPercentage);
             
-            // Detect if section changed
             detectCurrentSection();
         }
         
-        // Handle visibility change (tab active/inactive)
         function handleVisibilityChange() {
-            isActive = document.visibilityState === 'visible';
-            
-            if (isActive) {
-                // User returned to the page
-                const now = new Date();
-                lastUpdateTime = now;
-            } else {
-                // User left the page, send data
-                sendEngagementData();
+            const now = new Date();
+            if (document.visibilityState === 'hidden') {
+                if (isActive && currentSectionId) { 
+                    recordSectionVisit(currentSectionId, currentSectionStartTime, now);
+                }
+                isActive = false;
+                sendEngagementDataToServer(); // Send data when tab becomes hidden
+            } else { // 'visible'
+                isActive = true;
+                lastActivityTime = now;
+                // When tab becomes visible, effectively start a new time segment for the current view
+                currentSectionStartTime = now;
+                detectCurrentSection(); // Re-evaluate current section
             }
         }
-        
-        // Detect current section based on scroll position
-        function detectCurrentSection() {
-            // Get all section headings
-            const headings = document.querySelectorAll('#learning-materials h2');
-            let newSection = "";
-            
-            // Find the section currently in view
-            for (const heading of headings) {
-                const rect = heading.getBoundingClientRect();
-                if (rect.top < window.innerHeight / 2) {
-                    newSection = heading.id;
-                }
+
+        function handleBeforeUnload() {
+            const now = new Date();
+            if (isActive && currentSectionId) {
+                recordSectionVisit(currentSectionId, currentSectionStartTime, now);
             }
-            
-            // If no section is found, we're at the intro
-            if (!newSection && document.querySelector('#learning-materials h1')) {
-                newSection = "intro";
-            }
-            
-            // If section changed, update times
-            if (newSection !== currentSection) {
-                const now = new Date();
-                
-                // If we had a previous section, update its time
-                if (currentSection) {
-                    const sectionTime = now - lastUpdateTime;
-                    sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + sectionTime;
-                }
-                
-                // Update current section and time
-                currentSection = newSection;
-                lastUpdateTime = now;
-            }
+            isActive = false; 
+            // Attempt to send final data. navigator.sendBeacon is more reliable here.
+            sendEngagementDataToServer(true); 
         }
         
-        // Send engagement data to Google Apps Script
-        function sendEngagementData() {
-            // First, update the current section's time
+        function sendEngagementDataToServer(isFinal = false) {
             const now = new Date();
             
-            if (currentSection && isActive) {
-                const sectionTime = now - lastUpdateTime;
-                sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + sectionTime;
-                lastUpdateTime = now;
-            }
-            
-            // Convert section times from milliseconds to seconds for better readability
-            const sectionTimesInSeconds = {};
-            for (const section in sectionTimes) {
-                sectionTimesInSeconds[section] = Math.round(sectionTimes[section] / 1000);
-            }
-            
-            // Calculate total duration in seconds
-            const totalDuration = Math.round((now - startTime) / 1000);
-            
-            // Prepare data for sending
-            const data = {
+            // Create a snapshot of engagementData for sending, especially if isFinal and current section needs adding
+            let dataToSend = JSON.parse(JSON.stringify(engagementData)); 
+
+            // If it's a final send and there's an active section that hasn't been recorded by detectCurrentSection yet
+            // (e.g., user closes tab without scrolling out of the last section)
+            // This case should be covered by handleBeforeUnload calling recordSectionVisit *before* this.
+            // So, engagementData should be up-to-date.
+
+            const payload = {
                 sessionId: sessionId,
                 username: getUsername(),
                 pageUrl: window.location.href,
-                startTime: formatDateSingaporeTime(startTime),
+                startTime: formatDateSingaporeTime(pageStartTime),
                 endTime: formatDateSingaporeTime(now),
-                totalDuration: totalDuration,
+                totalDuration: Math.round((now - pageStartTime) / 1000),
                 scrollDepth: Math.round(maxScroll),
-                sectionTimes: JSON.stringify(sectionTimesInSeconds)
+                sectionTimes: JSON.stringify(dataToSend) // Send the structured visits and totals
             };
             
+            console.log("Attempting to send engagement data:", payload.sectionTimes);
+
             try {
-                // Send data to GAS
-                fetch(ENGAGEMENT_TRACKING_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                    mode: 'no-cors'
-                });
-                
-                console.log("Engagement data sent:", data);
-                lastSendTime = now;
+                if (isFinal && navigator.sendBeacon) {
+                    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                    const success = navigator.sendBeacon(ENGAGEMENT_TRACKING_URL, blob);
+                    console.log(success ? "Engagement data beacon queued." : "Engagement data beacon failed to queue.");
+                } else {
+                    fetch(ENGAGEMENT_TRACKING_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        mode: 'no-cors',
+                        keepalive: isFinal // Important for fetch in beforeunload/visibilitychange
+                    }).then(() => {
+                        console.log("Engagement data sent via fetch.");
+                    }).catch(error => {
+                        // no-cors means we won't see success/failure here in the .then/.catch
+                        // but the request is made.
+                        console.log("Engagement data fetch initiated (no-cors). Error if any:", error);
+                    });
+                }
             } catch (error) {
-                console.error("Error sending engagement data:", error);
+                console.error("Error preparing to send engagement data:", error);
             }
         }
         
-        // Format date to Singapore time string
         function formatDateSingaporeTime(date) {
-            return new Date(date.getTime() + (8 * 60 * 60 * 1000)).toISOString();
+            // SGT is UTC+8
+            const sgDate = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+            return sgDate.toISOString().replace('Z', '+08:00'); // More explicit SGT format
         }
         
-        // Initialize copy buttons with tracking
         function initializeCopyButtons() {
             const copyButtons = document.querySelectorAll('.copy-button');
-            
             copyButtons.forEach(button => {
                 button.addEventListener('click', function() {
-                    // Get the closest code block container
                     const container = this.closest('.code-block-container');
-                    // Get the code block within this container
                     const codeBlock = container.querySelector('.code-block');
-                    // Get the feedback element
                     const feedback = container.querySelector('.copy-feedback');
-                    // Get the code block name
-                    const blockName = container.getAttribute('data-block-name');
+                    const blockName = container.getAttribute('data-block-name') || 'unknown-block';
                     
-                    // Copy the text
                     const textToCopy = codeBlock.textContent;
                     navigator.clipboard.writeText(textToCopy)
                         .then(() => {
-                            // Show feedback
                             feedback.classList.add('show');
-                            
-                            // Track the copy event
                             trackCodeCopy(blockName);
-                            
-                            // Hide feedback after a delay
-                            setTimeout(() => {
-                                feedback.classList.remove('show');
-                            }, 2000);
+                            setTimeout(() => { feedback.classList.remove('show'); }, 2000);
                         })
-                        .catch(err => {
-                            console.error('Failed to copy text: ', err);
-                            // Show error feedback if needed
-                        });
+                        .catch(err => console.error('Failed to copy: ', err));
                 });
             });
         }
         
-        // Track code copy events to Google Sheet
         async function trackCodeCopy(blockName) {
             const username = getUsername();
-            const now = new Date();
             const data = {
                 type: 'code_copy',
                 username: username,
-                timestamp: now.toISOString(),
+                timestamp: new Date().toISOString(),
                 blockName: blockName,
                 pageUrl: window.location.href
             };
-            
             try {
                 await fetch(COPY_TRACKING_URL, {
                     method: 'POST',
@@ -1510,163 +1523,56 @@ print(summary_text)</div>
             }
         }
         
-        // Confetti animation types
         const confettiAnimations = {
-            // Burst from center
-            center: function() {
-                confetti({
-                    particleCount: 150,
-                    spread: 160,
-                    origin: { x: 0.5, y: 0.6 },
-                    colors: [nusBlue, nusOrange, nusLightBlue, '#ffffff']
-                });
+            center: () => confetti({ particleCount: 150, spread: 160, origin: { x: 0.5, y: 0.6 }, colors: [nusBlue, nusOrange, nusLightBlue, '#ffffff'] }),
+            sides: () => {
+                confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0, y: 0.65 }, colors: [nusBlue, nusLightBlue, '#ffffff'] });
+                setTimeout(() => confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.65 }, colors: [nusOrange, nusLightBlue, '#ffffff'] }), 150);
             },
-            // Side bursts
-            sides: function() {
-                confetti({
-                    particleCount: 80,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0, y: 0.65 },
-                    colors: [nusBlue, nusLightBlue, '#ffffff']
-                });
-                
-                setTimeout(() => {
-                    confetti({
-                        particleCount: 80,
-                        angle: 120,
-                        spread: 55,
-                        origin: { x: 1, y: 0.65 },
-                        colors: [nusOrange, nusLightBlue, '#ffffff']
-                    });
-                }, 150);
-            },
-            // Fireworks style
-            fireworks: function() {
-                let duration = 1500;
-                let animationEnd = Date.now() + duration;
-                let defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-                
-                function randomInRange(min, max) {
-                    return Math.random() * (max - min) + min;
-                }
-                
-                let interval = setInterval(function() {
+            fireworks: () => {
+                let duration = 1500, animationEnd = Date.now() + duration, defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+                function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+                let interval = setInterval(() => {
                     let timeLeft = animationEnd - Date.now();
-                    
-                    if (timeLeft <= 0) {
-                        return clearInterval(interval);
-                    }
-                    
+                    if (timeLeft <= 0) return clearInterval(interval);
                     let particleCount = 50 * (timeLeft / duration);
-                    // since particles fall down, start a bit higher than random
-                    confetti(Object.assign({}, defaults, { 
-                        particleCount, 
-                        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-                        colors: [nusBlue, nusLightBlue, '#ffffff']
-                    }));
-                    confetti(Object.assign({}, defaults, { 
-                        particleCount, 
-                        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-                        colors: [nusOrange, nusLightBlue, '#ffffff']
-                    }));
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: [nusBlue, nusLightBlue, '#ffffff'] }));
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: [nusOrange, nusLightBlue, '#ffffff'] }));
                 }, 250);
             },
-            // School pride
-            school: function() {
-                // NUS blue rain
-                confetti({
-                    particleCount: 100,
-                    startVelocity: 30,
-                    spread: 360,
-                    origin: { x: 0.5, y: 0.3 },
-                    colors: [nusBlue],
-                    shapes: ['square'],
-                    scalar: 0.8
-                });
-                
-                // NUS orange rain
-                setTimeout(() => {
-                    confetti({
-                        particleCount: 100,
-                        startVelocity: 30,
-                        spread: 360,
-                        origin: { x: 0.5, y: 0.3 },
-                        colors: [nusOrange],
-                        shapes: ['circle'],
-                        scalar: 0.8
-                    });
-                }, 300);
+            school: () => {
+                confetti({ particleCount: 100, startVelocity: 30, spread: 360, origin: { x: 0.5, y: 0.3 }, colors: [nusBlue], shapes: ['square'], scalar: 0.8 });
+                setTimeout(() => confetti({ particleCount: 100, startVelocity: 30, spread: 360, origin: { x: 0.5, y: 0.3 }, colors: [nusOrange], shapes: ['circle'], scalar: 0.8 }), 300);
             }
         };
         
-        // Set up event listeners for celebration buttons
         function setupCelebrationButtons() {
-            const celebrateButtons = document.querySelectorAll('.celebrate-button');
-            
-            celebrateButtons.forEach(button => {
+            document.querySelectorAll('.celebrate-button').forEach(button => {
                 button.addEventListener('click', function() {
-                    const message = this.getAttribute('data-message');
-                    const animationType = this.getAttribute('data-animation');
-                    
-                    // Show message in modal
-                    celebrationMessage.textContent = message;
+                    celebrationMessage.textContent = this.getAttribute('data-message');
                     modal.style.display = 'block';
-                    
-                    // Trigger confetti animation
-                    if (confettiAnimations[animationType]) {
-                        confettiAnimations[animationType]();
-                    } else {
-                        confettiAnimations.center(); // Default animation
-                    }
+                    const animationType = this.getAttribute('data-animation');
+                    (confettiAnimations[animationType] || confettiAnimations.center)();
                 });
             });
-            
-            // Close modal when close button is clicked
-            document.querySelector('.modal-close').addEventListener('click', function() {
-                modal.style.display = 'none';
-            });
-            
-            // Close modal when clicking outside
-            window.addEventListener('click', function(event) {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
+            document.querySelector('.modal-close').addEventListener('click', () => modal.style.display = 'none');
+            window.addEventListener('click', event => { if (event.target === modal) modal.style.display = 'none'; });
         }
 
-        // Add event listeners for toggle answer buttons
         document.addEventListener('DOMContentLoaded', function() {
-            const toggleButtons = document.querySelectorAll('.toggle-answer');
-            
-            toggleButtons.forEach(button => {
+            document.querySelectorAll('.toggle-answer').forEach(button => {
                 button.addEventListener('click', function() {
                     const answer = this.nextElementSibling;
-                    
-                    if (answer.style.display === 'block') {
-                        answer.style.display = 'none';
-                        this.innerHTML = '<i class="fas fa-lightbulb"></i> Show Answer';
-                    } else {
-                        answer.style.display = 'block';
-                        this.innerHTML = '<i class="fas fa-times"></i> Hide Answer';
-                    }
+                    answer.style.display = answer.style.display === 'block' ? 'none' : 'block';
+                    this.innerHTML = answer.style.display === 'block' ? '<i class="fas fa-times"></i> Hide Answer' : '<i class="fas fa-lightbulb"></i> Show Answer';
                 });
             });
-            
-            // Initialize copy buttons
             initializeCopyButtons();
-            
-            // Set up celebration buttons
             setupCelebrationButtons();
-            
-            // Set up disease info toggle and reactions
-            setupDiseaseInfoToggle();
-            
-            // Initialize engagement tracking
-            initEngagementTracking();
+            setupDiseaseInfoToggle(); // Assuming this is still needed
+            initEngagementTracking(); // Initialize our new engagement tracking
         });
 
-        // Optimized function to get username
         function getUsername() {
             try {
                 const accountsData = localStorage.getItem('accounts');
@@ -1683,54 +1589,37 @@ print(summary_text)</div>
             }
         }
         
-        // Streamlined URL storage
         function storeCurrentUrl() {
-            try {
-                localStorage.setItem('lastVisitedUrl', window.location.href);
-            } catch (error) {
-                console.error('URL storage error:', error);
-            }
+            try { localStorage.setItem('lastVisitedUrl', window.location.href); }
+            catch (error) { console.error('URL storage error:', error); }
         }
         
-        // Simplified authentication check
         function checkAuthentication() {
             const accountsData = localStorage.getItem('accounts');
-            if (!accountsData) {
-                redirectToSignIn();
-                return false;
-            }
-            
+            if (!accountsData) { redirectToSignIn(); return false; }
             try {
                 const accounts = JSON.parse(accountsData);
                 if (!accounts || accounts.length === 0 || !accounts[0].username) {
-                    redirectToSignIn();
-                    return false;
+                    redirectToSignIn(); return false;
                 }
                 return true;
             } catch (error) {
                 console.error('Authentication check error:', error);
-                redirectToSignIn();
-                return false;
+                redirectToSignIn(); return false;
             }
         }
         
-        // Centralized redirect function
         function redirectToSignIn() {
             storeCurrentUrl();
             window.location.href = SIGN_IN_URL;
         }
         
-        // Async logging function
         async function logVisit() {
-            const username = getUsername();
-            const now = new Date();
             const data = {
-                username: username,
-                accessTime: now.toLocaleString(),
+                username: getUsername(),
+                accessTime: new Date().toLocaleString('en-SG', { timeZone: 'Asia/Singapore' }), // SGT
                 url: window.location.href
-                // User agent tracking removed for privacy
             };
-            
             try {
                 await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
@@ -1739,98 +1628,60 @@ print(summary_text)</div>
                     mode: 'no-cors'
                 });
                 console.log('Visit logged successfully');
-            } catch (error) {
-                console.error('Visit logging error:', error);
-            }
+            } catch (error) { console.error('Visit logging error:', error); }
         }
         
-        // For displaying in hidden user info box
         function updateUserInfoDisplay() {
-            const username = getUsername();
-            const now = new Date();
-            document.getElementById('username').textContent = username;
-            document.getElementById('access-time').textContent = now.toLocaleString();
+            document.getElementById('username').textContent = getUsername();
+            document.getElementById('access-time').textContent = new Date().toLocaleString('en-SG', { timeZone: 'Asia/Singapore' });
             document.getElementById('current-url').textContent = window.location.href;
         }
 
-        // Disease information toggle functionality
         function setupDiseaseInfoToggle() {
             const diseaseTitle = document.querySelector('.disease-title');
             const diseasePreview = document.querySelector('.disease-preview');
             const diseaseContent = document.querySelector('.disease-content');
             
-            // Function to toggle the disease info display
             function toggleDiseaseInfo() {
-                const isExpanded = diseaseTitle.classList.contains('expanded');
-                
-                if (isExpanded) {
-                    diseaseTitle.classList.remove('expanded');
-                    diseaseContent.style.display = 'none';
-                    diseasePreview.style.display = 'block';
-                } else {
-                    diseaseTitle.classList.add('expanded');
-                    diseaseContent.style.display = 'block';
-                    diseasePreview.style.display = 'none';
-                    
-                    // Track that user expanded the disease info
-                    trackUserInteraction('disease_info_expanded', 'Lou-Greig Disease');
-                }
+                const isExpanded = diseaseTitle.classList.toggle('expanded');
+                diseaseContent.style.display = isExpanded ? 'block' : 'none';
+                diseasePreview.style.display = isExpanded ? 'none' : 'block';
+                if (isExpanded) trackUserInteraction('disease_info_expanded', 'Lou-Greig Disease');
             }
             
-            // Add click event listeners
             if (diseaseTitle && diseasePreview && diseaseContent) {
                 diseaseTitle.addEventListener('click', toggleDiseaseInfo);
                 diseasePreview.addEventListener('click', toggleDiseaseInfo);
             }
-            
-            // Setup reaction buttons
             setupReactionButtons();
         }
 
-        // extra information reaction buttons
         function setupReactionButtons() {
             const reactionButtons = document.querySelectorAll('.reaction-button');
             const reactionFeedback = document.querySelector('.reaction-feedback');
             
             reactionButtons.forEach(button => {
                 button.addEventListener('click', function() {
-                    // Get the reaction type
                     const reactionType = this.getAttribute('data-reaction');
-                    
-                    // Remove selected class from all buttons
                     reactionButtons.forEach(btn => btn.classList.remove('selected'));
-                    
-                    // Add selected class to the clicked button
                     this.classList.add('selected');
-                    
-                    // Show feedback message
                     if (reactionFeedback) {
                         reactionFeedback.classList.add('show');
-                        
-                        // Hide feedback after 3 seconds
-                        setTimeout(() => {
-                            reactionFeedback.classList.remove('show');
-                        }, 3000);
+                        setTimeout(() => reactionFeedback.classList.remove('show'), 3000);
                     }
-                    
-                    // Track the reaction
                     trackUserInteraction('disease_info_reaction', reactionType);
                 });
             });
         }
 
-        // Generic function to track user interactions
         async function trackUserInteraction(interactionType, interactionValue) {
-            const username = getUsername();
-            const now = new Date();
             const data = {
                 type: interactionType,
-                username: username,
-                timestamp: now.toISOString(),
+                username: getUsername(),
+                timestamp: new Date().toISOString(),
                 value: interactionValue,
                 pageUrl: window.location.href
             };
-            
             try {
                 await fetch(EXTRA_INFO_INTERACTION_URL, {
                     method: 'POST',
@@ -1839,40 +1690,25 @@ print(summary_text)</div>
                     mode: 'no-cors'
                 });
                 console.log('User interaction tracked:', interactionType, interactionValue);
-            } catch (error) {
-                console.error('Interaction tracking error:', error);
-            }
+            } catch (error) { console.error('Interaction tracking error:', error); }
         }
 
         async function main() {
             try {
-                // Authentication and tracking initialization
                 storeCurrentUrl();
                 updateUserInfoDisplay();
-                
-                if (!checkAuthentication()) {
-                    return; // Stop further execution if redirecting
-                }
-                
-                // Async logging
+                if (!checkAuthentication()) return;
                 logVisit();
                 
-                // Python initialization
                 statusElement.textContent = 'Loading Python core...';
                 pyodide = await loadPyodide();
                 statusElement.textContent = `Loading Python libraries... This may take a moment.`;
-
-                // Redirect stdout/stderr for text output
                 pyodide.setStdout({ batched: (msg) => appendToOutputArea(msg) });
                 pyodide.setStderr({ batched: (msg) => appendToOutputArea(`Error: ${msg}`) });
-
-                // Load the required scientific packages
                 await pyodide.loadPackage(requiredPackages);
-
                 statusElement.textContent = 'Python is ready!';
                 runButton.disabled = false; 
                 console.log("Pyodide Ready with packages:", requiredPackages);
-
             } catch (error) {
                 statusElement.textContent = `Error loading Python: ${error}`;
                 console.error("Python loading error:", error);
@@ -1880,46 +1716,33 @@ print(summary_text)</div>
             }
         }
 
-        // Function to append text messages to the text output area
         function appendToOutputArea(message) {
             outputArea.textContent += message + (message.endsWith('\n') ? '' : '\n');
-            outputArea.scrollTop = outputArea.scrollHeight; // Scroll to bottom
+            outputArea.scrollTop = outputArea.scrollHeight;
         }
 
-        // Run Python code when the button is clicked
         runButton.addEventListener('click', async () => {
-            if (!pyodide) {
-                appendToOutputArea("Error: Python is not loaded yet.");
-                return;
-            }
-
-            const pythonCode = codeInput.value;
-            outputArea.textContent = ''; // Clear previous output
-
+            if (!pyodide) { appendToOutputArea("Error: Python is not loaded yet."); return; }
+            outputArea.textContent = ''; 
             statusElement.textContent = 'Running code...';
-            runButton.disabled = true;
-            clearButton.disabled = true;
-
+            runButton.disabled = true; clearButton.disabled = true;
             try {
-                await pyodide.runPythonAsync(pythonCode);
+                await pyodide.runPythonAsync(codeInput.value);
                 statusElement.textContent = 'Execution complete.';
             } catch (error) {
                 console.error("Python execution error:", error);
                 appendToOutputArea(`\n--- Execution Error --- \n${error}\n--------------------`);
                 statusElement.textContent = 'Error during execution.';
             } finally {
-                runButton.disabled = false;
-                clearButton.disabled = false;
+                runButton.disabled = false; clearButton.disabled = false;
             }
         });
 
-        // Clear the output area
         clearButton.addEventListener('click', () => {
             outputArea.textContent = '';
             statusElement.textContent = 'Output cleared. Python is ready.';
         });
         
-        // Initialize the application
         window.addEventListener('load', main);
     </script>
 </body>
