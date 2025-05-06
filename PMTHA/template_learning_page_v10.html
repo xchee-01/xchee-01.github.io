@@ -1255,7 +1255,8 @@ print(summary_text)</div>
         const SIGN_IN_URL = 'https://xchee-01.github.io/PMTHA/SOM-PMTHA_signin.html';
         const COPY_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbz88biGq3GAIfH77lEt_IeWcRbBrZ8r2K-4Z5C0foZDMHQGsuqaGIvhGOBKA5eqW65_AA/exec';
         const EXTRA_INFO_INTERACTION_URL = 'https://script.google.com/macros/s/AKfycbxXHMDDEnZq0krPyE96d22zEp3DqdLmwO74OsxSRW1Rq_JvHEYRXc5IgnaV-6J1l4o_GQ/exec';
-        const STUDENT_ENGAGEMENT_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbycviEnonOAE_rCgrw4iiWj_9XiVIHN1QhaSe3CInMO5rW2HH772f6dnWv9Gaq0I8p0zw/exec';
+        // URL for the student engagement tracking
+        const ENGAGEMENT_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbwL1KPzSn7yMr9LXr9RvuM4pnmyMp6eUR9ks1x_3gsgcFWkzOLyJAEsRDqoV-UJXVgfEg/exec';
         
         const codeInput = document.getElementById('python-code');
         const runButton = document.getElementById('run-button');
@@ -1276,184 +1277,174 @@ print(summary_text)</div>
         const modal = document.getElementById('celebrationModal');
         const celebrationMessage = document.getElementById('celebrationMessage');
         const confettiCanvas = document.getElementById('confetti-canvas');
-
-        // ------ ENGAGEMENT TRACKING VARIABLES ------
-        let sessionId = null;
-        let pageStartTime = null;
-        let currentSection = null;
-        let sectionStartTime = null;
+        
+        // =====================================================
+        // Student Engagement Tracking - Added Functionality
+        // =====================================================
+        
+        // Engagement tracking variables
+        let sessionId;
+        let startTime;
+        let currentSection = "";
+        let lastUpdateTime;
         let sectionTimes = {};
-        let maxScrollDepth = 0;
-        let hasLoggedInitialData = false;
-        let engagementInterval = null;
-        const ENGAGEMENT_UPDATE_INTERVAL = 30000; // 30 seconds
-        const SCROLL_THRESHOLD = 80; // 80% scroll depth
-        
-        // ------ ENGAGEMENT TRACKING FUNCTIONS ------
-        
-        // Generate a unique session ID
-        function generateSessionId() {
-            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        }
-        
-        // Get current time in Singapore timezone (GMT+8)
-        function getSingaporeTime() {
-            const now = new Date();
-            const singaporeTime = new Date(now.getTime() + (8 * 60 * 60 * 1000)); // Add 8 hours for Singapore timezone
-            return singaporeTime;
-        }
-        
-        // Format date as string
-        function formatDateTime(date) {
-            return date.toISOString().replace('T', ' ').substr(0, 19);
-        }
+        let lastSendTime;
+        const UPDATE_INTERVAL = 5000; // Send data every 5 seconds
+        let isActive = true;
+        let maxScroll = 0;
         
         // Initialize engagement tracking
         function initEngagementTracking() {
+            // Generate a unique session ID
             sessionId = generateSessionId();
-            pageStartTime = getSingaporeTime();
             
-            // Set up section tracking
-            setupSectionTracking();
+            // Set start time (in Singapore time)
+            startTime = new Date();
+            lastUpdateTime = new Date();
+            lastSendTime = new Date();
             
-            // Track scroll depth
-            trackScrollDepth();
+            // Initial section detection
+            detectCurrentSection();
             
-            // Set up interval for regular updates
-            engagementInterval = setInterval(updateEngagementData, ENGAGEMENT_UPDATE_INTERVAL);
+            // Set up scroll event listener to track scroll depth and section changes
+            document.addEventListener('scroll', handleScroll);
             
-            // Track when user leaves the page
-            window.addEventListener('beforeunload', function() {
-                const endTime = getSingaporeTime();
-                // If user was in a section, log the time spent
-                if (currentSection && sectionStartTime) {
-                    const timeSpent = (endTime - sectionStartTime) / 1000; // seconds
-                    sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + timeSpent;
-                }
-                
-                // Send final data
-                sendEngagementData(endTime);
-                
-                // Clear interval
-                if (engagementInterval) {
-                    clearInterval(engagementInterval);
-                }
-            });
+            // Set up visibility change listener
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            
+            // Set up beforeunload event to capture page exit
+            window.addEventListener('beforeunload', sendEngagementData);
+            
+            // Set up interval to send data periodically
+            setInterval(sendEngagementData, UPDATE_INTERVAL);
+            
+            console.log("Engagement tracking initialized with session ID:", sessionId);
         }
         
-        // Set up section tracking using Intersection Observer
-        function setupSectionTracking() {
-            const sections = document.querySelectorAll('h2');
-            
-            // Initialize section times object
-            sections.forEach(section => {
-                const sectionId = section.id || `section-${sections.indexOf(section)}`;
-                sectionTimes[sectionId] = 0;
-            });
-            
-            // Set up observer for section visibility
-            const sectionObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const sectionId = entry.target.id || `section-${Array.from(sections).indexOf(entry.target)}`;
-                    
-                    if (entry.isIntersecting) {
-                        // Section entered viewport
-                        if (currentSection && currentSection !== sectionId && sectionStartTime) {
-                            // Log time for previous section
-                            const timeSpent = (new Date() - sectionStartTime) / 1000; // seconds
-                            sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + timeSpent;
-                        }
-                        
-                        // Set new current section
-                        currentSection = sectionId;
-                        sectionStartTime = new Date();
-                    } else if (entry.target.id === currentSection) {
-                        // Section left viewport
-                        if (sectionStartTime) {
-                            const timeSpent = (new Date() - sectionStartTime) / 1000; // seconds
-                            sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + timeSpent;
-                            sectionStartTime = null;
-                            currentSection = null;
-                        }
-                    }
-                });
-            }, { threshold: 0.5 }); // Trigger when 50% of section is visible
-            
-            // Observe all sections
-            sections.forEach(section => {
-                sectionObserver.observe(section);
-            });
+        // Generate a unique session ID
+        function generateSessionId() {
+            const username = getUsername();
+            const timestamp = new Date().getTime();
+            const random = Math.floor(Math.random() * 1000000);
+            return `${username}_${timestamp}_${random}`;
         }
         
-        // Track scroll depth
-        function trackScrollDepth() {
-            window.addEventListener('scroll', function() {
-                // Calculate scroll depth percentage
-                const windowHeight = window.innerHeight;
-                const documentHeight = document.documentElement.scrollHeight;
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                
-                const scrollPercentage = (scrollTop / (documentHeight - windowHeight)) * 100;
-                
-                // Update max scroll depth
-                maxScrollDepth = Math.max(maxScrollDepth, scrollPercentage);
-                
-                // If scroll depth exceeds threshold and we haven't logged initial data yet, log it
-                if (maxScrollDepth >= SCROLL_THRESHOLD && !hasLoggedInitialData) {
-                    hasLoggedInitialData = true;
-                    sendEngagementData();
-                }
-            });
+        // Handle scroll events
+        function handleScroll() {
+            if (!isActive) return;
+            
+            // Calculate scroll depth percentage
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const currentScroll = document.documentElement.scrollTop;
+            const scrollPercentage = (currentScroll / scrollHeight) * 100;
+            
+            // Update max scroll depth
+            maxScroll = Math.max(maxScroll, scrollPercentage);
+            
+            // Detect if section changed
+            detectCurrentSection();
         }
         
-        // Send engagement data to the server
-        function sendEngagementData(endTime = null) {
-            // Get current time if endTime not provided
-            const currentTime = endTime || getSingaporeTime();
-            const totalDuration = (currentTime - pageStartTime) / 1000; // seconds
+        // Handle visibility change (tab active/inactive)
+        function handleVisibilityChange() {
+            isActive = document.visibilityState === 'visible';
             
-            // Update current section time if user is currently in a section
-            if (currentSection && sectionStartTime) {
-                const timeSpent = (new Date() - sectionStartTime) / 1000; // seconds
-                sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + timeSpent;
-                // Reset sectionStartTime to now for ongoing tracking
-                if (!endTime) {
-                    sectionStartTime = new Date();
+            if (isActive) {
+                // User returned to the page
+                const now = new Date();
+                lastUpdateTime = now;
+            } else {
+                // User left the page, send data
+                sendEngagementData();
+            }
+        }
+        
+        // Detect current section based on scroll position
+        function detectCurrentSection() {
+            // Get all section headings
+            const headings = document.querySelectorAll('#learning-materials h2');
+            let newSection = "";
+            
+            // Find the section currently in view
+            for (const heading of headings) {
+                const rect = heading.getBoundingClientRect();
+                if (rect.top < window.innerHeight / 2) {
+                    newSection = heading.id;
                 }
             }
             
-            const engagementData = {
+            // If no section is found, we're at the intro
+            if (!newSection && document.querySelector('#learning-materials h1')) {
+                newSection = "intro";
+            }
+            
+            // If section changed, update times
+            if (newSection !== currentSection) {
+                const now = new Date();
+                
+                // If we had a previous section, update its time
+                if (currentSection) {
+                    const sectionTime = now - lastUpdateTime;
+                    sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + sectionTime;
+                }
+                
+                // Update current section and time
+                currentSection = newSection;
+                lastUpdateTime = now;
+            }
+        }
+        
+        // Send engagement data to Google Apps Script
+        function sendEngagementData() {
+            // First, update the current section's time
+            const now = new Date();
+            
+            if (currentSection && isActive) {
+                const sectionTime = now - lastUpdateTime;
+                sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + sectionTime;
+                lastUpdateTime = now;
+            }
+            
+            // Convert section times from milliseconds to seconds for better readability
+            const sectionTimesInSeconds = {};
+            for (const section in sectionTimes) {
+                sectionTimesInSeconds[section] = Math.round(sectionTimes[section] / 1000);
+            }
+            
+            // Calculate total duration in seconds
+            const totalDuration = Math.round((now - startTime) / 1000);
+            
+            // Prepare data for sending
+            const data = {
                 sessionId: sessionId,
                 username: getUsername(),
                 pageUrl: window.location.href,
-                startTime: formatDateTime(pageStartTime),
-                endTime: endTime ? formatDateTime(endTime) : null,
-                totalDuration: Math.round(totalDuration),
-                maxScrollDepth: Math.round(maxScrollDepth),
-                sectionTimes: JSON.stringify(sectionTimes)
+                startTime: formatDateSingaporeTime(startTime),
+                endTime: formatDateSingaporeTime(now),
+                totalDuration: totalDuration,
+                scrollDepth: Math.round(maxScroll),
+                sectionTimes: JSON.stringify(sectionTimesInSeconds)
             };
             
-            // Send data to server
             try {
-                fetch(STUDENT_ENGAGEMENT_TRACKING_URL, {
+                // Send data to GAS
+                fetch(ENGAGEMENT_TRACKING_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(engagementData),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
                     mode: 'no-cors'
                 });
-                console.log('Engagement data sent:', engagementData);
+                
+                console.log("Engagement data sent:", data);
+                lastSendTime = now;
             } catch (error) {
-                console.error('Error sending engagement data:', error);
+                console.error("Error sending engagement data:", error);
             }
         }
         
-        // Update engagement data regularly
-        function updateEngagementData() {
-            if (hasLoggedInitialData) {
-                sendEngagementData();
-            }
+        // Format date to Singapore time string
+        function formatDateSingaporeTime(date) {
+            return new Date(date.getTime() + (8 * 60 * 60 * 1000)).toISOString();
         }
         
         // Initialize copy buttons with tracking
