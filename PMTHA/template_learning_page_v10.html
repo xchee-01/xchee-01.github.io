@@ -1250,12 +1250,12 @@ print(summary_text)</div>
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
-        // URL for the existing APIs
+        // Replace with your deployed Google Apps Script Web App URL
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxedhPDv6htF5BgUvGrnERM2qsmIWxkLR0suckhVGvDfzExTKi2Q7fqYIjoKC6Om0fxpQ/exec';
         const SIGN_IN_URL = 'https://xchee-01.github.io/PMTHA/SOM-PMTHA_signin.html';
         const COPY_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbz88biGq3GAIfH77lEt_IeWcRbBrZ8r2K-4Z5C0foZDMHQGsuqaGIvhGOBKA5eqW65_AA/exec';
         const EXTRA_INFO_INTERACTION_URL = 'https://script.google.com/macros/s/AKfycbxXHMDDEnZq0krPyE96d22zEp3DqdLmwO74OsxSRW1Rq_JvHEYRXc5IgnaV-6J1l4o_GQ/exec';
-        const STUDENT_ENGAGEMENT_URL = 'https://script.google.com/macros/s/AKfycbycviEnonOAE_rCgrw4iiWj_9XiVIHN1QhaSe3CInMO5rW2HH772f6dnWv9Gaq0I8p0zw/exec';
+        const ENGAGEMENT_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbyIBjgG3vAGSU-yyBLlIbXrRVcwTIv9hAKmPMnOFHDLRGwP0VxQFGsCBQuxiZXd2Xg6/exec';
         
         const codeInput = document.getElementById('python-code');
         const runButton = document.getElementById('run-button');
@@ -1276,116 +1276,108 @@ print(summary_text)</div>
         const modal = document.getElementById('celebrationModal');
         const celebrationMessage = document.getElementById('celebrationMessage');
         const confettiCanvas = document.getElementById('confetti-canvas');
-        
-        // Section tracking variables
-        let activeSection = null;
-        let sectionStartTime = null;
-        let sectionTimers = {};
+
+        // ------ ENGAGEMENT TRACKING VARIABLES ------
+        let sessionId = null;
         let pageStartTime = null;
+        let currentSection = null;
+        let sectionStartTime = null;
+        let sectionTimes = {};
         let maxScrollDepth = 0;
-        let lastScrollDepthUpdate = 0;
-        let pageTrackingInterval = null;
-        let visibilityChangeTime = null;
+        let hasLoggedInitialData = false;
+        let engagementInterval = null;
+        const ENGAGEMENT_UPDATE_INTERVAL = 30000; // 30 seconds
+        const SCROLL_THRESHOLD = 80; // 80% scroll depth
         
-        // Initialize page tracking
-        function initPageTracking() {
-            pageStartTime = Date.now();
+        // ------ ENGAGEMENT TRACKING FUNCTIONS ------
+        
+        // Generate a unique session ID
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Get current time in Singapore timezone (GMT+8)
+        function getSingaporeTime() {
+            const now = new Date();
+            const singaporeTime = new Date(now.getTime() + (8 * 60 * 60 * 1000)); // Add 8 hours for Singapore timezone
+            return singaporeTime;
+        }
+        
+        // Format date as string
+        function formatDateTime(date) {
+            return date.toISOString().replace('T', ' ').substr(0, 19);
+        }
+        
+        // Initialize engagement tracking
+        function initEngagementTracking() {
+            sessionId = generateSessionId();
+            pageStartTime = getSingaporeTime();
             
-            // Set up intersection observers for sections
-            setupSectionObservers();
+            // Set up section tracking
+            setupSectionTracking();
             
-            // Set up scroll tracking
-            window.addEventListener('scroll', trackScrollDepth);
+            // Track scroll depth
+            trackScrollDepth();
             
-            // Set up page visibility tracking
-            document.addEventListener('visibilitychange', handleVisibilityChange);
+            // Set up interval for regular updates
+            engagementInterval = setInterval(updateEngagementData, ENGAGEMENT_UPDATE_INTERVAL);
             
-            // Start periodic tracking
-            pageTrackingInterval = setInterval(sendPeriodicTrackingData, 60000); // Send data every minute
-            
-            // Track page exit
+            // Track when user leaves the page
             window.addEventListener('beforeunload', function() {
-                // Send final tracking data
-                sendTrackingData('page_exit', {
-                    totalTime: Math.round((Date.now() - pageStartTime) / 1000),
-                    sectionTimes: formatSectionTimes(),
-                    maxScrollDepth: maxScrollDepth
-                });
+                const endTime = getSingaporeTime();
+                // If user was in a section, log the time spent
+                if (currentSection && sectionStartTime) {
+                    const timeSpent = (endTime - sectionStartTime) / 1000; // seconds
+                    sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + timeSpent;
+                }
+                
+                // Send final data
+                sendEngagementData(endTime);
+                
+                // Clear interval
+                if (engagementInterval) {
+                    clearInterval(engagementInterval);
+                }
             });
         }
         
-        // Handle visibility change events (tab switching)
-        function handleVisibilityChange() {
-            if (document.hidden) {
-                // Page is hidden (tab switched, minimized)
-                visibilityChangeTime = Date.now();
-                
-                // If there's an active section, pause its timer
-                if (activeSection) {
-                    const timeSpent = Math.round((Date.now() - sectionStartTime) / 1000);
-                    sectionTimers[activeSection] = (sectionTimers[activeSection] || 0) + timeSpent;
-                    sectionStartTime = null;
-                }
-            } else {
-                // Page is visible again
-                if (visibilityChangeTime) {
-                    const timeAway = Math.round((Date.now() - visibilityChangeTime) / 1000);
-                    sendTrackingData('tab_return', {
-                        timeAway: timeAway
-                    });
-                    visibilityChangeTime = null;
-                }
-                
-                // If there was an active section, restart its timer
-                if (activeSection && !sectionStartTime) {
-                    sectionStartTime = Date.now();
-                }
-            }
-        }
-        
-        // Set up intersection observers to track when sections are visible
-        function setupSectionObservers() {
-            const sections = document.querySelectorAll('h2[id^="section-"]');
+        // Set up section tracking using Intersection Observer
+        function setupSectionTracking() {
+            const sections = document.querySelectorAll('h2');
             
-            const options = {
-                root: null,
-                rootMargin: '0px',
-                threshold: 0.5 // At least 50% of the section needs to be visible
-            };
+            // Initialize section times object
+            sections.forEach(section => {
+                const sectionId = section.id || `section-${sections.indexOf(section)}`;
+                sectionTimes[sectionId] = 0;
+            });
             
+            // Set up observer for section visibility
             const sectionObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    const sectionId = entry.target.id;
+                    const sectionId = entry.target.id || `section-${Array.from(sections).indexOf(entry.target)}`;
                     
                     if (entry.isIntersecting) {
-                        // Section is now visible
-                        // If we already have an active section, log the time spent there
-                        if (activeSection && activeSection !== sectionId && sectionStartTime) {
-                            const timeSpent = Math.round((Date.now() - sectionStartTime) / 1000);
-                            sectionTimers[activeSection] = (sectionTimers[activeSection] || 0) + timeSpent;
-                            
-                            // Report section change
-                            sendTrackingData('section_change', {
-                                fromSection: activeSection,
-                                toSection: sectionId,
-                                timeSpent: timeSpent
-                            });
+                        // Section entered viewport
+                        if (currentSection && currentSection !== sectionId && sectionStartTime) {
+                            // Log time for previous section
+                            const timeSpent = (new Date() - sectionStartTime) / 1000; // seconds
+                            sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + timeSpent;
                         }
                         
-                        // Update active section
-                        activeSection = sectionId;
-                        sectionStartTime = Date.now();
-                    } else if (sectionId === activeSection) {
-                        // The active section is no longer visible
-                        const timeSpent = Math.round((Date.now() - sectionStartTime) / 1000);
-                        sectionTimers[activeSection] = (sectionTimers[activeSection] || 0) + timeSpent;
-                        
-                        // Reset active section
-                        activeSection = null;
-                        sectionStartTime = null;
+                        // Set new current section
+                        currentSection = sectionId;
+                        sectionStartTime = new Date();
+                    } else if (entry.target.id === currentSection) {
+                        // Section left viewport
+                        if (sectionStartTime) {
+                            const timeSpent = (new Date() - sectionStartTime) / 1000; // seconds
+                            sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + timeSpent;
+                            sectionStartTime = null;
+                            currentSection = null;
+                        }
                     }
                 });
-            }, options);
+            }, { threshold: 0.5 }); // Trigger when 50% of section is visible
             
             // Observe all sections
             sections.forEach(section => {
@@ -1395,82 +1387,72 @@ print(summary_text)</div>
         
         // Track scroll depth
         function trackScrollDepth() {
-            // Calculate scroll depth percentage
-            const scrollPosition = window.scrollY || document.documentElement.scrollTop;
-            const totalHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            const scrollDepthPercentage = Math.round((scrollPosition / totalHeight) * 100);
-            
-            // Update max scroll depth
-            if (scrollDepthPercentage > maxScrollDepth) {
-                maxScrollDepth = scrollDepthPercentage;
+            window.addEventListener('scroll', function() {
+                // Calculate scroll depth percentage
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
                 
-                // Only send updates if significant time has passed or significant change in depth
-                const now = Date.now();
-                if (now - lastScrollDepthUpdate > 5000) { // 5 seconds between updates
-                    sendTrackingData('scroll_depth', {
-                        depth: maxScrollDepth
-                    });
-                    lastScrollDepthUpdate = now;
+                const scrollPercentage = (scrollTop / (documentHeight - windowHeight)) * 100;
+                
+                // Update max scroll depth
+                maxScrollDepth = Math.max(maxScrollDepth, scrollPercentage);
+                
+                // If scroll depth exceeds threshold and we haven't logged initial data yet, log it
+                if (maxScrollDepth >= SCROLL_THRESHOLD && !hasLoggedInitialData) {
+                    hasLoggedInitialData = true;
+                    sendEngagementData();
                 }
-            }
-        }
-        
-        // Send periodic tracking data
-        function sendPeriodicTrackingData() {
-            // Update current section time if there is an active section
-            let currentSectionTimers = {...sectionTimers};
-            
-            if (activeSection && sectionStartTime) {
-                const currentTimeSpent = Math.round((Date.now() - sectionStartTime) / 1000);
-                currentSectionTimers[activeSection] = (currentSectionTimers[activeSection] || 0) + currentTimeSpent;
-            }
-            
-            sendTrackingData('periodic_update', {
-                totalTime: Math.round((Date.now() - pageStartTime) / 1000),
-                sectionTimes: formatSectionTimes(currentSectionTimers),
-                maxScrollDepth: maxScrollDepth
             });
         }
         
-        // Format section times for reporting
-        function formatSectionTimes(timers = null) {
-            const times = timers || sectionTimers;
-            const formatted = {};
+        // Send engagement data to the server
+        function sendEngagementData(endTime = null) {
+            // Get current time if endTime not provided
+            const currentTime = endTime || getSingaporeTime();
+            const totalDuration = (currentTime - pageStartTime) / 1000; // seconds
             
-            for (const [section, time] of Object.entries(times)) {
-                // Extract section number if possible, otherwise use the full ID
-                const match = section.match(/section-(\d+)/);
-                const sectionKey = match ? `Section ${match[1]}` : section;
-                formatted[sectionKey] = time;
+            // Update current section time if user is currently in a section
+            if (currentSection && sectionStartTime) {
+                const timeSpent = (new Date() - sectionStartTime) / 1000; // seconds
+                sectionTimes[currentSection] = (sectionTimes[currentSection] || 0) + timeSpent;
+                // Reset sectionStartTime to now for ongoing tracking
+                if (!endTime) {
+                    sectionStartTime = new Date();
+                }
             }
             
-            return formatted;
-        }
-        
-        // Send tracking data to the server
-        async function sendTrackingData(eventType, data) {
-            const username = getUsername();
-            const now = new Date();
-            
-            const trackingData = {
-                type: eventType,
-                username: username,
-                timestamp: now.toISOString(),
+            const engagementData = {
+                sessionId: sessionId,
+                username: getUsername(),
                 pageUrl: window.location.href,
-                pageName: document.title,
-                ...data
+                startTime: formatDateTime(pageStartTime),
+                endTime: endTime ? formatDateTime(endTime) : null,
+                totalDuration: Math.round(totalDuration),
+                maxScrollDepth: Math.round(maxScrollDepth),
+                sectionTimes: JSON.stringify(sectionTimes)
             };
             
+            // Send data to server
             try {
-                await fetch(STUDENT_ENGAGEMENT_URL, {
+                fetch(ENGAGEMENT_TRACKING_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(trackingData),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(engagementData),
                     mode: 'no-cors'
                 });
-                console.log(`Tracking data sent: ${eventType}`);
+                console.log('Engagement data sent:', engagementData);
             } catch (error) {
-                console.error('Error sending tracking data:', error);
+                console.error('Error sending engagement data:', error);
+            }
+        }
+        
+        // Update engagement data regularly
+        function updateEngagementData() {
+            if (hasLoggedInitialData) {
+                sendEngagementData();
             }
         }
         
@@ -1646,12 +1628,6 @@ print(summary_text)</div>
                     } else {
                         confettiAnimations.center(); // Default animation
                     }
-                    
-                    // Track celebration event
-                    sendTrackingData('celebrate_button', {
-                        buttonType: animationType,
-                        section: activeSection
-                    });
                 });
             });
             
@@ -1675,22 +1651,13 @@ print(summary_text)</div>
             toggleButtons.forEach(button => {
                 button.addEventListener('click', function() {
                     const answer = this.nextElementSibling;
-                    const isShowing = answer.style.display === 'block';
                     
-                    if (isShowing) {
+                    if (answer.style.display === 'block') {
                         answer.style.display = 'none';
                         this.innerHTML = '<i class="fas fa-lightbulb"></i> Show Answer';
                     } else {
                         answer.style.display = 'block';
                         this.innerHTML = '<i class="fas fa-times"></i> Hide Answer';
-                        
-                        // Track answer reveal
-                        const challengeTitle = this.closest('.challenge').querySelector('h3').textContent;
-                        sendTrackingData('toggle_answer', {
-                            action: 'show',
-                            challenge: challengeTitle,
-                            section: activeSection
-                        });
                     }
                 });
             });
@@ -1704,8 +1671,8 @@ print(summary_text)</div>
             // Set up disease info toggle and reactions
             setupDiseaseInfoToggle();
             
-            // Initialize page tracking
-            initPageTracking();
+            // Initialize engagement tracking
+            initEngagementTracking();
         });
 
         // Optimized function to get username
@@ -1770,6 +1737,7 @@ print(summary_text)</div>
                 username: username,
                 accessTime: now.toLocaleString(),
                 url: window.location.href
+                // User agent tracking removed for privacy
             };
             
             try {
@@ -1780,11 +1748,6 @@ print(summary_text)</div>
                     mode: 'no-cors'
                 });
                 console.log('Visit logged successfully');
-                
-                // Also log the visit to our enhanced tracking
-                sendTrackingData('page_load', {
-                    pageTitle: document.title
-                });
             } catch (error) {
                 console.error('Visit logging error:', error);
             }
@@ -1947,24 +1910,12 @@ print(summary_text)</div>
             clearButton.disabled = true;
 
             try {
-                // Track code execution
-                sendTrackingData('code_execution', {
-                    codeLength: pythonCode.length,
-                    section: activeSection
-                });
-                
                 await pyodide.runPythonAsync(pythonCode);
                 statusElement.textContent = 'Execution complete.';
             } catch (error) {
                 console.error("Python execution error:", error);
                 appendToOutputArea(`\n--- Execution Error --- \n${error}\n--------------------`);
                 statusElement.textContent = 'Error during execution.';
-                
-                // Track execution error
-                sendTrackingData('code_execution_error', {
-                    errorType: error.name,
-                    section: activeSection
-                });
             } finally {
                 runButton.disabled = false;
                 clearButton.disabled = false;
