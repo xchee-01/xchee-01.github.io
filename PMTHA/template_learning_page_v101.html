@@ -1,0 +1,131 @@
+// Session tracking variables
+let sessionId = '';
+let sessionStartTime = '';
+let maxScrollDepth = 0;
+let sessionDuration = 0;
+let updateTimer = null;
+let isSessionEnded = false;
+
+// Replace with your deployed Google Apps Script Web App URL
+const SESSION_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbxedhPDv6htF5BgUvGrnERM2qsmIWxkLR0suckhVGvDfzExTKi2Q7fqYIjoKC6Om0fxpQ/exec';
+
+// Generate a unique session ID
+function generateSessionId() {
+    const timestamp = new Date().getTime();
+    const randomPart = Math.floor(Math.random() * 1000000);
+    return `${timestamp}-${randomPart}`;
+}
+
+// Calculate and update max scroll depth
+function updateScrollDepth() {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const windowHeight = window.innerHeight;
+    const docHeight = Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight
+    );
+    
+    if (docHeight > windowHeight) {
+        const scrollableDistance = docHeight - windowHeight;
+        const currentScrollDepth = Math.floor((scrollTop / scrollableDistance) * 100);
+        maxScrollDepth = Math.max(maxScrollDepth, currentScrollDepth);
+    }
+}
+
+// Update session duration
+function updateSessionDuration() {
+    if (sessionStartTime) {
+        const currentTime = new Date();
+        const startTime = new Date(sessionStartTime);
+        sessionDuration = Math.floor((currentTime - startTime) / 1000); // in seconds
+    }
+}
+
+// Send session data to server
+async function sendSessionData(isEndingSession = false) {
+    if (!sessionId) return;
+    
+    updateSessionDuration();
+    
+    const username = getUsername();
+    const now = new Date();
+    const data = {
+        sessionId: sessionId,
+        username: username,
+        pageUrl: window.location.href,
+        sessionStartTime: sessionStartTime,
+        sessionEndTime: isEndingSession ? now.toISOString() : '',
+        sessionDuration: sessionDuration,
+        maxScrollDepth: maxScrollDepth,
+        isSessionEnded: isEndingSession
+    };
+    
+    try {
+        await fetch(SESSION_TRACKING_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            mode: 'no-cors'
+        });
+        console.log(isEndingSession ? 'Session ended and logged' : 'Session data updated');
+    } catch (error) {
+        console.error('Session tracking error:', error);
+    }
+}
+
+// Initialize session tracking
+function initSessionTracking() {
+    // Generate session ID and record start time if not already set
+    if (!sessionId) {
+        sessionId = generateSessionId();
+        sessionStartTime = new Date().toISOString();
+        console.log('New session started:', sessionId);
+        
+        // Send initial session data
+        sendSessionData();
+        
+        // Set up periodic updates (every 0.5 seconds)
+        updateTimer = setInterval(() => {
+            updateScrollDepth();
+            updateSessionDuration();
+            sendSessionData();
+        }, 500);
+        
+        // Track scroll events to update max scroll depth
+        window.addEventListener('scroll', updateScrollDepth);
+        
+        // Handle page unload to send final session data
+        window.addEventListener('beforeunload', () => {
+            clearInterval(updateTimer);
+            isSessionEnded = true;
+            updateScrollDepth();
+            updateSessionDuration();
+            
+            // Use sendBeacon for more reliable data sending during page unload
+            if (navigator.sendBeacon) {
+                const data = new Blob([JSON.stringify({
+                    sessionId: sessionId,
+                    username: getUsername(),
+                    pageUrl: window.location.href,
+                    sessionStartTime: sessionStartTime,
+                    sessionEndTime: new Date().toISOString(),
+                    sessionDuration: sessionDuration,
+                    maxScrollDepth: maxScrollDepth,
+                    isSessionEnded: true
+                })], { type: 'application/json' });
+                
+                navigator.sendBeacon(SESSION_TRACKING_URL, data);
+                console.log('Session data sent via beacon');
+            } else {
+                // Fallback to fetch
+                sendSessionData(true);
+            }
+        });
+    }
+}
+
+// Initialize session tracking on page load
+window.addEventListener('load', initSessionTracking);
