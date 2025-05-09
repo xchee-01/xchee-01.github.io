@@ -1391,6 +1391,15 @@ print(summary_text)</div>
         const COPY_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbz88biGq3GAIfH77lEt_IeWcRbBrZ8r2K-4Z5C0foZDMHQGsuqaGIvhGOBKA5eqW65_AA/exec';
         const EXTRA_INFO_INTERACTION_URL = 'https://script.google.com/macros/s/AKfycbxXHMDDEnZq0krPyE96d22zEp3DqdLmwO74OsxSRW1Rq_JvHEYRXc5IgnaV-6J1l4o_GQ/exec';
         
+        // Enhanced tracking variables
+        let trackingSessions = {};
+        let activeHeartbeat = null;
+        let lastActivityTime = Date.now();
+        let isTabVisible = true;
+        let trackingQueue = [];
+        const HEARTBEAT_INTERVAL = 60000; // 60 seconds
+        const INACTIVITY_THRESHOLD = 300000; // 5 minutes
+        
         // Section tracking variables
         let currentOpenSection = null;
         let currentSectionStartTime = null;
@@ -1441,18 +1450,49 @@ print(summary_text)</div>
             // Get username
             username = getUsername();
             
-            // Generate new session ID
+            // Check if we have a stored session in localStorage
+            let storedSession = localStorage.getItem('trackingSession');
+            
+            if (storedSession) {
+                try {
+                    const parsedSession = JSON.parse(storedSession);
+                    // Only reuse the session if it's less than 24 hours old
+                    if (Date.now() - parsedSession.startTime < 24 * 60 * 60 * 1000) {
+                        sessionId = parsedSession.sessionId;
+                        trackingSessions = parsedSession.sections || {};
+                        // Log a session continuation
+                        logPageVisit('session_continued');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error parsing stored session:', error);
+                }
+            }
+            
+            // Generate new session ID if we couldn't reuse a stored one
             sessionId = generateSessionId(username);
+            trackingSessions = {};
             
-            // Store in session storage so it persists across page refreshes
-            sessionStorage.setItem('trackingSessionId', sessionId);
+            // Store in localStorage
+            updateLocalStorage();
             
-            // Log the page visit
-            logPageVisit();
+            // Log the new page visit
+            logPageVisit('session_started');
         }
         
-        // Log page visit
-        async function logPageVisit() {
+        // New function to update localStorage with the current tracking state
+        function updateLocalStorage() {
+            const sessionData = {
+                sessionId: sessionId,
+                startTime: Date.now(),
+                sections: trackingSessions,
+                username: username
+            };
+            localStorage.setItem('trackingSession', JSON.stringify(sessionData));
+        }
+        
+        // Log page visit with optional action
+        async function logPageVisit(action = 'page_visit') {
             const timestamp = getSingaporeTime();
             
             const data = {
@@ -1460,7 +1500,8 @@ print(summary_text)</div>
                 sessionId: sessionId,
                 username: username,
                 timestamp: timestamp,
-                url: window.location.href
+                url: window.location.href,
+                action: action
             };
             
             try {
@@ -1473,27 +1514,95 @@ print(summary_text)</div>
                 console.log('Page visit logged');
             } catch (error) {
                 console.error('Error logging page visit:', error);
+                addToQueue(data);
             }
         }
         
-        // Track section interaction
-        async function trackSectionInteraction(sectionId, action, duration = null) {
+        // Start a heartbeat timer for the current section
+        function startHeartbeat(sectionId) {
+            // Clear any existing heartbeat
+            stopHeartbeat();
+            
+            // Initialize section tracking data if it doesn't exist
+            if (!trackingSessions[sectionId]) {
+                trackingSessions[sectionId] = {
+                    totalTime: 0,
+                    lastStartTime: Date.now(),
+                    lastUpdate: Date.now()
+                };
+            } else {
+                // Update last start time
+                trackingSessions[sectionId].lastStartTime = Date.now();
+            }
+            
+            // Set up heartbeat for periodic updates
+            activeHeartbeat = setInterval(() => {
+                if (!isTabVisible) return; // Don't update if tab is not visible
+                
+                // Check for inactivity
+                if (Date.now() - lastActivityTime > INACTIVITY_THRESHOLD) {
+                    console.log('User inactive, pausing tracking');
+                    stopHeartbeat();
+                    return;
+                }
+                
+                // Update time for current section
+                updateSectionTime(sectionId);
+                
+                // Send update to server
+                sendHeartbeat(sectionId);
+                
+            }, HEARTBEAT_INTERVAL);
+            
+            // Update localStorage
+            updateLocalStorage();
+        }
+
+        // Stop the heartbeat timer
+        function stopHeartbeat() {
+            if (activeHeartbeat) {
+                clearInterval(activeHeartbeat);
+                activeHeartbeat = null;
+            }
+        }
+
+        // Update accumulated time for a section
+        function updateSectionTime(sectionId) {
+            if (!trackingSessions[sectionId]) return;
+            
+            const now = Date.now();
+            const elapsed = now - trackingSessions[sectionId].lastStartTime;
+            
+            // Only update if the elapsed time is reasonable (less than 10 minutes)
+            if (elapsed > 0 && elapsed < 600000) {
+                trackingSessions[sectionId].totalTime += elapsed;
+            }
+            
+            // Reset start time
+            trackingSessions[sectionId].lastStartTime = now;
+            trackingSessions[sectionId].lastUpdate = now;
+            
+            // Update localStorage
+            updateLocalStorage();
+        }
+
+        // Send heartbeat update to server
+        async function sendHeartbeat(sectionId) {
+            if (!trackingSessions[sectionId]) return;
+            
             const timestamp = getSingaporeTime();
+            const totalTimeSeconds = Math.round(trackingSessions[sectionId].totalTime / 1000);
             
             const data = {
-                type: 'section_tracking',
+                type: 'section_heartbeat',
                 sessionId: sessionId,
                 username: username,
                 timestamp: timestamp,
                 url: window.location.href,
                 sectionId: sectionId,
-                action: action
+                totalTime: totalTimeSeconds, // Send total accumulated time in seconds
+                lastUpdate: timestamp
             };
-            
-            // Add duration if provided
-            if (duration !== null) {
-                data.duration = duration;
-            }
             
             try {
                 await fetch(TRACKING_API_URL, {
@@ -1502,48 +1611,105 @@ print(summary_text)</div>
                     body: JSON.stringify(data),
                     mode: 'no-cors'
                 });
-                console.log(`Section ${sectionId} ${action} logged`);
+                console.log(`Heartbeat sent for section ${sectionId}: ${totalTimeSeconds}s`);
             } catch (error) {
-                console.error('Error logging section interaction:', error);
+                console.error('Error sending heartbeat:', error);
+                addToQueue(data);
             }
         }
         
-        // Handle section opening and closing
+        // Track user activity
+        function updateActivity() {
+            lastActivityTime = Date.now();
+            
+            // If heartbeat was stopped due to inactivity, restart it for current section
+            if (!activeHeartbeat && currentOpenSection) {
+                startHeartbeat(currentOpenSection);
+            }
+        }
+        
+        // Add to request queue for retry
+        function addToQueue(data) {
+            trackingQueue.push(data);
+            
+            // Store queue in localStorage
+            localStorage.setItem('trackingQueue', JSON.stringify(trackingQueue));
+        }
+
+        // Send queued requests
+        async function sendQueuedRequests() {
+            // Check if we have queued items
+            const storedQueue = localStorage.getItem('trackingQueue');
+            if (storedQueue) {
+                try {
+                    const queue = JSON.parse(storedQueue);
+                    
+                    // Process each item
+                    for (const item of queue) {
+                        try {
+                            await fetch(TRACKING_API_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(item),
+                                mode: 'no-cors'
+                            });
+                        } catch (error) {
+                            console.error('Failed to process queued item:', error);
+                            // Keep in queue for next attempt
+                            addToQueue(item);
+                        }
+                    }
+                    
+                    // Clear the queue if we've processed all items
+                    localStorage.removeItem('trackingQueue');
+                    trackingQueue = [];
+                    
+                } catch (error) {
+                    console.error('Error processing queue:', error);
+                }
+            }
+        }
+
+        // Try to process any queued requests at startup
+        function processQueuedRequests() {
+            setTimeout(sendQueuedRequests, 5000); // Wait 5 seconds after page load
+        }
+        
+        // Handle section opening and closing with enhanced tracking
         function handleSectionToggle(sectionId) {
-            // If there's an open section and it's not the current one
-            if (currentOpenSection !== null && currentOpenSection !== sectionId) {
-                // Calculate duration
-                const endTime = new Date();
-                const duration = Math.round((endTime - currentSectionStartTime) / 1000); // in seconds
-                
-                // Log closing of the previous section
-                trackSectionInteraction(currentOpenSection, 'close', duration);
+            const section = document.querySelector(`#${sectionId}`).closest('.section-header');
+            const content = section.nextElementSibling;
+            const isOpening = !content.classList.contains('active');
+            
+            if (isOpening) {
+                // If there's an already open section, finalize its tracking
+                if (currentOpenSection && currentOpenSection !== sectionId) {
+                    // Update time for previous section
+                    updateSectionTime(currentOpenSection);
+                    stopHeartbeat();
+                    
+                    // Send final update for previous section
+                    sendHeartbeat(currentOpenSection);
+                }
                 
                 // Set new current section
                 currentOpenSection = sectionId;
                 currentSectionStartTime = new Date();
                 
-                // Log opening of the new section
-                trackSectionInteraction(sectionId, 'open');
-            } 
-            // If no section is open or same section is being toggled
-            else if (currentOpenSection === null || currentOpenSection === sectionId) {
-                // Check if section is being opened or closed
-                const section = document.querySelector(`#${sectionId}`).closest('.section-header');
-                const content = section.nextElementSibling;
-                const isOpening = !content.classList.contains('active');
+                // Start heartbeat for this section
+                startHeartbeat(sectionId);
                 
-                if (isOpening) {
-                    // Section is being opened
-                    currentOpenSection = sectionId;
-                    currentSectionStartTime = new Date();
-                    trackSectionInteraction(sectionId, 'open');
-                } else {
-                    // Section is being closed
-                    const endTime = new Date();
-                    const duration = Math.round((endTime - currentSectionStartTime) / 1000); // in seconds
+            } else {
+                // Section is being closed
+                if (currentOpenSection === sectionId) {
+                    // Update time
+                    updateSectionTime(sectionId);
                     
-                    trackSectionInteraction(sectionId, 'close', duration);
+                    // Stop heartbeat
+                    stopHeartbeat();
+                    
+                    // Send final update
+                    sendHeartbeat(sectionId);
                     
                     currentOpenSection = null;
                     currentSectionStartTime = null;
@@ -1614,6 +1780,36 @@ print(summary_text)</div>
                 console.error('Code copy tracking error:', error);
             }
         }
+        
+        // Monitor tab visibility
+        document.addEventListener('visibilitychange', function() {
+            isTabVisible = !document.hidden;
+            
+            if (isTabVisible) {
+                // Tab became visible again
+                console.log('Tab visible, resuming tracking');
+                if (currentOpenSection) {
+                    // Reset the start time to now
+                    if (trackingSessions[currentOpenSection]) {
+                        trackingSessions[currentOpenSection].lastStartTime = Date.now();
+                    }
+                    startHeartbeat(currentOpenSection);
+                }
+            } else {
+                // Tab hidden, pause tracking
+                console.log('Tab hidden, pausing tracking');
+                if (currentOpenSection) {
+                    updateSectionTime(currentOpenSection);
+                    stopHeartbeat();
+                }
+            }
+        });
+
+        // Add activity listeners to detect user interaction
+        document.addEventListener('mousemove', updateActivity);
+        document.addEventListener('keydown', updateActivity);
+        document.addEventListener('click', updateActivity);
+        document.addEventListener('scroll', updateActivity);
         
         // NUS colors for confetti
         const nusBlue = '#003D7C';
@@ -1885,43 +2081,34 @@ print(summary_text)</div>
         
         // Handle page unload events
         window.addEventListener('beforeunload', function() {
-            // If there's an open section, log its closing
-            if (currentOpenSection !== null) {
-                const endTime = new Date();
-                const duration = Math.round((endTime - currentSectionStartTime) / 1000); // in seconds
+            if (currentOpenSection) {
+                // Update final time
+                updateSectionTime(currentOpenSection);
                 
-                // Use navigator.sendBeacon for more reliable tracking on page unload
+                // Try to send a final update
+                const timestamp = getSingaporeTime();
+                const totalTimeSeconds = trackingSessions[currentOpenSection] ? 
+                    Math.round(trackingSessions[currentOpenSection].totalTime / 1000) : 0;
+                
                 if (navigator.sendBeacon) {
                     const data = {
-                        type: 'section_tracking',
+                        type: 'section_final',
                         sessionId: sessionId,
                         username: username,
-                        timestamp: getSingaporeTime(),
+                        timestamp: timestamp,
                         url: window.location.href,
                         sectionId: currentOpenSection,
-                        action: 'close_on_exit',
-                        duration: duration
+                        totalTime: totalTimeSeconds,
+                        lastUpdate: timestamp
                     };
                     
                     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
                     navigator.sendBeacon(TRACKING_API_URL, blob);
-                } else {
-                    // Fallback to synchronous XHR
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', TRACKING_API_URL, false); // false makes it synchronous
-                    xhr.setRequestHeader('Content-Type', 'application/json');
-                    xhr.send(JSON.stringify({
-                        type: 'section_tracking',
-                        sessionId: sessionId,
-                        username: username,
-                        timestamp: getSingaporeTime(),
-                        url: window.location.href,
-                        sectionId: currentOpenSection,
-                        action: 'close_on_exit',
-                        duration: duration
-                    }));
                 }
             }
+            
+            // Process any queued tracking requests
+            sendQueuedRequests();
         });
 
         // Python interpreter functionality
@@ -2004,12 +2191,44 @@ print(summary_text)</div>
             // Initialize session and tracking
             initializeSession();
             
+            // Check for queued requests
+            processQueuedRequests();
+            
             // Set up UI components
             setupSectionDropdowns();
             setupToggleAnswerButtons();
             initializeCopyButtons();
             setupCelebrationButtons();
             setupDiseaseInfoToggle();
+            
+            // Check if a section was active before page refresh
+            const storedSession = localStorage.getItem('trackingSession');
+            if (storedSession) {
+                try {
+                    const session = JSON.parse(storedSession);
+                    // Find last active section
+                    let mostRecentSection = null;
+                    let mostRecentTime = 0;
+                    
+                    for (const [sectionId, data] of Object.entries(session.sections || {})) {
+                        if (data.lastUpdate > mostRecentTime) {
+                            mostRecentTime = data.lastUpdate;
+                            mostRecentSection = sectionId;
+                        }
+                    }
+                    
+                    // If we found a recently active section and it's still on this page, reactivate it
+                    if (mostRecentSection && document.getElementById(mostRecentSection)) {
+                        const section = document.querySelector(`#${mostRecentSection}`).closest('.section-header');
+                        if (section) {
+                            // Simulate click to open the section
+                            section.click();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking for active section:', error);
+                }
+            }
             
             // Initialize Python
             initPython();
