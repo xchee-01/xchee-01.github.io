@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUS Location Finder</title>
+    <style>
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #4F92D6;
+            --light-gray: #f4f6f9;
+            --dark-gray: #555;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-gray);
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+        
+        .nus-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .nus-logo {
+            color: var(--nus-blue);
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+        
+        .nus-logo span {
+            color: var(--nus-orange);
+        }
+        
+        h1 {
+            color: var(--nus-blue);
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            color: var(--dark-gray);
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .password-form {
+            margin: 30px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .input-group {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 20px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 16px;
+            background-color: var(--light-gray);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus {
+            border-color: var(--nus-blue);
+            box-shadow: 0 0 0 3px rgba(0, 61, 124, 0.1);
+        }
+        
+        button {
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 350px;
+        }
+        
+        button:hover {
+            background-color: var(--nus-light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+            transition: all 0.3s ease;
+        }
+        
+        .success {
+            background-color: rgba(0, 200, 83, 0.1);
+            color: #00843D;
+            border: 1px solid rgba(0, 200, 83, 0.3);
+        }
+        
+        .error {
+            background-color: rgba(239, 83, 80, 0.1);
+            color: #DC3545;
+            border: 1px solid rgba(239, 83, 80, 0.3);
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 14px;
+            color: #999;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nus-header">
+            <div class="nus-logo">NUS <span>Campus</span></div>
+        </div>
+        
+        <h1>Where Should I Go?</h1>
+        <p>Enter your password to find out your destination on campus</p>
+        
+        <div class="password-form">
+            <div class="input-group">
+                <input type="text" id="passwordInput" placeholder="Enter password">
+            </div>
+            <button onclick="checkPassword()">Find My Location</button>
+        </div>
+        
+        <div id="result" class="result"></div>
+        
+        <div class="footer">
+            &copy; National University of Singapore
+        </div>
+    </div>
+    
+    <script>
+        // Password data from the spreadsheet
+        const passwordData = [
+            { password: "precision", answer: "Go to Frontier's canteen" },
+            { password: "medicine", answer: "Go to MD7" },
+            { password: "health", answer: "Go to LT35" },
+            { password: "protein", answer: "Go to Central Library" },
+            { password: "dna", answer: "Go to UTown" },
+            { password: "rna", answer: "Go to CTLT" }
+        ];
+        
+        // Add event listener for Enter key
+        document.getElementById("passwordInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                checkPassword();
+            }
+        });
+        
+        function checkPassword() {
+            const input = document.getElementById("passwordInput").value.toLowerCase().trim();
+            const resultDiv = document.getElementById("result");
+            
+            // Clear previous result
+            resultDiv.className = "result";
+            
+            if (!input) {
+                resultDiv.textContent = "Please enter a password";
+                resultDiv.classList.add("error");
+                resultDiv.style.display = "block";
+                return;
+            }
+            
+            // Check if password matches any in our data
+            const match = passwordData.find(item => item.password.toLowerCase() === input);
+            
+            if (match) {
+                resultDiv.textContent = match.answer;
+                resultDiv.classList.add("success");
+            } else {
+                resultDiv.textContent = "Incorrect password. Please try again.";
+                resultDiv.classList.add("error");
+            }
+            
+            resultDiv.style.display = "block";
+            
+            // Add slight animation
+            resultDiv.style.opacity = "0";
+            setTimeout(() => {
+                resultDiv.style.opacity = "1";
+            }, 10);
+        }
+    </script>
+</body>
+</html>
