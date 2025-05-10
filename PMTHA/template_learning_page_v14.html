@@ -1459,9 +1459,9 @@ print(summary_text)</div>
         let inactivityNotificationCount = 0;
         
         // Constants for tracking
-        const TRACKING_INTERVAL = 30000; // 30 seconds for periodic tracking
-        const HEARTBEAT_INTERVAL = 15000; // 15 seconds for heartbeat
-        const INACTIVITY_THRESHOLD = 60000; // 1 minute until user is considered inactive
+        const TRACKING_INTERVAL = 2000; // 2 seconds for periodic tracking
+        const HEARTBEAT_INTERVAL = 2000; // 2 seconds for heartbeat
+        const INACTIVITY_THRESHOLD = 10000; // 10 seconds until user is considered inactive
 
         // Generate a unique session ID
         function generateSessionId() {
@@ -1508,39 +1508,32 @@ print(summary_text)</div>
         }
 
         // Show inactivity popup
-        function showInactivityPopup() {
-            // Pause tracking
-            isTrackingPaused = true;
-            
-            // Increment notification counter
-            inactivityNotificationCount++;
-            
-            // Log the notification event
-            sectionEvents.push({
-                type: 'inactivity_notification',
-                sectionId: getCurrentSectionId(),
-                startTime: new Date(),
-                endTime: null,
-                duration: 0,
-                count: inactivityNotificationCount
-            });
-            
-            // Show the popup
-            const inactivityModal = document.getElementById('inactivityModal');
-            inactivityModal.style.display = 'block';
-            
-            console.log("Tracking paused due to inactivity. Notification count:", inactivityNotificationCount);
-        }
+function showInactivityPopup() {
+    // Only show popup if not already shown
+    if (!isTrackingPaused) {
+        // Pause tracking
+        isTrackingPaused = true;
+        
+        // Show the popup
+        const inactivityModal = document.getElementById('inactivityModal');
+        inactivityModal.style.display = 'block';
+        
+        console.log("Tracking paused due to inactivity");
+    }
+}
 
         // Handle user return after inactivity
-        function handleUserReturn() {
-            // Hide the popup
-            const inactivityModal = document.getElementById('inactivityModal');
-            inactivityModal.style.display = 'none';
-            
-            // Resume tracking
-            isTrackingPaused = false;
-            lastUserActivity = new Date();
+function handleUserReturn() {
+    // Hide the popup
+    const inactivityModal = document.getElementById('inactivityModal');
+    inactivityModal.style.display = 'none';
+    
+    // Resume tracking
+    isTrackingPaused = false;
+    lastUserActivity = new Date();
+    
+    console.log("Tracking resumed");
+}
             
             // Log the user's return after inactivity
             sectionEvents.push({
@@ -1559,123 +1552,98 @@ print(summary_text)</div>
         }
 
         // Setup activity monitoring
-        function setupActivityMonitoring() {
-            // List of events to consider as user activity
-            const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-            
-            // Throttle function to prevent too many event firings
-            function throttle(func, delay) {
-                let lastCall = 0;
-                return function(...args) {
-                    const now = new Date().getTime();
-                    if (now - lastCall < delay) {
-                        return;
-                    }
-                    lastCall = now;
-                    return func(...args);
-                };
+function setupActivityMonitoring() {
+    // List of events to consider as user activity
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    // Throttle function to prevent too many event firings
+    function throttle(func, delay) {
+        let lastCall = 0;
+        return function(...args) {
+            const now = new Date().getTime();
+            if (now - lastCall < delay) {
+                return;
             }
-            
-            // Handle user activity
-            const handleActivity = throttle(function() {
-                const now = new Date();
-                
-                // If tracking was paused due to inactivity, resume it
-                if (isTrackingPaused) {
-                    handleUserReturn();
-                }
-                
-                // Update last activity time
-                lastUserActivity = now;
-                
-                // Reset inactivity timeout
-                resetInactivityTimeout();
-                
-                // If user was inactive and is now active again
-                if (!isUserActive) {
-                    const inactivityDuration = (now - lastUserActivity) / 1000;
-                    
-                    // Log the return from inactivity
-                    sectionEvents.push({
-                        type: 'activity_return',
-                        sectionId: getCurrentSectionId(),
-                        startTime: lastUserActivity,
-                        endTime: now,
-                        duration: inactivityDuration
-                    });
-                    
-                    isUserActive = true;
-                }
-                
-            }, 1000); // Throttle to once per second
-            
-            // Add event listeners for each activity event
-            activityEvents.forEach(function(eventName) {
-                document.addEventListener(eventName, handleActivity, { passive: true });
-            });
+            lastCall = now;
+            return func(...args);
+        };
+    }
+    
+    // Handle user activity
+    const handleActivity = throttle(function() {
+        // Only process if not already handling
+        const now = new Date();
+        
+        // Clear any existing timeout
+        if (inactivityTimeout) {
+            clearTimeout(inactivityTimeout);
         }
         
+        // If tracking was paused due to inactivity, resume it
+        if (isTrackingPaused) {
+            handleUserReturn();
+        }
+        
+        // Update last activity time
+        lastUserActivity = now;
+        
+        // Set new inactivity timeout
+        inactivityTimeout = setTimeout(function() {
+            if (isPageVisible) {
+                showInactivityPopup();
+            }
+        }, INACTIVITY_THRESHOLD);
+    }, 1000); // Throttle to once per second
+    
+    // Add event listeners for each activity event
+    activityEvents.forEach(function(eventName) {
+        document.addEventListener(eventName, handleActivity, { passive: true });
+    });
+}
+        
         // Initialize the Page Visibility API
-        function setupVisibilityTracking() {
-            // Different browsers might have different property names
-            let hidden, visibilityChange;
+function setupVisibilityTracking() {
+    // Different browsers might have different property names
+    let hidden, visibilityChange;
+    
+    if (typeof document.hidden !== "undefined") {
+        hidden = "hidden";
+        visibilityChange = "visibilitychange";
+    } else if (typeof document.msHidden !== "undefined") {
+        hidden = "msHidden";
+        visibilityChange = "msvisibilitychange";
+    } else if (typeof document.webkitHidden !== "undefined") {
+        hidden = "webkitHidden";
+        visibilityChange = "webkitvisibilitychange";
+    }
+    
+    // Add event listener to track visibility changes
+    document.addEventListener(visibilityChange, function() {
+        isPageVisible = !document[hidden];
+        
+        if (isPageVisible) {
+            // Page became visible again - if it's been more than a minute, show popup
+            if (new Date() - lastUserActivity > INACTIVITY_THRESHOLD) {
+                showInactivityPopup();
+            }
+        } else {
+            // Page was hidden - schedule popup after 1 minute
+            lastUserActivity = new Date();
             
-            if (typeof document.hidden !== "undefined") {
-                hidden = "hidden";
-                visibilityChange = "visibilitychange";
-            } else if (typeof document.msHidden !== "undefined") {
-                hidden = "msHidden";
-                visibilityChange = "msvisibilitychange";
-            } else if (typeof document.webkitHidden !== "undefined") {
-                hidden = "webkitHidden";
-                visibilityChange = "webkitvisibilitychange";
+            // Clear any existing timeout
+            if (inactivityTimeout) {
+                clearTimeout(inactivityTimeout);
             }
             
-            // Add event listener to track visibility changes
-            document.addEventListener(visibilityChange, function() {
-                isPageVisible = !document[hidden];
-                
-                if (isPageVisible) {
-                    // Page became visible again
-                    const visibilityReturnTime = new Date();
-                    const invisibilityDuration = (visibilityReturnTime - lastUserActivity) / 1000;
-                    
-                    // Track this visibility change
-                    sectionEvents.push({
-                        type: 'visibility_return',
-                        sectionId: 'page',
-                        startTime: lastUserActivity,
-                        endTime: visibilityReturnTime,
-                        duration: invisibilityDuration
-                    });
-                    
-                    // Update time tracking
-                    lastUserActivity = visibilityReturnTime;
-                    isUserActive = true;
-                    
-                    // Resume active tracking
-                    resumeActiveTracking();
-                    
-                    // Reset inactivity timeout
-                    resetInactivityTimeout();
-                } else {
-                    // Page was hidden
-                    lastUserActivity = new Date();
-                    
-                    // Track this visibility loss
-                    sectionEvents.push({
-                        type: 'visibility_lost',
-                        sectionId: 'page',
-                        startTime: lastUserActivity,
-                        endTime: null,
-                        duration: 0
-                    });
-                    
-                    // Pause active tracking if needed
-                    pauseActiveTracking();
+            // Set timeout to show popup after 1 minute of visibility loss
+            inactivityTimeout = setTimeout(function() {
+                if (!isPageVisible) {
+                    showInactivityPopup();
                 }
-            });
+            }, INACTIVITY_THRESHOLD);
         }
+    });
+}
         
         // Calculate which section is currently in focus
         function getCurrentSectionId() {
@@ -2598,10 +2566,10 @@ print(summary_text)</div>
             initializeEnhancedTracking();
             
             // Set up the inactivity modal close button
-            const inactivityCloseButton = document.querySelector('#inactivityModal .modal-close');
-            if (inactivityCloseButton) {
-                inactivityCloseButton.addEventListener('click', handleUserReturn);
-            }
+const inactivityCloseButton = document.querySelector('#inactivityModal .modal-close');
+if (inactivityCloseButton) {
+    inactivityCloseButton.addEventListener('click', handleUserReturn);
+}
             
             // Set up toggle answer buttons
             setupToggleAnswerButtons();
