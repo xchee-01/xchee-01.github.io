@@ -1559,77 +1559,114 @@ print(summary_text)</div>
         }
         
         // Calculate which section is currently in focus
-        function getCurrentSectionId() {
-            // Default to 'unknown' if no section is detected
-            let currentSectionId = 'unknown';
+// Calculate which section is currently in focus
+function getCurrentSectionId() {
+    // Default to 'unknown' if no section is detected
+    let currentSectionId = 'unknown';
+    
+    // Find the section that's most visible in the viewport
+    const sectionHeaders = document.querySelectorAll('.section-header');
+    let maxVisibleArea = 0;
+    
+    sectionHeaders.forEach(header => {
+        const content = header.nextElementSibling;
+        const sectionId = header.querySelector('h2').getAttribute('id');
+        
+        // Only consider open sections
+        if (content.classList.contains('active')) {
+            const rect = content.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
             
-            // Find the section that's most visible in the viewport
-            const sectionHeaders = document.querySelectorAll('.section-header');
-            let maxVisibility = 0;
+            // Calculate how much of the section is visible in pixels
+            const visibleTop = Math.max(0, rect.top);
+            const visibleBottom = Math.min(windowHeight, rect.bottom);
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+            const visibleArea = visibleHeight * rect.width;
             
-            sectionHeaders.forEach(header => {
-                const content = header.nextElementSibling;
-                const sectionId = header.querySelector('h2').getAttribute('id');
+            if (visibleArea > maxVisibleArea) {
+                maxVisibleArea = visibleArea;
+                currentSectionId = sectionId;
+            }
+        }
+    });
+    
+    return currentSectionId;
+}
+        
+// Start heartbeat mechanism for continuous monitoring
+function startHeartbeat() {
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+    }
+    
+    heartbeatInterval = setInterval(function() {
+        // Only send heartbeats if page is visible
+        if (isPageVisible) {
+            const now = new Date();
+            
+            // Get the most visible section (what the user is currently viewing)
+            const currentSectionId = getCurrentSectionId();
+            
+            // Update active status for all sections based on visibility
+            Object.keys(openSections).forEach(sectionId => {
+                const section = openSections[sectionId];
                 
-                // Only consider open sections
-                if (content.classList.contains('active')) {
-                    const rect = content.getBoundingClientRect();
-                    const windowHeight = window.innerHeight;
+                // If this is the current section but wasn't active before
+                if (sectionId === currentSectionId && !section.isActive) {
+                    // Section has become active again due to scrolling
+                    section.isActive = true;
                     
-                    // Calculate how much of the section is visible
-                    const visibleHeight = Math.min(rect.bottom, windowHeight) - Math.max(rect.top, 0);
-                    const visibility = visibleHeight > 0 ? visibleHeight / content.offsetHeight : 0;
+                    // Track re-activation event
+                    sectionEvents.push({
+                        type: 'scroll_activation',
+                        sectionId: sectionId,
+                        startTime: now,
+                        endTime: null,
+                        duration: 0
+                    });
+                }
+                // If this is NOT the current section but was active
+                else if (sectionId !== currentSectionId && section.isActive) {
+                    // Section is no longer in view
+                    section.isActive = false;
                     
-                    if (visibility > maxVisibility) {
-                        maxVisibility = visibility;
-                        currentSectionId = sectionId;
+                    // Track deactivation due to scrolling elsewhere
+                    sectionEvents.push({
+                        type: 'scroll_deactivation',
+                        sectionId: sectionId,
+                        startTime: section.lastActiveTime,
+                        endTime: now,
+                        duration: (now - section.lastActiveTime) / 1000
+                    });
+                }
+                
+                // Update tracking and send heartbeats only for the active section
+                if (sectionId === currentSectionId && section.isActive) {
+                    const activeDuration = (now - section.lastActiveTime) / 1000;
+                    
+                    // Add heartbeat to tracking events if we have activity
+                    if (isUserActive) {
+                        sectionEvents.push({
+                            type: 'heartbeat',
+                            sectionId: sectionId,
+                            startTime: section.lastActiveTime,
+                            endTime: now,
+                            duration: activeDuration
+                        });
+                        
+                        // Update tracking
+                        section.lastActiveTime = now;
                     }
                 }
             });
             
-            return currentSectionId;
-        }
-        
-        // Start heartbeat mechanism for continuous monitoring
-        function startHeartbeat() {
-            if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
+            // Send tracking data if we've accumulated events
+            if (sectionEvents.length > 0) {
+                sendTrackingData();
             }
-            
-            heartbeatInterval = setInterval(function() {
-                // Only send heartbeats if page is visible
-                if (isPageVisible) {
-                    const now = new Date();
-                    
-                    // For each open section, calculate cumulative time
-                    Object.keys(openSections).forEach(sectionId => {
-                        const section = openSections[sectionId];
-                        if (section.isActive) {
-                            const activeDuration = (now - section.lastActiveTime) / 1000;
-                            
-                            // Add heartbeat to tracking events if we have activity
-                            if (isUserActive) {
-                                sectionEvents.push({
-                                    type: 'heartbeat',
-                                    sectionId: sectionId,
-                                    startTime: section.lastActiveTime,
-                                    endTime: now,
-                                    duration: activeDuration
-                                });
-                                
-                                // Update tracking
-                                section.lastActiveTime = now;
-                            }
-                        }
-                    });
-                    
-                    // Send tracking data if we've accumulated events
-                    if (sectionEvents.length > 0) {
-                        sendTrackingData();
-                    }
-                }
-            }, HEARTBEAT_INTERVAL);
         }
+    }, HEARTBEAT_INTERVAL);
+}
         
         // Pause active tracking when page becomes hidden
         function pauseActiveTracking() {
@@ -1677,23 +1714,16 @@ print(summary_text)</div>
                 const savedData = localStorage.getItem('sectionState');
                 if (savedData) {
                     const sessionData = JSON.parse(savedData);
-                    
-                    // If previous session was recent (< 2 hours), offer to resume
+            
+                    // If previous session was recent (< 2 hours), automatically restore
                     const lastSession = new Date(sessionData.timestamp);
                     const now = new Date();
                     const hoursSinceLastSession = (now - lastSession) / (1000 * 60 * 60);
-                    
+            
                     if (hoursSinceLastSession < 2) {
-                        // Could show a UI message here offering to resume
+                        // Automatically restore without asking
                         console.log("Previous session found from", lastSession.toLocaleString());
-                        
-                        // Restore open sections if desired
-                        if (confirm("Would you like to resume your previous learning session?")) {
-                            restorePreviousSession(sessionData);
-                        } else {
-                            // Clear previous session
-                            localStorage.removeItem('sectionState');
-                        }
+                        restorePreviousSession(sessionData);
                     } else {
                         // Clear old session data
                         localStorage.removeItem('sectionState');
