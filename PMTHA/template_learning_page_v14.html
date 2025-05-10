@@ -18,7 +18,7 @@
             --nus-gray: #666666;
             --nus-light-gray: #f5f5f5;
             --nus-dark-gray: #333333;
-            --nus-red: #c41230; /* Added for Lou-Greig's disease container */
+            --nus-red: #c41230; /* For Lou-Greig's disease container */
         }
         
         /* Copy Button Styles */
@@ -71,60 +71,8 @@
         .copy-feedback.show {
             opacity: 1;
         }
-
-        /* Inactivity Modal Styles */
-#inactivityModal {
-    display: none;
-    position: fixed;
-    z-index: 1060;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.4);
-    animation: fadeIn 0.3s;
-}
-
-#inactivityModal .modal-content {
-    background-color: #fff8e1; /* Light yellow background */
-    border: 2px solid var(--nus-orange);
-    margin: 15% auto;
-    padding: 20px;
-    border-radius: 10px;
-    width: 80%;
-    max-width: 500px;
-    text-align: center;
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    animation: slideDown 0.4s;
-}
-
-#inactivityModal .modal-header {
-    color: var(--nus-orange);
-    border-bottom: 2px solid var(--nus-blue);
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-}
-
-#inactivityModal .modal-close {
-    background-color: var(--nus-orange);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 25px;
-    font-size: 1.1rem;
-    transition: transform 0.2s, background-color 0.2s;
-    margin-top: 15px;
-    border: none;
-    cursor: pointer;
-}
-
-#inactivityModal .modal-close:hover {
-    background-color: var(--nus-blue);
-    transform: scale(1.05);
-}
         
-        /* Celebration Modal */
+        /* Modal Styles - Unified for all modals */
         .modal {
             display: none;
             position: fixed;
@@ -173,13 +121,36 @@
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.2s;
         }
         
         .modal-close:hover {
             background-color: var(--nus-light-blue);
+            transform: translateY(-2px);
         }
         
+        .modal-close:active {
+            transform: translateY(0);
+        }
+        
+        /* Inactivity Modal Custom Styles */
+        #inactivityModal .modal-header {
+            color: var(--nus-orange);
+        }
+        
+        #inactivityModal .modal-close {
+            background-color: var(--nus-orange);
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-top: 15px;
+        }
+        
+        #inactivityModal .modal-close:hover {
+            background-color: var(--nus-blue);
+        }
+        
+        /* Celebration Button Style */
         .celebrate-button {
             background-color: var(--nus-orange);
             color: white;
@@ -192,7 +163,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.2s;
         }
         
         .celebrate-button:hover {
@@ -224,7 +195,7 @@
             to {transform: translateY(0); opacity: 1;}
         }
         
-        /* Dropdown Section Styles - Added from paste-2.txt */
+        /* Dropdown Section Styles */
         .section-dropdown {
             margin: 1.5rem 0;
             border-radius: 8px;
@@ -1435,21 +1406,38 @@ print(summary_text)</div>
         </div>
     </div>
 
-<!-- Inactivity Modal -->
-<div id="inactivityModal" class="modal">
-    <div class="modal-content">
-        <h3 class="modal-header">🧪 Hey there, scientist! 🧪</h3>
-        <p class="modal-message">Looks like you've been inactive for a while. Are you still exploring the Python basics with us?</p>
-        <button class="modal-close">I'm Still Here!</button>
+    <!-- Inactivity Modal - Using consistent styling with other modals -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🧪 Hey there, scientist! 🧪</h3>
+            <p class="modal-message">Looks like you've been inactive for a while. Are you still exploring the Python basics with us?</p>
+            <button class="modal-close">I'm Still Here!</button>
+        </div>
     </div>
-</div>
-    
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
+        // Variables for Python Interpreter
+        let pyodide = null;
+        const codeInput = document.getElementById('python-code');
+        const runButton = document.getElementById('run-button');
+        const clearButton = document.getElementById('clear-button');
+        const outputArea = document.getElementById('output-area');
+        const statusElement = document.getElementById('status');
+        const modal = document.getElementById('celebrationModal');
+        const celebrationMessage = document.getElementById('celebrationMessage');
+        
+        // NUS color definitions for confetti
+        const nusBlue = '#003D7C';
+        const nusOrange = '#EF7C00';
+        const nusLightBlue = '#4D7CAE';
+        
+        // Required packages for Python
+        const requiredPackages = ['numpy', 'pandas'];
+        
         // Replace with your deployed Google Apps Script Web App URL
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzM3-12-Fy9Km4IYMYHeisGQVCd7hGoFRzk0kaLhyGhqayUl6ecRSV41df8czNxDQ8C-A/exec';
         const SIGN_IN_URL = 'https://xchee-01.github.io/PMTHA/SOM-PMTHA_signin.html';
@@ -1471,202 +1459,161 @@ print(summary_text)</div>
         let inactivityNotificationCount = 0;
         
         // Constants for tracking
-        const TRACKING_INTERVAL = 2000; // 30 seconds for periodic tracking
-        const HEARTBEAT_INTERVAL = 2000; // 15 seconds for heartbeat
-        const INACTIVITY_THRESHOLD = 10000; // 1 minutes until user is considered inactive
+        const TRACKING_INTERVAL = 30000; // 30 seconds for periodic tracking
+        const HEARTBEAT_INTERVAL = 15000; // 15 seconds for heartbeat
+        const INACTIVITY_THRESHOLD = 60000; // 1 minute until user is considered inactive
 
-// Add these functions to handle the inactivity popup
-function showInactivityPopup() {
-    // Only show popup if not already shown
-    if (!isTrackingPaused) {
-        // Pause tracking
-        isTrackingPaused = true;
-        
-        // Increment notification counter
-        inactivityNotificationCount++;
-        
-        // Log the notification event
-        sectionEvents.push({
-            type: 'inactivity_notification',
-            sectionId: getCurrentSectionId(),
-            startTime: new Date(),
-            endTime: null,
-            duration: 0,
-            count: inactivityNotificationCount
-        });
-        
-        // Show the popup
-        const inactivityModal = document.getElementById('inactivityModal');
-        inactivityModal.style.display = 'block';
-        
-        console.log("Tracking paused due to inactivity. Notification count:", inactivityNotificationCount);
-    }
-}
-
-function handleUserReturn() {
-    // Hide the popup
-    const inactivityModal = document.getElementById('inactivityModal');
-    inactivityModal.style.display = 'none';
-    
-    // Resume tracking
-    isTrackingPaused = false;
-    lastUserActivity = new Date();
-    
-    // Log the user's return after inactivity
-    sectionEvents.push({
-        type: 'inactivity_return',
-        sectionId: getCurrentSectionId(),
-        startTime: new Date(),
-        endTime: null,
-        duration: 0,
-        count: inactivityNotificationCount
-    });
-    
-    console.log("Tracking resumed after inactivity notification");
-}
-
-// Replace setupActivityMonitoring function with this version
-function setupActivityMonitoring() {
-    // List of events to consider as user activity
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    
-    // Throttle function to prevent too many event firings
-    function throttle(func, delay) {
-        let lastCall = 0;
-        return function(...args) {
-            const now = new Date().getTime();
-            if (now - lastCall < delay) {
-                return;
-            }
-            lastCall = now;
-            return func(...args);
-        };
-    }
-    
-    // Handle user activity
-    const handleActivity = throttle(function() {
-        // Only process if not already handling
-        const now = new Date();
-        
-        // Clear any existing timeout
-        if (inactivityTimeout) {
-            clearTimeout(inactivityTimeout);
+        // Generate a unique session ID
+        function generateSessionId() {
+            const timestamp = new Date().getTime();
+            const randomPart = Math.floor(Math.random() * 1000000);
+            return `${timestamp}-${randomPart}`;
         }
         
-        // If tracking was paused due to inactivity, resume it
-        if (isTrackingPaused) {
-            handleUserReturn();
-        }
-        
-        // Update last activity time
-        lastUserActivity = now;
-        
-        // Set new inactivity timeout (10 seconds)
-        inactivityTimeout = setTimeout(function() {
-            if (isPageVisible) {
-                showInactivityPopup();
-            }
-        }, INACTIVITY_THRESHOLD);
-    }, 1000); // Throttle to once per second
-    
-    // Add event listeners for each activity event
-    activityEvents.forEach(function(eventName) {
-        document.addEventListener(eventName, handleActivity, { passive: true });
-    });
-}
-
-// Modify startHeartbeat to respect tracking pause
-function startHeartbeat() {
-    if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-    }
-    
-    heartbeatInterval = setInterval(function() {
-        // Skip heartbeat if tracking is paused or page is not visible
-        if (isTrackingPaused || !isPageVisible) {
-            return;
-        }
-        
-        const now = new Date();
-        
-        // Get the most visible section (what the user is currently viewing)
-        const currentSectionId = getCurrentSectionId();
-        
-        // Update active status for all sections based on visibility
-        Object.keys(openSections).forEach(sectionId => {
-            const section = openSections[sectionId];
+        // Initialize enhanced tracking system
+        function initializeEnhancedTracking() {
+            // Periodic tracking for active sections
+            startPeriodicTracking();
             
-            // If this is the current section but wasn't active
-            if (sectionId === currentSectionId && !section.isActive) {
-                // Section has become active again due to scrolling
-                section.isActive = true;
-                section.lastActiveTime = now;
-            }
-            // If this is NOT the current section but was active
-            else if (sectionId !== currentSectionId && section.isActive) {
-                // Section is no longer in view
-                section.isActive = false;
+            // Start heartbeat for continuous monitoring
+            startHeartbeat();
+            
+            // Set up Page Visibility API
+            setupVisibilityTracking();
+            
+            // Set up user activity monitoring
+            setupActivityMonitoring();
+
+            // Set initial inactivity timeout
+            resetInactivityTimeout();
+            
+            // Save session state on unload
+            window.addEventListener('beforeunload', handlePageUnload);
+            
+            // When page loads, check for previous session
+            checkForPreviousSession();
+        }
+
+        // Reset inactivity timeout - centralized function
+        function resetInactivityTimeout() {
+            if (inactivityTimeout) {
+                clearTimeout(inactivityTimeout);
             }
             
-            // Send heartbeats only for the active section
-            if (sectionId === currentSectionId && section.isActive) {
-                // Add heartbeat to tracking events
-                sectionEvents.push({
-                    type: 'heartbeat',
-                    sectionId: sectionId,
-                    startTime: now,
-                    endTime: null,
-                    duration: 0
-                });
+            inactivityTimeout = setTimeout(function() {
+                if (isPageVisible && !isTrackingPaused) {
+                    showInactivityPopup();
+                }
+            }, INACTIVITY_THRESHOLD);
+        }
+
+        // Show inactivity popup
+        function showInactivityPopup() {
+            // Pause tracking
+            isTrackingPaused = true;
+            
+            // Increment notification counter
+            inactivityNotificationCount++;
+            
+            // Log the notification event
+            sectionEvents.push({
+                type: 'inactivity_notification',
+                sectionId: getCurrentSectionId(),
+                startTime: new Date(),
+                endTime: null,
+                duration: 0,
+                count: inactivityNotificationCount
+            });
+            
+            // Show the popup
+            const inactivityModal = document.getElementById('inactivityModal');
+            inactivityModal.style.display = 'block';
+            
+            console.log("Tracking paused due to inactivity. Notification count:", inactivityNotificationCount);
+        }
+
+        // Handle user return after inactivity
+        function handleUserReturn() {
+            // Hide the popup
+            const inactivityModal = document.getElementById('inactivityModal');
+            inactivityModal.style.display = 'none';
+            
+            // Resume tracking
+            isTrackingPaused = false;
+            lastUserActivity = new Date();
+            
+            // Log the user's return after inactivity
+            sectionEvents.push({
+                type: 'inactivity_return',
+                sectionId: getCurrentSectionId(),
+                startTime: new Date(),
+                endTime: null,
+                duration: 0,
+                count: inactivityNotificationCount
+            });
+            
+            // Reset inactivity timeout
+            resetInactivityTimeout();
+            
+            console.log("Tracking resumed after inactivity notification");
+        }
+
+        // Setup activity monitoring
+        function setupActivityMonitoring() {
+            // List of events to consider as user activity
+            const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+            
+            // Throttle function to prevent too many event firings
+            function throttle(func, delay) {
+                let lastCall = 0;
+                return function(...args) {
+                    const now = new Date().getTime();
+                    if (now - lastCall < delay) {
+                        return;
+                    }
+                    lastCall = now;
+                    return func(...args);
+                };
             }
-        });
-        
-        // Send tracking data if we've accumulated events
-        if (sectionEvents.length > 0) {
-            sendTrackingData();
+            
+            // Handle user activity
+            const handleActivity = throttle(function() {
+                const now = new Date();
+                
+                // If tracking was paused due to inactivity, resume it
+                if (isTrackingPaused) {
+                    handleUserReturn();
+                }
+                
+                // Update last activity time
+                lastUserActivity = now;
+                
+                // Reset inactivity timeout
+                resetInactivityTimeout();
+                
+                // If user was inactive and is now active again
+                if (!isUserActive) {
+                    const inactivityDuration = (now - lastUserActivity) / 1000;
+                    
+                    // Log the return from inactivity
+                    sectionEvents.push({
+                        type: 'activity_return',
+                        sectionId: getCurrentSectionId(),
+                        startTime: lastUserActivity,
+                        endTime: now,
+                        duration: inactivityDuration
+                    });
+                    
+                    isUserActive = true;
+                }
+                
+            }, 1000); // Throttle to once per second
+            
+            // Add event listeners for each activity event
+            activityEvents.forEach(function(eventName) {
+                document.addEventListener(eventName, handleActivity, { passive: true });
+            });
         }
-    }, HEARTBEAT_INTERVAL);
-}
-
-// Make sure initializeEnhancedTracking sets up initial inactivity timeout
-function initializeEnhancedTracking() {
-    // Periodic tracking for active sections
-    startPeriodicTracking();
-    
-    // Start heartbeat for continuous monitoring
-    startHeartbeat();
-    
-    // Set up Page Visibility API
-    setupVisibilityTracking();
-    
-    // Set up user activity monitoring
-    setupActivityMonitoring();
-
-    // Set initial inactivity timeout
-    if (inactivityTimeout) {
-        clearTimeout(inactivityTimeout);
-    }
-    
-    // Set the initial timeout (10 seconds)
-    inactivityTimeout = setTimeout(function() {
-        if (isPageVisible) {
-            showInactivityPopup();
-        }
-    }, INACTIVITY_THRESHOLD);
-    
-    // Save session state on unload
-    window.addEventListener('beforeunload', handlePageUnload);
-    
-    // When page loads, check for previous session
-    checkForPreviousSession();
-}
-
-// Add this function to generate a unique session ID
-function generateSessionId() {
-    const timestamp = new Date().getTime();
-    const randomPart = Math.floor(Math.random() * 1000000);
-    return `${timestamp}-${randomPart}`;
-}
         
         // Initialize the Page Visibility API
         function setupVisibilityTracking() {
@@ -1699,7 +1646,7 @@ function generateSessionId() {
                         sectionId: 'page',
                         startTime: lastUserActivity,
                         endTime: visibilityReturnTime,
-                        duration: ''
+                        duration: invisibilityDuration
                     });
                     
                     // Update time tracking
@@ -1708,6 +1655,9 @@ function generateSessionId() {
                     
                     // Resume active tracking
                     resumeActiveTracking();
+                    
+                    // Reset inactivity timeout
+                    resetInactivityTimeout();
                 } else {
                     // Page was hidden
                     lastUserActivity = new Date();
@@ -1718,7 +1668,7 @@ function generateSessionId() {
                         sectionId: 'page',
                         startTime: lastUserActivity,
                         endTime: null,
-                        duration: ''
+                        duration: 0
                     });
                     
                     // Pause active tracking if needed
@@ -1727,175 +1677,92 @@ function generateSessionId() {
             });
         }
         
-        // Set up monitoring for user activity
-        function setupActivityMonitoring() {
-            // List of events to consider as user activity
-            const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-            
-            // Throttle function to prevent too many event firings
-            function throttle(func, delay) {
-                let lastCall = 0;
-                return function(...args) {
-                    const now = new Date().getTime();
-                    if (now - lastCall < delay) {
-                        return;
-                    }
-                    lastCall = now;
-                    return func(...args);
-                };
-            }
-            
-            // Handle user activity
-            const handleActivity = throttle(function() {
-                // Only process if page is visible
-                if (isPageVisible) {
-                    const now = new Date();
-                    
-                    // If user was inactive and is now active again
-                    if (!isUserActive) {
-                        const inactivityDuration = (now - lastUserActivity) / 1000;
-                        
-                        // Log the return from inactivity
-                        sectionEvents.push({
-                            type: 'activity_return',
-                            sectionId: getCurrentSectionId(),
-                            startTime: lastUserActivity,
-                            endTime: now,
-                            duration: ''
-                        });
-                        
-                        isUserActive = true;
-                    }
-                    
-                    // Update last activity time
-                    lastUserActivity = now;
-                    
-                    // Clear any existing inactivity timeout
-                    if (activityTimeout) {
-                        clearTimeout(activityTimeout);
-                    }
-                    
-                    // Set new inactivity timeout
-                    activityTimeout = setTimeout(function() {
-                        if (isUserActive && isPageVisible) {
-                            isUserActive = false;
-                            
-                            // Log the start of inactivity
-                            sectionEvents.push({
-                                type: 'inactivity_start',
-                                sectionId: getCurrentSectionId(),
-                                startTime: lastUserActivity,
-                                endTime: new Date(),
-                                duration: ''
-                            });
-                        }
-                    }, INACTIVITY_THRESHOLD);
-                }
-            }, 1000); // Throttle to once per second
-            
-            // Add event listeners for each activity event
-            activityEvents.forEach(function(eventName) {
-                document.addEventListener(eventName, handleActivity, { passive: true });
-            });
-        }
-        
         // Calculate which section is currently in focus
-// Calculate which section is currently in focus
-function getCurrentSectionId() {
-    // Default to 'unknown' if no section is detected
-    let currentSectionId = 'unknown';
-    
-    // Find the section that's most visible in the viewport
-    const sectionHeaders = document.querySelectorAll('.section-header');
-    let maxVisibleArea = 0;
-    
-    sectionHeaders.forEach(header => {
-        const content = header.nextElementSibling;
-        const sectionId = header.querySelector('h2').getAttribute('id');
-        
-        // Only consider open sections
-        if (content.classList.contains('active')) {
-            const rect = content.getBoundingClientRect();
-            const windowHeight = window.innerHeight;
+        function getCurrentSectionId() {
+            // Default to 'unknown' if no section is detected
+            let currentSectionId = 'unknown';
             
-            // Calculate how much of the section is visible in pixels
-            const visibleTop = Math.max(0, rect.top);
-            const visibleBottom = Math.min(windowHeight, rect.bottom);
-            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-            const visibleArea = visibleHeight * rect.width;
+            // Find the section that's most visible in the viewport
+            const sectionHeaders = document.querySelectorAll('.section-header');
+            let maxVisibleArea = 0;
             
-            if (visibleArea > maxVisibleArea) {
-                maxVisibleArea = visibleArea;
-                currentSectionId = sectionId;
-            }
-        }
-    });
-    
-    return currentSectionId;
-}
-        
-// Start heartbeat mechanism for continuous monitoring
-function startHeartbeat() {
-    if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-    }
-    
-    heartbeatInterval = setInterval(function() {
-        // Only send heartbeats if page is visible
-        if (isPageVisible) {
-            const now = new Date();
-            
-            // Get the most visible section (what the user is currently viewing)
-            const currentSectionId = getCurrentSectionId();
-            
-            // Update active status for all sections based on visibility
-            Object.keys(openSections).forEach(sectionId => {
-                const section = openSections[sectionId];
+            sectionHeaders.forEach(header => {
+                const content = header.nextElementSibling;
+                const sectionId = header.querySelector('h2').getAttribute('id');
                 
-                // If this is the current section but wasn't active before
-if (sectionId === currentSectionId && !section.isActive) {
-    // Section has become active again due to scrolling
-    section.isActive = true;
-    
-    // Update lastActiveTime without pushing scroll_activation event
-    section.lastActiveTime = now;
-}
-                // If this is NOT the current section but was active
-else if (sectionId !== currentSectionId && section.isActive) {
-    // Section is no longer in view
-    section.isActive = false;
-    
-    // Simply update tracking status without pushing scroll_deactivation event
-    section.lastDeactivationTime = now;
-}
-                
-                // Update tracking and send heartbeats only for the active section
-                if (sectionId === currentSectionId && section.isActive) {
-                    const activeDuration = (now - section.lastActiveTime) / 1000;
+                // Only consider open sections
+                if (content.classList.contains('active')) {
+                    const rect = content.getBoundingClientRect();
+                    const windowHeight = window.innerHeight;
                     
-                    // Add heartbeat to tracking events if we have activity
-                    if (isUserActive) {
+                    // Calculate how much of the section is visible in pixels
+                    const visibleTop = Math.max(0, rect.top);
+                    const visibleBottom = Math.min(windowHeight, rect.bottom);
+                    const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+                    const visibleArea = visibleHeight * rect.width;
+                    
+                    if (visibleArea > maxVisibleArea) {
+                        maxVisibleArea = visibleArea;
+                        currentSectionId = sectionId;
+                    }
+                }
+            });
+            
+            return currentSectionId;
+        }
+        
+        // Start heartbeat mechanism for continuous monitoring
+        function startHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+            }
+            
+            heartbeatInterval = setInterval(function() {
+                // Skip heartbeat if tracking is paused or page is not visible
+                if (isTrackingPaused || !isPageVisible) {
+                    return;
+                }
+                
+                const now = new Date();
+                
+                // Get the most visible section (what the user is currently viewing)
+                const currentSectionId = getCurrentSectionId();
+                
+                // Update active status for all sections based on visibility
+                Object.keys(openSections).forEach(sectionId => {
+                    const section = openSections[sectionId];
+                    
+                    // If this is the current section but wasn't active
+                    if (sectionId === currentSectionId && !section.isActive) {
+                        // Section has become active again due to scrolling
+                        section.isActive = true;
+                        section.lastActiveTime = now;
+                    }
+                    // If this is NOT the current section but was active
+                    else if (sectionId !== currentSectionId && section.isActive) {
+                        // Section is no longer in view
+                        section.isActive = false;
+                    }
+                    
+                    // Send heartbeats only for the active section
+                    if (sectionId === currentSectionId && section.isActive) {
+                        // Add heartbeat to tracking events
                         sectionEvents.push({
                             type: 'heartbeat',
                             sectionId: sectionId,
-                            startTime: section.lastActiveTime,
-                            endTime: now,
-                            duration: activeDuration
+                            startTime: now,
+                            endTime: null,
+                            duration: 0
                         });
-                        
-                        // Update tracking
-                        section.lastActiveTime = now;
                     }
+                });
+                
+                // Send tracking data if we've accumulated events
+                if (sectionEvents.length > 0) {
+                    sendTrackingData();
                 }
-            });
-            
-            // Send tracking data if we've accumulated events
-            if (sectionEvents.length > 0) {
-                sendTrackingData();
-            }
+            }, HEARTBEAT_INTERVAL);
         }
-    }, HEARTBEAT_INTERVAL);
-}
         
         // Pause active tracking when page becomes hidden
         function pauseActiveTracking() {
@@ -1936,15 +1803,6 @@ else if (sectionId !== currentSectionId && section.isActive) {
                 }
             });
         }
-
-// Setup inactivity popup button
-document.addEventListener('DOMContentLoaded', function() {
-    // Setup inactivity popup button
-    const inactivityCloseButton = document.querySelector('#inactivityModal .modal-close');
-    if (inactivityCloseButton) {
-        inactivityCloseButton.addEventListener('click', handleUserReturn);
-    }
-});
         
         // Check for previous session data when page loads
         function checkForPreviousSession() {
@@ -2080,13 +1938,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (isOpening) {
                 // Mark currently active section as inactive (user switched to a new section)
-Object.keys(openSections).forEach(id => {
-    if (openSections[id].isActive && id !== sectionId) {
-        // Just update the status without recording focus shift
-        openSections[id].isActive = false;
-        openSections[id].lastActiveTime = new Date();
-    }
-});
+                Object.keys(openSections).forEach(id => {
+                    if (openSections[id].isActive && id !== sectionId) {
+                        // Just update the status without recording focus shift
+                        openSections[id].isActive = false;
+                        openSections[id].lastActiveTime = new Date();
+                    }
+                });
                 
                 // Section is being opened or becomes active again
                 if (openSections[sectionId]) {
@@ -2124,19 +1982,19 @@ Object.keys(openSections).forEach(id => {
                 }
             } else {
                 // Section is being explicitly closed
-if (openSections[sectionId]) {
-    // Add closure event without duration
-    sectionEvents.push({
-        type: 'section_closed',
-        sectionId: sectionId,
-        startTime: openSections[sectionId].startTime,
-        endTime: new Date(),
-        duration: '' // Empty string instead of calculating duration
-    });
-    
-    // Remove from tracking
-    delete openSections[sectionId];
-}
+                if (openSections[sectionId]) {
+                    // Add closure event without duration
+                    sectionEvents.push({
+                        type: 'section_closed',
+                        sectionId: sectionId,
+                        startTime: openSections[sectionId].startTime,
+                        endTime: new Date(),
+                        duration: '' // Empty string instead of calculating duration
+                    });
+                    
+                    // Remove from tracking
+                    delete openSections[sectionId];
+                }
             }
             
             // If we've accumulated enough events, send data now
@@ -2178,13 +2036,13 @@ if (openSections[sectionId]) {
             sectionEvents = [];
             
             // Prepare data payload
-const data = {
-    username: username,
-    url: window.location.href,
-    events: eventsCopy,
-    timestamp: new Date().toISOString(),
-    sessionId: sessionId, // Add session ID to each batch
-};
+            const data = {
+                username: username,
+                url: window.location.href,
+                events: eventsCopy,
+                timestamp: new Date().toISOString(),
+                sessionId: sessionId, // Add session ID to each batch
+            };
             
             // Determine whether to use sync or async request
             const fetchOptions = {
@@ -2373,7 +2231,7 @@ const data = {
             });
             
             // Close modal when close button is clicked
-            document.querySelector('.modal-close').addEventListener('click', function() {
+            document.querySelector('#celebrationModal .modal-close').addEventListener('click', function() {
                 modal.style.display = 'none';
             });
             
@@ -2386,10 +2244,7 @@ const data = {
         }
 
         // Add event listeners for toggle answer buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize enhanced tracking system
-            initializeEnhancedTracking();
-            
+        function setupToggleAnswerButtons() {
             const toggleButtons = document.querySelectorAll('.toggle-answer');
             
             toggleButtons.forEach(button => {
@@ -2419,19 +2274,7 @@ const data = {
                     }
                 });
             });
-            
-            // Initialize copy buttons
-            initializeCopyButtons();
-            
-            // Set up celebration buttons
-            setupCelebrationButtons();
-            
-            // Set up dropdown sections with tracking
-            setupSectionDropdowns();
-            
-            // Set up disease info toggle and reactions
-            setupDiseaseInfoToggle();
-        });
+        }
 
         // Initialize copy buttons with tracking
         function initializeCopyButtons() {
@@ -2616,7 +2459,7 @@ const data = {
             setupReactionButtons();
         }
 
-        // extra information reaction buttons
+        // Extra information reaction buttons
         function setupReactionButtons() {
             const reactionButtons = document.querySelectorAll('.reaction-button');
             const reactionFeedback = document.querySelector('.reaction-feedback');
@@ -2673,6 +2516,7 @@ const data = {
             }
         }
 
+        // Main initialization function
         async function main() {
             try {
                 // Authentication and tracking initialization
@@ -2746,6 +2590,33 @@ const data = {
         clearButton.addEventListener('click', () => {
             outputArea.textContent = '';
             statusElement.textContent = 'Output cleared. Python is ready.';
+        });
+        
+        // Set up event listeners on DOM content loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize enhanced tracking system
+            initializeEnhancedTracking();
+            
+            // Set up the inactivity modal close button
+            const inactivityCloseButton = document.querySelector('#inactivityModal .modal-close');
+            if (inactivityCloseButton) {
+                inactivityCloseButton.addEventListener('click', handleUserReturn);
+            }
+            
+            // Set up toggle answer buttons
+            setupToggleAnswerButtons();
+            
+            // Initialize copy buttons
+            initializeCopyButtons();
+            
+            // Set up celebration buttons
+            setupCelebrationButtons();
+            
+            // Set up dropdown sections with tracking
+            setupSectionDropdowns();
+            
+            // Set up disease info toggle and reactions
+            setupDiseaseInfoToggle();
         });
         
         // Initialize the application
