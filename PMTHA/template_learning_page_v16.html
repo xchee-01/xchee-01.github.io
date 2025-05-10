@@ -1,1 +1,2576 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Syntax Basics for Precision Health - NUS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* NUS Colors */
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #4D7CAE;
+            --nus-gray: #666666;
+            --nus-light-gray: #f5f5f5;
+            --nus-dark-gray: #333333;
+            --nus-red: #c41230; /* Added for Lou-Greig's disease container */
+        }
+        
+        /* Copy Button Styles */
+        .code-block-container {
+            position: relative;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: var(--nus-light-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .copy-button:hover {
+            opacity: 1;
+            transform: translateY(-2px);
+        }
+        
+        .copy-button:active {
+            transform: translateY(0);
+        }
+        
+        .copy-feedback {
+            position: absolute;
+            top: -25px;
+            right: 0;
+            background-color: var(--nus-dark-gray);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .copy-feedback.show {
+            opacity: 1;
+        }
+
+/* Inactivity Modal Styles */
+#inactivityModal {
+    display: none;
+    position: fixed;
+    z-index: 1060;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.4s ease;
+}
+
+#inactivityModal .modal-content {
+    background: white;
+    margin: 12% auto;
+    width: 90%;
+    max-width: 480px;
+    border-radius: 16px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+    animation: modalPop 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+#inactivityModal .modal-top {
+    position: relative;
+    padding: 30px 30px 10px;
+    background: linear-gradient(135deg, var(--nus-blue) 0%, #003166 100%);
+    border-radius: 16px 16px 0 0;
+}
+
+#inactivityModal .modal-icon {
+    position: absolute;
+    top: -26px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--nus-orange) 0%, #ff9833 100%);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 8px 16px rgba(239, 124, 0, 0.3);
+}
+
+#inactivityModal .modal-icon i {
+    color: white;
+    font-size: 36px;
+}
+
+#inactivityModal .modal-header {
+    color: white;
+    text-align: center;
+    font-size: 1.6rem;
+    margin: 30px 0 0;
+    font-weight: 600;
+}
+
+#inactivityModal .modal-subheader {
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    font-size: 1rem;
+    margin: 5px 0 15px;
+    font-weight: normal;
+}
+
+#inactivityModal .modal-body {
+    padding: 30px;
+    color: var(--nus-dark-gray);
+}
+
+#inactivityModal .modal-message {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+#inactivityModal .modal-close {
+    background: linear-gradient(135deg, var(--nus-orange) 0%, #ff9833 100%);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 auto;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(239, 124, 0, 0.25);
+}
+
+#inactivityModal .modal-close:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(239, 124, 0, 0.35);
+}
+
+#inactivityModal .modal-close:active {
+    transform: translateY(0);
+}
+
+#inactivityModal .modal-close i {
+    font-size: 1.2rem;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+@keyframes modalPop {
+    0% {transform: scale(0.9); opacity: 0;}
+    40% {transform: scale(1.03); opacity: 1;}
+    60% {transform: scale(0.98);}
+    80% {transform: scale(1.01);}
+    100% {transform: scale(1);}
+}
+        
+        /* Celebration Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            animation: slideDown 0.4s;
+        }
+        
+        .modal-header {
+            color: var(--nus-blue);
+            border-bottom: 2px solid var(--nus-orange);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .modal-message {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .modal-close {
+            color: white;
+            background-color: var(--nus-blue);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-close:hover {
+            background-color: var(--nus-light-blue);
+        }
+        
+        .celebrate-button {
+            background-color: var(--nus-orange);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .celebrate-button:hover {
+            background-color: #d56e00;
+            transform: translateY(-2px);
+        }
+        
+        .celebrate-button:active {
+            transform: translateY(0);
+        }
+        
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1051;
+            pointer-events: none;
+        }
+        
+        @keyframes slideDown {
+            from {transform: translateY(-50px); opacity: 0;}
+            to {transform: translateY(0); opacity: 1;}
+        }
+        
+        /* Dropdown Section Styles - Added from paste-2.txt */
+        .section-dropdown {
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .section-header {
+            background-color: var(--nus-light-gray);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--nus-blue);
+            transition: background-color 0.2s ease;
+        }
+        
+        .section-header:hover {
+            background-color: #eaeaea;
+        }
+        
+        .section-header h2 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--nus-blue);
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-header .toggle-icon {
+            color: var(--nus-orange);
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .section-header.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+        
+        .section-content {
+            padding: 0 1.5rem 1.5rem;
+            display: none;
+            border-left: 4px solid var(--nus-blue);
+            background-color: white;
+        }
+        
+        .section-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--nus-dark-gray);
+            background-color: #f9f9f9;
+            position: relative;
+        }
+        
+        header {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nus-logo {
+            font-weight: bold;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nus-logo span {
+            color: var(--nus-orange);
+        }
+        
+        main {
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0;
+            position: relative;
+            min-height: calc(100vh - 65px - 60px); /* Viewport height minus header and footer */
+        }
+        
+        #learning-materials {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            max-width: 65%;
+        }
+        
+        #interpreter-container {
+            width: 35%;
+            background-color: var(--nus-light-gray);
+            padding: 1.5rem;
+            position: sticky;
+            top: 65px; /* Height of the header */
+            height: calc(100vh - 65px - 60px); /* Viewport height minus header and footer */
+            overflow-y: auto;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+        }
+        
+        h1, h2, h3 {
+            color: var(--nus-blue);
+            margin-bottom: 1rem;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            border-bottom: 3px solid var(--nus-orange);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-top: 2.5rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 2px solid var(--nus-light-blue);
+            scroll-margin-top: 80px; /* Ensures proper scrolling with sticky header */
+        }
+        
+        h3 {
+            font-size: 1.3rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        p, ul, ol {
+            margin-bottom: 1rem;
+        }
+        
+        ul, ol {
+            padding-left: 2rem;
+        }
+        
+        .fun-fact {
+            background-color: #FFF8E1;
+            border-left: 4px solid var(--nus-orange);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .challenge {
+            background-color: #E3F2FD;
+            border: 1px solid var(--nus-light-blue);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+        }
+        
+        .challenge h3 {
+            color: var(--nus-blue);
+            margin-top: 0;
+        }
+        
+        .answer {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--nus-gray);
+            display: none; /* Hide answers by default */
+        }
+        
+        .answer h4 {
+            color: var(--nus-orange);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Toggle button styles */
+        .toggle-answer {
+            background-color: var(--nus-light-blue);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .toggle-answer:hover {
+            background-color: var(--nus-blue);
+        }
+        
+        pre {
+            background-color: #f7f7f7;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-left: 3px solid var(--nus-light-blue);
+        }
+        
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+        }
+        
+        .code-block {
+            background-color: #f6f8fa;
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            border-left: 3px solid var(--nus-light-blue);
+        }
+        
+        .expected-output {
+            background-color: #ECEFF1;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap; /* This preserves line breaks */
+        }
+        
+        hr {
+            margin: 2rem 0;
+            border: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--nus-light-blue), transparent);
+        }
+        
+        /* Python Interpreter Styling */
+        #interpreter-heading {
+            color: var(--nus-blue);
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--nus-orange);
+            padding-bottom: 0.5rem;
+        }
+        
+        #python-code {
+            width: 100%;
+            min-height: 200px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            margin-bottom: 1rem;
+            resize: vertical;
+            background-color: #fff;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        button {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        #run-button {
+            background-color: var(--nus-blue);
+            color: white;
+            flex: 1;
+        }
+        
+        #run-button:hover:not(:disabled) {
+            background-color: #00306a;
+        }
+        
+        #clear-button {
+            background-color: var(--nus-gray);
+            color: white;
+        }
+        
+        #clear-button:hover:not(:disabled) {
+            background-color: #555555;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        #status {
+            margin: 1rem 0;
+            font-style: italic;
+            color: var(--nus-gray);
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .output-label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--nus-blue);
+        }
+        
+        #output-area {
+            background-color: #fff;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            min-height: 150px;
+            max-height: 300px;
+        }
+        
+        footer {
+            background-color: var(--nus-blue);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+            height: 60px;
+        }
+        
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* User Information Box Styling */
+        .user-info-box {
+            display: none;
+            margin-top: 30px;
+            padding: 15px;
+            background-color: var(--nus-light-gray);
+            border: 1px solid var(--nus-blue);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .user-info-box h3 {
+            color: var(--nus-blue);
+            margin-top: 0;
+            border-bottom: 1px solid var(--nus-blue);
+            padding-bottom: 5px;
+        }
+        
+        .user-info-item {
+            margin: 8px 0;
+        }
+        
+        .user-info-label {
+            font-weight: bold;
+            color: var(--nus-blue);
+        }
+        
+        #status-message {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Disease Information Container Styles */
+        .disease-container {
+            background-color: #f8f0f0;
+            border-left: 4px solid var(--nus-red);
+            border-radius: 0 8px 8px 0;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .disease-title {
+            color: var(--nus-red) !important;
+            border-bottom: 2px solid var(--nus-red) !important;
+            margin-top: 0 !important;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .disease-title::after {
+            content: '\f078'; /* Down arrow */
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            margin-left: 10px;
+            transition: transform 0.3s;
+        }
+        
+        .disease-title.expanded::after {
+            transform: rotate(180deg);
+        }
+        
+        .disease-preview {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        
+        .disease-content {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--nus-red);
+        }
+        
+        .reaction-container {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+        
+        .reaction-button {
+            background-color: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .reaction-button:hover {
+            background-color: #e9e9e9;
+            transform: translateY(-2px);
+        }
+        
+        .reaction-button[data-reaction="helpful"]:active,
+        .reaction-button[data-reaction="helpful"].selected {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        
+        .reaction-button[data-reaction="not-helpful"]:active,
+        .reaction-button[data-reaction="not-helpful"].selected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        
+        .reaction-feedback {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+            display: none;
+        }
+        
+        .reaction-feedback.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        /* Media Queries for Responsiveness */
+        @media (max-width: 1200px) {
+            main {
+                flex-direction: column;
+            }
+            
+            #learning-materials, #interpreter-container {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            #interpreter-container {
+                position: relative;
+                top: 0;
+                height: auto;
+                min-height: 500px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            main {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+            
+            .section-header h2 {
+                font-size: 1.3rem;
+            }
+        }
+        
+        /* Utility Classes */
+        .mt-2 {
+            margin-top: 2rem;
+        }
+        
+        .mb-2 {
+            margin-bottom: 2rem;
+        }
+    </style>
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Precision Medical Toolkit for Health Analytics</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>Python Syntax Basics</h1>
+            
+            <p>Welcome to your journey as a Precision Health Programmer! In this module, you'll learn the fundamental building blocks of Python syntax that will empower you to analyze medical data, process genomic information, and build tools for personalized healthcare. As precision medicine increasingly relies on computational approaches to analyze large biological datasets, these foundational programming skills will be invaluable in your career.</p>
+            
+            <!-- Section 1: First Python Statements -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-code" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mission Briefing: Writing Your First Python Statements
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Every great medical discovery begins with an initial hypothesis, and similarly, your Python journey starts with learning how to write and execute simple statements. In Python, a statement is a unit of code that performs an action, like printing text or performing calculations.</p>
+                    
+                    <p>Think of Python statements as instructions you might give to a laboratory assistant - clear, precise, and executed in a specific order. In precision medicine, you'll use these statements to process patient data, analyze biological samples, and interpret clinical results.</p>
+                    
+                    <div class="code-block-container" data-block-name="welcome-python-statements">
+                        <div class="code-block"># This is a simple Python statement that displays text
+print("Welcome to Precision Health Programming")
+
+# This statement performs a calculation relevant to drug dosing
+print("Standard adult dosage:", 500 * 0.8, "mg")
+
+# This statement displays information about a patient sample
+print("Patient ID: P12345, Blood Type: A+")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>In the code above, each line represents a Python statement. The <code>print()</code> function displays information to the screen, which is useful for seeing results of your analysis or providing information to healthcare providers. Each statement is executed sequentially, just like following a laboratory protocol step by step.</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Real-World Connection:</strong> Medical researchers use Python statements to process and analyze large datasets from clinical trials, allowing them to identify patterns in patient responses to treatments and develop more personalized therapeutic approaches.</p>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 1: Your First Clinical Report</h3>
+                        <p>As a new bioinformatics analyst at a precision medicine clinic, you need to create a simple report displaying patient information and basic health metrics.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab1-clinical-report-exercise">
+                            <div class="code-block"># Lab scenario: Complete the code to display patient information
+# Fix the missing parts indicated by ...
+
+print("...")
+print("Patient: Jane Doe")
+print("Age: ...")
+print("Biomarker A1C level:", ... , "%")
+print("Risk assessment: Monitoring recommended")</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected output:</p>
+                        <div class="expected-output">PRECISION HEALTH CLINIC
+Patient: Jane Doe
+Age: 65
+Biomarker A1C level: 6.7 %
+Risk assessment: Monitoring recommended</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab1-clinical-report-solution">
+                                <div class="code-block"># Complete solution
+print("PRECISION HEALTH CLINIC")
+print("Patient: Jane Doe")
+print("Age: 65")
+print("Biomarker A1C level:", 6.7, "%")
+print("Risk assessment: Monitoring recommended")</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Great job! You've created your first clinical report using Python statements. Each statement precisely communicates important patient information, just as you would need in a real healthcare setting." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 2: Data Types -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-database" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mission Briefing: Understanding Data Types in Biomedical Research
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>In medicine, precision matters - a small difference in dosage or biomarker levels can have significant clinical implications. Python uses different data types to represent different kinds of information, just as you might use different laboratory tests to measure different biological parameters.</p>
+                    
+                    <p>Let's explore the three fundamental data types you'll use constantly in biomedical programming:</p>
+                    
+                    <h3>Integers (int)</h3>
+                    <p>Integers are whole numbers without decimal points. In medical contexts, you might use integers to represent patient counts, days since treatment, or discrete measurements.</p>
+                    
+                    <div class="code-block-container" data-block-name="integers-clinical-contexts">
+                        <div class="code-block"># Integers in clinical contexts
+patient_count = 125
+days_since_vaccination = 14
+heart_rate = 72
+
+print("Patients enrolled:", patient_count)
+print("Post-vaccination follow-up:", days_since_vaccination, "days")
+print("Resting heart rate:", heart_rate, "bpm")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Floating-Point Numbers (float)</h3>
+                    <p>Floats are numbers with decimal points, essential for precise measurements in medical research such as drug concentrations, lab values, or physiological readings.</p>
+                    
+                    <div class="code-block-container" data-block-name="floats-clinical-measurements">
+                        <div class="code-block"># Floating-point numbers in clinical contexts
+body_temperature = 37.2
+serum_glucose = 5.4
+tumor_size = 2.35
+
+print("Patient temperature:", body_temperature, "°C")
+print("Glucose level:", serum_glucose, "mmol/L")
+print("Tumor diameter:", tumor_size, "cm")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Strings (str)</h3>
+                    <p>Strings represent text data, enclosed in quotation marks. In healthcare, strings store patient names, diagnostic codes, DNA sequences, or any textual information.</p>
+                    
+                    <div class="code-block-container" data-block-name="strings-genomic-medicine">
+                        <div class="code-block"># Strings in genomic medicine
+patient_id = "GEN-2023-0457"
+mutation_status = "BRCA1 positive"
+therapy_recommendation = "PARP inhibitor"
+dna_sequence = "ATGCTAGCTAGCTAGT"
+
+print("Patient ID:", patient_id)
+print("Genetic testing result:", mutation_status)
+print("Treatment pathway:", therapy_recommendation)
+print("Target sequence:", dna_sequence)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Real-World Connection:</strong> In genomic medicine, researchers use different data types to process sequencing data - integers to count gene mutations, floats to calculate expression levels, and strings to represent DNA sequences or protein configurations.</p>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 2: Biomarker Analysis</h3>
+                        <p>Your team is analyzing biomarker data from a clinical trial. Complete the code to correctly represent and display different types of biomarker information.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab2-biomarker-analysis-exercise">
+                            <div class="code-block"># Lab scenario: Create variables with appropriate data types
+# Replace the ... with appropriate values and data types
+
+patient_id = ...
+age = ...
+tumor_marker_ca125 = ...
+mutation_detected = ...
+
+# Display the patient's biomarker profile
+print("Oncology Biomarker Report")
+print("ID:", patient_id)
+print("Patient age:", age)
+print("CA-125 level:", tumor_marker_ca125, "U/mL")
+print("Target mutation:", mutation_detected)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected output:</p>
+                        <div class="expected-output">Oncology Biomarker Report
+ID: PT-2025-0892
+Patient age: 54
+CA-125 level: 85.4 U/mL
+Target mutation: EGFR T790M</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab2-biomarker-analysis-solution">
+                                <div class="code-block"># Complete solution
+patient_id = "PT-2025-0892"  # String for ID
+age = 54                     # Integer for age
+tumor_marker_ca125 = 85.4    # Float for precision measurement
+mutation_detected = "EGFR T790M"  # String for mutation name
+
+# Display the patient's biomarker profile
+print("Oncology Biomarker Report")
+print("ID:", patient_id)
+print("Patient age:", age)
+print("CA-125 level:", tumor_marker_ca125, "U/mL")
+print("Target mutation:", mutation_detected)</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Excellent work! You've demonstrated your understanding of different data types by correctly organizing a patient's biomarker data. Notice how each piece of information is stored in the most appropriate data type - just as you would select the most appropriate test tube for different laboratory samples." data-animation="sides"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Boolean Values -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-check-circle" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mission Briefing: Boolean Values in Medical Data
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>In medicine, many diagnoses and test results come down to binary outcomes - positive or negative, present or absent, eligible or ineligible. Python uses Boolean values (<code>True</code> and <code>False</code>) to represent these binary states, making them perfect for representing diagnostic results and patient statuses.</p>
+                    
+                    <p>Boolean values will be crucial for your work in precision medicine, where you'll frequently need to represent binary states of biomarkers, genetic mutations, or disease statuses.</p>
+                    
+                    <div class="code-block-container" data-block-name="boolean-clinical-findings">
+                        <div class="code-block"># Boolean values representing clinical findings
+is_diabetic = True
+has_hypertension = False
+is_eligible_for_trial = True
+
+print("Diabetes diagnosis confirmed:", is_diabetic)
+print("Hypertension present:", has_hypertension)
+print("Trial eligibility:", is_eligible_for_trial)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>Boolean operations allow you to combine multiple conditions, just as clinicians consider multiple factors in their analyses:</p>
+                    
+                    <div class="code-block-container" data-block-name="boolean-operations-biomarker">
+                        <div class="code-block"># Boolean operations for biomarker analysis
+high_glucose = True
+elevated_hba1c = True
+has_symptoms = False
+
+# AND operation (requires all conditions to be True)
+diabetes_biomarkers_present = high_glucose and elevated_hba1c
+print("Diabetes biomarkers detected:", diabetes_biomarkers_present)
+
+# OR operation (requires at least one condition to be True)
+metabolic_anomaly = high_glucose or has_symptoms
+print("Metabolic anomaly detected:", metabolic_anomaly)
+
+# NOT operation (inverts the Boolean value)
+normal_glucose = not high_glucose
+print("Glucose within normal range:", normal_glucose)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>Boolean values can also be created through comparison operations, which evaluate relationships between values:</p>
+                    
+                    <div class="code-block-container" data-block-name="comparison-operations">
+                        <div class="code-block"># Comparison operations to generate Boolean values
+blood_pressure = 135
+pulse = 72
+cholesterol = 5.2
+
+# Greater than
+hypertension_range = blood_pressure > 130
+print("Blood pressure in hypertension range:", hypertension_range)
+
+# Less than
+low_pulse = pulse < 60
+print("Pulse below normal range:", low_pulse)
+
+# Equal to
+target_cholesterol = cholesterol == 5.0
+print("Cholesterol at target level:", target_cholesterol)
+
+# Not equal to
+baseline_deviation = pulse != 80
+print("Pulse deviates from baseline:", baseline_deviation)
+
+# Greater than or equal to
+elevated_bp = blood_pressure >= 140
+print("Blood pressure classified as elevated:", elevated_bp)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Real-World Connection:</strong> In genomics research, Boolean values represent the presence or absence of specific gene mutations. Researchers create complex Boolean expressions to identify patterns across multiple genes that may indicate disease risk or treatment response.</p>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 3: Genetic Analysis Boolean Operations</h3>
+                        <p>You're analyzing genetic test results for a precision medicine study. Complete the code to perform Boolean operations on mutation data.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab3-genetic-analysis-exercise">
+                            <div class="code-block"># Lab scenario: Analyze patterns in genetic mutations
+# Replace the ... with appropriate Boolean operators
+
+# Genetic test results for a patient
+brca1_mutation = True
+brca2_mutation = False
+tp53_mutation = True
+egfr_mutation = False
+kras_mutation = True
+
+# Analyze mutation patterns
+hereditary_breast_cancer_risk = brca1_mutation ... brca2_mutation
+print("Hereditary breast cancer risk factors present:", hereditary_breast_cancer_risk)
+
+# Li-Fraumeni syndrome risk (requires TP53 mutation AND NOT BRCA mutations)
+li_fraumeni_risk = tp53_mutation ... ... (brca1_mutation ... brca2_mutation)
+print("Li-Fraumeni syndrome risk profile:", li_fraumeni_risk)
+
+# Lung cancer analysis (EGFR OR KRAS, but not both)
+targeted_therapy_option = (egfr_mutation ... ... kras_mutation) ... ... (egfr_mutation ... kras_mutation)
+print("Candidate for targeted therapy:", targeted_therapy_option)
+
+# Comprehensive genomic instability check (at least 3 mutations)
+mutation_count = ... + ... + ... + ... + ...
+high_mutation_burden = mutation_count >= 3
+print("High mutation burden detected:", high_mutation_burden)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected output:</p>
+                        <div class="expected-output">Hereditary breast cancer risk factors present: True
+Li-Fraumeni syndrome risk profile: False
+Candidate for targeted therapy: False
+High mutation burden detected: True</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab3-genetic-analysis-solution">
+                                <div class="code-block"># Complete solution
+# Genetic test results for a patient
+brca1_mutation = True
+brca2_mutation = False
+tp53_mutation = True
+egfr_mutation = False
+kras_mutation = True
+
+# Analyze mutation patterns
+hereditary_breast_cancer_risk = brca1_mutation or brca2_mutation
+print("Hereditary breast cancer risk factors present:", hereditary_breast_cancer_risk)
+
+# Li-Fraumeni syndrome risk (requires TP53 mutation AND NOT BRCA mutations)
+li_fraumeni_risk = tp53_mutation and not (brca1_mutation or brca2_mutation)
+print("Li-Fraumeni syndrome risk profile:", li_fraumeni_risk)
+
+# Lung cancer analysis (EGFR OR KRAS, but not both)
+targeted_therapy_option = (egfr_mutation or kras_mutation) and not (egfr_mutation and kras_mutation)
+print("Candidate for targeted therapy:", targeted_therapy_option)
+
+# Comprehensive genomic instability check (at least 3 mutations)
+mutation_count = int(brca1_mutation) + int(brca2_mutation) + int(tp53_mutation) + int(egfr_mutation) + int(kras_mutation)
+high_mutation_burden = mutation_count >= 3
+print("High mutation burden detected:", high_mutation_burden)</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Excellent work! You've applied Boolean operations to analyze genetic mutation patterns, a fundamental task in precision oncology. These techniques help identify complex genetic signatures that can guide targeted therapy selection and risk assessment." data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 4: Type Conversion -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-exchange-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mission Briefing: Type Conversion for Medical Data Processing
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>In healthcare informatics, you'll frequently need to convert between different data types to properly process and analyze patient information. For example, you might need to convert numeric input from a form (which comes in as a string) to a float before calculating a medication dosage.</p>
+                    
+                    <p>Python provides built-in functions to convert between data types:</p>
+                    <ul>
+                        <li><code>int()</code>: Converts to integer</li>
+                        <li><code>float()</code>: Converts to floating-point number</li>
+                        <li><code>str()</code>: Converts to string</li>
+                        <li><code>bool()</code>: Converts to Boolean</li>
+                    </ul>
+                    
+                    <div class="code-block-container" data-block-name="type-conversion-patient-data">
+                        <div class="code-block"># Type conversion in patient data processing
+patient_age_input = "42"  # Age received as string from a form
+height_cm_input = "175.5"  # Height received as string
+is_smoker_input = "0"      # Smoking status as binary code
+
+# Convert string to integer
+patient_age = int(patient_age_input)
+print("Age (integer):", patient_age)
+print("Age in 5 years:", patient_age + 5)  # Now we can do math with it
+
+# Convert string to float
+height_cm = float(height_cm_input)
+height_m = height_cm / 100  # Convert cm to m
+print("Height (m):", height_m)
+print("BMI calculation can now use:", height_m)
+
+# Convert other types to string for reporting
+report_text = "Patient age: " + str(patient_age)
+print(report_text)
+
+# Convert to boolean (0 is False, non-zero is True)
+is_smoker = bool(int(is_smoker_input))
+print("Current smoker:", is_smoker)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Health Tech Tip:</strong> When processing clinical data, always verify that conversions make sense in the medical context. For example, a negative height or weight after conversion would indicate an error in the original data or the conversion process.</p>
+                        
+                        <p><strong>Real-World Connection:</strong> Bioinformatics pipelines routinely convert between data types when processing genomic sequencing data. For example, read qualities might come as strings of ASCII characters but need to be converted to integers for quality filtering algorithms.</p>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 4: Biomarker Calculation</h3>
+                        <p>You're analyzing biomarker data from a clinical study. Complete the code by performing the necessary type conversions.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab4-biomarker-calculation-exercise">
+                            <div class="code-block"># Lab scenario: Process laboratory biomarker data
+# Replace the ... with appropriate type conversions
+
+# Biomarker data as received from laboratory system
+glucose_string = "105.5"
+cholesterol_string = "5.2"
+platelet_count_string = "235000"
+a1c_string = "6.7"
+creatinine_string = "0.9"
+
+# Convert to appropriate numeric types
+glucose = ...
+cholesterol = ...
+platelet_count = ...
+a1c = ...
+creatinine = ...
+
+# Perform calculations on the converted values
+glucose_mmol = glucose * 0.0555  # Convert mg/dL to mmol/L
+egfr = 175 * (creatinine ** -1.154) * (42 ** -0.203)  # eGFR calculation
+platelet_adequacy = platelet_count / 1000  # Express in thousands/µL
+
+# Prepare string report elements
+patient_id = "PTB-2025-104"
+risk_score = str(int(a1c * 10 + cholesterol))
+report_date = "2025-04-29"
+summary_text = "Patient " + ... + " biomarker analysis (Date: " + ... + "): Risk score " + ...
+
+# Display the results
+print("PRECISION MEDICINE BIOMARKER ANALYSIS")
+print("Glucose:", glucose, "mg/dL (", glucose_mmol, "mmol/L)")
+print("HbA1c:", a1c, "%")
+print("Cholesterol:", cholesterol, "mmol/L")
+print("Platelet count:", platelet_count, "cells/µL (", platelet_adequacy, "k/µL)")
+print("eGFR:", egfr, "mL/min/1.73m²")
+print(summary_text)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected output:</p>
+                        <div class="expected-output">PRECISION MEDICINE BIOMARKER ANALYSIS
+Glucose: 105.5 mg/dL ( 5.85525 mmol/L)
+HbA1c: 6.7 %
+Cholesterol: 5.2 mmol/L
+Platelet count: 235000 cells/µL ( 235.0 k/µL)
+eGFR: 92.69453968573 mL/min/1.73m²
+Patient PTB-2025-104 biomarker analysis (Date: 2025-04-29): Risk score 117</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab4-biomarker-calculation-solution">
+                                <div class="code-block"># Complete solution
+# Biomarker data as received from laboratory system
+glucose_string = "105.5"
+cholesterol_string = "5.2"
+platelet_count_string = "235000"
+a1c_string = "6.7"
+creatinine_string = "0.9"
+
+# Convert to appropriate numeric types
+glucose = float(glucose_string)
+cholesterol = float(cholesterol_string)
+platelet_count = int(platelet_count_string)
+a1c = float(a1c_string)
+creatinine = float(creatinine_string)
+
+# Perform calculations on the converted values
+glucose_mmol = glucose * 0.0555  # Convert mg/dL to mmol/L
+egfr = 175 * (creatinine ** -1.154) * (42 ** -0.203)  # eGFR calculation
+platelet_adequacy = platelet_count / 1000  # Express in thousands/µL
+
+# Prepare string report elements
+patient_id = "PTB-2025-104"
+risk_score = str(int(a1c * 10 + cholesterol))
+report_date = "2025-04-29"
+summary_text = "Patient " + patient_id + " biomarker analysis (Date: " + report_date + "): Risk score " + risk_score
+
+# Display the results
+print("PRECISION MEDICINE BIOMARKER ANALYSIS")
+print("Glucose:", glucose, "mg/dL (", glucose_mmol, "mmol/L)")
+print("HbA1c:", a1c, "%")
+print("Cholesterol:", cholesterol, "mmol/L")
+print("Platelet count:", platelet_count, "cells/µL (", platelet_adequacy, "k/µL)")
+print("eGFR:", egfr, "mL/min/1.73m²")
+print(summary_text)</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Excellent work! You've successfully created a biomarker analysis tool that converts various laboratory values between data types to perform meaningful clinical calculations. This mirrors real-world clinical laboratory systems that must transform raw data into medically relevant metrics and reports." data-animation="school"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Disease Information Section (already a dropdown) -->
+            <div class="disease-container">
+                <h2 id="disease-info" class="disease-title">What is Lou-Greig's Disease?</h2>
+                <p class="disease-preview">Click to learn about this rare genetic disorder relevant to precision medicine...</p>
+                
+                <div class="disease-content" style="display: none;">
+                    <p>Lou-Greig's Disease is a rare genetic disorder characterized by progressive neurological deterioration and distinctive skin manifestations. First described in 2018, it affects approximately 1 in 250,000 individuals worldwide.</p>
+                    
+                    <p>Key clinical features include:</p>
+                    <ul>
+                        <li>Early-onset cognitive decline (typically beginning in adolescence)</li>
+                        <li>Characteristic salmon-colored rash on extremities</li>
+                        <li>Gradually increasing muscle weakness</li>
+                        <li>Distinctive biomarker profile with elevated CSF protein levels</li>
+                    </ul>
+                    
+                    <p>Recent precision medicine approaches have identified specific genetic variants in the LGD1 and LGD2 genes associated with this condition. Targeted therapies are currently in Phase II clinical trials, demonstrating the potential of genomic medicine to address previously untreatable disorders.</p>
+                    
+                    <div class="reaction-container">
+                        <p>Was this information helpful?</p>
+                        <button class="reaction-button" data-reaction="helpful"><i class="fas fa-thumbs-up"></i> Helpful</button>
+                        <button class="reaction-button" data-reaction="not-helpful"><i class="fas fa-thumbs-down"></i> Not Helpful</button>
+                        <div class="reaction-feedback">Thank you for your feedback!</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 5: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-5">
+                        <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Summary: Python Syntax Basics
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Congratulations on completing the Python Syntax Basics module! You've gained essential skills that form the foundation of your precision health programming toolkit:</p>
+                    
+                    <ol>
+                        <li><strong>Python statements</strong>: You learned how to write clear, executable instructions that form the building blocks of your medical data analysis code.</li>
+                        <li><strong>Data types</strong>: You explored how to represent different kinds of biomedical information using integers, floats, and strings - ensuring your precision medicine applications handle data appropriately.</li>
+                        <li><strong>Boolean values and operations</strong>: You discovered how to use Boolean operations to represent and analyze biological states and medical test results, just as medical researchers do when evaluating multiple factors in disease diagnosis.</li>
+                        <li><strong>Type conversion</strong>: You practiced converting between data types, an essential skill for processing medical information from diverse sources and ensuring accurate calculations for patient care.</li>
+                    </ol>
+                    
+                    <p>These fundamental concepts are directly applicable to precision medicine workflows, from analyzing genetic sequencing data to calculating personalized treatment protocols. As healthcare becomes increasingly data-driven, your ability to manipulate and process information will be invaluable.</p>
+                    
+                    <p>In the next module, you'll build on these foundations by learning about variables and assignment in Python, which will allow you to store and manipulate patient data, genetic information, and clinical measurements throughout your programs. This will further enhance your ability to create sophisticated precision medicine applications.</p>
+                    
+                    <p>Keep up the great work, and remember that every Python skill you master brings us one step closer to truly personalized healthcare!</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out Python code examples as you learn. You can practice with basic commands or experiment with more complex examples from the lesson.</p>
+            
+            <textarea id="python-code">
+# Try Python code here
+
+               
+</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Python session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+        // Replace with your deployed Google Apps Script Web App URL
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzM3-12-Fy9Km4IYMYHeisGQVCd7hGoFRzk0kaLhyGhqayUl6ecRSV41df8czNxDQ8C-A/exec';
+        const SIGN_IN_URL = 'https://xchee-01.github.io/PMTHA/SOM-PMTHA_signin.html';
+        const COPY_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbz88biGq3GAIfH77lEt_IeWcRbBrZ8r2K-4Z5C0foZDMHQGsuqaGIvhGOBKA5eqW65_AA/exec';
+        const EXTRA_INFO_INTERACTION_URL = 'https://script.google.com/macros/s/AKfycbxXHMDDEnZq0krPyE96d22zEp3DqdLmwO74OsxSRW1Rq_JvHEYRXc5IgnaV-6J1l4o_GQ/exec';
+        
+        // Configuration and constants
+        const TRACKING_INTERVAL = 2000; // 2 seconds for periodic tracking
+        const HEARTBEAT_INTERVAL = 2000; // 2 seconds for heartbeat
+        const INACTIVITY_THRESHOLD = 10000; // 10 seconds until user is considered inactive
+        const THROTTLE_DELAY = 1000; // Throttle delay for frequent events
+        
+        // Required packages for Pyodide
+        const requiredPackages = ['numpy', 'pandas'];
+        
+        // Global variables
+        let pyodide;
+        let openSections = {};
+        let sectionEvents = [];
+        let trackingInterval = null;
+        let lastUserActivity = new Date();
+        let isPageVisible = true;
+        let isUserActive = true;
+        let heartbeatInterval = null;
+        let activityTimeout = null;
+        let sessionId = generateSessionId();
+        let inactivityTimeout = null;
+        let isTrackingPaused = false;
+        
+        // Cache DOM elements
+        const domElements = {
+            runButton: document.getElementById('run-button'),
+            clearButton: document.getElementById('clear-button'),
+            statusElement: document.getElementById('status'),
+            outputArea: document.getElementById('output-area'),
+            codeInput: document.getElementById('python-code'),
+            inactivityModal: document.getElementById('inactivityModal'),
+            celebrationModal: document.getElementById('celebrationModal'),
+            celebrationMessage: document.getElementById('celebrationMessage'),
+            sectionHeaders: document.querySelectorAll('.section-header'),
+            toggleButtons: document.querySelectorAll('.toggle-answer'),
+            copyButtons: document.querySelectorAll('.copy-button'),
+            celebrateButtons: document.querySelectorAll('.celebrate-button'),
+            diseaseTitle: document.querySelector('.disease-title'),
+            diseasePreview: document.querySelector('.disease-preview'),
+            diseaseContent: document.querySelector('.disease-content'),
+            reactionButtons: document.querySelectorAll('.reaction-button'),
+            reactionFeedback: document.querySelector('.reaction-feedback'),
+            modalClose: document.querySelector('.modal-close'),
+            inactivityCloseButton: document.querySelector('#inactivityModal .modal-close')
+        };
+
+        // Optimized initialization function
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize enhanced tracking system
+            initializeTracking();
+            
+            // Setup UI interactions
+            setupUIInteractions();
+            
+            // Initialize Python
+            initializePython();
+        });
+        
+        // Generate a unique session ID
+        function generateSessionId() {
+            return `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+        }
+        
+        // Optimized tracking initialization
+        function initializeTracking() {
+            // Start periodic tracking for active sections
+            startPeriodicTracking();
+            
+            // Start heartbeat for continuous monitoring
+            startHeartbeat();
+            
+            // Set up Page Visibility API
+            setupVisibilityTracking();
+            
+            // Set up user activity monitoring
+            setupActivityMonitoring();
+            
+            // Set initial inactivity timeout
+            resetInactivityTimeout();
+            
+            // Save session state on unload
+            window.addEventListener('beforeunload', handlePageUnload);
+            
+            // Check for previous session
+            checkForPreviousSession();
+        }
+        
+        // Setup all UI interactions
+        function setupUIInteractions() {
+            // Set up section dropdowns with event delegation
+            document.querySelector('#learning-materials').addEventListener('click', handleLearningMaterialsClick);
+            
+            // Setup inactivity modal button
+            if (domElements.inactivityCloseButton) {
+                domElements.inactivityCloseButton.addEventListener('click', handleUserReturn);
+            }
+            
+            // Setup celebration modal
+            setupCelebrationModal();
+            
+            // Set up disease info toggle
+            setupDiseaseInfoToggle();
+            
+            // Initialize copy buttons
+            initializeCopyButtons();
+        }
+        
+        // Handle clicks within learning materials using event delegation
+        function handleLearningMaterialsClick(event) {
+            // Handle section header clicks
+            if (event.target.closest('.section-header')) {
+                const header = event.target.closest('.section-header');
+                toggleSection(header);
+            }
+            
+            // Handle toggle answer buttons
+            if (event.target.closest('.toggle-answer')) {
+                const button = event.target.closest('.toggle-answer');
+                toggleAnswer(button);
+            }
+            
+            // Handle celebration buttons
+            if (event.target.closest('.celebrate-button')) {
+                const button = event.target.closest('.celebrate-button');
+                showCelebration(button);
+            }
+        }
+        
+        // Toggle section visibility
+        function toggleSection(header) {
+            header.classList.toggle('active');
+            const content = header.nextElementSibling;
+            const sectionId = header.querySelector('h2').getAttribute('id');
+            
+            content.classList.toggle('active');
+            
+            // Track section interaction
+            trackSectionInteraction(sectionId, content.classList.contains('active'));
+        }
+        
+        // Toggle answer visibility
+        function toggleAnswer(button) {
+            const answer = button.nextElementSibling;
+            if (answer.style.display === 'block') {
+                answer.style.display = 'none';
+                button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Answer';
+            } else {
+                answer.style.display = 'block';
+                button.innerHTML = '<i class="fas fa-times"></i> Hide Answer';
+                
+                // Track that the user viewed an answer
+                const challengeContainer = button.closest('.challenge');
+                const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
+                
+                trackEvent('answer_viewed', getCurrentSectionId(), challengeTitle);
+            }
+        }
+        
+        // Show celebration modal
+        function showCelebration(button) {
+            const message = button.getAttribute('data-message');
+            const animationType = button.getAttribute('data-animation');
+            
+            // Show message in modal
+            domElements.celebrationMessage.textContent = message;
+            domElements.celebrationModal.style.display = 'block';
+            
+            // Track this celebration event
+            const challengeContainer = button.closest('.challenge');
+            const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
+            
+            trackEvent('challenge_completed', getCurrentSectionId(), challengeTitle);
+            
+            // Trigger confetti animation
+            if (confettiAnimations[animationType]) {
+                confettiAnimations[animationType]();
+            } else {
+                confettiAnimations.center(); // Default animation
+            }
+        }
+        
+        // Setup celebration modal
+        function setupCelebrationModal() {
+            // Close modal when close button is clicked
+            document.querySelector('.modal-close').addEventListener('click', function() {
+                domElements.celebrationModal.style.display = 'none';
+            });
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', function(event) {
+                if (event.target === domElements.celebrationModal) {
+                    domElements.celebrationModal.style.display = 'none';
+                }
+            });
+        }
+        
+        // Add an event to the tracking queue
+        function trackEvent(type, sectionId, additionalInfo = '') {
+            sectionEvents.push({
+                type: type,
+                sectionId: sectionId,
+                startTime: new Date(),
+                endTime: null,
+                duration: 0,
+                additionalInfo: additionalInfo
+            });
+            
+            // If we've accumulated enough events, send data now
+            if (sectionEvents.length >= 5) {
+                sendTrackingData();
+            }
+        }
+        
+        // Start periodic tracking
+        function startPeriodicTracking() {
+            // Clear any existing interval
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+            }
+            
+            // Set up new interval
+            trackingInterval = setInterval(function() {
+                if (sectionEvents.length > 0 && !isTrackingPaused) {
+                    sendTrackingData();
+                }
+            }, TRACKING_INTERVAL);
+        }
+        
+        // Show inactivity popup
+function showInactivityPopup() {
+    // Only show popup if not already shown
+    if (!isTrackingPaused) {
+        // Pause tracking
+        isTrackingPaused = true;
+        
+        // Show the popup
+        const inactivityModal = document.getElementById('inactivityModal');
+        inactivityModal.style.display = 'block';
+        
+        // Track this inactivity event
+        sectionEvents.push({
+            type: 'inactivity_popup_shown',
+            sectionId: getCurrentSectionId(),
+            startTime: new Date(),
+            endTime: null,
+            duration: ''
+        });
+        
+        // Send tracking data immediately
+        sendTrackingData();
+        
+        console.log("Tracking paused due to inactivity");
+    }
+}
+        
+        // Handle user return from inactivity
+        function handleUserReturn() {
+            domElements.inactivityModal.style.display = 'none';
+            isTrackingPaused = false;
+            lastUserActivity = new Date();
+            resetInactivityTimeout();
+        }
+        
+        // Reset inactivity timeout
+        function resetInactivityTimeout() {
+            if (inactivityTimeout) {
+                clearTimeout(inactivityTimeout);
+            }
+            
+            inactivityTimeout = setTimeout(function() {
+                if (isPageVisible) {
+                    showInactivityPopup();
+                }
+            }, INACTIVITY_THRESHOLD);
+        }
+        
+        // Set up visibility tracking
+        function setupVisibilityTracking() {
+    // Different browsers might have different property names
+    let hidden, visibilityChange;
+    
+    if (typeof document.hidden !== "undefined") {
+        hidden = "hidden";
+        visibilityChange = "visibilitychange";
+    } else if (typeof document.msHidden !== "undefined") {
+        hidden = "msHidden";
+        visibilityChange = "msvisibilitychange";
+    } else if (typeof document.webkitHidden !== "undefined") {
+        hidden = "webkitHidden";
+        visibilityChange = "webkitvisibilitychange";
+    }
+    
+    // Add event listener to track visibility changes
+    document.addEventListener(visibilityChange, function() {
+        isPageVisible = !document[hidden];
+        const timestamp = new Date();
+        
+        if (isPageVisible) {
+            // Page became visible again
+            // Track visibility return
+            sectionEvents.push({
+                type: 'visibility_return',
+                sectionId: getCurrentSectionId(),
+                startTime: lastUserActivity,
+                endTime: timestamp,
+                duration: (timestamp - lastUserActivity) / 1000
+            });
+            
+            // Update last activity time
+            lastUserActivity = timestamp;
+            
+            // If it's been inactive for too long, show popup
+            if (timestamp - lastUserActivity > INACTIVITY_THRESHOLD && !isTrackingPaused) {
+                showInactivityPopup();
+            }
+        } else {
+            // Page was hidden
+            // Track visibility lost
+            sectionEvents.push({
+                type: 'visibility_lost',
+                sectionId: getCurrentSectionId(),
+                startTime: timestamp,
+                endTime: null,
+                duration: 0
+            });
+            
+            lastUserActivity = timestamp;
+            
+            // Clear any existing timeout
+            if (inactivityTimeout) {
+                clearTimeout(inactivityTimeout);
+            }
+            
+            // Set timeout for when page is hidden
+            inactivityTimeout = setTimeout(function() {
+                if (!isPageVisible) {
+                    showInactivityPopup();
+                }
+            }, INACTIVITY_THRESHOLD);
+        }
+        
+        // Send tracking data immediately
+        sendTrackingData();
+    });
+}
+        
+        // Efficiently throttle function calls
+        function throttle(func, delay) {
+            let lastCall = 0;
+            return function(...args) {
+                const now = Date.now();
+                if (now - lastCall < delay) {
+                    return;
+                }
+                lastCall = now;
+                return func(...args);
+            };
+        }
+        
+        // Set up activity monitoring with optimized events
+function setupActivityMonitoring() {
+    // List of events to consider as user activity
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    // Throttle function to prevent too many event firings
+    function throttle(func, delay) {
+        let lastCall = 0;
+        return function(...args) {
+            const now = new Date().getTime();
+            if (now - lastCall < delay) {
+                return;
+            }
+            lastCall = now;
+            return func(...args);
+        };
+    }
+    
+    // Handle user activity
+    const handleActivity = throttle(function() {
+        // If tracking is paused (popup is visible), don't automatically resume
+        if (isTrackingPaused) {
+            return; // This is the key change - don't auto-resume when popup is visible
+        }
+        
+        // Only process if page is visible
+        if (isPageVisible) {
+            const now = new Date();
+            
+            // Update last activity time
+            lastUserActivity = now;
+            
+            // Clear any existing inactivity timeout
+            if (inactivityTimeout) {
+                clearTimeout(inactivityTimeout);
+            }
+            
+            // Set new inactivity timeout
+            inactivityTimeout = setTimeout(function() {
+                if (isPageVisible) {
+                    showInactivityPopup();
+                }
+            }, INACTIVITY_THRESHOLD);
+        }
+    }, 1000); // Throttle to once per second
+    
+    // Add event listeners for each activity event
+    activityEvents.forEach(function(eventName) {
+        document.addEventListener(eventName, handleActivity, { passive: true });
+    });
+}
+        
+        // Get the current visible section ID
+        function getCurrentSectionId() {
+            let currentSectionId = 'unknown';
+            let maxVisibleArea = 0;
+            
+            domElements.sectionHeaders.forEach(header => {
+                const content = header.nextElementSibling;
+                const sectionId = header.querySelector('h2').getAttribute('id');
+                
+                if (content.classList.contains('active')) {
+                    const rect = content.getBoundingClientRect();
+                    const windowHeight = window.innerHeight;
+                    
+                    const visibleTop = Math.max(0, rect.top);
+                    const visibleBottom = Math.min(windowHeight, rect.bottom);
+                    const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+                    const visibleArea = visibleHeight * rect.width;
+                    
+                    if (visibleArea > maxVisibleArea) {
+                        maxVisibleArea = visibleArea;
+                        currentSectionId = sectionId;
+                    }
+                }
+            });
+            
+            return currentSectionId;
+        }
+        
+        // Start heartbeat mechanism
+        function startHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+            }
+            
+            heartbeatInterval = setInterval(function() {
+                if (!isTrackingPaused && isPageVisible) {
+                    const now = new Date();
+                    const currentSectionId = getCurrentSectionId();
+                    
+                    // Update active status for sections
+                    Object.keys(openSections).forEach(sectionId => {
+                        const section = openSections[sectionId];
+                        
+                        if (sectionId === currentSectionId && !section.isActive) {
+                            section.isActive = true;
+                            section.lastActiveTime = now;
+                        } else if (sectionId !== currentSectionId && section.isActive) {
+                            section.isActive = false;
+                        }
+                        
+                        // Send heartbeat only for active section
+                        if (sectionId === currentSectionId && section.isActive && isUserActive) {
+                            sectionEvents.push({
+                                type: 'heartbeat',
+                                sectionId: sectionId,
+                                startTime: now,
+                                endTime: null,
+                                duration: 0
+                            });
+                        }
+                    });
+                    
+                    // Send tracking data if we have events
+                    if (sectionEvents.length > 0) {
+                        sendTrackingData();
+                    }
+                }
+            }, HEARTBEAT_INTERVAL);
+        }
+        
+        // Track section interactions efficiently
+        function trackSectionInteraction(sectionId, isOpening) {
+            const timestamp = new Date();
+            
+            if (isOpening) {
+                // Mark other active sections as inactive
+                Object.keys(openSections).forEach(id => {
+                    if (openSections[id].isActive && id !== sectionId) {
+                        openSections[id].isActive = false;
+                    }
+                });
+                
+                // Handle new or existing section
+                if (openSections[sectionId]) {
+                    if (!openSections[sectionId].isActive) {
+                        sectionEvents.push({
+                            type: 're_activation',
+                            sectionId: sectionId,
+                            startTime: timestamp,
+                            endTime: null,
+                            duration: 0
+                        });
+                        
+                        openSections[sectionId].isActive = true;
+                        openSections[sectionId].lastActiveTime = timestamp;
+                    }
+                } else {
+                    // New section being opened
+                    openSections[sectionId] = {
+                        startTime: timestamp,
+                        isActive: true,
+                        lastActiveTime: timestamp
+                    };
+                    
+                    sectionEvents.push({
+                        type: 'section_opened',
+                        sectionId: sectionId,
+                        startTime: timestamp,
+                        endTime: null,
+                        duration: 0
+                    });
+                }
+            } else {
+                // Section being closed
+                if (openSections[sectionId]) {
+                    sectionEvents.push({
+                        type: 'section_closed',
+                        sectionId: sectionId,
+                        startTime: timestamp,
+                        endTime: null,
+                        duration: 0
+                    });
+                    
+                    delete openSections[sectionId];
+                }
+            }
+            
+            // Send data if enough events accumulated
+            if (sectionEvents.length >= 5) {
+                sendTrackingData();
+            }
+        }
+        
+        // Send tracking data to server with batching
+        function sendTrackingData(isSync = false) {
+            // Don't proceed if there's no data or tracking is paused
+            if (sectionEvents.length === 0 || isTrackingPaused) {
+                return;
+            }
+            
+            // Prepare data
+            const username = getUsername();
+            const eventsCopy = [...sectionEvents];
+            sectionEvents = [];
+            
+            const data = {
+                username: username,
+                url: window.location.href,
+                events: eventsCopy,
+                timestamp: new Date().toISOString(),
+                sessionId: sessionId
+            };
+            
+            // Use beacon API for unload events
+            if (isSync && navigator.sendBeacon) {
+                try {
+                    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+                    navigator.sendBeacon(APPS_SCRIPT_URL, blob);
+                } catch (error) {
+                    console.error('Beacon error:', error);
+                    sectionEvents = [...eventsCopy, ...sectionEvents];
+                }
+                return;
+            }
+            
+            // Use fetch for normal tracking
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                mode: 'no-cors'
+            })
+            .catch(error => {
+                console.error('Tracking error:', error);
+                sectionEvents = [...eventsCopy, ...sectionEvents];
+            });
+        }
+        
+        // Get username with caching
+        const usernameCache = {
+            value: null,
+            timestamp: 0
+        };
+        
+        function getUsername() {
+            // Return cached username if valid (cache for 5 minutes)
+            if (usernameCache.value && Date.now() - usernameCache.timestamp < 300000) {
+                return usernameCache.value;
+            }
+            
+            try {
+                const accountsData = localStorage.getItem('accounts');
+                if (accountsData) {
+                    const accounts = JSON.parse(accountsData);
+                    const username = (accounts && accounts.length > 0 && accounts[0].username) 
+                        ? accounts[0].username 
+                        : 'Guest_' + Math.floor(Math.random() * 10000);
+                    
+                    // Update cache
+                    usernameCache.value = username;
+                    usernameCache.timestamp = Date.now();
+                    
+                    return username;
+                }
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            } catch (error) {
+                return 'Guest_' + Math.floor(Math.random() * 10000);
+            }
+        }
+        
+        // Handle page unload
+        function handlePageUnload() {
+            // Capture final state for all sections
+            const exitTime = new Date();
+            
+            Object.keys(openSections).forEach(sectionId => {
+                const section = openSections[sectionId];
+                
+                sectionEvents.push({
+                    type: section.isActive ? 'active_on_exit' : 'inactive_on_exit',
+                    sectionId: sectionId,
+                    startTime: section.startTime,
+                    endTime: exitTime,
+                    duration: (exitTime - section.startTime) / 1000
+                });
+            });
+            
+            // Save session state
+            saveSessionState();
+            
+            // Send tracking data
+            if (sectionEvents.length > 0) {
+                sendTrackingData(true);
+            }
+        }
+        
+        // Save session state
+        function saveSessionState() {
+            try {
+                const openSectionIds = Object.keys(openSections);
+                let lastActiveSection = null;
+                
+                // Find most recently active section
+                Object.keys(openSections).forEach(sectionId => {
+                    const section = openSections[sectionId];
+                    if (section.isActive) {
+                        lastActiveSection = sectionId;
+                    }
+                });
+                
+                // Save to localStorage
+                localStorage.setItem('sectionState', JSON.stringify({
+                    timestamp: new Date().toISOString(),
+                    openSectionIds: openSectionIds,
+                    lastActiveSection: lastActiveSection
+                }));
+            } catch (error) {
+                console.error('Session save error:', error);
+            }
+        }
+        
+        // Check for previous session
+        function checkForPreviousSession() {
+            try {
+                const savedData = localStorage.getItem('sectionState');
+                if (savedData) {
+                    const sessionData = JSON.parse(savedData);
+                    
+                    // If session was recent (< 2 hours), restore
+                    const lastSession = new Date(sessionData.timestamp);
+                    const hoursSinceLastSession = (new Date() - lastSession) / (1000 * 60 * 60);
+                    
+                    if (hoursSinceLastSession < 2) {
+                        restorePreviousSession(sessionData);
+                    } else {
+                        localStorage.removeItem('sectionState');
+                    }
+                }
+            } catch (error) {
+                console.error('Session check error:', error);
+            }
+        }
+        
+        // Restore previous session
+        function restorePreviousSession(sessionData) {
+            try {
+                if (sessionData.openSectionIds && sessionData.openSectionIds.length > 0) {
+                    sessionData.openSectionIds.forEach(sectionId => {
+                        const header = document.querySelector(`h2#${sectionId}`).closest('.section-header');
+                        if (header) {
+                            header.classList.add('active');
+                            header.nextElementSibling.classList.add('active');
+                            
+                            trackSectionInteraction(sectionId, true);
+                            
+                            sectionEvents.push({
+                                type: 'session_restored',
+                                sectionId: sectionId,
+                                startTime: new Date(),
+                                endTime: null,
+                                duration: 0
+                            });
+                        }
+                    });
+                    
+                    // Scroll to last active section
+                    if (sessionData.lastActiveSection) {
+                        const element = document.getElementById(sessionData.lastActiveSection);
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Session restore error:', error);
+            }
+        }
+        
+        // Initialize copy buttons
+        function initializeCopyButtons() {
+            domElements.copyButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const container = this.closest('.code-block-container');
+                    const codeBlock = container.querySelector('.code-block');
+                    const feedback = container.querySelector('.copy-feedback');
+                    const blockName = container.getAttribute('data-block-name');
+                    
+                    navigator.clipboard.writeText(codeBlock.textContent)
+                        .then(() => {
+                            feedback.classList.add('show');
+                            
+                            trackCodeCopy(blockName);
+                            
+                            setTimeout(() => {
+                                feedback.classList.remove('show');
+                            }, 2000);
+                        })
+                        .catch(err => {
+                            console.error('Copy error:', err);
+                        });
+                });
+            });
+        }
+        
+        // Track code copy
+        async function trackCodeCopy(blockName) {
+            try {
+                const data = {
+                    type: 'code_copy',
+                    username: getUsername(),
+                    timestamp: new Date().toISOString(),
+                    blockName: blockName,
+                    pageUrl: window.location.href
+                };
+                
+                await fetch(COPY_TRACKING_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+            } catch (error) {
+                console.error('Copy tracking error:', error);
+            }
+        }
+        
+        // Setup disease info toggle
+        function setupDiseaseInfoToggle() {
+            // Function to toggle disease info
+            function toggleDiseaseInfo() {
+                const isExpanded = domElements.diseaseTitle.classList.contains('expanded');
+                
+                if (isExpanded) {
+                    domElements.diseaseTitle.classList.remove('expanded');
+                    domElements.diseaseContent.style.display = 'none';
+                    domElements.diseasePreview.style.display = 'block';
+                } else {
+                    domElements.diseaseTitle.classList.add('expanded');
+                    domElements.diseaseContent.style.display = 'block';
+                    domElements.diseasePreview.style.display = 'none';
+                    
+                    // Track that user expanded the disease info
+                    trackUserInteraction('disease_info_expanded', 'Lou-Greig Disease');
+                }
+            }
+            
+            // Add click event listeners
+            if (domElements.diseaseTitle && domElements.diseasePreview) {
+                domElements.diseaseTitle.addEventListener('click', toggleDiseaseInfo);
+                domElements.diseasePreview.addEventListener('click', toggleDiseaseInfo);
+            }
+            
+            // Setup reaction buttons
+            setupReactionButtons();
+        }
+        
+        // Setup reaction buttons
+        function setupReactionButtons() {
+            // Use event delegation for reaction buttons
+            const reactionContainer = document.querySelector('.reaction-container');
+            if (reactionContainer) {
+                reactionContainer.addEventListener('click', function(event) {
+                    const button = event.target.closest('.reaction-button');
+                    if (!button) return;
+                    
+                    // Get reaction type
+                    const reactionType = button.getAttribute('data-reaction');
+                    
+                    // Remove selected class from all buttons
+                    document.querySelectorAll('.reaction-button').forEach(btn => 
+                        btn.classList.remove('selected'));
+                    
+                    // Add selected class to clicked button
+                    button.classList.add('selected');
+                    
+                    // Show feedback message
+                    const feedback = document.querySelector('.reaction-feedback');
+                    if (feedback) {
+                        feedback.classList.add('show');
+                        
+                        // Hide feedback after 3 seconds
+                        setTimeout(() => {
+                            feedback.classList.remove('show');
+                        }, 3000);
+                    }
+                    
+                    // Track the reaction
+                    trackUserInteraction('disease_info_reaction', reactionType);
+                });
+            }
+        }
+        
+        // Track user interactions with extra info
+        async function trackUserInteraction(interactionType, interactionValue) {
+            try {
+                const data = {
+                    type: interactionType,
+                    username: getUsername(),
+                    timestamp: new Date().toISOString(),
+                    value: interactionValue,
+                    pageUrl: window.location.href
+                };
+                
+                await fetch(EXTRA_INFO_INTERACTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+            } catch (error) {
+                console.error('Interaction tracking error:', error);
+            }
+        }
+        
+        // Initialize Python interpreter
+        async function initializePython() {
+            try {
+                // Update status
+                domElements.statusElement.textContent = 'Loading Python core...';
+                
+                // Load Pyodide
+                const pyodide = await loadPyodide();
+                
+                domElements.statusElement.textContent = 'Loading Python libraries... This may take a moment.';
+                
+                // Set up stdout/stderr redirection
+                pyodide.setStdout({ batched: (msg) => appendToOutputArea(msg) });
+                pyodide.setStderr({ batched: (msg) => appendToOutputArea(`Error: ${msg}`) });
+                
+                // Load required packages
+                await pyodide.loadPackage(requiredPackages);
+                
+                // Update UI
+                domElements.statusElement.textContent = 'Python is ready!';
+                domElements.runButton.disabled = false;
+                
+                // Set up run and clear buttons
+                setupPythonButtons(pyodide);
+                
+                return pyodide;
+            } catch (error) {
+                domElements.statusElement.textContent = `Error loading Python: ${error}`;
+                console.error('Python loading error:', error);
+                domElements.runButton.disabled = true;
+                return null;
+            }
+        }
+        
+        // Set up Python buttons
+        function setupPythonButtons(pyodide) {
+            // Run button
+            domElements.runButton.addEventListener('click', async () => {
+                if (!pyodide) {
+                    appendToOutputArea("Error: Python is not loaded yet.");
+                    return;
+                }
+                
+                const pythonCode = domElements.codeInput.value;
+                domElements.outputArea.textContent = ''; // Clear previous output
+                
+                domElements.statusElement.textContent = 'Running code...';
+                domElements.runButton.disabled = true;
+                domElements.clearButton.disabled = true;
+                
+                try {
+                    await pyodide.runPythonAsync(pythonCode);
+                    domElements.statusElement.textContent = 'Execution complete.';
+                } catch (error) {
+                    appendToOutputArea(`\n--- Execution Error --- \n${error}\n--------------------`);
+                    domElements.statusElement.textContent = 'Error during execution.';
+                } finally {
+                    domElements.runButton.disabled = false;
+                    domElements.clearButton.disabled = false;
+                }
+            });
+            
+            // Clear button
+            domElements.clearButton.addEventListener('click', () => {
+                domElements.outputArea.textContent = '';
+                domElements.statusElement.textContent = 'Output cleared. Python is ready.';
+            });
+        }
+        
+        // Append text to output area
+        function appendToOutputArea(message) {
+            domElements.outputArea.textContent += message + (message.endsWith('\n') ? '' : '\n');
+            domElements.outputArea.scrollTop = domElements.outputArea.scrollHeight; // Scroll to bottom
+        }
+        
+        // NUS color variables for confetti
+        const nusBlue = '#003D7C';
+        const nusOrange = '#EF7C00';
+        const nusLightBlue = '#4D7CAE';
+        
+        // Optimized confetti animations
+        const confettiAnimations = {
+            center: function() {
+                confetti({
+                    particleCount: 150,
+                    spread: 160,
+                    origin: { x: 0.5, y: 0.6 },
+                    colors: [nusBlue, nusOrange, nusLightBlue, '#ffffff']
+                });
+            },
+            sides: function() {
+                // Left side
+                confetti({
+                    particleCount: 80,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.65 },
+                    colors: [nusBlue, nusLightBlue, '#ffffff']
+                });
+                
+                // Right side after a small delay
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 80,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1, y: 0.65 },
+                        colors: [nusOrange, nusLightBlue, '#ffffff']
+                    });
+                }, 150);
+            },
+            fireworks: function() {
+                const duration = 1500;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+                
+                function randomInRange(min, max) {
+                    return Math.random() * (max - min) + min;
+                }
+                
+                // Use requestAnimationFrame for better performance
+                function fireworkFrame() {
+                    const timeLeft = animationEnd - Date.now();
+                    
+                    if (timeLeft <= 0) return;
+                    
+                    const particleCount = 50 * (timeLeft / duration);
+                    
+                    // Left firework
+                    confetti(Object.assign({}, defaults, { 
+                        particleCount, 
+                        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+                        colors: [nusBlue, nusLightBlue, '#ffffff']
+                    }));
+                    
+                    // Right firework
+                    confetti(Object.assign({}, defaults, { 
+                        particleCount, 
+                        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+                        colors: [nusOrange, nusLightBlue, '#ffffff']
+                    }));
+                    
+                    requestAnimationFrame(fireworkFrame);
+                }
+                
+                requestAnimationFrame(fireworkFrame);
+            },
+            school: function() {
+                // NUS blue rain
+                confetti({
+                    particleCount: 100,
+                    startVelocity: 30,
+                    spread: 360,
+                    origin: { x: 0.5, y: 0.3 },
+                    colors: [nusBlue],
+                    shapes: ['square'],
+                    scalar: 0.8
+                });
+                
+                // NUS orange rain
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 100,
+                        startVelocity: 30,
+                        spread: 360,
+                        origin: { x: 0.5, y: 0.3 },
+                        colors: [nusOrange],
+                        shapes: ['circle'],
+                        scalar: 0.8
+                    });
+                }, 300);
+            }
+        };
+    </script>
+</body>
+</html>
