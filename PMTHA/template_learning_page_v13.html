@@ -1703,7 +1703,7 @@ function generateSessionId() {
                         sectionId: 'page',
                         startTime: lastUserActivity,
                         endTime: visibilityReturnTime,
-                        duration: invisibilityDuration
+                        duration: ''
                     });
                     
                     // Update time tracking
@@ -1722,7 +1722,7 @@ function generateSessionId() {
                         sectionId: 'page',
                         startTime: lastUserActivity,
                         endTime: null,
-                        duration: 0
+                        duration: ''
                     });
                     
                     // Pause active tracking if needed
@@ -1765,7 +1765,7 @@ function generateSessionId() {
                             sectionId: getCurrentSectionId(),
                             startTime: lastUserActivity,
                             endTime: now,
-                            duration: inactivityDuration
+                            duration: ''
                         });
                         
                         isUserActive = true;
@@ -1790,7 +1790,7 @@ function generateSessionId() {
                                 sectionId: getCurrentSectionId(),
                                 startTime: lastUserActivity,
                                 endTime: new Date(),
-                                duration: INACTIVITY_THRESHOLD / 1000
+                                duration: ''
                             });
                         }
                     }, INACTIVITY_THRESHOLD);
@@ -2081,25 +2081,13 @@ if (inactivityCloseButton) {
             
             if (isOpening) {
                 // Mark currently active section as inactive (user switched to a new section)
-                Object.keys(openSections).forEach(id => {
-                    if (openSections[id].isActive && id !== sectionId) {
-                        const softExitTime = new Date();
-                        const activeDuration = (softExitTime - openSections[id].startTime) / 1000;
-                        
-                        // Add this event to the tracking queue
-                        sectionEvents.push({
-                            type: 'focus_shift',
-                            sectionId: id,
-                            startTime: openSections[id].startTime,
-                            endTime: softExitTime,
-                            duration: activeDuration
-                        });
-                        
-                        // Update the status (keep tracking in case user returns to this section)
-                        openSections[id].isActive = false;
-                        openSections[id].lastActiveTime = softExitTime;
-                    }
-                });
+Object.keys(openSections).forEach(id => {
+    if (openSections[id].isActive && id !== sectionId) {
+        // Just update the status without recording focus shift
+        openSections[id].isActive = false;
+        openSections[id].lastActiveTime = new Date();
+    }
+});
                 
                 // Section is being opened or becomes active again
                 if (openSections[sectionId]) {
