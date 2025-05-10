@@ -1557,14 +1557,14 @@ print(summary_text)</div>
 function showInactivityPopup() {
     // Only show popup if not already shown
     if (!isTrackingPaused) {
-        // Pause tracking
+        // Pause tracking for heartbeats but continue for visibility events
         isTrackingPaused = true;
         
         // Show the popup
         const inactivityModal = document.getElementById('inactivityModal');
         inactivityModal.style.display = 'block';
         
-        console.log("Tracking paused due to inactivity");
+        console.log("Heartbeat tracking paused due to inactivity, visibility tracking continues");
     }
 }
 
@@ -1780,62 +1780,108 @@ function generateSessionId() {
         
         // Initialize the Page Visibility API
         function setupVisibilityTracking() {
-            // Different browsers might have different property names
-            let hidden, visibilityChange;
+    // Different browsers might have different property names
+    let hidden, visibilityChange;
+    
+    if (typeof document.hidden !== "undefined") {
+        hidden = "hidden";
+        visibilityChange = "visibilitychange";
+    } else if (typeof document.msHidden !== "undefined") {
+        hidden = "msHidden";
+        visibilityChange = "msvisibilitychange";
+    } else if (typeof document.webkitHidden !== "undefined") {
+        hidden = "webkitHidden";
+        visibilityChange = "webkitvisibilitychange";
+    }
+    
+    // Add event listener to track visibility changes
+    document.addEventListener(visibilityChange, function() {
+        isPageVisible = !document[hidden];
+        
+        if (isPageVisible) {
+            // Page became visible again - if it's been more than a minute, show popup
+            const visibilityReturnTime = new Date();
             
-            if (typeof document.hidden !== "undefined") {
-                hidden = "hidden";
-                visibilityChange = "visibilitychange";
-            } else if (typeof document.msHidden !== "undefined") {
-                hidden = "msHidden";
-                visibilityChange = "msvisibilitychange";
-            } else if (typeof document.webkitHidden !== "undefined") {
-                hidden = "webkitHidden";
-                visibilityChange = "webkitvisibilitychange";
+            // Track this visibility change
+            sectionEvents.push({
+                type: 'visibility_return',
+                sectionId: 'page',
+                startTime: lastUserActivity,
+                endTime: visibilityReturnTime,
+                duration: (visibilityReturnTime - lastUserActivity) / 1000
+            });
+            
+            // Send this visibility event immediately
+            sendVisibilityEvent('visibility_return', lastUserActivity, visibilityReturnTime);
+            
+            if (new Date() - lastUserActivity > INACTIVITY_THRESHOLD) {
+                showInactivityPopup();
             }
             
-            // Add event listener to track visibility changes
-            document.addEventListener(visibilityChange, function() {
-                isPageVisible = !document[hidden];
-                
-                if (isPageVisible) {
-                    // Page became visible again
-                    const visibilityReturnTime = new Date();
-                    const invisibilityDuration = (visibilityReturnTime - lastUserActivity) / 1000;
-                    
-                    // Track this visibility change
-                    sectionEvents.push({
-                        type: 'visibility_return',
-                        sectionId: 'page',
-                        startTime: lastUserActivity,
-                        endTime: visibilityReturnTime,
-                        duration: ''
-                    });
-                    
-                    // Update time tracking
-                    lastUserActivity = visibilityReturnTime;
-                    isUserActive = true;
-                    
-                    // Resume active tracking
-                    resumeActiveTracking();
-                } else {
-                    // Page was hidden
-                    lastUserActivity = new Date();
-                    
-                    // Track this visibility loss
-                    sectionEvents.push({
-                        type: 'visibility_lost',
-                        sectionId: 'page',
-                        startTime: lastUserActivity,
-                        endTime: null,
-                        duration: ''
-                    });
-                    
-                    // Pause active tracking if needed
-                    pauseActiveTracking();
-                }
+            // Update last activity time
+            lastUserActivity = visibilityReturnTime;
+            
+        } else {
+            // Page was hidden
+            lastUserActivity = new Date();
+            
+            // Track this visibility loss
+            sectionEvents.push({
+                type: 'visibility_lost',
+                sectionId: 'page',
+                startTime: lastUserActivity,
+                endTime: null,
+                duration: 0
             });
+            
+            // Send this visibility event immediately
+            sendVisibilityEvent('visibility_lost', lastUserActivity, null);
+            
+            // Clear any existing timeout
+            if (inactivityTimeout) {
+                clearTimeout(inactivityTimeout);
+            }
+            
+            // Set timeout to show popup after inactivity threshold of visibility loss
+            inactivityTimeout = setTimeout(function() {
+                if (!isPageVisible) {
+                    showInactivityPopup();
+                }
+            }, INACTIVITY_THRESHOLD);
         }
+    });
+}
+
+// Add a special function to directly send visibility events regardless of tracking status
+function sendVisibilityEvent(eventType, startTime, endTime) {
+    const username = getUsername();
+    
+    const visibilityEvent = {
+        type: eventType,
+        sectionId: 'page',
+        startTime: startTime,
+        endTime: endTime,
+        duration: endTime ? (endTime - startTime) / 1000 : 0
+    };
+    
+    const data = {
+        username: username,
+        url: window.location.href,
+        events: [visibilityEvent],
+        timestamp: new Date().toISOString(),
+        sessionId: sessionId
+    };
+    
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        mode: 'no-cors'
+    })
+    .catch(error => {
+        console.error('Error sending visibility event:', error);
+    });
+}
         
         // Set up monitoring for user activity
         function setupActivityMonitoring() {
@@ -2167,25 +2213,19 @@ if (inactivityCloseButton) {
         }
 
         // Start periodic tracking 
-        function startPeriodicTracking() {
-            // Clear any existing interval
-            if (trackingInterval) {
-                clearInterval(trackingInterval);
-            }
-            
+function startPeriodicTracking() {
+    // Clear any existing interval
+    if (trackingInterval) {
+        clearInterval(trackingInterval);
+    }
+    
     // Set up new interval to send data periodically
     trackingInterval = setInterval(function() {
-        // Skip if tracking is paused
-        if (isTrackingPaused) {
-            return;
-        }
-        
         if (sectionEvents.length > 0) {
             sendTrackingData();
         }
     }, TRACKING_INTERVAL);
-}
-        
+}    
         // Track when a section is opened or closed
         function trackSectionInteraction(sectionId, isOpening) {
             const timestamp = new Date();
@@ -2276,65 +2316,84 @@ if (openSections[sectionId]) {
         }
         
         // Send tracking data to the server
-        function sendTrackingData(isSync = false) {
-            // Don't proceed if there's no data to send
-    if (sectionEvents.length === 0)) {
+function sendTrackingData(isSync = false) {
+    // Don't proceed if there's no data to send
+    if (sectionEvents.length === 0) {
         return;
     }
+    
+    // Prepare the data package
+    const username = getUsername();
+    
+    // Filter events if tracking is paused - only send visibility events
+    let eventsToSend;
+    if (isTrackingPaused) {
+        // Only allow visibility events when tracking is paused
+        eventsToSend = sectionEvents.filter(event => 
+            event.type === 'visibility_lost' || 
+            event.type === 'visibility_return');
+    } else {
+        // Send all events when tracking is not paused
+        eventsToSend = [...sectionEvents];
+    }
+    
+    // If no events to send after filtering, return
+    if (eventsToSend.length === 0) {
+        return;
+    }
+    
+    // Create a copy of events to send
+    const eventsCopy = [...eventsToSend];
+    
+    // Remove the events we're sending from the sectionEvents array
+    sectionEvents = sectionEvents.filter(event => !eventsToSend.includes(event));
+    
+    // Prepare data payload
+    const data = {
+        username: username,
+        url: window.location.href,
+        events: eventsCopy,
+        timestamp: new Date().toISOString(),
+        sessionId: sessionId, // Add session ID to each batch
+    };
+    
+    // Determine whether to use sync or async request
+    const fetchOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        mode: 'no-cors'
+    };
+    
+    // If this is a synchronous request (page unload), use navigator.sendBeacon if available
+    if (isSync && navigator.sendBeacon) {
+        try {
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const success = navigator.sendBeacon(APPS_SCRIPT_URL, blob);
             
-            // Prepare the data package
-            const username = getUsername();
-            const eventsCopy = [...sectionEvents]; // Create a copy of the current events
-            
-            // Clear the events array for new events
-            sectionEvents = [];
-            
-            // Prepare data payload
-const data = {
-    username: username,
-    url: window.location.href,
-    events: eventsCopy,
-    timestamp: new Date().toISOString(),
-    sessionId: sessionId, // Add session ID to each batch
-};
-            
-            // Determine whether to use sync or async request
-            const fetchOptions = {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-                mode: 'no-cors'
-            };
-            
-            // If this is a synchronous request (page unload), use navigator.sendBeacon if available
-            if (isSync && navigator.sendBeacon) {
-                try {
-                    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-                    const success = navigator.sendBeacon(APPS_SCRIPT_URL, blob);
-                    
-                    if (!success) {
-                        console.error('Beacon transmission failed');
-                        // Put events back in the queue if sending failed
-                        sectionEvents = [...eventsCopy, ...sectionEvents];
-                    }
-                } catch (error) {
-                    console.error('Error sending data with beacon:', error);
-                    // Put events back in the queue
-                    sectionEvents = [...eventsCopy, ...sectionEvents];
-                }
-            } else {
-                // Use regular fetch for async tracking
-                fetch(APPS_SCRIPT_URL, fetchOptions)
-                    .then(response => {
-                        console.log('Tracking data sent successfully');
-                    })
-                    .catch(error => {
-                        console.error('Error sending tracking data:', error);
-                        // Put events back in the queue if sending failed
-                        sectionEvents = [...eventsCopy, ...sectionEvents];
-                    });
+            if (!success) {
+                console.error('Beacon transmission failed');
+                // Put events back in the queue if sending failed
+                sectionEvents = [...eventsCopy, ...sectionEvents];
             }
+        } catch (error) {
+            console.error('Error sending data with beacon:', error);
+            // Put events back in the queue
+            sectionEvents = [...eventsCopy, ...sectionEvents];
         }
+    } else {
+        // Use regular fetch for async tracking
+        fetch(APPS_SCRIPT_URL, fetchOptions)
+            .then(response => {
+                console.log('Tracking data sent successfully');
+            })
+            .catch(error => {
+                console.error('Error sending tracking data:', error);
+                // Put events back in the queue if sending failed
+                sectionEvents = [...eventsCopy, ...sectionEvents];
+            });
+    }
+}
         
         // Set up dropdown sections with tracking
         function setupSectionDropdowns() {
