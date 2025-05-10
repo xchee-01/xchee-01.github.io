@@ -107,7 +107,7 @@
 
 #inactivityModal .modal-icon {
     position: absolute;
-    top: -40px;
+    top: -100px;
     left: 50%;
     transform: translateX(-50%);
     width: 80px;
@@ -2173,13 +2173,18 @@ if (inactivityCloseButton) {
                 clearInterval(trackingInterval);
             }
             
-            // Set up new interval to send data periodically
-            trackingInterval = setInterval(function() {
-                if (sectionEvents.length > 0) {
-                    sendTrackingData();
-                }
-            }, TRACKING_INTERVAL);
+    // Set up new interval to send data periodically
+    trackingInterval = setInterval(function() {
+        // Skip if tracking is paused
+        if (isTrackingPaused) {
+            return;
         }
+        
+        if (sectionEvents.length > 0) {
+            sendTrackingData();
+        }
+    }, TRACKING_INTERVAL);
+}
         
         // Track when a section is opened or closed
         function trackSectionInteraction(sectionId, isOpening) {
@@ -2273,9 +2278,9 @@ if (openSections[sectionId]) {
         // Send tracking data to the server
         function sendTrackingData(isSync = false) {
             // Don't proceed if there's no data to send
-            if (sectionEvents.length === 0) {
-                return;
-            }
+    if (sectionEvents.length === 0 || (isTrackingPaused && !isSync)) {
+        return;
+    }
             
             // Prepare the data package
             const username = getUsername();
