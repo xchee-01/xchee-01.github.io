@@ -1400,6 +1400,7 @@ print(summary_text)</div>
         let isUserActive = true;
         let heartbeatInterval = null;
         let activityTimeout = null;
+        let sessionId = generateSessionId();
         
         // Constants for tracking
         const TRACKING_INTERVAL = 2000; // 30 seconds for periodic tracking
@@ -1426,6 +1427,13 @@ print(summary_text)</div>
             // When page loads, check for previous session
             checkForPreviousSession();
         }
+
+// Add this function to generate a unique session ID
+function generateSessionId() {
+    const timestamp = new Date().getTime();
+    const randomPart = Math.floor(Math.random() * 1000000);
+    return `${timestamp}-${randomPart}`;
+}
         
         // Initialize the Page Visibility API
         function setupVisibilityTracking() {
@@ -1612,33 +1620,21 @@ function startHeartbeat() {
                 const section = openSections[sectionId];
                 
                 // If this is the current section but wasn't active before
-                if (sectionId === currentSectionId && !section.isActive) {
-                    // Section has become active again due to scrolling
-                    section.isActive = true;
-                    
-                    // Track re-activation event
-                    sectionEvents.push({
-                        type: 'scroll_activation',
-                        sectionId: sectionId,
-                        startTime: now,
-                        endTime: null,
-                        duration: 0
-                    });
-                }
+if (sectionId === currentSectionId && !section.isActive) {
+    // Section has become active again due to scrolling
+    section.isActive = true;
+    
+    // Update lastActiveTime without pushing scroll_activation event
+    section.lastActiveTime = now;
+}
                 // If this is NOT the current section but was active
-                else if (sectionId !== currentSectionId && section.isActive) {
-                    // Section is no longer in view
-                    section.isActive = false;
-                    
-                    // Track deactivation due to scrolling elsewhere
-                    sectionEvents.push({
-                        type: 'scroll_deactivation',
-                        sectionId: sectionId,
-                        startTime: section.lastActiveTime,
-                        endTime: now,
-                        duration: (now - section.lastActiveTime) / 1000
-                    });
-                }
+else if (sectionId !== currentSectionId && section.isActive) {
+    // Section is no longer in view
+    section.isActive = false;
+    
+    // Simply update tracking status without pushing scroll_deactivation event
+    section.lastDeactivationTime = now;
+}
                 
                 // Update tracking and send heartbeats only for the active section
                 if (sectionId === currentSectionId && section.isActive) {
@@ -1898,21 +1894,19 @@ function startHeartbeat() {
                 }
             } else {
                 // Section is being explicitly closed
-                if (openSections[sectionId]) {
-                    const closeDuration = (timestamp - openSections[sectionId].startTime) / 1000;
-                    
-                    // Add closure event
-                    sectionEvents.push({
-                        type: 'section_closed',
-                        sectionId: sectionId,
-                        startTime: openSections[sectionId].startTime,
-                        endTime: timestamp,
-                        duration: closeDuration
-                    });
-                    
-                    // Remove from tracking
-                    delete openSections[sectionId];
-                }
+if (openSections[sectionId]) {
+    // Add closure event without duration
+    sectionEvents.push({
+        type: 'section_closed',
+        sectionId: sectionId,
+        startTime: openSections[sectionId].startTime,
+        endTime: new Date(),
+        duration: '' // Empty string instead of calculating duration
+    });
+    
+    // Remove from tracking
+    delete openSections[sectionId];
+}
             }
             
             // If we've accumulated enough events, send data now
@@ -1954,12 +1948,13 @@ function startHeartbeat() {
             sectionEvents = [];
             
             // Prepare data payload
-            const data = {
-                username: username,
-                url: window.location.href,
-                events: eventsCopy,
-                timestamp: new Date().toISOString(),
-            };
+const data = {
+    username: username,
+    url: window.location.href,
+    events: eventsCopy,
+    timestamp: new Date().toISOString(),
+    sessionId: sessionId, // Add session ID to each batch
+};
             
             // Determine whether to use sync or async request
             const fetchOptions = {
