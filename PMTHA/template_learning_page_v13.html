@@ -68,6 +68,44 @@
         .copy-feedback.show {
             opacity: 1;
         }
+
+        /* Inactivity Modal Styles */
+#inactivityModal {
+    display: none;
+    position: fixed;
+    z-index: 1060;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    animation: fadeIn 0.3s;
+}
+
+#inactivityModal .modal-content {
+    background-color: #fff8e1; /* Light yellow background */
+    border: 2px solid var(--nus-orange);
+}
+
+#inactivityModal .modal-header {
+    color: var(--nus-orange);
+    border-bottom: 2px solid var(--nus-blue);
+}
+
+#inactivityModal .modal-close {
+    background-color: var(--nus-orange);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+#inactivityModal .modal-close:hover {
+    background-color: var(--nus-blue);
+    transform: scale(1.05);
+}
         
         /* Celebration Modal */
         .modal {
@@ -1379,6 +1417,16 @@ print(summary_text)</div>
             <button class="modal-close">Continue Learning</button>
         </div>
     </div>
+
+<!-- Inactivity Modal -->
+<div id="inactivityModal" class="modal">
+    <div class="modal-content">
+        <h3 class="modal-header">🧪 Hey there, scientist! 🧪</h3>
+        <p class="modal-message">Looks like your Python experiment has been running unattended for a while! Are you still analyzing medical data with us?</p>
+        <button class="modal-close">I'm Back to Coding!</button>
+    </div>
+</div>
+    
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
@@ -1401,11 +1449,188 @@ print(summary_text)</div>
         let heartbeatInterval = null;
         let activityTimeout = null;
         let sessionId = generateSessionId();
+        let inactivityTimeout = null;
+        let isTrackingPaused = false;
         
         // Constants for tracking
         const TRACKING_INTERVAL = 2000; // 30 seconds for periodic tracking
         const HEARTBEAT_INTERVAL = 2000; // 15 seconds for heartbeat
-        const INACTIVITY_THRESHOLD = 300000; // 2 minutes until user is considered inactive
+        const INACTIVITY_THRESHOLD = 60000; // 1 minutes until user is considered inactive
+
+// Add these functions to handle the inactivity popup
+function showInactivityPopup() {
+    // Only show popup if not already shown
+    if (!isTrackingPaused) {
+        // Pause tracking
+        isTrackingPaused = true;
+        
+        // Show the popup
+        const inactivityModal = document.getElementById('inactivityModal');
+        inactivityModal.style.display = 'block';
+        
+        console.log("Tracking paused due to inactivity");
+    }
+}
+
+function handleUserReturn() {
+    // Hide the popup
+    const inactivityModal = document.getElementById('inactivityModal');
+    inactivityModal.style.display = 'none';
+    
+    // Resume tracking
+    isTrackingPaused = false;
+    lastUserActivity = new Date();
+    
+    console.log("Tracking resumed");
+}
+
+// Replace the setupVisibilityTracking function with this simplified version
+function setupVisibilityTracking() {
+    // Different browsers might have different property names
+    let hidden, visibilityChange;
+    
+    if (typeof document.hidden !== "undefined") {
+        hidden = "hidden";
+        visibilityChange = "visibilitychange";
+    } else if (typeof document.msHidden !== "undefined") {
+        hidden = "msHidden";
+        visibilityChange = "msvisibilitychange";
+    } else if (typeof document.webkitHidden !== "undefined") {
+        hidden = "webkitHidden";
+        visibilityChange = "webkitvisibilitychange";
+    }
+    
+    // Add event listener to track visibility changes
+    document.addEventListener(visibilityChange, function() {
+        isPageVisible = !document[hidden];
+        
+        if (isPageVisible) {
+            // Page became visible again - if it's been more than a minute, show popup
+            if (new Date() - lastUserActivity > INACTIVITY_THRESHOLD) {
+                showInactivityPopup();
+            }
+        } else {
+            // Page was hidden - schedule popup after 1 minute
+            lastUserActivity = new Date();
+            
+            // Clear any existing timeout
+            if (inactivityTimeout) {
+                clearTimeout(inactivityTimeout);
+            }
+            
+            // Set timeout to show popup after 1 minute of visibility loss
+            inactivityTimeout = setTimeout(function() {
+                if (!isPageVisible) {
+                    showInactivityPopup();
+                }
+            }, INACTIVITY_THRESHOLD);
+        }
+    });
+}
+
+// Replace setupActivityMonitoring function with this version
+function setupActivityMonitoring() {
+    // List of events to consider as user activity
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    // Throttle function to prevent too many event firings
+    function throttle(func, delay) {
+        let lastCall = 0;
+        return function(...args) {
+            const now = new Date().getTime();
+            if (now - lastCall < delay) {
+                return;
+            }
+            lastCall = now;
+            return func(...args);
+        };
+    }
+    
+    // Handle user activity
+    const handleActivity = throttle(function() {
+        // Only process if not already handling
+        const now = new Date();
+        
+        // Clear any existing timeout
+        if (inactivityTimeout) {
+            clearTimeout(inactivityTimeout);
+        }
+        
+        // If tracking was paused due to inactivity, resume it
+        if (isTrackingPaused) {
+            handleUserReturn();
+        }
+        
+        // Update last activity time
+        lastUserActivity = now;
+        
+        // Set new inactivity timeout
+        inactivityTimeout = setTimeout(function() {
+            if (isPageVisible) {
+                showInactivityPopup();
+            }
+        }, INACTIVITY_THRESHOLD);
+    }, 1000); // Throttle to once per second
+    
+    // Add event listeners for each activity event
+    activityEvents.forEach(function(eventName) {
+        document.addEventListener(eventName, handleActivity, { passive: true });
+    });
+}
+
+// Modify startHeartbeat to respect tracking pause
+function startHeartbeat() {
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+    }
+    
+    heartbeatInterval = setInterval(function() {
+        // Skip heartbeat if tracking is paused or page is not visible
+        if (isTrackingPaused || !isPageVisible) {
+            return;
+        }
+        
+        const now = new Date();
+        
+        // Get the most visible section (what the user is currently viewing)
+        const currentSectionId = getCurrentSectionId();
+        
+        // Update active status for all sections based on visibility
+        Object.keys(openSections).forEach(sectionId => {
+            const section = openSections[sectionId];
+            
+            // If this is the current section but wasn't active
+            if (sectionId === currentSectionId && !section.isActive) {
+                // Section has become active again due to scrolling
+                section.isActive = true;
+                section.lastActiveTime = now;
+            }
+            // If this is NOT the current section but was active
+            else if (sectionId !== currentSectionId && section.isActive) {
+                // Section is no longer in view
+                section.isActive = false;
+            }
+            
+            // Send heartbeats only for the active section
+            if (sectionId === currentSectionId && section.isActive) {
+                // Add heartbeat to tracking events
+                sectionEvents.push({
+                    type: 'heartbeat',
+                    sectionId: sectionId,
+                    startTime: now,
+                    endTime: null,
+                    duration: 0
+                });
+            }
+        });
+        
+        // Send tracking data if we've accumulated events
+        if (sectionEvents.length > 0) {
+            sendTrackingData();
+        }
+    }, HEARTBEAT_INTERVAL);
+}
+
         
         // Initialize tracking and visibility API
         function initializeEnhancedTracking() {
@@ -1703,6 +1928,12 @@ else if (sectionId !== currentSectionId && section.isActive) {
                 }
             });
         }
+
+// Setup inactivity popup button
+const inactivityCloseButton = document.querySelector('#inactivityModal .modal-close');
+if (inactivityCloseButton) {
+    inactivityCloseButton.addEventListener('click', handleUserReturn);
+}
         
         // Check for previous session data when page loads
         function checkForPreviousSession() {
