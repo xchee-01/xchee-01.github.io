@@ -27,6 +27,21 @@ let sessionId = generateSessionId();
 let inactivityTimeout = null;
 let isTrackingPaused = false;
 
+// Event priority mapping (higher number = higher priority)
+const EVENT_PRIORITY = {
+    'heartbeat': 1,
+    'section_opened': 2, 
+    'section_closed': 2,
+    're_activation': 2,
+    'active_on_exit': 2,
+    'inactive_on_exit': 2,
+    'visibility_return': 2,
+    'visibility_lost': 2,
+    'answer_viewed': 3,
+    'challenge_completed': 4,
+    'inactivity_popup_shown': 3
+};
+
 // Cache DOM elements
 const domElements = {
     runButton: document.getElementById('run-button'),
@@ -158,7 +173,7 @@ function toggleAnswer(button) {
         const challengeContainer = button.closest('.challenge');
         const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
         
-        trackEventWithPriority('answer_viewed', getCurrentSectionId(), challengeTitle);
+        trackEvent('answer_viewed', getCurrentSectionId(), challengeTitle);
     }
 }
 
@@ -175,7 +190,7 @@ function showCelebration(button) {
     const challengeContainer = button.closest('.challenge');
     const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
     
-    trackEventWithPriority('challenge_completed', getCurrentSectionId(), challengeTitle);
+    trackEvent('challenge_completed', getCurrentSectionId(), challengeTitle);
     
     // Trigger confetti animation
     if (confettiAnimations[animationType]) {
@@ -202,14 +217,36 @@ function setupCelebrationModal() {
 
 // Add an event to the tracking queue
 function trackEvent(type, sectionId, additionalInfo = '') {
-    sectionEvents.push({
+    // Create the event object
+    const newEvent = {
         type: type,
         sectionId: sectionId,
         startTime: new Date(),
         endTime: null,
         duration: 0,
         additionalInfo: additionalInfo
-    });
+    };
+    
+    // Check if we already have an identical event in the queue
+    const existingEventIndex = findExistingEvent(type, sectionId);
+    
+    if (existingEventIndex >= 0) {
+        // We found an identical event
+        const existingEvent = sectionEvents[existingEventIndex];
+        
+        // Check event priority
+        const existingPriority = EVENT_PRIORITY[existingEvent.type] || 0;
+        const newPriority = EVENT_PRIORITY[type] || 0;
+        
+        // Only replace if new event has higher priority
+        if (newPriority >= existingPriority) {
+            // Update existing event
+            sectionEvents[existingEventIndex] = newEvent;
+        }
+    } else {
+        // No identical event found, add this one
+        sectionEvents.push(newEvent);
+    }
     
     // If we've accumulated enough events, send data now
     if (sectionEvents.length >= 5) {
@@ -217,51 +254,14 @@ function trackEvent(type, sectionId, additionalInfo = '') {
     }
 }
 
-function trackEventWithPriority(type, sectionId, additionalInfo = '') {
-    // Event priority levels (higher number = higher priority)
-    const priorityLevels = {
-        'heartbeat': 1,
-        'visibility_return': 2,
-        'visibility_lost': 2,
-        'section_opened': 3,
-        'section_closed': 3, 
-        're_activation': 3,
-        'answer_viewed': 4,
-        'challenge_completed': 5,
-        'inactivity_popup_shown': 5,
-        'session_restored': 4
-    };
-    
-    const eventPriority = priorityLevels[type] || 3; // Default priority
-    
-    // Check if there's already an event for this section with higher priority
-    const currentTime = new Date();
-    const existingHigherPriorityIndex = sectionEvents.findIndex(event => 
-        event.sectionId === sectionId && 
-        priorityLevels[event.type] > eventPriority &&
-        Math.abs(currentTime - event.startTime) < 1000 // Within 1 second
-    );
-    
-    // If we found a higher priority event that just happened, don't add the heartbeat
-    if (type === 'heartbeat' && existingHigherPriorityIndex >= 0) {
-        return; // Skip adding this heartbeat
+// Find an existing event with the same type and sectionId
+function findExistingEvent(type, sectionId) {
+    for (let i = 0; i < sectionEvents.length; i++) {
+        if (sectionEvents[i].type === type && sectionEvents[i].sectionId === sectionId) {
+            return i; // Return the index of the matching event
+        }
     }
-    
-    // Add the event
-    sectionEvents.push({
-        type: type,
-        sectionId: sectionId,
-        startTime: currentTime,
-        endTime: null,
-        duration: 0,
-        additionalInfo: additionalInfo,
-        priority: eventPriority
-    });
-    
-    // If we've accumulated enough events, send data now
-    if (sectionEvents.length >= 5) {
-        sendTrackingData();
-    }
+    return -1; // No match found
 }
 
 // Start periodic tracking
@@ -291,15 +291,13 @@ function showInactivityPopup() {
         inactivityModal.style.display = 'block';
         
         // Track this inactivity event
-        trackEventWithPriority('heartbeat', sectionId, '');
-        // And add after that, to update the event with proper duration:
-        const eventIndex = sectionEvents.findIndex(e => 
-            e.type === 'heartbeat' && e.sectionId === sectionId && !e.endTime);
-        if (eventIndex >= 0) {
-            sectionEvents[eventIndex].endTime = now;
-            sectionEvents[eventIndex].duration = durationSeconds;
-            sectionEvents[eventIndex].startTime = heartbeatStartTimes[sectionId];
-        }
+        sectionEvents.push({
+            type: 'inactivity_popup_shown',
+            sectionId: getCurrentSectionId(),
+            startTime: new Date(),
+            endTime: null,
+            duration: ''
+        });
         
         // Send tracking data immediately
         sendTrackingData();
@@ -498,9 +496,6 @@ function startHeartbeat() {
         clearInterval(heartbeatInterval);
     }
     
-    // Keep track of the last heartbeat time for each section
-    const heartbeatStartTimes = {};
-    
     heartbeatInterval = setInterval(function() {
         if (!isTrackingPaused && isPageVisible) {
             const now = new Date();
@@ -519,24 +514,32 @@ function startHeartbeat() {
                 
                 // Send heartbeat only for active section
                 if (sectionId === currentSectionId && section.isActive && isUserActive) {
-                    // Initialize heartbeat start time if it doesn't exist
-                    if (!heartbeatStartTimes[sectionId]) {
-                        heartbeatStartTimes[sectionId] = now;
-                    }
+                    // Calculate heartbeat duration
+                    const lastActiveTime = section.lastActiveTime || now;
+                    const heartbeatDuration = Math.round((now - lastActiveTime) / 1000); // Convert to seconds
                     
-                    // Calculate duration in seconds
-                    const durationSeconds = (now - heartbeatStartTimes[sectionId]) / 1000;
-                    
-                    sectionEvents.push({
+                    // Create heartbeat event with duration
+                    const heartbeatEvent = {
                         type: 'heartbeat',
                         sectionId: sectionId,
-                        startTime: heartbeatStartTimes[sectionId],
-                        endTime: now,
-                        duration: durationSeconds
-                    });
+                        startTime: now,
+                        endTime: null,
+                        duration: heartbeatDuration
+                    };
                     
-                    // Update the start time for next duration calculation
-                    heartbeatStartTimes[sectionId] = now;
+                    // Check if we already have a heartbeat event for this section
+                    const existingHeartbeatIndex = findExistingEvent('heartbeat', sectionId);
+                    
+                    if (existingHeartbeatIndex >= 0) {
+                        // Update the existing heartbeat
+                        sectionEvents[existingHeartbeatIndex] = heartbeatEvent;
+                    } else {
+                        // No existing heartbeat, add this one
+                        sectionEvents.push(heartbeatEvent);
+                    }
+                    
+                    // Update section's last active time
+                    section.lastActiveTime = now;
                 }
             });
             
@@ -611,6 +614,41 @@ function trackSectionInteraction(sectionId, isOpening) {
     }
 }
 
+// Process and combine tracking events
+function processTrackingEvents(events) {
+    const combinedEvents = [];
+    const eventMap = new Map();
+    
+    // First pass: group events by their key properties
+    events.forEach(event => {
+        // Create a unique key for each event based on required properties
+        const eventKey = `${sessionId}_${getUsername()}_${window.location.href}_section_tracking_${event.sectionId}_${event.type}`;
+        
+        if (eventMap.has(eventKey)) {
+            const existingEvent = eventMap.get(eventKey);
+            
+            // For heartbeat events, update the duration if the new event has a longer duration
+            if (event.type === 'heartbeat' && event.duration > existingEvent.duration) {
+                existingEvent.duration = event.duration;
+                existingEvent.startTime = event.startTime;
+            }
+            // For other events, check priority
+            else if (EVENT_PRIORITY[event.type] > EVENT_PRIORITY[existingEvent.type]) {
+                eventMap.set(eventKey, event);
+            }
+        } else {
+            eventMap.set(eventKey, event);
+        }
+    });
+    
+    // Convert map back to array
+    eventMap.forEach(event => {
+        combinedEvents.push(event);
+    });
+    
+    return combinedEvents;
+}
+
 // Send tracking data to server with batching
 function sendTrackingData(isSync = false) {
     // Don't proceed if there's no data or tracking is paused
@@ -618,66 +656,18 @@ function sendTrackingData(isSync = false) {
         return;
     }
     
-    // Group events by combination of key attributes
-    const groupedEvents = {};
+    // Prepare data
+    const username = getUsername();
     const eventsCopy = [...sectionEvents];
     sectionEvents = [];
     
-    eventsCopy.forEach(event => {
-        // Create a unique key for this event type
-        const eventKey = `${event.type}_${event.sectionId}`;
-        
-        if (!groupedEvents[eventKey]) {
-            // First occurrence of this event type
-            groupedEvents[eventKey] = {
-                ...event,
-                occurrences: 1,
-                allStartTimes: [event.startTime],
-                allEndTimes: event.endTime ? [event.endTime] : [],
-                totalDuration: event.duration || 0
-            };
-        } else {
-            // Increment count for this event type
-            groupedEvents[eventKey].occurrences += 1;
-            groupedEvents[eventKey].allStartTimes.push(event.startTime);
-            if (event.endTime) {
-                groupedEvents[eventKey].allEndTimes.push(event.endTime);
-            }
-            
-            // Update end time to the latest one
-            if (event.endTime && (!groupedEvents[eventKey].endTime || 
-                new Date(event.endTime) > new Date(groupedEvents[eventKey].endTime))) {
-                groupedEvents[eventKey].endTime = event.endTime;
-            }
-            
-            // Sum up durations
-            groupedEvents[eventKey].totalDuration += event.duration || 0;
-        }
-    });
-    
-    // Convert back to array, but now with consolidated events
-    const consolidatedEvents = Object.values(groupedEvents).map(event => {
-        // Only include the special fields for reporting, not in the actual event
-        const { occurrences, allStartTimes, allEndTimes, totalDuration, ...cleanEvent } = event;
-        
-        // For duration, use the total
-        cleanEvent.duration = totalDuration;
-        
-        // Add a special field to indicate multiple occurrences
-        if (occurrences > 1) {
-            cleanEvent.eventCount = occurrences;
-        }
-        
-        return cleanEvent;
-    });
-    
-    // Prepare data
-    const username = getUsername();
+    // Process and combine events
+    const processedEvents = processTrackingEvents(eventsCopy);
     
     const data = {
         username: username,
         url: window.location.href,
-        events: consolidatedEvents,
+        events: processedEvents,
         timestamp: new Date().toISOString(),
         sessionId: sessionId
     };
@@ -689,8 +679,7 @@ function sendTrackingData(isSync = false) {
             navigator.sendBeacon(APPS_SCRIPT_URL, blob);
         } catch (error) {
             console.error('Beacon error:', error);
-            // In case of error, restore events
-            eventsCopy.forEach(event => sectionEvents.push(event));
+            sectionEvents = [...eventsCopy, ...sectionEvents];
         }
         return;
     }
@@ -704,8 +693,7 @@ function sendTrackingData(isSync = false) {
     })
     .catch(error => {
         console.error('Tracking error:', error);
-        // In case of error, restore events
-        eventsCopy.forEach(event => sectionEvents.push(event));
+        sectionEvents = [...eventsCopy, ...sectionEvents];
     });
 }
 
