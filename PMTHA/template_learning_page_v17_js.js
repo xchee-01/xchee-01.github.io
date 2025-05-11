@@ -449,6 +449,9 @@ function startHeartbeat() {
         clearInterval(heartbeatInterval);
     }
     
+    // Keep track of the last heartbeat time for each section
+    const heartbeatStartTimes = {};
+    
     heartbeatInterval = setInterval(function() {
         if (!isTrackingPaused && isPageVisible) {
             const now = new Date();
@@ -467,13 +470,24 @@ function startHeartbeat() {
                 
                 // Send heartbeat only for active section
                 if (sectionId === currentSectionId && section.isActive && isUserActive) {
+                    // Initialize heartbeat start time if it doesn't exist
+                    if (!heartbeatStartTimes[sectionId]) {
+                        heartbeatStartTimes[sectionId] = now;
+                    }
+                    
+                    // Calculate duration in seconds
+                    const durationSeconds = (now - heartbeatStartTimes[sectionId]) / 1000;
+                    
                     sectionEvents.push({
                         type: 'heartbeat',
                         sectionId: sectionId,
-                        startTime: now,
-                        endTime: null,
-                        duration: 0
+                        startTime: heartbeatStartTimes[sectionId],
+                        endTime: now,
+                        duration: durationSeconds
                     });
+                    
+                    // Update the start time for next duration calculation
+                    heartbeatStartTimes[sectionId] = now;
                 }
             });
             
@@ -555,15 +569,66 @@ function sendTrackingData(isSync = false) {
         return;
     }
     
-    // Prepare data
-    const username = getUsername();
+    // Group events by combination of key attributes
+    const groupedEvents = {};
     const eventsCopy = [...sectionEvents];
     sectionEvents = [];
+    
+    eventsCopy.forEach(event => {
+        // Create a unique key for this event type
+        const eventKey = `${event.type}_${event.sectionId}`;
+        
+        if (!groupedEvents[eventKey]) {
+            // First occurrence of this event type
+            groupedEvents[eventKey] = {
+                ...event,
+                occurrences: 1,
+                allStartTimes: [event.startTime],
+                allEndTimes: event.endTime ? [event.endTime] : [],
+                totalDuration: event.duration || 0
+            };
+        } else {
+            // Increment count for this event type
+            groupedEvents[eventKey].occurrences += 1;
+            groupedEvents[eventKey].allStartTimes.push(event.startTime);
+            if (event.endTime) {
+                groupedEvents[eventKey].allEndTimes.push(event.endTime);
+            }
+            
+            // Update end time to the latest one
+            if (event.endTime && (!groupedEvents[eventKey].endTime || 
+                new Date(event.endTime) > new Date(groupedEvents[eventKey].endTime))) {
+                groupedEvents[eventKey].endTime = event.endTime;
+            }
+            
+            // Sum up durations
+            groupedEvents[eventKey].totalDuration += event.duration || 0;
+        }
+    });
+    
+    // Convert back to array, but now with consolidated events
+    const consolidatedEvents = Object.values(groupedEvents).map(event => {
+        // Only include the special fields for reporting, not in the actual event
+        const { occurrences, allStartTimes, allEndTimes, totalDuration, ...cleanEvent } = event;
+        
+        // For duration, use the total
+        cleanEvent.duration = totalDuration;
+        
+        // Add a special field to indicate multiple occurrences
+        if (occurrences > 1) {
+            cleanEvent.eventCount = occurrences;
+        }
+        
+        return cleanEvent;
+    });
+    
+    // Prepare data
+    const username = getUsername();
     
     const data = {
         username: username,
         url: window.location.href,
-        events: eventsCopy,
+        events: consolidatedEvents,
         timestamp: new Date().toISOString(),
         sessionId: sessionId
     };
@@ -575,7 +640,8 @@ function sendTrackingData(isSync = false) {
             navigator.sendBeacon(APPS_SCRIPT_URL, blob);
         } catch (error) {
             console.error('Beacon error:', error);
-            sectionEvents = [...eventsCopy, ...sectionEvents];
+            // In case of error, restore events
+            eventsCopy.forEach(event => sectionEvents.push(event));
         }
         return;
     }
@@ -589,7 +655,8 @@ function sendTrackingData(isSync = false) {
     })
     .catch(error => {
         console.error('Tracking error:', error);
-        sectionEvents = [...eventsCopy, ...sectionEvents];
+        // In case of error, restore events
+        eventsCopy.forEach(event => sectionEvents.push(event));
     });
 }
 
