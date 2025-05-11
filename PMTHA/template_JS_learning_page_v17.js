@@ -545,7 +545,7 @@ function startHeartbeat() {
                         sectionId: sectionId,
                         startTime: now,
                         endTime: null,
-                        duration: heartbeatDuration
+                        duration: heartbeatDuration,
                         visibilitySession: visibilitySession
 
                     };
