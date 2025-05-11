@@ -531,8 +531,11 @@ function startHeartbeat() {
                     const existingHeartbeatIndex = findExistingEvent('heartbeat', sectionId);
                     
                     if (existingHeartbeatIndex >= 0) {
-                        // Update the existing heartbeat
-                        sectionEvents[existingHeartbeatIndex] = heartbeatEvent;
+                        // MODIFIED: Update the existing heartbeat by ADDING the new duration
+                        // instead of replacing the whole event
+                        const existingEvent = sectionEvents[existingHeartbeatIndex];
+                        existingEvent.duration = (existingEvent.duration || 0) + heartbeatDuration;
+                        existingEvent.startTime = now; // Update the timestamp
                     } else {
                         // No existing heartbeat, add this one
                         sectionEvents.push(heartbeatEvent);
@@ -631,7 +634,8 @@ function processTrackingEvents(events) {
             if (event.type === 'heartbeat') {
                 // Add the new duration to the existing one
                 existingEvent.duration = (existingEvent.duration || 0) + (event.duration || 0);
-                // Update the startTime if the new event has a later timestamp
+                
+                // Use the latest timestamp as the startTime
                 if (new Date(event.startTime) > new Date(existingEvent.startTime)) {
                     existingEvent.startTime = event.startTime;
                 }
@@ -641,7 +645,8 @@ function processTrackingEvents(events) {
                 eventMap.set(eventKey, event);
             }
         } else {
-            eventMap.set(eventKey, event);
+            // Make a copy of the event to avoid reference issues
+            eventMap.set(eventKey, {...event});
         }
     });
     
@@ -651,6 +656,18 @@ function processTrackingEvents(events) {
     });
     
     return combinedEvents;
+}
+
+// Fix 3 (Optional): Update how we find existing events to be more reliable
+// Around line 401 in paste-3.txt file
+
+function findExistingEvent(type, sectionId) {
+    for (let i = 0; i < sectionEvents.length; i++) {
+        if (sectionEvents[i].type === type && sectionEvents[i].sectionId === sectionId) {
+            return i; // Return the index of the matching event
+        }
+    }
+    return -1; // No match found
 }
 
 // Send tracking data to server with batching
