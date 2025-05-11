@@ -26,6 +26,8 @@ let activityTimeout = null;
 let sessionId = generateSessionId();
 let inactivityTimeout = null;
 let isTrackingPaused = false;
+let visibilitySession = Date.now();
+
 
 // Event priority mapping (higher number = higher priority)
 const EVENT_PRIORITY = {
@@ -329,7 +331,7 @@ function resetInactivityTimeout() {
 
 // Set up visibility tracking
 function setupVisibilityTracking() {
-    // Different browsers might have different property names
+    // Browser compatibility code remains the same
     let hidden, visibilityChange;
     
     if (typeof document.hidden !== "undefined") {
@@ -345,6 +347,7 @@ function setupVisibilityTracking() {
     
     // Add event listener to track visibility changes
     document.addEventListener(visibilityChange, function() {
+        const wasVisible = isPageVisible; // Store previous state
         isPageVisible = !document[hidden];
         const timestamp = new Date();
         
@@ -362,6 +365,9 @@ function setupVisibilityTracking() {
             // Update last activity time
             lastUserActivity = timestamp;
             
+            // ADDED: Restart the heartbeat when visibility returns
+            startHeartbeat();
+            
             // If it's been inactive for too long, show popup
             if (timestamp - lastUserActivity > INACTIVITY_THRESHOLD && !isTrackingPaused) {
                 showInactivityPopup();
@@ -376,6 +382,17 @@ function setupVisibilityTracking() {
                 endTime: null,
                 duration: 0
             });
+            
+            // ADDED: Clear heartbeat interval when page becomes hidden
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+            
+            // Send any pending heartbeat events before page is hidden
+            if (sectionEvents.length > 0) {
+                sendTrackingData();
+            }
             
             lastUserActivity = timestamp;
             
@@ -495,6 +512,10 @@ function startHeartbeat() {
     if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
     }
+
+    // Update visibility session when starting a new heartbeat
+    visibilitySession = Date.now();
+    
     
     heartbeatInterval = setInterval(function() {
         if (!isTrackingPaused && isPageVisible) {
@@ -525,6 +546,8 @@ function startHeartbeat() {
                         startTime: now,
                         endTime: null,
                         duration: heartbeatDuration
+                        visibilitySession: visibilitySession
+
                     };
                     
                     // Check if we already have a heartbeat event for this section
@@ -621,13 +644,15 @@ function processTrackingEvents(events) {
     
     // First pass: group events by their key properties
     events.forEach(event => {
-        // Create a unique key for each event based on required properties
-        const eventKey = `${sessionId}_${getUsername()}_${window.location.href}_section_tracking_${event.sectionId}_${event.type}`;
+        // MODIFIED: Include a visibility session identifier in the key
+        // This will prevent combining heartbeats across visibility changes
+        const visibilitySession = event.visibilitySession || 'default';
+        const eventKey = `${sessionId}_${getUsername()}_${window.location.href}_section_tracking_${event.sectionId}_${event.type}_${visibilitySession}`;
         
         if (eventMap.has(eventKey)) {
             const existingEvent = eventMap.get(eventKey);
             
-            // For heartbeat events, SUM the durations
+            // For heartbeat events, SUM the durations only within the same visibility session
             if (event.type === 'heartbeat') {
                 // Add the new duration to the existing one
                 existingEvent.duration = (existingEvent.duration || 0) + (event.duration || 0);
