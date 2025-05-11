@@ -158,7 +158,7 @@ function toggleAnswer(button) {
         const challengeContainer = button.closest('.challenge');
         const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
         
-        trackEvent('answer_viewed', getCurrentSectionId(), challengeTitle);
+        trackEventWithPriority('answer_viewed', getCurrentSectionId(), challengeTitle);
     }
 }
 
@@ -175,7 +175,7 @@ function showCelebration(button) {
     const challengeContainer = button.closest('.challenge');
     const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
     
-    trackEvent('challenge_completed', getCurrentSectionId(), challengeTitle);
+    trackEventWithPriority('challenge_completed', getCurrentSectionId(), challengeTitle);
     
     // Trigger confetti animation
     if (confettiAnimations[animationType]) {
@@ -217,6 +217,53 @@ function trackEvent(type, sectionId, additionalInfo = '') {
     }
 }
 
+function trackEventWithPriority(type, sectionId, additionalInfo = '') {
+    // Event priority levels (higher number = higher priority)
+    const priorityLevels = {
+        'heartbeat': 1,
+        'visibility_return': 2,
+        'visibility_lost': 2,
+        'section_opened': 3,
+        'section_closed': 3, 
+        're_activation': 3,
+        'answer_viewed': 4,
+        'challenge_completed': 5,
+        'inactivity_popup_shown': 5,
+        'session_restored': 4
+    };
+    
+    const eventPriority = priorityLevels[type] || 3; // Default priority
+    
+    // Check if there's already an event for this section with higher priority
+    const currentTime = new Date();
+    const existingHigherPriorityIndex = sectionEvents.findIndex(event => 
+        event.sectionId === sectionId && 
+        priorityLevels[event.type] > eventPriority &&
+        Math.abs(currentTime - event.startTime) < 1000 // Within 1 second
+    );
+    
+    // If we found a higher priority event that just happened, don't add the heartbeat
+    if (type === 'heartbeat' && existingHigherPriorityIndex >= 0) {
+        return; // Skip adding this heartbeat
+    }
+    
+    // Add the event
+    sectionEvents.push({
+        type: type,
+        sectionId: sectionId,
+        startTime: currentTime,
+        endTime: null,
+        duration: 0,
+        additionalInfo: additionalInfo,
+        priority: eventPriority
+    });
+    
+    // If we've accumulated enough events, send data now
+    if (sectionEvents.length >= 5) {
+        sendTrackingData();
+    }
+}
+
 // Start periodic tracking
 function startPeriodicTracking() {
     // Clear any existing interval
@@ -244,13 +291,15 @@ function showInactivityPopup() {
         inactivityModal.style.display = 'block';
         
         // Track this inactivity event
-        sectionEvents.push({
-            type: 'inactivity_popup_shown',
-            sectionId: getCurrentSectionId(),
-            startTime: new Date(),
-            endTime: null,
-            duration: ''
-        });
+        trackEventWithPriority('heartbeat', sectionId, '');
+        // And add after that, to update the event with proper duration:
+        const eventIndex = sectionEvents.findIndex(e => 
+            e.type === 'heartbeat' && e.sectionId === sectionId && !e.endTime);
+        if (eventIndex >= 0) {
+            sectionEvents[eventIndex].endTime = now;
+            sectionEvents[eventIndex].duration = durationSeconds;
+            sectionEvents[eventIndex].startTime = heartbeatStartTimes[sectionId];
+        }
         
         // Send tracking data immediately
         sendTrackingData();
