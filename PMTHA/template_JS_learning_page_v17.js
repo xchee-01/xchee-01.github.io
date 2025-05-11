@@ -627,10 +627,14 @@ function processTrackingEvents(events) {
         if (eventMap.has(eventKey)) {
             const existingEvent = eventMap.get(eventKey);
             
-            // For heartbeat events, update the duration if the new event has a longer duration
-            if (event.type === 'heartbeat' && event.duration > existingEvent.duration) {
-                existingEvent.duration = event.duration;
-                existingEvent.startTime = event.startTime;
+            // For heartbeat events, SUM the durations
+            if (event.type === 'heartbeat') {
+                // Add the new duration to the existing one
+                existingEvent.duration = (existingEvent.duration || 0) + (event.duration || 0);
+                // Update the startTime if the new event has a later timestamp
+                if (new Date(event.startTime) > new Date(existingEvent.startTime)) {
+                    existingEvent.startTime = event.startTime;
+                }
             }
             // For other events, check priority
             else if (EVENT_PRIORITY[event.type] > EVENT_PRIORITY[existingEvent.type]) {
