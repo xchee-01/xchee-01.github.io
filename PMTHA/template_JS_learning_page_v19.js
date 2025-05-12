@@ -87,6 +87,13 @@ function generateSessionId() {
 
 // Optimized tracking initialization
 function initializeTracking() {
+    // First check if user is logged in before doing anything else
+    const username = getUsername();
+    if (!username) {
+        // getUsername will redirect if needed
+        return;
+    }
+    
     // Load any cached events from localStorage
     loadCachedEvents();
     
@@ -347,11 +354,42 @@ function showInactivityPopup() {
     }
 }
 
-// Handle user return from inactivity
 function handleUserReturn() {
     domElements.inactivityModal.style.display = 'none';
     isTrackingPaused = false;
     lastUserActivity = new Date();
+    
+    // Create re-activation events for currently open sections
+    const currentTime = new Date();
+    Object.keys(openSections).forEach(sectionId => {
+        // Create a new re-activation event
+        sectionEvents.push({
+            type: 're_activation',
+            sectionId: sectionId,
+            startTime: currentTime,
+            endTime: null,
+            duration: 0,
+            visibilitySession: visibilitySession, // Keep track of the same visibility session
+            sessionId: sessionId,
+            username: getUsername()
+        });
+        
+        // Update the section's last active time
+        openSections[sectionId].lastActiveTime = currentTime;
+        
+        // If this is the currently visible section, mark it as active
+        if (sectionId === getCurrentSectionId()) {
+            openSections[sectionId].isActive = true;
+        }
+    });
+    
+    // Save updated events to localStorage
+    saveEventsToLocalStorage();
+    
+    // Send tracking data immediately to ensure session separation
+    sendTrackingData();
+    
+    // Reset the inactivity timeout
     resetInactivityTimeout();
 }
 
@@ -822,19 +860,27 @@ function getUsername() {
         const accountsData = localStorage.getItem('accounts');
         if (accountsData) {
             const accounts = JSON.parse(accountsData);
-            const username = (accounts && accounts.length > 0 && accounts[0].username) 
-                ? accounts[0].username 
-                : 'Guest_' + Math.floor(Math.random() * 10000);
-            
-            // Update cache
-            usernameCache.value = username;
-            usernameCache.timestamp = Date.now();
-            
-            return username;
+            if (accounts && accounts.length > 0 && accounts[0].username) {
+                // Update cache
+                usernameCache.value = accounts[0].username;
+                usernameCache.timestamp = Date.now();
+                
+                return accounts[0].username;
+            } else {
+                // No valid username found - redirect to sign-in page
+                window.location.href = SIGN_IN_URL;
+                return null;
+            }
+        } else {
+            // No accounts data found - redirect to sign-in page
+            window.location.href = SIGN_IN_URL;
+            return null;
         }
-        return 'Guest_' + Math.floor(Math.random() * 10000);
     } catch (error) {
-        return 'Guest_' + Math.floor(Math.random() * 10000);
+        console.error('Error retrieving username:', error);
+        // Error occurred - redirect to sign-in page
+        window.location.href = SIGN_IN_URL;
+        return null;
     }
 }
 
