@@ -331,6 +331,24 @@ function showInactivityPopup() {
         // Pause tracking
         isTrackingPaused = true;
         
+        // Mark all active sections as inactive before showing popup
+        Object.keys(openSections).forEach(sectionId => {
+            if (openSections[sectionId].isActive) {
+                openSections[sectionId].isActive = false;
+                
+                // Add an inactive event to mark the end of the activity period
+                sectionEvents.push({
+                    type: 'inactive_due_to_popup',
+                    sectionId: sectionId,
+                    startTime: new Date(),
+                    endTime: null,
+                    duration: 0,
+                    sessionId: sessionId,
+                    username: getUsername()
+                });
+            }
+        });
+        
         // Show the popup
         const inactivityModal = document.getElementById('inactivityModal');
         inactivityModal.style.display = 'block';
@@ -341,7 +359,9 @@ function showInactivityPopup() {
             sectionId: getCurrentSectionId(),
             startTime: new Date(),
             endTime: null,
-            duration: ''
+            duration: 0,
+            sessionId: sessionId,
+            username: getUsername()
         });
         
         // Save to localStorage
