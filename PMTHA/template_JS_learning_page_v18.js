@@ -554,68 +554,70 @@ function getCurrentSectionId() {
 
 // Start heartbeat mechanism
 function startHeartbeat() {
+    // Clear any existing interval to prevent multiple heartbeats running
     if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
+        heartbeatInterval = null; // Good practice to nullify after clearing
     }
 
-    // Update visibility session when starting a new heartbeat
+    // Update visibility session when starting a new heartbeat sequence
+    // This helps group heartbeats that occur during a continuous period of page visibility
     visibilitySession = Date.now();
-    
-    // Now heartbeat every 2 seconds instead of 5
+
     heartbeatInterval = setInterval(function() {
+        // Only run heartbeat if tracking is not paused and the page is visible
         if (!isTrackingPaused && isPageVisible) {
-            const now = new Date();
-            const currentSectionId = getCurrentSectionId();
-            
-            // Update active status for sections
+            const now = new Date(); // Current timestamp for this heartbeat tick
+            const currentSectionId = getCurrentSectionId(); // Determine the most prominent section
+
+            // Iterate over all sections currently considered "open" by the user
             Object.keys(openSections).forEach(sectionId => {
-                const section = openSections[sectionId];
-                
-                if (sectionId === currentSectionId && !section.isActive) {
-                    section.isActive = true;
-                    section.lastActiveTime = now;
-                } else if (sectionId !== currentSectionId && section.isActive) {
-                    section.isActive = false;
+                const sectionData = openSections[sectionId]; // Get data for this specific open section
+
+                // Update the active status of the section within openSections
+                // This is for internal tracking, not directly the heartbeat event itself
+                if (sectionId === currentSectionId && !sectionData.isActive) {
+                    sectionData.isActive = true;
+                    // sectionData.lastActiveTime = now; // This will be updated below more specifically
+                } else if (sectionId !== currentSectionId && sectionData.isActive) {
+                    sectionData.isActive = false;
                 }
-                
-                // Send heartbeat only for active section
-                if (sectionId === currentSectionId && section.isActive && isUserActive) {
-                    // Calculate heartbeat duration
-                    const lastActiveTime = section.lastActiveTime || now;
-                    const heartbeatDuration = Math.round((now - lastActiveTime) / 1000); // Convert to seconds
-                    
-                    // Create heartbeat event with duration
+
+                // Generate a heartbeat event ONLY for the CURRENTLY VISIBLE and ACTIVE section
+                // and only if the user is generally considered active on the page
+                if (sectionId === currentSectionId && sectionData.isActive && isUserActive) {
+                    // Define the start and end for this specific 2-second heartbeat interval
+                    const startTimeForThisHeartbeat = new Date(now.getTime() - HEARTBEAT_INTERVAL);
+                    const endTimeForThisHeartbeat = now;
+                    const individualHeartbeatDuration = Math.round(HEARTBEAT_INTERVAL / 1000); // Should be 2
+
                     const heartbeatEvent = {
                         type: 'heartbeat',
                         sectionId: sectionId,
-                        startTime: now,
-                        endTime: null,
-                        duration: heartbeatDuration,
-                        visibilitySession: visibilitySession,
-                        sessionId: sessionId, // Add sessionId here to aid in aggregation
-                        username: getUsername()
+                        startTime: startTimeForThisHeartbeat.toISOString(), // Start of this 2s interval
+                        endTime: endTimeForThisHeartbeat.toISOString(),     // End of this 2s interval
+                        duration: individualHeartbeatDuration,              // Duration of this specific beat (e.g., 2 seconds)
+                        visibilitySession: visibilitySession,               // Groups heartbeats within one visibility period
+                        sessionId: sessionId,                               // Overall session ID
+                        username: getUsername()                             // Current user
                     };
-                    
-                    // Check if we already have a heartbeat event for this section
-                    const existingHeartbeatIndex = findExistingEvent('heartbeat', sectionId);
-                    
-                    if (existingHeartbeatIndex >= 0) {
-                        // Update the existing heartbeat
-                        sectionEvents[existingHeartbeatIndex] = heartbeatEvent;
-                    } else {
-                        // No existing heartbeat, add this one
-                        sectionEvents.push(heartbeatEvent);
-                    }
-                    
-                    // Save to localStorage
+
+                    // Always push the new, individual heartbeat event.
+                    // Aggregation will be handled by processTrackingEvents before sending.
+                    sectionEvents.push(heartbeatEvent);
+
+                    // Save all events (including this new one) to localStorage
                     saveEventsToLocalStorage();
-                    
-                    // Update section's last active time
-                    section.lastActiveTime = now;
+
+                    // Update the section's overall last active time in openSections.
+                    // This is useful for other logic, like calculating 'active_on_exit' duration.
+                    sectionData.lastActiveTime = now;
                 }
             });
         }
     }, HEARTBEAT_INTERVAL);
+
+    console.log("Heartbeat started with interval:", HEARTBEAT_INTERVAL, "ms");
 }
 
 // Track section interactions efficiently
@@ -683,40 +685,59 @@ function trackSectionInteraction(sectionId, isOpening) {
 function processTrackingEvents(events) {
     const combinedEvents = [];
     const eventMap = new Map();
-    
-    // First pass: group events by their key properties
+
     events.forEach(event => {
         // Create a key that includes all the properties we want to use for aggregation
         const eventKey = `${event.sessionId || sessionId}_${event.username || getUsername()}_${window.location.href}_section_tracking_${event.sectionId}_${event.type}`;
-        
+
         if (eventMap.has(eventKey)) {
             const existingEvent = eventMap.get(eventKey);
-            
-            // For heartbeat events, aggregate the durations 
+
             if (event.type === 'heartbeat') {
                 // Add the new duration to the existing one
                 existingEvent.duration = (existingEvent.duration || 0) + (event.duration || 0);
-                // Update the startTime if the new event has a later timestamp
-                if (new Date(event.startTime) > new Date(existingEvent.startTime)) {
+
+                // Update startTime to be the EARLIEST startTime of the aggregated block
+                if (new Date(event.startTime) < new Date(existingEvent.startTime)) {
                     existingEvent.startTime = event.startTime;
                 }
-            }
-            // For other events, check priority
-            else if (EVENT_PRIORITY[event.type] > EVENT_PRIORITY[existingEvent.type]) {
-                eventMap.set(eventKey, event);
+                // Update endTime to be the LATEST endTime of the aggregated block
+                if (event.endTime) { // Make sure individual heartbeats provide endTime
+                    if (!existingEvent.endTime || new Date(event.endTime) > new Date(existingEvent.endTime)) {
+                        existingEvent.endTime = event.endTime;
+                    }
+                } else {
+                    // Fallback: if individual heartbeats don't have endTime, calculate from their startTime & duration
+                    // This shouldn't be needed if startHeartbeat is fixed to provide endTime
+                    const currentEventEndTime = new Date(new Date(event.startTime).getTime() + (event.duration * 1000));
+                    if (!existingEvent.endTime || currentEventEndTime > new Date(existingEvent.endTime)) {
+                        existingEvent.endTime = currentEventEndTime.toISOString();
+                    }
+                }
+
+            } else if (EVENT_PRIORITY[event.type] >= EVENT_PRIORITY[existingEvent.type]) { // Use >= to replace if same or higher priority
+                // For non-heartbeat events, replace if new event has same or higher priority
+                eventMap.set(eventKey, { ...event }); // Store a copy
             }
         } else {
-            eventMap.set(eventKey, event);
+            // New event for this key
+            const newEventToAdd = { ...event }; // Store a copy
+            // Ensure initial heartbeats have an endTime if not already set (should be set by startHeartbeat)
+            if (newEventToAdd.type === 'heartbeat' && !newEventToAdd.endTime && newEventToAdd.startTime && newEventToAdd.duration) {
+                newEventToAdd.endTime = new Date(new Date(newEventToAdd.startTime).getTime() + (newEventToAdd.duration * 1000)).toISOString();
+            } else if (newEventToAdd.type === 'heartbeat' && !newEventToAdd.endTime && newEventToAdd.startTime) {
+                newEventToAdd.endTime = newEventToAdd.startTime; // If duration is 0 or missing
+            }
+            eventMap.set(eventKey, newEventToAdd);
         }
     });
-    
+
     // Convert map back to array
     eventMap.forEach(event => {
-        // Add last update time to all events
-        event.lastUpdateTime = new Date().toISOString();
+        event.lastUpdateTime = new Date().toISOString(); // Add last update time to all events being sent
         combinedEvents.push(event);
     });
-    
+
     return combinedEvents;
 }
 
