@@ -1,687 +1,1263 @@
-<!-- fixed version of template_learning_page_v16. Still uses track_progress_v3. Here, we split v16 monolithic HTML script into HTML, CSS and JS scripts  -->
+// Replace with your deployed Google Apps Script Web App URL
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSxyvmPYsdnimwhEj572QuTvow9nTpkc13rOd1rQY9neh0mp-a4Bx5p6tERWRzR9d1tA/exec';
+const SIGN_IN_URL = 'https://xchee-01.github.io/PMTHA/SOM-PMTHA_signin.html';
+const COPY_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbz88biGq3GAIfH77lEt_IeWcRbBrZ8r2K-4Z5C0foZDMHQGsuqaGIvhGOBKA5eqW65_AA/exec';
+const EXTRA_INFO_INTERACTION_URL = 'https://script.google.com/macros/s/AKfycbxXHMDDEnZq0krPyE96d22zEp3DqdLmwO74OsxSRW1Rq_JvHEYRXc5IgnaV-6J1l4o_GQ/exec';
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python Syntax Basics for Precision Health - NUS</title>
-    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v17.css"><-------------------------- CSS script
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Load custom scripts -->
-    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v18.js" defer></script> <---------------------------- JS script
+// Configuration and constants
+const TRACKING_INTERVAL = 30000; // 30 seconds for periodic tracking (changed from 5000)
+const HEARTBEAT_INTERVAL = 2000; // 2 seconds for heartbeat (changed from 5000)
+const INACTIVITY_THRESHOLD = 10000; // 10 seconds until user is considered inactive
+const THROTTLE_DELAY = 1000; // Throttle delay for frequent events
+const LOCAL_STORAGE_KEY = 'tracking_events_cache'; // Key for localStorage tracking cache
+
+// Required packages for Pyodide
+const requiredPackages = ['numpy', 'pandas'];
+
+// Global variables
+let pyodide;
+let openSections = {};
+let sectionEvents = [];
+let trackingInterval = null;
+let lastUserActivity = new Date();
+let isPageVisible = true;
+let isUserActive = true;
+let heartbeatInterval = null;
+let activityTimeout = null;
+let sessionId = generateSessionId();
+let inactivityTimeout = null;
+let isTrackingPaused = false;
+let visibilitySession = Date.now();
+let lastUpdateTime = new Date().toISOString(); // Track last update time
+
+// Event priority mapping (higher number = higher priority)
+const EVENT_PRIORITY = {
+    'heartbeat': 1,
+    'section_opened': 2, 
+    'section_closed': 2,
+    're_activation': 2,
+    'active_on_exit': 2,
+    'inactive_on_exit': 2,
+    'visibility_return': 2,
+    'visibility_lost': 2,
+    'answer_viewed': 3,
+    'challenge_completed': 4,
+    'inactivity_popup_shown': 3
+};
+
+// Cache DOM elements
+const domElements = {
+    runButton: document.getElementById('run-button'),
+    clearButton: document.getElementById('clear-button'),
+    statusElement: document.getElementById('status'),
+    outputArea: document.getElementById('output-area'),
+    codeInput: document.getElementById('python-code'),
+    inactivityModal: document.getElementById('inactivityModal'),
+    celebrationModal: document.getElementById('celebrationModal'),
+    celebrationMessage: document.getElementById('celebrationMessage'),
+    sectionHeaders: document.querySelectorAll('.section-header'),
+    toggleButtons: document.querySelectorAll('.toggle-answer'),
+    copyButtons: document.querySelectorAll('.copy-button'),
+    celebrateButtons: document.querySelectorAll('.celebrate-button'),
+    diseaseTitle: document.querySelector('.disease-title'),
+    diseasePreview: document.querySelector('.disease-preview'),
+    diseaseContent: document.querySelector('.disease-content'),
+    reactionButtons: document.querySelectorAll('.reaction-button'),
+    reactionFeedback: document.querySelector('.reaction-feedback'),
+    modalClose: document.querySelector('.modal-close'),
+    inactivityCloseButton: document.querySelector('#inactivityModal .modal-close')
+};
+
+// Optimized initialization function
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize enhanced tracking system
+    initializeTracking();
     
-    <!-- Load Pyodide -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
-</head>
-<body>
-    <header>
-        <div class="header-container">
-            <div class="nus-logo">
-                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
-                NUS <span>Precision Medical Toolkit for Health Analytics</span>
-            </div>
-        </div>
-    </header>
+    // Setup UI interactions
+    setupUIInteractions();
     
-    <main>
-        <section id="learning-materials">
-            <h1>Python Syntax Basics</h1>
-            
-            <p>Welcome to your journey as a Precision Health Programmer! In this module, you'll learn the fundamental building blocks of Python syntax that will empower you to analyze medical data, process genomic information, and build tools for personalized healthcare. As precision medicine increasingly relies on computational approaches to analyze large biological datasets, these foundational programming skills will be invaluable in your career.</p>
-            
-            <!-- Section 1: First Python Statements -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-1">
-                        <i class="fas fa-code" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Writing Your First Python Statements
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>Every great medical discovery begins with an initial hypothesis, and similarly, your Python journey starts with learning how to write and execute simple statements. In Python, a statement is a unit of code that performs an action, like printing text or performing calculations.</p>
-                    
-                    <p>Think of Python statements as instructions you might give to a laboratory assistant - clear, precise, and executed in a specific order. In precision medicine, you'll use these statements to process patient data, analyze biological samples, and interpret clinical results.</p>
-                    
-                    <div class="code-block-container" data-block-name="welcome-python-statements">
-                        <div class="code-block"># This is a simple Python statement that displays text
-print("Welcome to Precision Health Programming")
+    // Initialize Python
+    initializePython();
+});
 
-# This statement performs a calculation relevant to drug dosing
-print("Standard adult dosage:", 500 * 0.8, "mg")
+// Generate a unique session ID
+function generateSessionId() {
+    return `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+}
 
-# This statement displays information about a patient sample
-print("Patient ID: P12345, Blood Type: A+")</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <p>In the code above, each line represents a Python statement. The <code>print()</code> function displays information to the screen, which is useful for seeing results of your analysis or providing information to healthcare providers. Each statement is executed sequentially, just like following a laboratory protocol step by step.</p>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Real-World Connection:</strong> Medical researchers use Python statements to process and analyze large datasets from clinical trials, allowing them to identify patterns in patient responses to treatments and develop more personalized therapeutic approaches.</p>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 1: Your First Clinical Report</h3>
-                        <p>As a new bioinformatics analyst at a precision medicine clinic, you need to create a simple report displaying patient information and basic health metrics.</p>
-                        
-                        <div class="code-block-container" data-block-name="lab1-clinical-report-exercise">
-                            <div class="code-block"># Lab scenario: Complete the code to display patient information
-# Fix the missing parts indicated by ...
+// Optimized tracking initialization
+function initializeTracking() {
+    // Load any cached events from localStorage
+    loadCachedEvents();
+    
+    // Start periodic tracking for active sections
+    startPeriodicTracking();
+    
+    // Start heartbeat for continuous monitoring
+    startHeartbeat();
+    
+    // Set up Page Visibility API
+    setupVisibilityTracking();
+    
+    // Set up user activity monitoring
+    setupActivityMonitoring();
+    
+    // Set initial inactivity timeout
+    resetInactivityTimeout();
+    
+    // Save session state on unload
+    window.addEventListener('beforeunload', handlePageUnload);
+    
+    // Check for previous session
+    checkForPreviousSession();
+}
 
-print("...")
-print("Patient: Jane Doe")
-print("Age: ...")
-print("Biomarker A1C level:", ... , "%")
-print("Risk assessment: Monitoring recommended")</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                        
-                        <p>Expected output:</p>
-                        <div class="expected-output">PRECISION HEALTH CLINIC
-Patient: Jane Doe
-Age: 65
-Biomarker A1C level: 6.7 %
-Risk assessment: Monitoring recommended</div>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab1-clinical-report-solution">
-                                <div class="code-block"># Complete solution
-print("PRECISION HEALTH CLINIC")
-print("Patient: Jane Doe")
-print("Age: 65")
-print("Biomarker A1C level:", 6.7, "%")
-print("Risk assessment: Monitoring recommended")</div>
-                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                                <div class="copy-feedback">Copied!</div>
-                            </div>
-                        </div>
-                        <button class="celebrate-button" data-message="Great job! You've created your first clinical report using Python statements. Each statement precisely communicates important patient information, just as you would need in a real healthcare setting." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 2: Data Types -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-2">
-                        <i class="fas fa-database" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Understanding Data Types in Biomedical Research
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>In medicine, precision matters - a small difference in dosage or biomarker levels can have significant clinical implications. Python uses different data types to represent different kinds of information, just as you might use different laboratory tests to measure different biological parameters.</p>
-                    
-                    <p>Let's explore the three fundamental data types you'll use constantly in biomedical programming:</p>
-                    
-                    <h3>Integers (int)</h3>
-                    <p>Integers are whole numbers without decimal points. In medical contexts, you might use integers to represent patient counts, days since treatment, or discrete measurements.</p>
-                    
-                    <div class="code-block-container" data-block-name="integers-clinical-contexts">
-                        <div class="code-block"># Integers in clinical contexts
-patient_count = 125
-days_since_vaccination = 14
-heart_rate = 72
+// Load cached events from localStorage
+function loadCachedEvents() {
+    try {
+        const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            if (Array.isArray(parsedData)) {
+                sectionEvents = [...parsedData, ...sectionEvents];
+                console.log(`Loaded ${parsedData.length} cached events from localStorage`);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading cached events:', error);
+    }
+}
 
-print("Patients enrolled:", patient_count)
-print("Post-vaccination follow-up:", days_since_vaccination, "days")
-print("Resting heart rate:", heart_rate, "bpm")</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Floating-Point Numbers (float)</h3>
-                    <p>Floats are numbers with decimal points, essential for precise measurements in medical research such as drug concentrations, lab values, or physiological readings.</p>
-                    
-                    <div class="code-block-container" data-block-name="floats-clinical-measurements">
-                        <div class="code-block"># Floating-point numbers in clinical contexts
-body_temperature = 37.2
-serum_glucose = 5.4
-tumor_size = 2.35
+// Save events to localStorage
+function saveEventsToLocalStorage() {
+    try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sectionEvents));
+    } catch (error) {
+        console.error('Error saving events to localStorage:', error);
+        // If localStorage is full, we'll clear it and try again
+        if (error.name === 'QuotaExceededError') {
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sectionEvents));
+            } catch (innerError) {
+                console.error('Still failed to save after clearing:', innerError);
+            }
+        }
+    }
+}
 
-print("Patient temperature:", body_temperature, "°C")
-print("Glucose level:", serum_glucose, "mmol/L")
-print("Tumor diameter:", tumor_size, "cm")</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Strings (str)</h3>
-                    <p>Strings represent text data, enclosed in quotation marks. In healthcare, strings store patient names, diagnostic codes, DNA sequences, or any textual information.</p>
-                    
-                    <div class="code-block-container" data-block-name="strings-genomic-medicine">
-                        <div class="code-block"># Strings in genomic medicine
-patient_id = "GEN-2023-0457"
-mutation_status = "BRCA1 positive"
-therapy_recommendation = "PARP inhibitor"
-dna_sequence = "ATGCTAGCTAGCTAGT"
+// Setup all UI interactions
+function setupUIInteractions() {
+    // Set up section dropdowns with event delegation
+    document.querySelector('#learning-materials').addEventListener('click', handleLearningMaterialsClick);
+    
+    // Setup inactivity modal button
+    if (domElements.inactivityCloseButton) {
+        domElements.inactivityCloseButton.addEventListener('click', handleUserReturn);
+    }
+    
+    // Setup celebration modal
+    setupCelebrationModal();
+    
+    // Set up disease info toggle
+    setupDiseaseInfoToggle();
+    
+    // Initialize copy buttons
+    initializeCopyButtons();
+}
 
-print("Patient ID:", patient_id)
-print("Genetic testing result:", mutation_status)
-print("Treatment pathway:", therapy_recommendation)
-print("Target sequence:", dna_sequence)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Real-World Connection:</strong> In genomic medicine, researchers use different data types to process sequencing data - integers to count gene mutations, floats to calculate expression levels, and strings to represent DNA sequences or protein configurations.</p>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 2: Biomarker Analysis</h3>
-                        <p>Your team is analyzing biomarker data from a clinical trial. Complete the code to correctly represent and display different types of biomarker information.</p>
-                        
-                        <div class="code-block-container" data-block-name="lab2-biomarker-analysis-exercise">
-                            <div class="code-block"># Lab scenario: Create variables with appropriate data types
-# Replace the ... with appropriate values and data types
+// Handle clicks within learning materials using event delegation
+function handleLearningMaterialsClick(event) {
+    // Handle section header clicks
+    if (event.target.closest('.section-header')) {
+        const header = event.target.closest('.section-header');
+        toggleSection(header);
+    }
+    
+    // Handle toggle answer buttons
+    if (event.target.closest('.toggle-answer')) {
+        const button = event.target.closest('.toggle-answer');
+        toggleAnswer(button);
+    }
+    
+    // Handle celebration buttons
+    if (event.target.closest('.celebrate-button')) {
+        const button = event.target.closest('.celebrate-button');
+        showCelebration(button);
+    }
+}
 
-patient_id = ...
-age = ...
-tumor_marker_ca125 = ...
-mutation_detected = ...
+// Toggle section visibility
+function toggleSection(header) {
+    header.classList.toggle('active');
+    const content = header.nextElementSibling;
+    const sectionId = header.querySelector('h2').getAttribute('id');
+    
+    content.classList.toggle('active');
+    
+    // Track section interaction
+    trackSectionInteraction(sectionId, content.classList.contains('active'));
+}
 
-# Display the patient's biomarker profile
-print("Oncology Biomarker Report")
-print("ID:", patient_id)
-print("Patient age:", age)
-print("CA-125 level:", tumor_marker_ca125, "U/mL")
-print("Target mutation:", mutation_detected)</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                        
-                        <p>Expected output:</p>
-                        <div class="expected-output">Oncology Biomarker Report
-ID: PT-2025-0892
-Patient age: 54
-CA-125 level: 85.4 U/mL
-Target mutation: EGFR T790M</div>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab2-biomarker-analysis-solution">
-                                <div class="code-block"># Complete solution
-patient_id = "PT-2025-0892"  # String for ID
-age = 54                     # Integer for age
-tumor_marker_ca125 = 85.4    # Float for precision measurement
-mutation_detected = "EGFR T790M"  # String for mutation name
-
-# Display the patient's biomarker profile
-print("Oncology Biomarker Report")
-print("ID:", patient_id)
-print("Patient age:", age)
-print("CA-125 level:", tumor_marker_ca125, "U/mL")
-print("Target mutation:", mutation_detected)</div>
-                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                                <div class="copy-feedback">Copied!</div>
-                            </div>
-                        </div>
-                        <button class="celebrate-button" data-message="Excellent work! You've demonstrated your understanding of different data types by correctly organizing a patient's biomarker data. Notice how each piece of information is stored in the most appropriate data type - just as you would select the most appropriate test tube for different laboratory samples." data-animation="sides"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 3: Boolean Values -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-3">
-                        <i class="fas fa-check-circle" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Boolean Values in Medical Data
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>In medicine, many diagnoses and test results come down to binary outcomes - positive or negative, present or absent, eligible or ineligible. Python uses Boolean values (<code>True</code> and <code>False</code>) to represent these binary states, making them perfect for representing diagnostic results and patient statuses.</p>
-                    
-                    <p>Boolean values will be crucial for your work in precision medicine, where you'll frequently need to represent binary states of biomarkers, genetic mutations, or disease statuses.</p>
-                    
-                    <div class="code-block-container" data-block-name="boolean-clinical-findings">
-                        <div class="code-block"># Boolean values representing clinical findings
-is_diabetic = True
-has_hypertension = False
-is_eligible_for_trial = True
-
-print("Diabetes diagnosis confirmed:", is_diabetic)
-print("Hypertension present:", has_hypertension)
-print("Trial eligibility:", is_eligible_for_trial)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <p>Boolean operations allow you to combine multiple conditions, just as clinicians consider multiple factors in their analyses:</p>
-                    
-                    <div class="code-block-container" data-block-name="boolean-operations-biomarker">
-                        <div class="code-block"># Boolean operations for biomarker analysis
-high_glucose = True
-elevated_hba1c = True
-has_symptoms = False
-
-# AND operation (requires all conditions to be True)
-diabetes_biomarkers_present = high_glucose and elevated_hba1c
-print("Diabetes biomarkers detected:", diabetes_biomarkers_present)
-
-# OR operation (requires at least one condition to be True)
-metabolic_anomaly = high_glucose or has_symptoms
-print("Metabolic anomaly detected:", metabolic_anomaly)
-
-# NOT operation (inverts the Boolean value)
-normal_glucose = not high_glucose
-print("Glucose within normal range:", normal_glucose)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <p>Boolean values can also be created through comparison operations, which evaluate relationships between values:</p>
-                    
-                    <div class="code-block-container" data-block-name="comparison-operations">
-                        <div class="code-block"># Comparison operations to generate Boolean values
-blood_pressure = 135
-pulse = 72
-cholesterol = 5.2
-
-# Greater than
-hypertension_range = blood_pressure > 130
-print("Blood pressure in hypertension range:", hypertension_range)
-
-# Less than
-low_pulse = pulse < 60
-print("Pulse below normal range:", low_pulse)
-
-# Equal to
-target_cholesterol = cholesterol == 5.0
-print("Cholesterol at target level:", target_cholesterol)
-
-# Not equal to
-baseline_deviation = pulse != 80
-print("Pulse deviates from baseline:", baseline_deviation)
-
-# Greater than or equal to
-elevated_bp = blood_pressure >= 140
-print("Blood pressure classified as elevated:", elevated_bp)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Real-World Connection:</strong> In genomics research, Boolean values represent the presence or absence of specific gene mutations. Researchers create complex Boolean expressions to identify patterns across multiple genes that may indicate disease risk or treatment response.</p>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 3: Genetic Analysis Boolean Operations</h3>
-                        <p>You're analyzing genetic test results for a precision medicine study. Complete the code to perform Boolean operations on mutation data.</p>
-                        
-                        <div class="code-block-container" data-block-name="lab3-genetic-analysis-exercise">
-                            <div class="code-block"># Lab scenario: Analyze patterns in genetic mutations
-# Replace the ... with appropriate Boolean operators
-
-# Genetic test results for a patient
-brca1_mutation = True
-brca2_mutation = False
-tp53_mutation = True
-egfr_mutation = False
-kras_mutation = True
-
-# Analyze mutation patterns
-hereditary_breast_cancer_risk = brca1_mutation ... brca2_mutation
-print("Hereditary breast cancer risk factors present:", hereditary_breast_cancer_risk)
-
-# Li-Fraumeni syndrome risk (requires TP53 mutation AND NOT BRCA mutations)
-li_fraumeni_risk = tp53_mutation ... ... (brca1_mutation ... brca2_mutation)
-print("Li-Fraumeni syndrome risk profile:", li_fraumeni_risk)
-
-# Lung cancer analysis (EGFR OR KRAS, but not both)
-targeted_therapy_option = (egfr_mutation ... ... kras_mutation) ... ... (egfr_mutation ... kras_mutation)
-print("Candidate for targeted therapy:", targeted_therapy_option)
-
-# Comprehensive genomic instability check (at least 3 mutations)
-mutation_count = ... + ... + ... + ... + ...
-high_mutation_burden = mutation_count >= 3
-print("High mutation burden detected:", high_mutation_burden)</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                        
-                        <p>Expected output:</p>
-                        <div class="expected-output">Hereditary breast cancer risk factors present: True
-Li-Fraumeni syndrome risk profile: False
-Candidate for targeted therapy: False
-High mutation burden detected: True</div>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab3-genetic-analysis-solution">
-                                <div class="code-block"># Complete solution
-# Genetic test results for a patient
-brca1_mutation = True
-brca2_mutation = False
-tp53_mutation = True
-egfr_mutation = False
-kras_mutation = True
-
-# Analyze mutation patterns
-hereditary_breast_cancer_risk = brca1_mutation or brca2_mutation
-print("Hereditary breast cancer risk factors present:", hereditary_breast_cancer_risk)
-
-# Li-Fraumeni syndrome risk (requires TP53 mutation AND NOT BRCA mutations)
-li_fraumeni_risk = tp53_mutation and not (brca1_mutation or brca2_mutation)
-print("Li-Fraumeni syndrome risk profile:", li_fraumeni_risk)
-
-# Lung cancer analysis (EGFR OR KRAS, but not both)
-targeted_therapy_option = (egfr_mutation or kras_mutation) and not (egfr_mutation and kras_mutation)
-print("Candidate for targeted therapy:", targeted_therapy_option)
-
-# Comprehensive genomic instability check (at least 3 mutations)
-mutation_count = int(brca1_mutation) + int(brca2_mutation) + int(tp53_mutation) + int(egfr_mutation) + int(kras_mutation)
-high_mutation_burden = mutation_count >= 3
-print("High mutation burden detected:", high_mutation_burden)</div>
-                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                                <div class="copy-feedback">Copied!</div>
-                            </div>
-                        </div>
-                        <button class="celebrate-button" data-message="Excellent work! You've applied Boolean operations to analyze genetic mutation patterns, a fundamental task in precision oncology. These techniques help identify complex genetic signatures that can guide targeted therapy selection and risk assessment." data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 4: Type Conversion -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-4">
-                        <i class="fas fa-exchange-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Type Conversion for Medical Data Processing
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>In healthcare informatics, you'll frequently need to convert between different data types to properly process and analyze patient information. For example, you might need to convert numeric input from a form (which comes in as a string) to a float before calculating a medication dosage.</p>
-                    
-                    <p>Python provides built-in functions to convert between data types:</p>
-                    <ul>
-                        <li><code>int()</code>: Converts to integer</li>
-                        <li><code>float()</code>: Converts to floating-point number</li>
-                        <li><code>str()</code>: Converts to string</li>
-                        <li><code>bool()</code>: Converts to Boolean</li>
-                    </ul>
-                    
-                    <div class="code-block-container" data-block-name="type-conversion-patient-data">
-                        <div class="code-block"># Type conversion in patient data processing
-patient_age_input = "42"  # Age received as string from a form
-height_cm_input = "175.5"  # Height received as string
-is_smoker_input = "0"      # Smoking status as binary code
-
-# Convert string to integer
-patient_age = int(patient_age_input)
-print("Age (integer):", patient_age)
-print("Age in 5 years:", patient_age + 5)  # Now we can do math with it
-
-# Convert string to float
-height_cm = float(height_cm_input)
-height_m = height_cm / 100  # Convert cm to m
-print("Height (m):", height_m)
-print("BMI calculation can now use:", height_m)
-
-# Convert other types to string for reporting
-report_text = "Patient age: " + str(patient_age)
-print(report_text)
-
-# Convert to boolean (0 is False, non-zero is True)
-is_smoker = bool(int(is_smoker_input))
-print("Current smoker:", is_smoker)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Health Tech Tip:</strong> When processing clinical data, always verify that conversions make sense in the medical context. For example, a negative height or weight after conversion would indicate an error in the original data or the conversion process.</p>
-                        
-                        <p><strong>Real-World Connection:</strong> Bioinformatics pipelines routinely convert between data types when processing genomic sequencing data. For example, read qualities might come as strings of ASCII characters but need to be converted to integers for quality filtering algorithms.</p>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 4: Biomarker Calculation</h3>
-                        <p>You're analyzing biomarker data from a clinical study. Complete the code by performing the necessary type conversions.</p>
-                        
-                        <div class="code-block-container" data-block-name="lab4-biomarker-calculation-exercise">
-                            <div class="code-block"># Lab scenario: Process laboratory biomarker data
-# Replace the ... with appropriate type conversions
-
-# Biomarker data as received from laboratory system
-glucose_string = "105.5"
-cholesterol_string = "5.2"
-platelet_count_string = "235000"
-a1c_string = "6.7"
-creatinine_string = "0.9"
-
-# Convert to appropriate numeric types
-glucose = ...
-cholesterol = ...
-platelet_count = ...
-a1c = ...
-creatinine = ...
-
-# Perform calculations on the converted values
-glucose_mmol = glucose * 0.0555  # Convert mg/dL to mmol/L
-egfr = 175 * (creatinine ** -1.154) * (42 ** -0.203)  # eGFR calculation
-platelet_adequacy = platelet_count / 1000  # Express in thousands/µL
-
-# Prepare string report elements
-patient_id = "PTB-2025-104"
-risk_score = str(int(a1c * 10 + cholesterol))
-report_date = "2025-04-29"
-summary_text = "Patient " + ... + " biomarker analysis (Date: " + ... + "): Risk score " + ...
-
-# Display the results
-print("PRECISION MEDICINE BIOMARKER ANALYSIS")
-print("Glucose:", glucose, "mg/dL (", glucose_mmol, "mmol/L)")
-print("HbA1c:", a1c, "%")
-print("Cholesterol:", cholesterol, "mmol/L")
-print("Platelet count:", platelet_count, "cells/µL (", platelet_adequacy, "k/µL)")
-print("eGFR:", egfr, "mL/min/1.73m²")
-print(summary_text)</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                        
-                        <p>Expected output:</p>
-                        <div class="expected-output">PRECISION MEDICINE BIOMARKER ANALYSIS
-Glucose: 105.5 mg/dL ( 5.85525 mmol/L)
-HbA1c: 6.7 %
-Cholesterol: 5.2 mmol/L
-Platelet count: 235000 cells/µL ( 235.0 k/µL)
-eGFR: 92.69453968573 mL/min/1.73m²
-Patient PTB-2025-104 biomarker analysis (Date: 2025-04-29): Risk score 117</div>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab4-biomarker-calculation-solution">
-                                <div class="code-block"># Complete solution
-# Biomarker data as received from laboratory system
-glucose_string = "105.5"
-cholesterol_string = "5.2"
-platelet_count_string = "235000"
-a1c_string = "6.7"
-creatinine_string = "0.9"
-
-# Convert to appropriate numeric types
-glucose = float(glucose_string)
-cholesterol = float(cholesterol_string)
-platelet_count = int(platelet_count_string)
-a1c = float(a1c_string)
-creatinine = float(creatinine_string)
-
-# Perform calculations on the converted values
-glucose_mmol = glucose * 0.0555  # Convert mg/dL to mmol/L
-egfr = 175 * (creatinine ** -1.154) * (42 ** -0.203)  # eGFR calculation
-platelet_adequacy = platelet_count / 1000  # Express in thousands/µL
-
-# Prepare string report elements
-patient_id = "PTB-2025-104"
-risk_score = str(int(a1c * 10 + cholesterol))
-report_date = "2025-04-29"
-summary_text = "Patient " + patient_id + " biomarker analysis (Date: " + report_date + "): Risk score " + risk_score
-
-# Display the results
-print("PRECISION MEDICINE BIOMARKER ANALYSIS")
-print("Glucose:", glucose, "mg/dL (", glucose_mmol, "mmol/L)")
-print("HbA1c:", a1c, "%")
-print("Cholesterol:", cholesterol, "mmol/L")
-print("Platelet count:", platelet_count, "cells/µL (", platelet_adequacy, "k/µL)")
-print("eGFR:", egfr, "mL/min/1.73m²")
-print(summary_text)</div>
-                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                                <div class="copy-feedback">Copied!</div>
-                            </div>
-                        </div>
-                        <button class="celebrate-button" data-message="Excellent work! You've successfully created a biomarker analysis tool that converts various laboratory values between data types to perform meaningful clinical calculations. This mirrors real-world clinical laboratory systems that must transform raw data into medically relevant metrics and reports." data-animation="school"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Disease Information Section (already a dropdown) -->
-            <div class="disease-container">
-                <h2 id="disease-info" class="disease-title">What is Lou-Greig's Disease?</h2>
-                <p class="disease-preview">Click to learn about this rare genetic disorder relevant to precision medicine...</p>
-                
-                <div class="disease-content" style="display: none;">
-                    <p>Lou-Greig's Disease is a rare genetic disorder characterized by progressive neurological deterioration and distinctive skin manifestations. First described in 2018, it affects approximately 1 in 250,000 individuals worldwide.</p>
-                    
-                    <p>Key clinical features include:</p>
-                    <ul>
-                        <li>Early-onset cognitive decline (typically beginning in adolescence)</li>
-                        <li>Characteristic salmon-colored rash on extremities</li>
-                        <li>Gradually increasing muscle weakness</li>
-                        <li>Distinctive biomarker profile with elevated CSF protein levels</li>
-                    </ul>
-                    
-                    <p>Recent precision medicine approaches have identified specific genetic variants in the LGD1 and LGD2 genes associated with this condition. Targeted therapies are currently in Phase II clinical trials, demonstrating the potential of genomic medicine to address previously untreatable disorders.</p>
-                    
-                    <div class="reaction-container">
-                        <p>Was this information helpful?</p>
-                        <button class="reaction-button" data-reaction="helpful"><i class="fas fa-thumbs-up"></i> Helpful</button>
-                        <button class="reaction-button" data-reaction="not-helpful"><i class="fas fa-thumbs-down"></i> Not Helpful</button>
-                        <div class="reaction-feedback">Thank you for your feedback!</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 5: Summary -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-5">
-                        <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Summary: Python Syntax Basics
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>Congratulations on completing the Python Syntax Basics module! You've gained essential skills that form the foundation of your precision health programming toolkit:</p>
-                    
-                    <ol>
-                        <li><strong>Python statements</strong>: You learned how to write clear, executable instructions that form the building blocks of your medical data analysis code.</li>
-                        <li><strong>Data types</strong>: You explored how to represent different kinds of biomedical information using integers, floats, and strings - ensuring your precision medicine applications handle data appropriately.</li>
-                        <li><strong>Boolean values and operations</strong>: You discovered how to use Boolean operations to represent and analyze biological states and medical test results, just as medical researchers do when evaluating multiple factors in disease diagnosis.</li>
-                        <li><strong>Type conversion</strong>: You practiced converting between data types, an essential skill for processing medical information from diverse sources and ensuring accurate calculations for patient care.</li>
-                    </ol>
-                    
-                    <p>These fundamental concepts are directly applicable to precision medicine workflows, from analyzing genetic sequencing data to calculating personalized treatment protocols. As healthcare becomes increasingly data-driven, your ability to manipulate and process information will be invaluable.</p>
-                    
-                    <p>In the next module, you'll build on these foundations by learning about variables and assignment in Python, which will allow you to store and manipulate patient data, genetic information, and clinical measurements throughout your programs. This will further enhance your ability to create sophisticated precision medicine applications.</p>
-                    
-                    <p>Keep up the great work, and remember that every Python skill you master brings us one step closer to truly personalized healthcare!</p>
-                </div>
-            </div>
-        </section>
+// Toggle answer visibility
+function toggleAnswer(button) {
+    const answer = button.nextElementSibling;
+    if (answer.style.display === 'block') {
+        answer.style.display = 'none';
+        button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Answer';
+    } else {
+        answer.style.display = 'block';
+        button.innerHTML = '<i class="fas fa-times"></i> Hide Answer';
         
-        <section id="interpreter-container">
-            <h2 id="interpreter-heading">Python Interpreter</h2>
-            <p>Try out Python code examples as you learn. You can practice with basic commands or experiment with more complex examples from the lesson.</p>
-            
-            <textarea id="python-code">
-# Try Python code here
+        // Track that the user viewed an answer
+        const challengeContainer = button.closest('.challenge');
+        const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
+        
+        trackEvent('answer_viewed', getCurrentSectionId(), challengeTitle);
+    }
+}
 
-               
-</textarea>
-            
-            <div class="button-group">
-                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
-                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
-            </div>
-            
-            <div id="status">Loading Python runtime... Please wait.</div>
-            
-            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
-            <pre id="output-area"></pre>
-        </section>
-    </main>
+// Show celebration modal
+function showCelebration(button) {
+    const message = button.getAttribute('data-message');
+    const animationType = button.getAttribute('data-animation');
     
-    <!-- User Information Box -->
-    <div class="user-info-box">
-        <h3>Session Information</h3>
-        <div class="user-info-item">
-            <span class="user-info-label">Username:</span>
-            <span id="username">Loading...</span>
-        </div>
-        <div class="user-info-item">
-            <span class="user-info-label">Access Time:</span>
-            <span id="access-time">Loading...</span>
-        </div>
-        <div class="user-info-item">
-            <span class="user-info-label">Current URL:</span>
-            <span id="current-url">Loading...</span>
-        </div>
-        <div id="status-message"></div>
-    </div>
+    // Show message in modal
+    domElements.celebrationMessage.textContent = message;
+    domElements.celebrationModal.style.display = 'block';
     
-    <footer>
-        <div class="footer-content">
-            <div>© 2025 National University of Singapore. All rights reserved.</div>
-        </div>
-    </footer>
+    // Track this celebration event
+    const challengeContainer = button.closest('.challenge');
+    const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
     
-    <!-- Celebration Modal -->
-    <div id="celebrationModal" class="modal">
-        <div class="modal-content">
-            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
-            <p id="celebrationMessage" class="modal-message"></p>
-            <button class="modal-close">Continue Learning</button>
-        </div>
-    </div>
+    trackEvent('challenge_completed', getCurrentSectionId(), challengeTitle);
+    
+    // Trigger confetti animation
+    if (confettiAnimations[animationType]) {
+        confettiAnimations[animationType]();
+    } else {
+        confettiAnimations.center(); // Default animation
+    }
+}
 
-    <!-- Inactivity Modal -->
-    <div id="inactivityModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-top">
-                <div class="modal-icon">
-                    <i class="fas fa-flask"></i>
-                </div>
-                <h3 class="modal-header">Time for a break?</h3>
-                <p class="modal-subheader">Your Python session is waiting</p>
-            </div>
+// Setup celebration modal
+function setupCelebrationModal() {
+    // Close modal when close button is clicked
+    document.querySelector('.modal-close').addEventListener('click', function() {
+        domElements.celebrationModal.style.display = 'none';
+    });
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target === domElements.celebrationModal) {
+            domElements.celebrationModal.style.display = 'none';
+        }
+    });
+}
+
+// Add an event to the tracking queue
+function trackEvent(type, sectionId, additionalInfo = '') {
+    // Create the event object
+    const newEvent = {
+        type: type,
+        sectionId: sectionId,
+        startTime: new Date(),
+        endTime: null,
+        duration: 0,
+        additionalInfo: additionalInfo
+    };
+    
+    // Check if we already have an identical event in the queue
+    const existingEventIndex = findExistingEvent(type, sectionId);
+    
+    if (existingEventIndex >= 0) {
+        // We found an identical event
+        const existingEvent = sectionEvents[existingEventIndex];
+        
+        // Check event priority
+        const existingPriority = EVENT_PRIORITY[existingEvent.type] || 0;
+        const newPriority = EVENT_PRIORITY[type] || 0;
+        
+        // Only replace if new event has higher priority
+        if (newPriority >= existingPriority) {
+            // Update existing event
+            sectionEvents[existingEventIndex] = newEvent;
+        }
+    } else {
+        // No identical event found, add this one
+        sectionEvents.push(newEvent);
+    }
+    
+    // Always save to localStorage when events are updated
+    saveEventsToLocalStorage();
+}
+
+// Find an existing event with the same type and sectionId
+function findExistingEvent(type, sectionId) {
+    for (let i = 0; i < sectionEvents.length; i++) {
+        if (sectionEvents[i].type === type && sectionEvents[i].sectionId === sectionId) {
+            return i; // Return the index of the matching event
+        }
+    }
+    return -1; // No match found
+}
+
+// Start periodic tracking
+function startPeriodicTracking() {
+    // Clear any existing interval
+    if (trackingInterval) {
+        clearInterval(trackingInterval);
+    }
+    
+    // Set up new interval (now 30 seconds instead of 5)
+    trackingInterval = setInterval(function() {
+        if (sectionEvents.length > 0 && !isTrackingPaused) {
+            sendTrackingData();
+        }
+    }, TRACKING_INTERVAL);
+}
+
+// Show inactivity popup
+function showInactivityPopup() {
+    // Only show popup if not already shown
+    if (!isTrackingPaused) {
+        // Pause tracking
+        isTrackingPaused = true;
+        
+        // Show the popup
+        const inactivityModal = document.getElementById('inactivityModal');
+        inactivityModal.style.display = 'block';
+        
+        // Track this inactivity event
+        sectionEvents.push({
+            type: 'inactivity_popup_shown',
+            sectionId: getCurrentSectionId(),
+            startTime: new Date(),
+            endTime: null,
+            duration: ''
+        });
+        
+        // Save to localStorage
+        saveEventsToLocalStorage();
+        
+        // Send tracking data immediately
+        sendTrackingData();
+        
+        console.log("Tracking paused due to inactivity");
+    }
+}
+
+// Handle user return from inactivity
+function handleUserReturn() {
+    domElements.inactivityModal.style.display = 'none';
+    isTrackingPaused = false;
+    lastUserActivity = new Date();
+    resetInactivityTimeout();
+}
+
+// Reset inactivity timeout
+function resetInactivityTimeout() {
+    if (inactivityTimeout) {
+        clearTimeout(inactivityTimeout);
+    }
+    
+    inactivityTimeout = setTimeout(function() {
+        if (isPageVisible) {
+            showInactivityPopup();
+        }
+    }, INACTIVITY_THRESHOLD);
+}
+
+// Set up visibility tracking
+function setupVisibilityTracking() {
+    // Browser compatibility code remains the same
+    let hidden, visibilityChange;
+    
+    if (typeof document.hidden !== "undefined") {
+        hidden = "hidden";
+        visibilityChange = "visibilitychange";
+    } else if (typeof document.msHidden !== "undefined") {
+        hidden = "msHidden";
+        visibilityChange = "msvisibilitychange";
+    } else if (typeof document.webkitHidden !== "undefined") {
+        hidden = "webkitHidden";
+        visibilityChange = "webkitvisibilitychange";
+    }
+    
+    // Add event listener to track visibility changes
+    document.addEventListener(visibilityChange, function() {
+        const wasVisible = isPageVisible; // Store previous state
+        isPageVisible = !document[hidden];
+        const timestamp = new Date();
+        
+        if (isPageVisible) {
+            // Page became visible again
+            // Track visibility return
+            sectionEvents.push({
+                type: 'visibility_return',
+                sectionId: getCurrentSectionId(),
+                startTime: timestamp,
+                endTime: null,
+                duration: null
+            });
             
-            <div class="modal-body">
-                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
-                <button class="modal-close">
-                    <i class="fas fa-code"></i> Resume My Session
-                </button>
-            </div>
-        </div>
-    </div>
+            // Save to localStorage
+            saveEventsToLocalStorage();
+            
+            // Update last activity time
+            lastUserActivity = timestamp;
+            
+            // ADDED: Restart the heartbeat when visibility returns
+            startHeartbeat();
+            
+            // If it's been inactive for too long, show popup
+            if (timestamp - lastUserActivity > INACTIVITY_THRESHOLD && !isTrackingPaused) {
+                showInactivityPopup();
+            }
+        } else {
+            // Page was hidden
+            // Track visibility lost
+            sectionEvents.push({
+                type: 'visibility_lost',
+                sectionId: getCurrentSectionId(),
+                startTime: timestamp,
+                endTime: null,
+                duration: 0
+            });
+            
+            // Save to localStorage
+            saveEventsToLocalStorage();
+            
+            // ADDED: Clear heartbeat interval when page becomes hidden
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+            
+            // Send any pending heartbeat events before page is hidden
+            if (sectionEvents.length > 0) {
+                sendTrackingData();
+            }
+            
+            lastUserActivity = timestamp;
+            
+            // Clear any existing timeout
+            if (inactivityTimeout) {
+                clearTimeout(inactivityTimeout);
+            }
+            
+            // Set timeout for when page is hidden
+            inactivityTimeout = setTimeout(function() {
+                if (!isPageVisible) {
+                    showInactivityPopup();
+                }
+            }, INACTIVITY_THRESHOLD);
+        }
+        
+        // Send tracking data immediately
+        sendTrackingData();
+    });
+}
+
+// Efficiently throttle function calls
+function throttle(func, delay) {
+    let lastCall = 0;
+    return function(...args) {
+        const now = Date.now();
+        if (now - lastCall < delay) {
+            return;
+        }
+        lastCall = now;
+        return func(...args);
+    };
+}
+
+// Set up activity monitoring with optimized events
+function setupActivityMonitoring() {
+    // List of events to consider as user activity
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
     
-    <!-- Confetti Canvas -->
-    <canvas id="confetti-canvas"></canvas>
+    // Throttle function to prevent too many event firings
+    function throttle(func, delay) {
+        let lastCall = 0;
+        return function(...args) {
+            const now = new Date().getTime();
+            if (now - lastCall < delay) {
+                return;
+            }
+            lastCall = now;
+            return func(...args);
+        };
+    }
     
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+    // Handle user activity
+    const handleActivity = throttle(function() {
+        // If tracking is paused (popup is visible), don't automatically resume
+        if (isTrackingPaused) {
+            return; // This is the key change - don't auto-resume when popup is visible
+        }
+        
+        // Only process if page is visible
+        if (isPageVisible) {
+            const now = new Date();
+            
+            // Update last activity time
+            lastUserActivity = now;
+            
+            // Clear any existing inactivity timeout
+            if (inactivityTimeout) {
+                clearTimeout(inactivityTimeout);
+            }
+            
+            // Set new inactivity timeout
+            inactivityTimeout = setTimeout(function() {
+                if (isPageVisible) {
+                    showInactivityPopup();
+                }
+            }, INACTIVITY_THRESHOLD);
+        }
+    }, 1000); // Throttle to once per second
+    
+    // Add event listeners for each activity event
+    activityEvents.forEach(function(eventName) {
+        document.addEventListener(eventName, handleActivity, { passive: true });
+    });
+}
+
+// Get the current visible section ID
+function getCurrentSectionId() {
+    let currentSectionId = 'unknown';
+    let maxVisibleArea = 0;
+    
+    domElements.sectionHeaders.forEach(header => {
+        const content = header.nextElementSibling;
+        const sectionId = header.querySelector('h2').getAttribute('id');
+        
+        if (content.classList.contains('active')) {
+            const rect = content.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            
+            const visibleTop = Math.max(0, rect.top);
+            const visibleBottom = Math.min(windowHeight, rect.bottom);
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+            const visibleArea = visibleHeight * rect.width;
+            
+            if (visibleArea > maxVisibleArea) {
+                maxVisibleArea = visibleArea;
+                currentSectionId = sectionId;
+            }
+        }
+    });
+    
+    return currentSectionId;
+}
+
+// Start heartbeat mechanism
+function startHeartbeat() {
+    // Clear any existing interval to prevent multiple heartbeats running
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null; // Good practice to nullify after clearing
+    }
+
+    // Update visibility session when starting a new heartbeat sequence
+    // This helps group heartbeats that occur during a continuous period of page visibility
+    visibilitySession = Date.now();
+
+    heartbeatInterval = setInterval(function() {
+        // Only run heartbeat if tracking is not paused and the page is visible
+        if (!isTrackingPaused && isPageVisible) {
+            const now = new Date(); // Current timestamp for this heartbeat tick
+            const currentSectionId = getCurrentSectionId(); // Determine the most prominent section
+
+            // Iterate over all sections currently considered "open" by the user
+            Object.keys(openSections).forEach(sectionId => {
+                const sectionData = openSections[sectionId]; // Get data for this specific open section
+
+                // Update the active status of the section within openSections
+                // This is for internal tracking, not directly the heartbeat event itself
+                if (sectionId === currentSectionId && !sectionData.isActive) {
+                    sectionData.isActive = true;
+                    // sectionData.lastActiveTime = now; // This will be updated below more specifically
+                } else if (sectionId !== currentSectionId && sectionData.isActive) {
+                    sectionData.isActive = false;
+                }
+
+                // Generate a heartbeat event ONLY for the CURRENTLY VISIBLE and ACTIVE section
+                // and only if the user is generally considered active on the page
+                if (sectionId === currentSectionId && sectionData.isActive && isUserActive) {
+                    // Define the start and end for this specific 2-second heartbeat interval
+                    const startTimeForThisHeartbeat = new Date(now.getTime() - HEARTBEAT_INTERVAL);
+                    const endTimeForThisHeartbeat = now;
+                    const individualHeartbeatDuration = Math.round(HEARTBEAT_INTERVAL / 1000); // Should be 2
+
+                    const heartbeatEvent = {
+                        type: 'heartbeat',
+                        sectionId: sectionId,
+                        startTime: startTimeForThisHeartbeat.toISOString(), // Start of this 2s interval
+                        endTime: endTimeForThisHeartbeat.toISOString(),     // End of this 2s interval
+                        duration: individualHeartbeatDuration,              // Duration of this specific beat (e.g., 2 seconds)
+                        visibilitySession: visibilitySession,               // Groups heartbeats within one visibility period
+                        sessionId: sessionId,                               // Overall session ID
+                        username: getUsername()                             // Current user
+                    };
+
+                    // Always push the new, individual heartbeat event.
+                    // Aggregation will be handled by processTrackingEvents before sending.
+                    sectionEvents.push(heartbeatEvent);
+
+                    // Save all events (including this new one) to localStorage
+                    saveEventsToLocalStorage();
+
+                    // Update the section's overall last active time in openSections.
+                    // This is useful for other logic, like calculating 'active_on_exit' duration.
+                    sectionData.lastActiveTime = now;
+                }
+            });
+        }
+    }, HEARTBEAT_INTERVAL);
+
+    console.log("Heartbeat started with interval:", HEARTBEAT_INTERVAL, "ms");
+}
+
+// Track section interactions efficiently
+function trackSectionInteraction(sectionId, isOpening) {
+    const timestamp = new Date();
+    
+    if (isOpening) {
+        // Mark other active sections as inactive
+        Object.keys(openSections).forEach(id => {
+            if (openSections[id].isActive && id !== sectionId) {
+                openSections[id].isActive = false;
+            }
+        });
+        
+        // Handle new or existing section
+        if (openSections[sectionId]) {
+            if (!openSections[sectionId].isActive) {
+                sectionEvents.push({
+                    type: 're_activation',
+                    sectionId: sectionId,
+                    startTime: timestamp,
+                    endTime: null,
+                    duration: 0
+                });
+                
+                openSections[sectionId].isActive = true;
+                openSections[sectionId].lastActiveTime = timestamp;
+            }
+        } else {
+            // New section being opened
+            openSections[sectionId] = {
+                startTime: timestamp,
+                isActive: true,
+                lastActiveTime: timestamp
+            };
+            
+            sectionEvents.push({
+                type: 'section_opened',
+                sectionId: sectionId,
+                startTime: timestamp,
+                endTime: null,
+                duration: 0
+            });
+        }
+    } else {
+        // Section being closed
+        if (openSections[sectionId]) {
+            sectionEvents.push({
+                type: 'section_closed',
+                sectionId: sectionId,
+                startTime: timestamp,
+                endTime: null,
+                duration: 0
+            });
+            
+            delete openSections[sectionId];
+        }
+    }
+    
+    // Save to localStorage
+    saveEventsToLocalStorage();
+}
+
+// Process and combine tracking events - improved for better heartbeat aggregation
+function processTrackingEvents(events) {
+    const combinedEvents = [];
+    const eventMap = new Map();
+
+    events.forEach(event => {
+        // Create a key that includes all the properties we want to use for aggregation
+        const eventKey = `${event.sessionId || sessionId}_${event.username || getUsername()}_${window.location.href}_section_tracking_${event.sectionId}_${event.type}`;
+
+        if (eventMap.has(eventKey)) {
+            const existingEvent = eventMap.get(eventKey);
+
+            if (event.type === 'heartbeat') {
+                // Add the new duration to the existing one
+                existingEvent.duration = (existingEvent.duration || 0) + (event.duration || 0);
+
+                // Update startTime to be the EARLIEST startTime of the aggregated block
+                if (new Date(event.startTime) < new Date(existingEvent.startTime)) {
+                    existingEvent.startTime = event.startTime;
+                }
+                // Update endTime to be the LATEST endTime of the aggregated block
+                if (event.endTime) { // Make sure individual heartbeats provide endTime
+                    if (!existingEvent.endTime || new Date(event.endTime) > new Date(existingEvent.endTime)) {
+                        existingEvent.endTime = event.endTime;
+                    }
+                } else {
+                    // Fallback: if individual heartbeats don't have endTime, calculate from their startTime & duration
+                    // This shouldn't be needed if startHeartbeat is fixed to provide endTime
+                    const currentEventEndTime = new Date(new Date(event.startTime).getTime() + (event.duration * 1000));
+                    if (!existingEvent.endTime || currentEventEndTime > new Date(existingEvent.endTime)) {
+                        existingEvent.endTime = currentEventEndTime.toISOString();
+                    }
+                }
+
+            } else if (EVENT_PRIORITY[event.type] >= EVENT_PRIORITY[existingEvent.type]) { // Use >= to replace if same or higher priority
+                // For non-heartbeat events, replace if new event has same or higher priority
+                eventMap.set(eventKey, { ...event }); // Store a copy
+            }
+        } else {
+            // New event for this key
+            const newEventToAdd = { ...event }; // Store a copy
+            // Ensure initial heartbeats have an endTime if not already set (should be set by startHeartbeat)
+            if (newEventToAdd.type === 'heartbeat' && !newEventToAdd.endTime && newEventToAdd.startTime && newEventToAdd.duration) {
+                newEventToAdd.endTime = new Date(new Date(newEventToAdd.startTime).getTime() + (newEventToAdd.duration * 1000)).toISOString();
+            } else if (newEventToAdd.type === 'heartbeat' && !newEventToAdd.endTime && newEventToAdd.startTime) {
+                newEventToAdd.endTime = newEventToAdd.startTime; // If duration is 0 or missing
+            }
+            eventMap.set(eventKey, newEventToAdd);
+        }
+    });
+
+    // Convert map back to array
+    eventMap.forEach(event => {
+        event.lastUpdateTime = new Date().toISOString(); // Add last update time to all events being sent
+        combinedEvents.push(event);
+    });
+
+    return combinedEvents;
+}
+
+// Send tracking data to server with batching
+function sendTrackingData(isSync = false) {
+    // Don't proceed if there's no data or tracking is paused
+    if (sectionEvents.length === 0 || isTrackingPaused) {
+        return;
+    }
+    
+    // Update last update time
+    lastUpdateTime = new Date().toISOString();
+    
+    // Prepare data
+    const username = getUsername();
+    const eventsCopy = [...sectionEvents];
+    sectionEvents = []; // Clear events since we're going to process them
+    
+    // Process and combine events
+    const processedEvents = processTrackingEvents(eventsCopy);
+    
+    const data = {
+        username: username,
+        url: window.location.href,
+        events: processedEvents,
+        timestamp: lastUpdateTime,
+        sessionId: sessionId,
+        lastUpdateTime: lastUpdateTime // Add this for the spreadsheet's first row
+    };
+    
+    // Use beacon API for unload events
+    if (isSync && navigator.sendBeacon) {
+        try {
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            navigator.sendBeacon(APPS_SCRIPT_URL, blob);
+            
+            // Clear localStorage after successful send
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+        } catch (error) {
+            console.error('Beacon error:', error);
+            // Put events back in the queue
+            sectionEvents = [...eventsCopy, ...sectionEvents];
+            // Update localStorage
+            saveEventsToLocalStorage();
+        }
+        return;
+    }
+    
+    // Use fetch for normal tracking
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        mode: 'no-cors'
+    })
+    .then(() => {
+        // Clear localStorage after successful send
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+    })
+    .catch(error => {
+        console.error('Tracking error:', error);
+        // Put events back in the queue
+        sectionEvents = [...eventsCopy, ...sectionEvents];
+        // Update localStorage
+        saveEventsToLocalStorage();
+    });
+}
+
+// Get username with caching
+const usernameCache = {
+    value: null,
+    timestamp: 0
+};
+
+function getUsername() {
+    // Return cached username if valid (cache for 5 minutes)
+    if (usernameCache.value && Date.now() - usernameCache.timestamp < 300000) {
+        return usernameCache.value;
+    }
+    
+    try {
+        const accountsData = localStorage.getItem('accounts');
+        if (accountsData) {
+            const accounts = JSON.parse(accountsData);
+            const username = (accounts && accounts.length > 0 && accounts[0].username) 
+                ? accounts[0].username 
+                : 'Guest_' + Math.floor(Math.random() * 10000);
+            
+            // Update cache
+            usernameCache.value = username;
+            usernameCache.timestamp = Date.now();
+            
+            return username;
+        }
+        return 'Guest_' + Math.floor(Math.random() * 10000);
+    } catch (error) {
+        return 'Guest_' + Math.floor(Math.random() * 10000);
+    }
+}
+
+// Handle page unload
+function handlePageUnload() {
+    // Capture final state for all sections
+    const exitTime = new Date();
+    
+    Object.keys(openSections).forEach(sectionId => {
+        const section = openSections[sectionId];
+        
+        sectionEvents.push({
+            type: section.isActive ? 'active_on_exit' : 'inactive_on_exit',
+            sectionId: sectionId,
+            startTime: section.startTime,
+            endTime: exitTime,
+            duration: (exitTime - section.startTime) / 1000
+        });
+    });
+    
+    // Save session state
+    saveSessionState();
+    
+    // Save to localStorage
+    saveEventsToLocalStorage();
+    
+    // Send tracking data
+    if (sectionEvents.length > 0) {
+        sendTrackingData(true);
+    }
+}
+
+// Save session state
+function saveSessionState() {
+    try {
+        const openSectionIds = Object.keys(openSections);
+        let lastActiveSection = null;
+        
+        // Find most recently active section
+        Object.keys(openSections).forEach(sectionId => {
+            const section = openSections[sectionId];
+            if (section.isActive) {
+                lastActiveSection = sectionId;
+            }
+        });
+        
+        // Save to localStorage
+        localStorage.setItem('sectionState', JSON.stringify({
+            timestamp: new Date().toISOString(),
+            openSectionIds: openSectionIds,
+            lastActiveSection: lastActiveSection
+        }));
+    } catch (error) {
+        console.error('Session save error:', error);
+    }
+}
+
+// Check for previous session
+function checkForPreviousSession() {
+    try {
+        const savedData = localStorage.getItem('sectionState');
+        if (savedData) {
+            const sessionData = JSON.parse(savedData);
+            
+            // If session was recent (< 2 hours), restore
+            const lastSession = new Date(sessionData.timestamp);
+            const hoursSinceLastSession = (new Date() - lastSession) / (1000 * 60 * 60);
+            
+            if (hoursSinceLastSession < 2) {
+                restorePreviousSession(sessionData);
+            } else {
+                localStorage.removeItem('sectionState');
+            }
+        }
+    } catch (error) {
+        console.error('Session check error:', error);
+    }
+}
+
+// Restore previous session
+function restorePreviousSession(sessionData) {
+    try {
+        if (sessionData.openSectionIds && sessionData.openSectionIds.length > 0) {
+            sessionData.openSectionIds.forEach(sectionId => {
+                const header = document.querySelector(`h2#${sectionId}`).closest('.section-header');
+                if (header) {
+                    header.classList.add('active');
+                    header.nextElementSibling.classList.add('active');
+                    
+                    trackSectionInteraction(sectionId, true);
+                    
+                    sectionEvents.push({
+                        type: 'session_restored',
+                        sectionId: sectionId,
+                        startTime: new Date(),
+                        endTime: null,
+                        duration: 0
+                    });
+                }
+            });
+            
+            // Save to localStorage
+            saveEventsToLocalStorage();
+            
+            // Scroll to last active section
+            if (sessionData.lastActiveSection) {
+                const element = document.getElementById(sessionData.lastActiveSection);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Session restore error:', error);
+    }
+}
+
+// Initialize copy buttons
+function initializeCopyButtons() {
+    domElements.copyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const container = this.closest('.code-block-container');
+            const codeBlock = container.querySelector('.code-block');
+            const feedback = container.querySelector('.copy-feedback');
+            const blockName = container.getAttribute('data-block-name');
+            
+            navigator.clipboard.writeText(codeBlock.textContent)
+                .then(() => {
+                    feedback.classList.add('show');
+                    
+                    trackCodeCopy(blockName);
+                    
+                    setTimeout(() => {
+                        feedback.classList.remove('show');
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Copy error:', err);
+                });
+        });
+    });
+}
+
+// Track code copy
+async function trackCodeCopy(blockName) {
+    try {
+        const data = {
+            type: 'code_copy',
+            username: getUsername(),
+            timestamp: new Date().toISOString(),
+            blockName: blockName,
+            pageUrl: window.location.href
+        };
+        
+        await fetch(COPY_TRACKING_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            mode: 'no-cors'
+        });
+    } catch (error) {
+        console.error('Copy tracking error:', error);
+    }
+}
+
+// Setup disease info toggle
+function setupDiseaseInfoToggle() {
+    // Function to toggle disease info
+    function toggleDiseaseInfo() {
+        const isExpanded = domElements.diseaseTitle.classList.contains('expanded');
+        
+        if (isExpanded) {
+            domElements.diseaseTitle.classList.remove('expanded');
+            domElements.diseaseContent.style.display = 'none';
+            domElements.diseasePreview.style.display = 'block';
+        } else {
+            domElements.diseaseTitle.classList.add('expanded');
+            domElements.diseaseContent.style.display = 'block';
+            domElements.diseasePreview.style.display = 'none';
+            
+            // Track that user expanded the disease info
+            trackUserInteraction('disease_info_expanded', 'Lou-Greig Disease');
+        }
+    }
+    
+    // Add click event listeners
+    if (domElements.diseaseTitle && domElements.diseasePreview) {
+        domElements.diseaseTitle.addEventListener('click', toggleDiseaseInfo);
+        domElements.diseasePreview.addEventListener('click', toggleDiseaseInfo);
+    }
+    
+    // Setup reaction buttons
+    setupReactionButtons();
+}
+
+// Setup reaction buttons
+function setupReactionButtons() {
+    // Use event delegation for reaction buttons
+    const reactionContainer = document.querySelector('.reaction-container');
+    if (reactionContainer) {
+        reactionContainer.addEventListener('click', function(event) {
+            const button = event.target.closest('.reaction-button');
+            if (!button) return;
+            
+            // Get reaction type
+            const reactionType = button.getAttribute('data-reaction');
+            
+            // Remove selected class from all buttons
+            document.querySelectorAll('.reaction-button').forEach(btn => 
+                btn.classList.remove('selected'));
+            
+            // Add selected class to clicked button
+            button.classList.add('selected');
+            
+            // Show feedback message
+            const feedback = document.querySelector('.reaction-feedback');
+            if (feedback) {
+                feedback.classList.add('show');
+                
+                // Hide feedback after 3 seconds
+                setTimeout(() => {
+                    feedback.classList.remove('show');
+                }, 3000);
+            }
+            
+            // Track the reaction
+            trackUserInteraction('disease_info_reaction', reactionType);
+        });
+    }
+}
+
+// Track user interactions with extra info
+async function trackUserInteraction(interactionType, interactionValue) {
+    try {
+        const data = {
+            type: interactionType,
+            username: getUsername(),
+            timestamp: new Date().toISOString(),
+            value: interactionValue,
+            pageUrl: window.location.href
+        };
+        
+        await fetch(EXTRA_INFO_INTERACTION_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            mode: 'no-cors'
+        });
+    } catch (error) {
+        console.error('Interaction tracking error:', error);
+    }
+}
+
+// Initialize Python interpreter
+async function initializePython() {
+    try {
+        // Update status
+        domElements.statusElement.textContent = 'Loading Python core...';
+        
+        // Load Pyodide
+        pyodide = await loadPyodide();
+        
+        domElements.statusElement.textContent = 'Loading Python libraries... This may take a moment.';
+        
+        // Set up stdout/stderr redirection
+        pyodide.setStdout({ batched: (msg) => appendToOutputArea(msg) });
+        pyodide.setStderr({ batched: (msg) => appendToOutputArea(`Error: ${msg}`) });
+        
+        // Load required packages
+        await pyodide.loadPackage(requiredPackages);
+        
+        // Update UI
+        domElements.statusElement.textContent = 'Python is ready!';
+        domElements.runButton.disabled = false;
+        
+        // Set up run and clear buttons
+        setupPythonButtons(pyodide);
+        
+        return pyodide;
+    } catch (error) {
+        domElements.statusElement.textContent = `Error loading Python: ${error}`;
+        console.error('Python loading error:', error);
+        domElements.runButton.disabled = true;
+        return null;
+    }
+}
+
+// Set up Python buttons
+function setupPythonButtons(pyodide) {
+    // Run button
+    domElements.runButton.addEventListener('click', async () => {
+        if (!pyodide) {
+            appendToOutputArea("Error: Python is not loaded yet.");
+            return;
+        }
+        
+        const pythonCode = domElements.codeInput.value;
+        domElements.outputArea.textContent = ''; // Clear previous output
+        
+        domElements.statusElement.textContent = 'Running code...';
+        domElements.runButton.disabled = true;
+        domElements.clearButton.disabled = true;
+        
+        try {
+            await pyodide.runPythonAsync(pythonCode);
+            domElements.statusElement.textContent = 'Execution complete.';
+        } catch (error) {
+            appendToOutputArea(`\n--- Execution Error --- \n${error}\n--------------------`);
+            domElements.statusElement.textContent = 'Error during execution.';
+        } finally {
+            domElements.runButton.disabled = false;
+            domElements.clearButton.disabled = false;
+        }
+    });
+    
+    // Clear button
+    domElements.clearButton.addEventListener('click', () => {
+        domElements.outputArea.textContent = '';
+        domElements.statusElement.textContent = 'Output cleared. Python is ready.';
+    });
+}
+
+// Append text to output area
+function appendToOutputArea(message) {
+    domElements.outputArea.textContent += message + (message.endsWith('\n') ? '' : '\n');
+    domElements.outputArea.scrollTop = domElements.outputArea.scrollHeight; // Scroll to bottom
+}
+
+// NUS color variables for confetti
+const nusBlue = '#003D7C';
+const nusOrange = '#EF7C00';
+const nusLightBlue = '#4D7CAE';
+
+// Optimized confetti animations
+const confettiAnimations = {
+    center: function() {
+        confetti({
+            particleCount: 150,
+            spread: 160,
+            origin: { x: 0.5, y: 0.6 },
+            colors: [nusBlue, nusOrange, nusLightBlue, '#ffffff']
+        });
+    },
+    sides: function() {
+        // Left side
+        confetti({
+            particleCount: 80,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0, y: 0.65 },
+            colors: [nusBlue, nusLightBlue, '#ffffff']
+        });
+        
+        // Right side after a small delay
+        setTimeout(() => {
+            confetti({
+                particleCount: 80,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1, y: 0.65 },
+                colors: [nusOrange, nusLightBlue, '#ffffff']
+            });
+        }, 150);
+    },
+    fireworks: function() {
+        const duration = 1500;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+        
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+        
+        // Use requestAnimationFrame for better performance
+        function fireworkFrame() {
+            const timeLeft = animationEnd - Date.now();
+            
+            if (timeLeft <= 0) return;
+            
+            const particleCount = 50 * (timeLeft / duration);
+            
+            // Left firework
+            confetti(Object.assign({}, defaults, { 
+                particleCount, 
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+                colors: [nusBlue, nusLightBlue, '#ffffff']
+            }));
+            
+            // Right firework
+            confetti(Object.assign({}, defaults, { 
+                particleCount, 
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+                colors: [nusOrange, nusLightBlue, '#ffffff']
+            }));
+            
+            requestAnimationFrame(fireworkFrame);
+        }
+        
+        requestAnimationFrame(fireworkFrame);
+    },
+    school: function() {
+        // NUS blue rain
+        confetti({
+            particleCount: 100,
+            startVelocity: 30,
+            spread: 360,
+            origin: { x: 0.5, y: 0.3 },
+            colors: [nusBlue],
+            shapes: ['square'],
+            scalar: 0.8
+        });
+        
+        // NUS orange rain
+        setTimeout(() => {
+            confetti({
+                particleCount: 100,
+                startVelocity: 30,
+                spread: 360,
+                origin: { x: 0.5, y: 0.3 },
+                colors: [nusOrange],
+                shapes: ['circle'],
+                scalar: 0.8
+            });
+        }, 300);
+    }
+};
