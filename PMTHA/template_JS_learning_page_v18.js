@@ -5,10 +5,11 @@ const COPY_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbz88biGq3GAIf
 const EXTRA_INFO_INTERACTION_URL = 'https://script.google.com/macros/s/AKfycbxXHMDDEnZq0krPyE96d22zEp3DqdLmwO74OsxSRW1Rq_JvHEYRXc5IgnaV-6J1l4o_GQ/exec';
 
 // Configuration and constants
-const TRACKING_INTERVAL = 5000; // 5 seconds for periodic tracking
-const HEARTBEAT_INTERVAL = 5000; // 5 seconds for heartbeat
+const TRACKING_INTERVAL = 30000; // 30 seconds for periodic tracking (changed from 5000)
+const HEARTBEAT_INTERVAL = 2000; // 2 seconds for heartbeat (changed from 5000)
 const INACTIVITY_THRESHOLD = 10000; // 10 seconds until user is considered inactive
 const THROTTLE_DELAY = 1000; // Throttle delay for frequent events
+const LOCAL_STORAGE_KEY = 'tracking_events_cache'; // Key for localStorage tracking cache
 
 // Required packages for Pyodide
 const requiredPackages = ['numpy', 'pandas'];
@@ -27,7 +28,7 @@ let sessionId = generateSessionId();
 let inactivityTimeout = null;
 let isTrackingPaused = false;
 let visibilitySession = Date.now();
-
+let lastUpdateTime = new Date().toISOString(); // Track last update time
 
 // Event priority mapping (higher number = higher priority)
 const EVENT_PRIORITY = {
@@ -86,6 +87,9 @@ function generateSessionId() {
 
 // Optimized tracking initialization
 function initializeTracking() {
+    // Load any cached events from localStorage
+    loadCachedEvents();
+    
     // Start periodic tracking for active sections
     startPeriodicTracking();
     
@@ -106,6 +110,40 @@ function initializeTracking() {
     
     // Check for previous session
     checkForPreviousSession();
+}
+
+// Load cached events from localStorage
+function loadCachedEvents() {
+    try {
+        const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            if (Array.isArray(parsedData)) {
+                sectionEvents = [...parsedData, ...sectionEvents];
+                console.log(`Loaded ${parsedData.length} cached events from localStorage`);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading cached events:', error);
+    }
+}
+
+// Save events to localStorage
+function saveEventsToLocalStorage() {
+    try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sectionEvents));
+    } catch (error) {
+        console.error('Error saving events to localStorage:', error);
+        // If localStorage is full, we'll clear it and try again
+        if (error.name === 'QuotaExceededError') {
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sectionEvents));
+            } catch (innerError) {
+                console.error('Still failed to save after clearing:', innerError);
+            }
+        }
+    }
 }
 
 // Setup all UI interactions
@@ -250,10 +288,8 @@ function trackEvent(type, sectionId, additionalInfo = '') {
         sectionEvents.push(newEvent);
     }
     
-    // If we've accumulated enough events, send data now
-    if (sectionEvents.length >= 5) {
-        sendTrackingData();
-    }
+    // Always save to localStorage when events are updated
+    saveEventsToLocalStorage();
 }
 
 // Find an existing event with the same type and sectionId
@@ -273,7 +309,7 @@ function startPeriodicTracking() {
         clearInterval(trackingInterval);
     }
     
-    // Set up new interval
+    // Set up new interval (now 30 seconds instead of 5)
     trackingInterval = setInterval(function() {
         if (sectionEvents.length > 0 && !isTrackingPaused) {
             sendTrackingData();
@@ -300,6 +336,9 @@ function showInactivityPopup() {
             endTime: null,
             duration: ''
         });
+        
+        // Save to localStorage
+        saveEventsToLocalStorage();
         
         // Send tracking data immediately
         sendTrackingData();
@@ -362,6 +401,9 @@ function setupVisibilityTracking() {
                 duration: null
             });
             
+            // Save to localStorage
+            saveEventsToLocalStorage();
+            
             // Update last activity time
             lastUserActivity = timestamp;
             
@@ -382,6 +424,9 @@ function setupVisibilityTracking() {
                 endTime: null,
                 duration: 0
             });
+            
+            // Save to localStorage
+            saveEventsToLocalStorage();
             
             // ADDED: Clear heartbeat interval when page becomes hidden
             if (heartbeatInterval) {
@@ -516,7 +561,7 @@ function startHeartbeat() {
     // Update visibility session when starting a new heartbeat
     visibilitySession = Date.now();
     
-    
+    // Now heartbeat every 2 seconds instead of 5
     heartbeatInterval = setInterval(function() {
         if (!isTrackingPaused && isPageVisible) {
             const now = new Date();
@@ -546,8 +591,9 @@ function startHeartbeat() {
                         startTime: now,
                         endTime: null,
                         duration: heartbeatDuration,
-                        visibilitySession: visibilitySession
-
+                        visibilitySession: visibilitySession,
+                        sessionId: sessionId, // Add sessionId here to aid in aggregation
+                        username: getUsername()
                     };
                     
                     // Check if we already have a heartbeat event for this section
@@ -561,15 +607,13 @@ function startHeartbeat() {
                         sectionEvents.push(heartbeatEvent);
                     }
                     
+                    // Save to localStorage
+                    saveEventsToLocalStorage();
+                    
                     // Update section's last active time
                     section.lastActiveTime = now;
                 }
             });
-            
-            // Send tracking data if we have events
-            if (sectionEvents.length > 0) {
-                sendTrackingData();
-            }
         }
     }, HEARTBEAT_INTERVAL);
 }
@@ -631,28 +675,24 @@ function trackSectionInteraction(sectionId, isOpening) {
         }
     }
     
-    // Send data if enough events accumulated
-    if (sectionEvents.length >= 5) {
-        sendTrackingData();
-    }
+    // Save to localStorage
+    saveEventsToLocalStorage();
 }
 
-// Process and combine tracking events
+// Process and combine tracking events - improved for better heartbeat aggregation
 function processTrackingEvents(events) {
     const combinedEvents = [];
     const eventMap = new Map();
     
     // First pass: group events by their key properties
     events.forEach(event => {
-        // MODIFIED: Include a visibility session identifier in the key
-        // This will prevent combining heartbeats across visibility changes
-        const visibilitySession = event.visibilitySession || 'default';
-        const eventKey = `${sessionId}_${getUsername()}_${window.location.href}_section_tracking_${event.sectionId}_${event.type}_${visibilitySession}`;
+        // Create a key that includes all the properties we want to use for aggregation
+        const eventKey = `${event.sessionId || sessionId}_${event.username || getUsername()}_${window.location.href}_section_tracking_${event.sectionId}_${event.type}`;
         
         if (eventMap.has(eventKey)) {
             const existingEvent = eventMap.get(eventKey);
             
-            // For heartbeat events, SUM the durations only within the same visibility session
+            // For heartbeat events, aggregate the durations 
             if (event.type === 'heartbeat') {
                 // Add the new duration to the existing one
                 existingEvent.duration = (existingEvent.duration || 0) + (event.duration || 0);
@@ -672,6 +712,8 @@ function processTrackingEvents(events) {
     
     // Convert map back to array
     eventMap.forEach(event => {
+        // Add last update time to all events
+        event.lastUpdateTime = new Date().toISOString();
         combinedEvents.push(event);
     });
     
@@ -685,10 +727,13 @@ function sendTrackingData(isSync = false) {
         return;
     }
     
+    // Update last update time
+    lastUpdateTime = new Date().toISOString();
+    
     // Prepare data
     const username = getUsername();
     const eventsCopy = [...sectionEvents];
-    sectionEvents = [];
+    sectionEvents = []; // Clear events since we're going to process them
     
     // Process and combine events
     const processedEvents = processTrackingEvents(eventsCopy);
@@ -697,8 +742,9 @@ function sendTrackingData(isSync = false) {
         username: username,
         url: window.location.href,
         events: processedEvents,
-        timestamp: new Date().toISOString(),
-        sessionId: sessionId
+        timestamp: lastUpdateTime,
+        sessionId: sessionId,
+        lastUpdateTime: lastUpdateTime // Add this for the spreadsheet's first row
     };
     
     // Use beacon API for unload events
@@ -706,9 +752,15 @@ function sendTrackingData(isSync = false) {
         try {
             const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
             navigator.sendBeacon(APPS_SCRIPT_URL, blob);
+            
+            // Clear localStorage after successful send
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
         } catch (error) {
             console.error('Beacon error:', error);
+            // Put events back in the queue
             sectionEvents = [...eventsCopy, ...sectionEvents];
+            // Update localStorage
+            saveEventsToLocalStorage();
         }
         return;
     }
@@ -720,9 +772,16 @@ function sendTrackingData(isSync = false) {
         body: JSON.stringify(data),
         mode: 'no-cors'
     })
+    .then(() => {
+        // Clear localStorage after successful send
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+    })
     .catch(error => {
         console.error('Tracking error:', error);
+        // Put events back in the queue
         sectionEvents = [...eventsCopy, ...sectionEvents];
+        // Update localStorage
+        saveEventsToLocalStorage();
     });
 }
 
@@ -777,6 +836,9 @@ function handlePageUnload() {
     
     // Save session state
     saveSessionState();
+    
+    // Save to localStorage
+    saveEventsToLocalStorage();
     
     // Send tracking data
     if (sectionEvents.length > 0) {
@@ -852,6 +914,9 @@ function restorePreviousSession(sessionData) {
                     });
                 }
             });
+            
+            // Save to localStorage
+            saveEventsToLocalStorage();
             
             // Scroll to last active section
             if (sessionData.lastActiveSection) {
