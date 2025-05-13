@@ -808,9 +808,18 @@ function processTrackingEvents(events) {
 }
 
 // Send tracking data to server with batching
+// Send tracking data to server with batching
 function sendTrackingData(isSync = false) {
     // Don't proceed if there's no data or tracking is paused
     if (sectionEvents.length === 0 || isTrackingPaused) {
+        return;
+    }
+    
+    // For non-sync (normal) calls, enforce the minimum threshold
+    // Unless it's a synchronous call (like during page unload)
+    if (!isSync && sectionEvents.length < 20) {
+        console.log(`Not sending ${sectionEvents.length} events - below threshold (20)`);
+        saveEventsToLocalStorage(); // Make sure data is saved
         return;
     }
     
@@ -862,6 +871,7 @@ function sendTrackingData(isSync = false) {
     .then(() => {
         // Clear localStorage after successful send
         localStorage.removeItem(LOCAL_STORAGE_KEY);
+        console.log(`Successfully sent batch of ${processedEvents.length} events`);
     })
     .catch(error => {
         console.error('Tracking error:', error);
@@ -935,8 +945,10 @@ function handlePageUnload() {
     // Save to localStorage
     saveEventsToLocalStorage();
     
-    // Send tracking data
+    // Send tracking data regardless of threshold - this is important
+    // to capture final events even if below threshold
     if (sectionEvents.length > 0) {
+        console.log(`Sending final batch of ${sectionEvents.length} events on page unload`);
         sendTrackingData(true);
     }
 }
