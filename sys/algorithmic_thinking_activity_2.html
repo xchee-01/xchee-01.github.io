@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Quest: The Algorithm Adventure</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --success: #22c55e;
+            --neutral: #cbd5e1;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background-color: #f8fafc;
+            color: var(--dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+        
+        header {
+            background-color: var(--primary-dark);
+            color: white;
+            padding: 1rem 2rem;
+            position: relative;
+            z-index: 10;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        header svg {
+            height: 1.5rem;
+            width: 1.5rem;
+        }
+        
+        main {
+            flex: 1;
+            padding: 1.5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .story-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .story-header {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .story-header h2 {
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .story-header p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        
+        .story-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        
+        .story-scene {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .story-scene::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+        }
+        
+        .story-scene h3 {
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+        
+        .story-scene p {
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .interactive-area {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .interactive-area h3 {
+            color: var(--primary-dark);
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+        
+        .code-blocks-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            min-height: 80px;
+            padding: 1rem;
+            background-color: var(--light);
+            border-radius: 0.5rem;
+            border: 2px dashed var(--neutral);
+        }
+        
+        .story-connections {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 1rem;
+            background-color: var(--primary-dark);
+            border-radius: 0.75rem;
+            min-height: 200px;
+        }
+        
+        .connection-slot {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .connection-slot.filled {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-style: solid;
+        }
+        
+        .connection-slot.correct {
+            background-color: rgba(34, 197, 94, 0.3);
+            border-color: var(--success);
+        }
+        
+        .code-block {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            display: inline-block;
+            cursor: grab;
+            user-select: none;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .code-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .code-block.dragging {
+            opacity: 0.6;
+            transform: scale(0.95);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            font-size: 1rem;
+            min-width: 140px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background-color: var(--neutral);
+            color: var(--dark);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #a1a1aa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-accent {
+            background-color: var(--accent);
+            color: white;
+        }
+        
+        .btn-accent:hover {
+            background-color: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .visualization {
+            position: relative;
+            min-height: 300px;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            margin-top: 2rem;
+        }
+        
+        .visual-scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease;
+            opacity: 0;
+        }
+        
+        .visual-scene.active {
+            opacity: 1;
+            z-index: 5;
+        }
+        
+        .character {
+            position: absolute;
+            bottom: 20px;
+            left: 100px;
+            width: 80px;
+            height: 120px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom;
+            transition: transform 1s ease, left 2s ease;
+            z-index: 10;
+        }
+        
+        .obstacle {
+            position: absolute;
+            bottom: 20px;
+            width: 100px;
+            height: 100px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom;
+            z-index: 8;
+        }
+        
+        .object {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: all 0.5s ease;
+            z-index: 9;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes celebrate {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(-10deg); }
+            100% { transform: rotate(0deg); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .dialogue-box {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            min-width: 60%;
+            max-width: 80%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            z-index: 20;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+        
+        .dialogue-box p {
+            margin: 0;
+            line-height: 1.4;
+        }
+        
+        .dialogue-character {
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+        
+        .feedback-message {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        .feedback-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .feedback-message.success {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        
+        .progress-container {
+            margin-top: 1.5rem;
+            padding: 0.75rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .progress-bar {
+            height: 0.5rem;
+            background-color: var(--neutral);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 1rem;
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--dark);
+        }
+        
+        @media (max-width: 768px) {
+            .story-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            Code Quest: The Algorithm Adventure
+        </h1>
+    </header>
+    
+    <main>
+        <div class="story-container">
+            <div class="story-header">
+                <h2>The Data Forest Adventure</h2>
+                <p>Help Professor Byte navigate through the Data Forest by connecting the right concepts to advance the story. Each connection you make will determine how our hero solves algorithmic challenges in their journey!</p>
+            </div>
+            
+            <div class="story-content">
+                <div class="story-scene" id="currentScene">
+                    <h3>Chapter 1: The Mysterious Path</h3>
+                    <p>Professor Byte stands at the entrance to the Data Forest. The path ahead splits into multiple routes. To find the hidden Laboratory of Algorithms, the professor needs to determine the most efficient path. "I need to organize my approach," thinks the professor.</p>
+                    <p>"I should use some kind of algorithm to find the shortest path through this forest..."</p>
+                </div>
+                
+                <div class="interactive-area">
+                    <h3>Connect the Story Elements</h3>
+                    <p>Drag the correct algorithmic concepts to their matching story elements to help Professor Byte solve the challenge.</p>
+                    
+                    <div class="code-blocks-container" id="blocksContainer">
+                        <!-- Blocks will be added by JavaScript -->
+                    </div>
+                    
+                    <div class="story-connections">
+                        <div class="connection-slot" data-position="0">
+                            <span>What should Professor Byte use to find the shortest path?</span>
+                        </div>
+                        <div class="connection-slot" data-position="1">
+                            <span>How should the professor track the paths already explored?</span>
+                        </div>
+                        <div class="connection-slot" data-position="2">
+                            <span>What data structure should the professor use to store the paths?</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="visualization">
+                    <div class="visual-scene active" id="scene1" style="background-image: url('/api/placeholder/800/400'); background-color: #4338ca;">
+                        <!-- Forest scene with paths -->
+                        <div class="character" id="character" style="background-image: url('/api/placeholder/100/150'); background-color: #6366f1;"></div>
+                        
+                        <div class="obstacle" style="left: 400px; background-image: url('/api/placeholder/100/100'); background-color: #22c55e;"></div>
+                        
+                        <div class="object" style="top: 100px; left: 300px; background-image: url('/api/placeholder/60/60'); background-color: #f59e0b;"></div>
+                        
+                        <div class="dialogue-box" id="dialogueBox">
+                            <p><span class="dialogue-character">Professor Byte:</span> I need to figure out the best algorithm to navigate through this forest...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feedback-message" id="feedback">
+                    <!-- Feedback will appear here -->
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span>Chapter 1/5</span>
+                        <span id="progressText">0% Complete</span>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-secondary" id="resetBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2.5 2v6h6M21.5 22v-6h-6"></path>
+                            <path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.2"></path>
+                        </svg>
+                        Reset
+                    </button>
+                    <button class="btn btn-primary" id="checkBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Check Solution
+                    </button>
+                    <button class="btn btn-accent" id="nextBtn" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                        Next Chapter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Story chapters and their associated algorithmic concepts
+        const storyChapters = [
+            {
+                title: "Chapter 1: The Mysterious Path",
+                description: "Professor Byte stands at the entrance to the Data Forest. The path ahead splits into multiple routes. To find the hidden Laboratory of Algorithms, the professor needs to determine the most efficient path. \"I need to organize my approach,\" thinks the professor.",
+                prompt: "\"I should use some kind of algorithm to find the shortest path through this forest...\"",
+                slots: [
+                    {
+                        question: "What should Professor Byte use to find the shortest path?",
+                        correctAnswer: "Dijkstra's Algorithm",
+                        animation: "pathfinding"
+                    },
+                    {
+                        question: "How should the professor track the paths already explored?",
+                        correctAnswer: "Visited Nodes Set",
+                        animation: "tracking"
+                    },
+                    {
+                        question: "What data structure should the professor use to store the paths?",
+                        correctAnswer: "Priority Queue",
+                        animation: "dataStructure"
+                    }
+                ],
+                options: ["Bubble Sort", "Dijkstra's Algorithm", "Binary Tree", "Priority Queue", "Visited Nodes Set", "Linear Search"],
+                dialogues: [
+                    "I need to figure out the best algorithm to navigate through this forest...",
+                    "This looks like a perfect problem for Dijkstra's Algorithm!",
+                    "I'll need to keep track of the paths I've already explored.",
+                    "A Priority Queue will help me always choose the shortest path next."
+                ]
+            },
+            {
+                title: "Chapter 2: The Data Lake",
+                description: "Professor Byte reaches a vast data lake filled with information fragments. To cross it, the professor needs to organize the fragments into a meaningful pattern.",
+                prompt: "\"There must be a pattern here. I need to sort through this data efficiently...\"",
+                slots: [
+                    {
+                        question: "Which sorting algorithm should the professor use on the data fragments?",
+                        correctAnswer: "Merge Sort",
+                        animation: "sorting"
+                    },
+                    {
+                        question: "What strategy should be applied to handle the large amount of data?",
+                        correctAnswer: "Divide and Conquer",
+                        animation: "strategy"
+                    },
+                    {
+                        question: "How should the professor verify the sorted result?",
+                        correctAnswer: "Linear Traversal",
+                        animation: "verification"
+                    }
+                ],
+                options: ["Bubble Sort", "Merge Sort", "Divide and Conquer", "Linear Traversal", "Hash Table", "Random Sampling"],
+                dialogues: [
+                    "So many data fragments floating in this lake! How can I organize them?",
+                    "Merge Sort would be perfect for handling these fragments efficiently.",
+                    "I'll use a divide and conquer approach to break down this problem.",
+                    "A simple linear traversal should confirm everything is in order."
+                ]
+            },
+            {
+                title: "Chapter 3: The Binary Tree Clearing",
+                description: "The professor enters a clearing where trees grow in a perfect binary pattern. A riddle on a sign says only the correct traversal technique will reveal the hidden path.",
+                prompt: "\"These trees form a binary structure. I need to traverse them in the right order...\"",
+                slots: [
+                    {
+                        question: "Which traversal should the professor use to find the hidden path?",
+                        correctAnswer: "In-order Traversal",
+                        animation: "traversal"
+                    },
+                    {
+                        question: "What data structure will help manage the traversal?",
+                        correctAnswer: "Stack",
+                        animation: "dataStructure"
+                    },
+                    {
+                        question: "How should the professor keep track of the pattern revealed?",
+                        correctAnswer: "Linked List",
+                        animation: "tracking"
+                    }
+                ],
+                options: ["In-order Traversal", "Stack", "Queue", "Hash Map", "Linked List", "Array"],
+                dialogues: [
+                    "These trees are arranged in a fascinating binary pattern!",
+                    "An in-order traversal should reveal the hidden sequence.",
+                    "I'll use a stack to manage my traversal without recursion.",
+                    "A linked list is perfect for recording the pattern as it emerges."
+                ]
+            },
+            {
+                title: "Chapter 4: The Encryption Cave",
+                description: "Professor Byte discovers a cave with a locked door. The door is covered in encrypted symbols that need to be decoded using the right algorithm.",
+                prompt: "\"This encryption looks like a substitution cipher. I need to find the key pattern...\"",
+                slots: [
+                    {
+                        question: "What approach should the professor use to decode the cipher?",
+                        correctAnswer: "Frequency Analysis",
+                        animation: "decoding"
+                    },
+                    {
+                        question: "Which data structure would best store the character mappings?",
+                        correctAnswer: "Hash Map",
+                        animation: "dataStructure"
+                    },
+                    {
+                        question: "What technique should be used to verify the decryption?",
+                        correctAnswer: "Pattern Matching",
+                        animation: "verification"
+                    }
+                ],
+                options: ["Brute Force", "Frequency Analysis", "Hash Map", "Binary Search", "Pattern Matching", "Dynamic Programming"],
+                dialogues: [
+                    "These symbols must follow some kind of encryption pattern...",
+                    "Frequency analysis should help me crack this substitution cipher.",
+                    "A hash map will be perfect for storing the character mappings.",
+                    "I'll use pattern matching to verify I've decoded it correctly."
+                ]
+            },
+            {
+                title: "Chapter 5: The Algorithm Laboratory",
+                description: "Finally, Professor Byte reaches the legendary Algorithm Laboratory. To access its knowledge, the professor must solve a final challenge: optimize a complex operation.",
+                prompt: "\"The final challenge! I need to find the most efficient algorithm for this data processing task...\"",
+                slots: [
+                    {
+                        question: "What technique should the professor use to optimize the algorithm?",
+                        correctAnswer: "Dynamic Programming",
+                        animation: "optimization"
+                    },
+                    {
+                        question: "How should the intermediate results be stored?",
+                        correctAnswer: "Memoization Table",
+                        animation: "storage"
+                    },
+                    {
+                        question: "What analysis technique should be used to verify the optimization?",
+                        correctAnswer: "Time Complexity Analysis",
+                        animation: "analysis"
+                    }
+                ],
+                options: ["Greedy Algorithm", "Dynamic Programming", "Memoization Table", "Time Complexity Analysis", "Recursive Descent", "Linear Regression"],
+                dialogues: [
+                    "The final challenge to enter the Algorithm Laboratory!",
+                    "This looks like a perfect case for dynamic programming.",
+                    "I'll store intermediate results in a memoization table.",
+                    "Time complexity analysis will confirm my solution is optimal."
+                ]
+            }
+        ];
+        
+        // Current chapter index
+        let currentChapter = 0;
+        let chapterProgress = 0;
+        
+        // Initialize the UI
+        function initUI() {
+            const blocksContainer = document.getElementById('blocksContainer');
+            const chapter = storyChapters[currentChapter];
+            
+            // Clear container
+            blocksContainer.innerHTML = '';
+            
+            // Add blocks to container
+            const shuffledOptions = shuffleArray([...chapter.options]);
+            shuffledOptions.forEach(option => {
+                const blockElement = document.createElement('div');
+                blockElement.className = 'code-block';
+                blockElement.textContent = option;
+                blockElement.draggable = true;
+                blockElement.dataset.value = option;
+                
+                // Add drag events
+                blockElement.addEventListener('dragstart', handleDragStart);
+                blockElement.addEventListener('dragend', handleDragEnd);
+                
+                blocksContainer.appendChild(blockElement);
+            });
+            
+            // Update story content
+            document.getElementById('currentScene').innerHTML = `
+                <h3>${chapter.title}</h3>
+                <p>${chapter.description}</p>
+                <p>${chapter.prompt}</p>
+            `;
+            
+            // Update connection slots
+            const connectionSlots = document.querySelectorAll('.connection-slot');
+            connectionSlots.forEach((slot, index) => {
+                if (chapter.slots[index]) {
+                    slot.innerHTML = `<span>${chapter.slots[index].question}</span>`;
+                    slot.dataset.position = index;
+                    slot.classList.remove('filled', 'correct');
+                }
+            });
+            
+            // Reset dialogue
+            updateDialogue(chapter.dialogues[0]);
+            
+            // Reset progress display
+            updateProgressDisplay();
+            
+            // Disable next button
+            document.getElementById('nextBtn').disabled = true;
+            
+            // Clear feedback
+            const feedback = document.getElementById('feedback');
+            feedback.className = 'feedback-message';
+            feedback.textContent = '';
+        }
+        
+        // Shuffle array helper function
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        // Drag and drop event handlers
+        function handleDragStart(e) {
+            this.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', this.dataset.value);
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('dragover');
+        }
+        
+        function handleDragLeave(e) {
+            this.classList.remove('dragover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const value = e.dataTransfer.getData('text/plain');
+            const position = this.dataset.position;
+            
+            // Update the slot
+            this.innerHTML = value;
+            this.classList.add('filled');
+            this.dataset.value = value;
+            
+            // Check if correct answer
+            const chapter = storyChapters[currentChapter];
+            if (chapter.slots[position].correctAnswer === value) {
+                this.classList.add('correct');
+                
+                // Play animation for correct answer
+                playAnimation(chapter.slots[position].animation);
+                
+                // Update dialogue
+                const dialogueIndex = parseInt(position) + 1;
+                if (chapter.dialogues[dialogueIndex]) {
+                    updateDialogue(chapter.dialogues[dialogueIndex]);
+                }
+                
+                // Check if all slots are correct
+                checkAllCorrect();
+            }
+        }
+        
+        // Check if all slots have correct answers
+        function checkAllCorrect() {
+            const slots = document.querySelectorAll('.connection-slot');
+            let allCorrect = true;
+            
+            slots.forEach((slot, index) => {
+                const chapter = storyChapters[currentChapter];
+                if (!slot.classList.contains('correct')) {
+                    allCorrect = false;
+                }
+            });
+            
+            if (allCorrect) {
+                // Enable next button
+                document.getElementById('nextBtn').disabled = false;
+                
+                // Show success feedback
+                const feedback = document.getElementById('feedback');
+                feedback.textContent = 'Great job! You\'ve connected all the right concepts!';
+                feedback.className = 'feedback-message show success';
+                
+                // Update progress
+                chapterProgress = 100;
+                updateProgressDisplay();
+                
+                // Celebrate animation
+                document.getElementById('character').style.animation = 'celebrate 0.5s 3';
+            }
+        }
+        
+        // Check the current solution
+        function checkSolution() {
+            const slots = document.querySelectorAll('.connection-slot');
+            const chapter = storyChapters[currentChapter];
+            let correctCount = 0;
+            
+            slots.forEach((slot, index) => {
+                if (slot.dataset.value === chapter.slots[index].correctAnswer) {
+                    slot.classList.add('correct');
+                    correctCount++;
+                } else if (slot.classList.contains('filled')) {
+                    slot.classList.remove('correct');
+                }
+            });
+            
+            // Update progress
+            chapterProgress = Math.round((correctCount / slots.length) * 100);
+            updateProgressDisplay();
+            
+            // Check if all correct
+            if (correctCount === slots.length) {
+                document.getElementById('nextBtn').disabled = false;
+                
+                // Show success feedback
+                const feedback = document.getElementById('feedback');
+                feedback.textContent = 'Great job! You\'ve connected all the right concepts!';
+                feedback.className = 'feedback-message show success';
+                
+                // Celebrate animation
+                document.getElementById('character').style.animation = 'celebrate 0.5s 3';
+            } else {
+                // Show feedback
+                const feedback = document.getElementById('feedback');
+                feedback.textContent = `You've got ${correctCount} out of ${slots.length} connections correct. Keep trying!`;
+                feedback.className = 'feedback-message show';
+            }
+        }
+        
+        // Reset the current chapter
+        function resetChapter() {
+            initUI();
+            
+            // Reset character animation
+            document.getElementById('character').style.animation = '';
+            
+            // Reset progress for this chapter
+            chapterProgress = 0;
+            updateProgressDisplay();
+        }
+        
+        // Go to next chapter
+        function nextChapter() {
+            currentChapter++;
+            
+            if (currentChapter >= storyChapters.length) {
+                // End of story
+                showEndingScene();
+            } else {
+                // Initialize the next chapter
+                initUI();
+            }
+        }
+        
+        // Show ending scene
+        function showEndingScene() {
+            const mainContent = document.querySelector('.story-container');
+            mainContent.innerHTML = `
+                <div class="story-header">
+                    <h2>Congratulations: Adventure Complete!</h2>
+                    <p>Professor Byte has successfully navigated the Data Forest and unlocked the secrets of the Algorithm Laboratory. Thanks to your mastery of algorithmic concepts, the professor can now share this knowledge with the world!</p>
+                    <div class="controls" style="margin-top: 2rem;">
+                        <button class="btn btn-primary" onclick="window.location.reload()">Start New Adventure</button>
+                    </div>
+                </div>
+                <div class="visualization" style="height: 400px;">
+                    <div class="visual-scene active" style="background-image: url('/api/placeholder/800/400'); background-color: #4338ca;">
+                        <div class="character" id="finalCharacter" style="left: 50%; transform: translateX(-50%); background-image: url('/api/placeholder/100/150'); background-color: #6366f1; animation: float 3s infinite;"></div>
+                        
+                        <div class="dialogue-box">
+                            <p><span class="dialogue-character">Professor Byte:</span> Thank you for helping me navigate the challenges of algorithmic thinking! You've proven yourself a master of algorithms!</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Play animation based on connection
+        function playAnimation(animationType) {
+            const character = document.getElementById('character');
+            
+            switch (animationType) {
+                case 'pathfinding':
+                    // Character moves along a path
+                    character.style.left = '250px';
+                    break;
+                case 'tracking':
+                    // Character turns around, looking
+                    character.style.transform = 'scaleX(-1)';
+                    setTimeout(() => {
+                        character.style.transform = 'scaleX(1)';
+                    }, 1000);
+                    break;
+                case 'dataStructure':
+                    // Character jumps
+                    character.style.transform = 'translateY(-30px)';
+                    setTimeout(() => {
+                        character.style.transform = 'translateY(0)';
+                    }, 500);
+                    break;
+                default:
+                    // Default animation
+                    character.style.animation = 'pulse 0.5s 2';
+                    setTimeout(() => {
+                        character.style.animation = '';
+                    }, 1000);
+            }
+        }
+        
+        // Update dialogue
+        function updateDialogue(text) {
+            const dialogueBox = document.getElementById('dialogueBox');
+            
+            // Fade out
+            dialogueBox.style.opacity = 0;
+            
+            setTimeout(() => {
+                // Update text
+                dialogueBox.innerHTML = `<p><span class="dialogue-character">Professor Byte:</span> ${text}</p>`;
+                
+                // Fade in
+                dialogueBox.style.opacity = 1;
+            }, 500);
+        }
+        
+        // Update progress display
+        function updateProgressDisplay() {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            progressBar.style.width = `${chapterProgress}%`;
+            progressText.textContent = `${chapterProgress}% Complete`;
+            
+            const progressContainer = document.querySelector('.progress-text span:first-child');
+            progressContainer.textContent = `Chapter ${currentChapter + 1}/${storyChapters.length}`;
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize UI
+            initUI();
+            
+            // Set up connection slots
+            const connectionSlots = document.querySelectorAll('.connection-slot');
+            connectionSlots.forEach(slot => {
+                slot.addEventListener('dragover', handleDragOver);
+                slot.addEventListener('dragleave', handleDragLeave);
+                slot.addEventListener('drop', handleDrop);
+            });
+            
+            // Set up buttons
+            document.getElementById('checkBtn').addEventListener('click', checkSolution);
+            document.getElementById('resetBtn').addEventListener('click', resetChapter);
+            document.getElementById('nextBtn').addEventListener('click', nextChapter);
+        });
+    </script>
+</body>
+</html>
