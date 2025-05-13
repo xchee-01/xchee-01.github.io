@@ -32,6 +32,8 @@ let inactivityTimeout = null;
 let isTrackingPaused = false;
 let visibilitySession = Date.now();
 let lastUpdateTime = new Date().toISOString(); // Track last update time
+let isPageClosing = false;
+
 
 // Event priority mapping (higher number = higher priority)
 const EVENT_PRIORITY = {
@@ -118,8 +120,16 @@ function initializeTracking() {
     // Set initial inactivity timeout
     resetInactivityTimeout();
     
-    // Save session state on unload
-    window.addEventListener('beforeunload', handlePageUnload);
+    // Add both event listeners for page unload with higher priority than the existing one
+    window.addEventListener('beforeunload', function(event) {
+        isPageClosing = true;
+        handlePageUnload(event);
+    }, { capture: true });
+    
+    window.addEventListener('unload', function(event) {
+        isPageClosing = true;
+        handlePageUnload(event);
+    }, { capture: true });
     
     // Check for previous session
     checkForPreviousSession();
@@ -528,11 +538,13 @@ function setupVisibilityTracking() {
             // Page was hidden
             // Track visibility lost
             sectionEvents.push({
-                type: 'visibility_lost',
+                type: 'tab_switched', // Changed from visibility_lost
                 sectionId: getCurrentSectionId(),
                 startTime: timestamp,
                 endTime: null,
-                duration: 0
+                duration: 0,
+                sessionId: sessionId,
+                username: getUsername()
             });
             
             // Save to localStorage
@@ -668,7 +680,7 @@ function startHeartbeat() {
     // Clear any existing interval to prevent multiple heartbeats running
     if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
-        heartbeatInterval = null; // Good practice to nullify after clearing
+        heartbeatInterval = null;
     }
 
     // Update visibility session when starting a new heartbeat sequence
@@ -676,8 +688,8 @@ function startHeartbeat() {
     visibilitySession = Date.now();
 
     heartbeatInterval = setInterval(function() {
-        // Only run heartbeat if tracking is not paused and the page is visible
-        if (!isTrackingPaused && isPageVisible) {
+        // Only run heartbeat if tracking is not paused, page is visible, and not closing
+        if (!isTrackingPaused && isPageVisible && !isPageClosing) {
             const now = new Date(); // Current timestamp for this heartbeat tick
             const currentSectionId = getCurrentSectionId(); // Determine the most prominent section
 
@@ -686,42 +698,54 @@ function startHeartbeat() {
                 const sectionData = openSections[sectionId]; // Get data for this specific open section
 
                 // Update the active status of the section within openSections
-                // This is for internal tracking, not directly the heartbeat event itself
                 if (sectionId === currentSectionId && !sectionData.isActive) {
                     sectionData.isActive = true;
-                    // sectionData.lastActiveTime = now; // This will be updated below more specifically
                 } else if (sectionId !== currentSectionId && sectionData.isActive) {
                     sectionData.isActive = false;
+                }
+
+                // Track that this section has had an open event
+                if (!sectionData.hasTrackedOpen) {
+                    sectionEvents.push({
+                        type: 'section_opened',
+                        sectionId: sectionId,
+                        startTime: sectionData.startTime,
+                        endTime: null,
+                        duration: 0,
+                        sessionId: sessionId,
+                        username: getUsername()
+                    });
+                    sectionData.hasTrackedOpen = true;
+                    saveEventsToLocalStorage();
                 }
 
                 // Generate a heartbeat event ONLY for the CURRENTLY VISIBLE and ACTIVE section
                 // and only if the user is generally considered active on the page
                 if (sectionId === currentSectionId && sectionData.isActive && isUserActive) {
-                    // Define the start and end for this specific 2-second heartbeat interval
+                    // Define the start and end for this specific heartbeat interval
                     const startTimeForThisHeartbeat = new Date(now.getTime() - HEARTBEAT_INTERVAL);
                     const endTimeForThisHeartbeat = now;
-                    const individualHeartbeatDuration = Math.round(HEARTBEAT_INTERVAL / 1000); // Should be 2
+                    const individualHeartbeatDuration = Math.round(HEARTBEAT_INTERVAL / 1000); // Should be 1 or 2
 
                     const heartbeatEvent = {
                         type: 'heartbeat',
                         sectionId: sectionId,
-                        startTime: startTimeForThisHeartbeat.toISOString(), // Start of this 2s interval
-                        endTime: endTimeForThisHeartbeat.toISOString(),     // End of this 2s interval
-                        duration: individualHeartbeatDuration,              // Duration of this specific beat (e.g., 2 seconds)
-                        visibilitySession: visibilitySession,               // Groups heartbeats within one visibility period
-                        sessionId: sessionId,                               // Overall session ID
-                        username: getUsername()                             // Current user
+                        startTime: startTimeForThisHeartbeat.toISOString(),
+                        endTime: endTimeForThisHeartbeat.toISOString(),
+                        duration: individualHeartbeatDuration,
+                        visibilitySession: visibilitySession,
+                        sessionId: sessionId,
+                        username: getUsername()
                     };
 
-                    // Always push the new, individual heartbeat event.
-                    // Aggregation will be handled by processTrackingEvents before sending.
+                    // Push the new, individual heartbeat event
                     sectionEvents.push(heartbeatEvent);
 
-                    // Save all events (including this new one) to localStorage
+                    // Save all events to localStorage
                     saveEventsToLocalStorage();
 
-                    // Update the section's overall last active time in openSections.
-                    // This is useful for other logic, like calculating 'active_on_exit' duration.
+                    // Update the section's tracking timestamps
+                    sectionData.lastHeartbeatTime = now;
                     sectionData.lastActiveTime = now;
                 }
             });
@@ -751,7 +775,9 @@ function trackSectionInteraction(sectionId, isOpening) {
                     sectionId: sectionId,
                     startTime: timestamp,
                     endTime: null,
-                    duration: 0
+                    duration: 0,
+                    sessionId: sessionId,
+                    username: getUsername()
                 });
                 
                 openSections[sectionId].isActive = true;
@@ -762,7 +788,9 @@ function trackSectionInteraction(sectionId, isOpening) {
             openSections[sectionId] = {
                 startTime: timestamp,
                 isActive: true,
-                lastActiveTime: timestamp
+                lastActiveTime: timestamp,
+                lastHeartbeatTime: null,
+                hasTrackedOpen: false // Add flag to track if we've pushed a section_opened event
             };
             
             sectionEvents.push({
@@ -770,8 +798,12 @@ function trackSectionInteraction(sectionId, isOpening) {
                 sectionId: sectionId,
                 startTime: timestamp,
                 endTime: null,
-                duration: 0
+                duration: 0,
+                sessionId: sessionId,
+                username: getUsername()
             });
+            
+            openSections[sectionId].hasTrackedOpen = true;
         }
     } else {
         // Section being closed
@@ -781,7 +813,9 @@ function trackSectionInteraction(sectionId, isOpening) {
                 sectionId: sectionId,
                 startTime: timestamp,
                 endTime: null,
-                duration: 0
+                duration: 0,
+                sessionId: sessionId,
+                username: getUsername()
             });
             
             delete openSections[sectionId];
@@ -863,9 +897,14 @@ function shouldSendEvents(forceSend = false) {
 
 // Send tracking data to server with batching
 function sendTrackingData(isSync = false, forceSend = false) {
-    // Don't proceed if there's no data or tracking is paused
-    if (sectionEvents.length === 0 || (isTrackingPaused && !isSync)) {
-        return; // EDIT: Added !isSync condition to allow sending during unload even if tracking was paused
+    // Don't proceed if there's no data
+    if (sectionEvents.length === 0) {
+        return;
+    }
+    
+    // If we're in an unload scenario or page is closing, always force send
+    if (isSync || isPageClosing) {
+        forceSend = true;
     }
     
     // Check if we should send based on threshold (unless forced)
@@ -892,19 +931,30 @@ function sendTrackingData(isSync = false, forceSend = false) {
         events: processedEvents,
         timestamp: lastUpdateTime,
         sessionId: sessionId,
-        lastUpdateTime: lastUpdateTime // Add this for the spreadsheet's first row
+        lastUpdateTime: lastUpdateTime,
+        isPageClosing: isPageClosing // Add flag to indicate this is from a page close
     };
     
-    console.log(`Sending batch of ${processedEvents.length} events. Force send: ${forceSend}, Sync: ${isSync}`);
+    console.log(`Sending batch of ${processedEvents.length} events. Force send: ${forceSend}, Sync: ${isSync}, Page closing: ${isPageClosing}`);
     
-    // EDIT START: Enhanced beacon handling with fallback for unload events
-    if (isSync) {
+    // Enhanced beacon handling for page unload/close
+    if (isSync || isPageClosing) {
         let beaconSucceeded = false;
         
-        // Try sendBeacon first if available
+        // Try sendBeacon first if available (preferred method for unload)
         if (navigator.sendBeacon) {
             try {
-                const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+                // Create a smaller, more critical payload for beacon
+                const criticalData = {
+                    username: data.username,
+                    url: data.url,
+                    events: data.events.filter(e => e.type !== 'heartbeat' || e.duration > 1), // Filter out tiny heartbeats
+                    timestamp: data.timestamp,
+                    sessionId: data.sessionId,
+                    isPageClosing: true
+                };
+                
+                const blob = new Blob([JSON.stringify(criticalData)], { type: 'application/json' });
                 beaconSucceeded = navigator.sendBeacon(APPS_SCRIPT_URL, blob);
                 
                 if (beaconSucceeded) {
@@ -947,9 +997,8 @@ function sendTrackingData(isSync = false, forceSend = false) {
         
         return;
     }
-    // EDIT END
     
-    // Use fetch for normal tracking
+    // Use fetch for normal tracking (non-unload scenarios)
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1011,45 +1060,81 @@ function getUsername() {
 }
 
 // Handle page unload
-function handlePageUnload() {
-    // EDIT START: Force reset tracking paused status to ensure data is sent
+function handlePageUnload(event) {
+    console.log("Page unload handler triggered! Event type:", event ? event.type : "unknown");
+    
+    // Reset tracking status
     isTrackingPaused = false;
-    // EDIT END
-
+    
     // Capture final state for all sections
     const exitTime = new Date();
     
+    // First add a specific page closed event
+    sectionEvents.push({
+        type: 'page_closed',
+        sectionId: getCurrentSectionId(),
+        startTime: exitTime,
+        endTime: exitTime,
+        duration: 0,
+        sessionId: sessionId,
+        username: getUsername(),
+        url: window.location.href
+    });
+    
+    // Ensure all open sections get proper tracking events
     Object.keys(openSections).forEach(sectionId => {
         const section = openSections[sectionId];
         
+        // Add missing heartbeats for active sections
+        if (section.isActive) {
+            const lastHeartbeatTime = section.lastHeartbeatTime || section.lastActiveTime;
+            if (lastHeartbeatTime && (exitTime - lastHeartbeatTime) > 1000) {
+                const duration = Math.round((exitTime - lastHeartbeatTime) / 1000);
+                sectionEvents.push({
+                    type: 'heartbeat',
+                    sectionId: sectionId,
+                    startTime: new Date(lastHeartbeatTime).toISOString(),
+                    endTime: exitTime.toISOString(),
+                    duration: duration,
+                    visibilitySession: visibilitySession,
+                    sessionId: sessionId,
+                    username: getUsername()
+                });
+            }
+        }
+        
+        // Add exit event
         sectionEvents.push({
             type: section.isActive ? 'active_on_exit' : 'inactive_on_exit',
             sectionId: sectionId,
             startTime: section.startTime,
             endTime: exitTime,
-            duration: (exitTime - section.startTime) / 1000
+            duration: Math.round((exitTime - section.startTime) / 1000),
+            sessionId: sessionId,
+            username: getUsername()
         });
     });
     
     // Save session state
     saveSessionState();
     
-    // Save to localStorage
+    // CRITICAL: Save to localStorage before attempting to send
     saveEventsToLocalStorage();
     
-    // On page unload, we DO want to force send regardless of threshold
-    if (sectionEvents.length > 0) {
-        console.log(`Sending final batch of ${sectionEvents.length} events on page unload`);
-        sendTrackingData(true, true);
-    }
-
-    // EDIT START: Add a small delay to give time for sendBeacon to complete
-    if (typeof event !== 'undefined' && event.type === 'beforeunload') {
+    console.log(`Sending final batch of ${sectionEvents.length} events on page unload/close`);
+    
+    // Send the data with high priority
+    sendTrackingData(true, true);
+    
+    // Increase delay to give more time for sendBeacon
+    if (event && (event.type === 'beforeunload' || event.type === 'unload')) {
         const start = Date.now();
-        while (Date.now() - start < 100) {
-            // Small delay that keeps the thread busy
+        while (Date.now() - start < 200) {
+            // Blocking delay to give time for sendBeacon
         }
     }
+    
+    return null; // Don't return a value to avoid "Leave site?" dialog
 }
 
 // Save session state
