@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Enigma of the Lost Codex - Interactive</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;700&display=swap');
+
+        :root {
+            --primary-bg: #f4f7f6;
+            --secondary-bg: #ffffff;
+            --text-color: #333333;
+            --accent-color: #8c7b75; /* Muted brownish-pink */
+            --highlight-color: #a0d2db; /* Soft teal */
+            --success-color: #77dd77; /* Soft green for success */
+            --error-color: #ff6961;   /* Soft red for error */
+            --border-color: #d1c7c3;
+            --font-body: 'Montserrat', sans-serif;
+            --font-heading: 'Playfair Display', serif;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .main-content-wrapper {
+            background-color: var(--secondary-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 95%;
+            max-width: 1200px; /* Increased max-width for side panel */
+            text-align: center;
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            font-size: 2.5em;
+        }
+
+        .intro-text {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            color: #555;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .game-layout {
+            display: flex;
+            flex-direction: column; /* Stack on small screens */
+            gap: 30px;
+            align-items: flex-start; /* Align items to the top */
+        }
+
+        .puzzle-area {
+            flex: 2; /* Takes more space */
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* Reduced gap for tighter layout */
+            width: 100%; /* Full width in column layout */
+        }
+
+        .draggable-items-container,
+        .drop-zones-container {
+            background-color: var(--primary-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 1px dashed var(--border-color);
+            width: 100%; /* Ensure they take full width of their container */
+        }
+        
+        .draggable-items-container h3,
+        .drop-zones-container h3,
+        .story-visualization-panel h3 {
+            margin-top: 0;
+            color: var(--accent-color);
+            font-family: var(--font-heading);
+            font-size: 1.5em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .draggable-items-list, .drop-zones-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .draggable-item {
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+            padding: 15px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            cursor: grab;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .draggable-item:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        .draggable-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .drop-zones-list {
+            flex-direction: column; /* Stack drop zones vertically */
+            gap: 10px; /* Tighter spacing */
+        }
+
+        .drop-zone {
+            background-color: #e9eef0;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            min-height: 70px; /* Slightly reduced height */
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s, border-color 0.3s;
+            position: relative;
+        }
+
+        .drop-zone-title {
+            font-weight: 600;
+            color: var(--accent-color);
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .drop-zone-placeholder {
+            font-style: italic;
+            color: #777;
+            font-size: 0.85em;
+        }
+
+        .drop-zone.drag-over {
+            background-color: lighten(var(--highlight-color), 10%);
+            border-color: var(--highlight-color);
+        }
+
+        .drop-zone.filled .drop-zone-placeholder { display: none; }
+
+        .drop-zone.filled .draggable-item {
+            cursor: default;
+            border: 1px solid var(--success-color);
+            background-color: lighten(var(--success-color), 25%);
+            box-shadow: none;
+            transform: none;
+            margin-top: 5px;
+        }
+        
+        .drop-zone.correct-drop-animation { /* Renamed for clarity */
+            animation: pulse-success 0.8s ease-in-out;
+            border-color: var(--success-color) !important; /* Ensure border shows success */
+        }
+
+        @keyframes pulse-success {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(var(--success-color), 0.7); }
+            50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(var(--success-color), 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(var(--success-color), 0); }
+        }
+        
+        .drop-zone.incorrect-try-animation { /* Renamed for clarity */
+            animation: shake-error 0.5s ease-in-out;
+            border-color: var(--error-color) !important;
+        }
+
+        @keyframes shake-error {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        
+        .feedback-area {
+            margin-top: 20px;
+            font-size: 1.1em;
+            font-weight: 600;
+            min-height: 25px;
+            text-align: center; /* Center feedback text */
+        }
+        .feedback-area.success { color: var(--success-color); }
+        .feedback-area.error { color: var(--error-color); }
+
+        /* Story Visualization Panel */
+        .story-visualization-panel {
+            flex: 1; /* Takes less space */
+            background-color: var(--primary-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 1px dashed var(--border-color);
+            min-height: 300px; /* Ensure it has some height */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Align items to top */
+            width: 100%; /* Full width in column layout */
+        }
+
+        .story-stage {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            background-color: var(--secondary-bg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            width: 90%;
+            text-align: center;
+            opacity: 0; /* Hidden by default */
+            transform: translateY(20px); /* Start slightly lower */
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+        .story-stage.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .story-stage.current-focus { /* Highlight the most recent story update */
+            border-left: 5px solid var(--highlight-color);
+            background-color: lighten(var(--highlight-color), 25%);
+        }
+
+        .story-stage h4 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: var(--accent-color);
+            font-family: var(--font-heading);
+        }
+        .story-stage p {
+            margin-bottom: 0;
+            font-size: 0.95em;
+        }
+        .story-icon {
+            font-size: 2.5em; /* Larger icons */
+            margin-bottom: 10px;
+            display: block; /* Center the icon if it's text/emoji */
+            animation: icon-appear 0.6s 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards; /* Slight pop */
+        }
+        @keyframes icon-appear {
+            from { transform: scale(0.5); opacity: 0;}
+            to { transform: scale(1); opacity: 1;}
+        }
+
+
+        /* Modal for final success */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--secondary-bg);
+            margin: auto;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            animation: fadeInModal 0.5s ease-out;
+        }
+
+        @keyframes fadeInModal {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-content h2 { font-family: var(--font-heading); color: var(--accent-color); }
+        .modal-content button {
+            background-color: var(--accent-color);
+            color: white; padding: 12px 25px; border: none; border-radius: var(--border-radius);
+            cursor: pointer; font-size: 1em; margin-top: 20px; transition: background-color 0.2s;
+        }
+        .modal-content button:hover { background-color: darken(var(--accent-color), 10%); }
+
+        /* Responsive adjustments */
+        @media (min-width: 992px) { /* Adjust breakpoint for side panel */
+            .game-layout {
+                flex-direction: row; /* Side-by-side on larger screens */
+            }
+            .puzzle-area {
+                width: auto; /* Let flexbox handle width */
+            }
+            .story-visualization-panel {
+                width: auto; /* Let flexbox handle width */
+                max-width: 350px; /* Constrain story panel width */
+            }
+        }
+         @media (min-width: 768px) and (max-width: 991px) {
+            /* For tablets, draggable items and dropzones might still be better stacked than puzzle area and story panel */
+            .puzzle-area {
+                flex-direction: row; 
+                align-items: flex-start;
+            }
+            .draggable-items-container,
+            .drop-zones-container {
+                flex: 1; 
+            }
+         }
+
+    </style>
+</head>
+<body>
+
+    <div class="main-content-wrapper">
+        <h1>The Enigma of the Lost Codex</h1>
+        <p class="intro-text">
+            Welcome, esteemed researcher. You've stumbled upon legends of a 'Lost Codex'.
+            Piece together your research actions in logical order to reveal the path to discovery and see the story unfold.
+        </p>
+
+        <div class="game-layout">
+            <div class="puzzle-area">
+                <div class="draggable-items-container">
+                    <h3>Available Research Actions:</h3>
+                    <div class="draggable-items-list">
+                        <div class="draggable-item" draggable="true" id="action-decipher">Decipher Ancient Runes</div>
+                        <div class="draggable-item" draggable="true" id="action-locate">Locate Hidden Archive</div>
+                        <div class="draggable-item" draggable="true" id="action-unlock">Unlock the Codex's Binding</div>
+                        <div class="draggable-item" draggable="true" id="action-map">Find the Cartographer's Map</div>
+                    </div>
+                </div>
+
+                <div class="drop-zones-container">
+                    <h3>Your Research Pathway:</h3>
+                    <div class="drop-zones-list">
+                        <div class="drop-zone" id="step1-clue" data-expected-id="action-map" data-story-stage="story-map">
+                            <span class="drop-zone-title">Step 1: The Initial Clue</span>
+                            <span class="drop-zone-placeholder">Drag first action here</span>
+                        </div>
+                        <div class="drop-zone" id="step2-analysis" data-expected-id="action-decipher" data-story-stage="story-runes">
+                            <span class="drop-zone-title">Step 2: Analysis & Interpretation</span>
+                            <span class="drop-zone-placeholder">Drag second action here</span>
+                        </div>
+                        <div class="drop-zone" id="step3-exploration" data-expected-id="action-locate" data-story-stage="story-archive">
+                            <span class="drop-zone-title">Step 3: Exploration & Search</span>
+                            <span class="drop-zone-placeholder">Drag third action here</span>
+                        </div>
+                        <div class="drop-zone" id="step4-revelation" data-expected-id="action-unlock" data-story-stage="story-codex">
+                            <span class="drop-zone-title">Step 4: The Final Revelation</span>
+                            <span class="drop-zone-placeholder">Drag final action here</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="story-visualization-panel">
+                <h3>Your Discovery Unfolds:</h3>
+                <div id="story-initial" class="story-stage visible current-focus">
+                    <span class="story-icon">⏳</span>
+                    <h4>The Quest Begins</h4>
+                    <p>The path to knowledge is shrouded in mystery. What is your first step?</p>
+                </div>
+                <div id="story-map" class="story-stage">
+                    <span class="story-icon">🗺️</span>
+                    <h4>The Cartographer's Map</h4>
+                    <p>A dusty map is found! It seems to hint at ancient locations.</p>
+                </div>
+                <div id="story-runes" class="story-stage">
+                    <span class="story-icon">✨</span>
+                    <h4>Runes Deciphered</h4>
+                    <p>Strange symbols on the map glow with meaning, revealing a specific location.</p>
+                </div>
+                <div id="story-archive" class="story-stage">
+                    <span class="story-icon">🏛️</span> <!-- Changed from door to a more general archive icon -->
+                    <h4>Archive Located</h4>
+                    <p>Following the deciphered map, you've found the entrance to a hidden archive!</p>
+                </div>
+                <div id="story-codex" class="story-stage">
+                    <span class="story-icon">📖</span>
+                    <h4>The Codex Unlocked!</h4>
+                    <p>Within the archive, the Lost Codex is found and its bindings unsealed. Knowledge awaits!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="feedback-area" id="feedbackArea">
+            <!-- Feedback messages will appear here -->
+        </div>
+    </div>
+
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <h2>Congratulations!</h2>
+            <p>You have successfully navigated the research path and unlocked the secrets of the Lost Codex! Your logical thinking has paid off.</p>
+            <p>This demonstrates how breaking down a complex problem into sequential, manageable steps is key to achieving a larger goal – a core principle in algorithmic thinking and research.</p>
+            <button onclick="document.getElementById('successModal').style.display='none'; resetGame();">Play Again?</button>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const draggables = document.querySelectorAll('.draggable-item');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const feedbackArea = document.getElementById('feedbackArea');
+        const successModal = document.getElementById('successModal');
+        const storyStages = document.querySelectorAll('.story-stage');
+        
+        let completedSteps = 0;
+        const totalSteps = dropZones.length;
+        
+        // Store initial positions for reset
+        const initialDraggablesContainer = document.querySelector('.draggable-items-list');
+        const initialDraggables = Array.from(draggables).map(d => d.cloneNode(true));
+
+
+        function initializeDraggables(items) {
+            items.forEach(draggable => {
+                draggable.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', draggable.id);
+                    setTimeout(() => draggable.classList.add('dragging'), 0);
+                });
+
+                draggable.addEventListener('dragend', () => {
+                    draggable.classList.remove('dragging');
+                });
+            });
+        }
+        initializeDraggables(draggables);
+
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (!zone.classList.contains('filled')) {
+                    zone.classList.add('drag-over');
+                }
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const draggedItemId = e.dataTransfer.getData('text/plain');
+                const draggedItem = document.getElementById(draggedItemId); // Get from document, not just current list
+                const expectedId = zone.dataset.expectedId;
+                const storyStageId = zone.dataset.storyStage;
+
+                if (draggedItem && !zone.querySelector('.draggable-item')) {
+                    if (draggedItemId === expectedId) {
+                        // Correct drop
+                        zone.appendChild(draggedItem);
+                        draggedItem.draggable = false;
+                        draggedItem.style.cursor = 'default';
+                        draggedItem.classList.remove('dragging');
+                        zone.classList.add('filled', 'correct-drop-animation');
+                        
+                        setTimeout(() => zone.classList.remove('correct-drop-animation'), 800);
+
+                        feedbackArea.textContent = 'Excellent! The story progresses...';
+                        feedbackArea.className = 'feedback-area success';
+                        completedSteps++;
+
+                        // Update story panel
+                        if (storyStageId) {
+                            updateStoryPanel(storyStageId);
+                        }
+
+                        if (completedSteps === totalSteps) {
+                            feedbackArea.textContent = 'All steps completed! The codex is within reach!';
+                            setTimeout(() => {
+                                successModal.style.display = 'flex';
+                            }, 1000);
+                        }
+
+                    } else {
+                        // Incorrect drop
+                        feedbackArea.textContent = 'That doesn\'t seem right. Consider the logical sequence.';
+                        feedbackArea.className = 'feedback-area error';
+                        zone.classList.add('incorrect-try-animation');
+                        setTimeout(() => zone.classList.remove('incorrect-try-animation'), 500);
+                    }
+                } else if (zone.querySelector('.draggable-item')) {
+                    feedbackArea.textContent = 'This step is already completed.';
+                    feedbackArea.className = 'feedback-area error'; // Using error for consistency
+                }
+                
+                setTimeout(() => {
+                    if (completedSteps < totalSteps) {
+                       feedbackArea.textContent = '';
+                       feedbackArea.className = 'feedback-area';
+                    }
+                }, 3000);
+            });
+        });
+
+        function updateStoryPanel(currentStageId) {
+            storyStages.forEach(stage => {
+                stage.classList.remove('current-focus'); // Remove focus from all
+                if(stage.id === 'story-initial' && currentStageId !== 'story-initial') {
+                     // Keep initial visible if it's the only one, or hide if others are now active
+                    if (document.querySelector('.story-stage.visible:not(#story-initial)')) {
+                         // stage.classList.remove('visible'); // Could hide initial once first step done
+                    }
+                }
+            });
+            
+            const currentStoryElement = document.getElementById(currentStageId);
+            if (currentStoryElement) {
+                currentStoryElement.classList.add('visible', 'current-focus');
+                // If it's the first actual step, hide the "initial" message if desired
+                if (currentStageId !== 'story-initial' && document.getElementById('story-initial').classList.contains('visible')) {
+                    // Optional: hide the initial message once the first step is taken
+                    // document.getElementById('story-initial').classList.remove('visible', 'current-focus');
+                }
+            }
+        }
+        
+        window.resetGame = function() { // Make resetGame globally accessible
+            completedSteps = 0;
+            feedbackArea.textContent = '';
+            feedbackArea.className = 'feedback-area';
+            successModal.style.display = 'none';
+
+            // Reset drop zones
+            dropZones.forEach(zone => {
+                zone.classList.remove('filled', 'correct-drop-animation', 'incorrect-try-animation');
+                const existingItem = zone.querySelector('.draggable-item');
+                if (existingItem) {
+                    zone.removeChild(existingItem);
+                    // We don't add it back to draggables list here, because we'll repopulate it
+                }
+                const placeholder = zone.querySelector('.drop-zone-placeholder');
+                if(placeholder) placeholder.style.display = 'block'; // Ensure placeholder is visible if it was hidden
+            });
+
+            // Reset draggable items to their initial container
+            initialDraggablesContainer.innerHTML = ''; // Clear current draggables
+            initialDraggables.forEach(clonedItem => {
+                const newItem = clonedItem.cloneNode(true); // Use a fresh clone
+                newItem.draggable = true;
+                newItem.style.cursor = 'grab';
+                initialDraggablesContainer.appendChild(newItem);
+            });
+            // Re-initialize event listeners for the new draggable items
+            initializeDraggables(initialDraggablesContainer.querySelectorAll('.draggable-item'));
+
+
+            // Reset story panel
+            storyStages.forEach(stage => {
+                stage.classList.remove('visible', 'current-focus');
+            });
+            document.getElementById('story-initial').classList.add('visible', 'current-focus');
+        }
+
+        // Initialize story panel to show only the initial state
+        updateStoryPanel('story-initial'); 
+    });
+</script>
+
+</body>
+</html>
