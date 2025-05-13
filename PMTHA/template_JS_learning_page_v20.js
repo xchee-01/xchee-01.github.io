@@ -12,7 +12,7 @@ const HEARTBEAT_INTERVAL = 1000; // 1 seconds for heartbeat
 const INACTIVITY_THRESHOLD = 10000; // 10 seconds until user is considered inactive
 const THROTTLE_DELAY = 1000; // Throttle delay for frequent events
 const LOCAL_STORAGE_KEY = 'tracking_events_cache'; // Key for localStorage tracking cache
-const EVENT_BATCH_THRESHOLD = 100; // Minimum number of events before sending to server
+const EVENT_BATCH_THRESHOLD = 10; // Minimum number of events before sending to server
 
 // Required packages for Pyodide
 const requiredPackages = ['numpy', 'pandas'];
