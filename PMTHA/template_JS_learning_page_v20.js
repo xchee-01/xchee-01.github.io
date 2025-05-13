@@ -10,6 +10,7 @@ const HEARTBEAT_INTERVAL = 1000; // 1 seconds for heartbeat (changed from 5000)
 const INACTIVITY_THRESHOLD = 10000; // 10 seconds until user is considered inactive
 const THROTTLE_DELAY = 1000; // Throttle delay for frequent events
 const LOCAL_STORAGE_KEY = 'tracking_events_cache'; // Key for localStorage tracking cache
+const EVENT_BATCH_THRESHOLD = 10; // Minimum number of events before sending to server
 
 // Required packages for Pyodide
 const requiredPackages = ['numpy', 'pandas'];
@@ -324,7 +325,7 @@ function startPeriodicTracking() {
         }
     }, TRACKING_INTERVAL);
     
-    console.log(`Periodic tracking started: Will check every ${TRACKING_INTERVAL/1000} seconds and send when ≥ 20 events`);
+    console.log(`Periodic tracking started: Will check every ${TRACKING_INTERVAL/1000} seconds and send when ≥ ${EVENT_BATCH_THRESHOLD} events`);
 }
 
 // Show inactivity popup
@@ -810,7 +811,7 @@ function shouldSendEvents(forceSend = false) {
     if (forceSend) return true;
     
     // Otherwise, only send if we have enough events
-    return sectionEvents.length >= 20;
+    return sectionEvents.length >= EVENT_BATCH_THRESHOLD;
 }
 
 // Send tracking data to server with batching
@@ -822,7 +823,7 @@ function sendTrackingData(isSync = false, forceSend = false) {
     
     // Check if we should send based on threshold (unless forced)
     if (!forceSend && !isSync && !shouldSendEvents()) {
-        console.log(`Not sending ${sectionEvents.length} events - below threshold (20)`);
+        console.log(`Not sending ${sectionEvents.length} events - below threshold (${EVENT_BATCH_THRESHOLD})`);
         saveEventsToLocalStorage(); // Make sure data is saved
         return;
     }
