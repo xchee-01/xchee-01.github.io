@@ -1,4 +1,4 @@
-//NOTE: Batches data before sending out but a bit wonky. 
+//NOTE: Batches data before sending out but a bit wonky. DOES NOT send data out when page is close. -->
 
 // Replace with your deployed Google Apps Script Web App URL
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSxyvmPYsdnimwhEj572QuTvow9nTpkc13rOd1rQY9neh0mp-a4Bx5p6tERWRzR9d1tA/exec';
