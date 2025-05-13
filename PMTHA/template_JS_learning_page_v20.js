@@ -318,18 +318,13 @@ function startPeriodicTracking() {
     
     // Set up new interval (now 30 seconds instead of 5)
     trackingInterval = setInterval(function() {
-        if (!isTrackingPaused) {
-            // Only send tracking data if we have at least 20 events
-            if (sectionEvents.length >= 20) {
-                console.log(`Sending batch of ${sectionEvents.length} events - threshold reached`);
-                sendTrackingData();
-            } else {
-                console.log(`Currently have ${sectionEvents.length} events - continuing to accumulate (threshold: 20)`);
-                // Just save to localStorage but don't send yet
-                saveEventsToLocalStorage();
-            }
+        if (!isTrackingPaused && sectionEvents.length > 0) {
+            // This will internally check the threshold
+            sendTrackingData(false, false);
         }
     }, TRACKING_INTERVAL);
+    
+    console.log(`Periodic tracking started: Will check every ${TRACKING_INTERVAL/1000} seconds and send when ≥ 20 events`);
 }
 
 // Show inactivity popup
@@ -414,8 +409,9 @@ function handleUserReturn() {
     // Save updated events to localStorage
     saveEventsToLocalStorage();
     
-    // Send tracking data immediately to ensure session separation
-    sendTrackingData();
+    // Send tracking data - but respect threshold unless we want to force it
+    // For user return, we probably want to respect the threshold
+    sendTrackingData(false, false);
     
     // Reset the inactivity timeout
     resetInactivityTimeout();
@@ -500,9 +496,10 @@ function setupVisibilityTracking() {
                 heartbeatInterval = null;
             }
             
-            // Send any pending heartbeat events before page is hidden
+            // Send any pending heartbeat events before page is hidden - BUT RESPECT THRESHOLD
             if (sectionEvents.length > 0) {
-                sendTrackingData();
+                // Check threshold before sending - we don't force send here
+                sendTrackingData(false, false);
             }
             
             lastUserActivity = timestamp;
@@ -520,8 +517,8 @@ function setupVisibilityTracking() {
             }, INACTIVITY_THRESHOLD);
         }
         
-        // Send tracking data immediately
-        sendTrackingData();
+        // Save to localStorage regardless
+        saveEventsToLocalStorage();
     });
 }
 
@@ -807,17 +804,24 @@ function processTrackingEvents(events) {
     return combinedEvents;
 }
 
+// Check if we have enough events to send
+function shouldSendEvents(forceSend = false) {
+    // Always send if forceSend is true (for critical events like page unload)
+    if (forceSend) return true;
+    
+    // Otherwise, only send if we have enough events
+    return sectionEvents.length >= 20;
+}
+
 // Send tracking data to server with batching
-// Send tracking data to server with batching
-function sendTrackingData(isSync = false) {
+function sendTrackingData(isSync = false, forceSend = false) {
     // Don't proceed if there's no data or tracking is paused
     if (sectionEvents.length === 0 || isTrackingPaused) {
         return;
     }
     
-    // For non-sync (normal) calls, enforce the minimum threshold
-    // Unless it's a synchronous call (like during page unload)
-    if (!isSync && sectionEvents.length < 20) {
+    // Check if we should send based on threshold (unless forced)
+    if (!forceSend && !isSync && !shouldSendEvents()) {
         console.log(`Not sending ${sectionEvents.length} events - below threshold (20)`);
         saveEventsToLocalStorage(); // Make sure data is saved
         return;
@@ -842,6 +846,8 @@ function sendTrackingData(isSync = false) {
         sessionId: sessionId,
         lastUpdateTime: lastUpdateTime // Add this for the spreadsheet's first row
     };
+    
+    console.log(`Sending batch of ${processedEvents.length} events. Force send: ${forceSend}, Sync: ${isSync}`);
     
     // Use beacon API for unload events
     if (isSync && navigator.sendBeacon) {
@@ -945,11 +951,10 @@ function handlePageUnload() {
     // Save to localStorage
     saveEventsToLocalStorage();
     
-    // Send tracking data regardless of threshold - this is important
-    // to capture final events even if below threshold
+    // On page unload, we DO want to force send regardless of threshold
     if (sectionEvents.length > 0) {
         console.log(`Sending final batch of ${sectionEvents.length} events on page unload`);
-        sendTrackingData(true);
+        sendTrackingData(true, true);
     }
 }
 
