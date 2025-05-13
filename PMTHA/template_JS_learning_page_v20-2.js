@@ -1,4 +1,9 @@
 //NOTE: Store everything in local storage and only sends data when user refreshes the page
+// Tracking Approach:
+// 1. All events are stored in memory (sectionEvents array)
+// 2. Events are periodically saved to localStorage as backup
+// 3. Data is only sent to the server when the page is closed or refreshed
+// 4. This optimizes for fewer network requests during active use
 
 // Replace with your deployed Google Apps Script Web App URL
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSxyvmPYsdnimwhEj572QuTvow9nTpkc13rOd1rQY9neh0mp-a4Bx5p6tERWRzR9d1tA/exec';
@@ -803,15 +808,6 @@ function processTrackingEvents(events) {
     return combinedEvents;
 }
 
-// Check if we have enough events to send
-function shouldSendEvents(forceSend = false) {
-    // Always send if forceSend is true (for critical events like page unload)
-    if (forceSend) return true;
-    
-    // Otherwise, only send if we have enough events
-    return sectionEvents.length >= EVENT_BATCH_THRESHOLD;
-}
-
 // Send tracking data to server with batching
 function sendTrackingData(isSync = false) {
     // Don't proceed if there's no data or tracking is paused
@@ -944,10 +940,10 @@ function handlePageUnload() {
     // Save to localStorage
     saveEventsToLocalStorage();
     
-    // On page unload, we DO want to force send regardless of threshold
+    // On page unload, we DO want to send regardless of batch size
     if (sectionEvents.length > 0) {
         console.log(`Sending final batch of ${sectionEvents.length} events on page unload`);
-        sendTrackingData(true, true);
+        sendTrackingData(true); // Only pass one parameter - isSync=true
     }
 }
 
