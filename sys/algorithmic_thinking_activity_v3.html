@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Enigma of the Lost Codex</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;700&display=swap');
+
+        :root {
+            --primary-bg: #f4f7f6; /* Light grey-green */
+            --secondary-bg: #ffffff;
+            --text-color: #333333;
+            --accent-color: #8c7b75; /* Muted brownish-pink */
+            --highlight-color: #a0d2db; /* Soft teal for success/highlight */
+            --border-color: #d1c7c3;
+            --font-body: 'Montserrat', sans-serif;
+            --font-heading: 'Playfair Display', serif;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for longer content */
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            background-color: var(--secondary-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 90%;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            font-size: 2.5em;
+        }
+
+        .intro-text {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            color: #555;
+        }
+
+        .puzzle-area {
+            display: flex;
+            flex-direction: column; /* Stack draggable items above drop zones on small screens */
+            gap: 30px;
+            margin-bottom: 30px;
+            align-items: stretch; /* Make children take full width if needed */
+        }
+
+        .draggable-items-container,
+        .drop-zones-container {
+            background-color: var(--primary-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 1px dashed var(--border-color);
+        }
+        
+        .draggable-items-container h3,
+        .drop-zones-container h3 {
+            margin-top: 0;
+            color: var(--accent-color);
+            font-family: var(--font-heading);
+            font-size: 1.5em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .draggable-items-list, .drop-zones-list {
+            display: flex;
+            flex-wrap: wrap; /* Allow items to wrap */
+            gap: 15px;
+            justify-content: center; /* Center items if they don't fill the row */
+        }
+
+
+        .draggable-item {
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+            padding: 15px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            cursor: grab;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            min-width: 150px; /* Ensure items have a decent width */
+            text-align: center;
+        }
+
+        .draggable-item:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        .draggable-item.dragging { /* Class added by JS when dragging starts */
+            opacity: 0.5;
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .drop-zone {
+            background-color: #e9eef0; /* Slightly different bg for drop zones */
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            min-height: 80px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column; /* Stack title and content */
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s, border-color 0.3s;
+            flex: 1; /* Allow drop zones to grow */
+            min-width: 180px; /* Ensure drop zones have a good width */
+            position: relative; /* For pseudo-elements or absolute positioned content */
+        }
+
+        .drop-zone-title {
+            font-weight: 600;
+            color: var(--accent-color);
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .drop-zone-placeholder {
+            font-style: italic;
+            color: #777;
+            font-size: 0.85em;
+        }
+
+        .drop-zone.drag-over { /* Class added by JS when item is dragged over */
+            background-color: var(--highlight-color);
+            border-color: darken(var(--highlight-color), 10%);
+        }
+
+        .drop-zone.filled .drop-zone-placeholder {
+            display: none; /* Hide placeholder when filled */
+        }
+
+        .drop-zone.filled .draggable-item { /* Style for the item when it's inside a drop zone */
+            cursor: default;
+            border: 1px solid var(--highlight-color);
+            background-color: lighten(var(--highlight-color), 15%);
+            box-shadow: none;
+            transform: none; /* Reset hover transform */
+            margin-top: 5px; /* Space from title if needed */
+        }
+        
+        /* Animation for correct drop */
+        .drop-zone.correct-drop {
+            animation: pulse-success 0.8s ease-in-out;
+        }
+
+        @keyframes pulse-success {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(var(--highlight-color), 0.7); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(var(--highlight-color), 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(var(--highlight-color), 0); }
+        }
+        
+        /* Animation for incorrect drop (item snaps back) - harder without JS, but a visual cue can be on the zone */
+        .drop-zone.incorrect-try {
+            animation: shake-error 0.5s ease-in-out;
+        }
+
+        @keyframes shake-error {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        
+        .feedback-area {
+            margin-top: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            min-height: 25px; /* Prevent layout shift */
+        }
+        .feedback-area.success { color: green; }
+        .feedback-area.error { color: #c0392b; } /* Red for error */
+
+        /* Modal for final success */
+        .modal {
+            display: none; /* Hidden by default, shown by JS */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--secondary-bg);
+            margin: auto;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            animation: fadeInModal 0.5s ease-out;
+        }
+
+        @keyframes fadeInModal {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-content h2 {
+            font-family: var(--font-heading);
+            color: var(--accent-color);
+        }
+
+        .modal-content button {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 20px;
+            transition: background-color 0.2s;
+        }
+        .modal-content button:hover {
+            background-color: darken(var(--accent-color), 10%);
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .puzzle-area {
+                flex-direction: row; /* Draggables and drop zones side-by-side */
+                align-items: flex-start; /* Align tops */
+            }
+            .draggable-items-container,
+            .drop-zones-container {
+                flex: 1; /* Each takes half the space */
+            }
+            .drop-zones-list {
+                flex-direction: column; /* Stack drop zones vertically */
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>The Enigma of the Lost Codex</h1>
+        <p class="intro-text">
+            Welcome, esteemed researcher. You've stumbled upon legends of a 'Lost Codex' said to hold profound forgotten knowledge.
+            To uncover its secrets, you must piece together the steps of your research journey. Arrange the actions in their logical order to reveal the path to discovery.
+        </p>
+
+        <div class="puzzle-area">
+            <div class="draggable-items-container">
+                <h3>Available Research Actions:</h3>
+                <div class="draggable-items-list">
+                    <!-- Draggable items. data-id should be unique and match a data-expected-id in a drop-zone -->
+                    <div class="draggable-item" draggable="true" id="action-decipher">Decipher Ancient Runes</div>
+                    <div class="draggable-item" draggable="true" id="action-locate">Locate Hidden Archive</div>
+                    <div class="draggable-item" draggable="true" id="action-unlock">Unlock the Codex's Binding</div>
+                    <div class="draggable-item" draggable="true" id="action-map">Find the Cartographer's Map</div>
+                </div>
+            </div>
+
+            <div class="drop-zones-container">
+                <h3>Your Research Pathway:</h3>
+                <div class="drop-zones-list">
+                    <!-- Drop zones. data-expected-id should match the id of the correct draggable-item -->
+                    <div class="drop-zone" id="step1-clue" data-expected-id="action-map">
+                        <span class="drop-zone-title">Step 1: The Initial Clue</span>
+                        <span class="drop-zone-placeholder">Drag first action here</span>
+                        <!-- Correctly dropped item will be appended here by JS -->
+                    </div>
+                    <div class="drop-zone" id="step2-analysis" data-expected-id="action-decipher">
+                        <span class="drop-zone-title">Step 2: Analysis & Interpretation</span>
+                        <span class="drop-zone-placeholder">Drag second action here</span>
+                    </div>
+                    <div class="drop-zone" id="step3-exploration" data-expected-id="action-locate">
+                        <span class="drop-zone-title">Step 3: Exploration & Search</span>
+                        <span class="drop-zone-placeholder">Drag third action here</span>
+                    </div>
+                    <div class="drop-zone" id="step4-revelation" data-expected-id="action-unlock">
+                        <span class="drop-zone-title">Step 4: The Final Revelation</span>
+                        <span class="drop-zone-placeholder">Drag final action here</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="feedback-area" id="feedbackArea">
+            <!-- Feedback messages will appear here -->
+        </div>
+
+    </div>
+
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <h2>Congratulations!</h2>
+            <p>You have successfully navigated the research path and unlocked the secrets of the Lost Codex! Your logical thinking has paid off.</p>
+            <p>This demonstrates how breaking down a complex problem into sequential, manageable steps is key to achieving a larger goal – a core principle in algorithmic thinking and research.</p>
+            <button onclick="document.getElementById('successModal').style.display='none'">Close</button>
+        </div>
+    </div>
+
+<script>
+    // Basic Drag and Drop JavaScript (conceptual - for full functionality)
+    // This script would handle the logic for checking correctness and triggering animations.
+    // The HTML and CSS are set up to support this.
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const draggables = document.querySelectorAll('.draggable-item');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const feedbackArea = document.getElementById('feedbackArea');
+        const successModal = document.getElementById('successModal');
+        let completedSteps = 0;
+        const totalSteps = dropZones.length;
+
+        draggables.forEach(draggable => {
+            draggable.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', draggable.id);
+                setTimeout(() => draggable.classList.add('dragging'), 0); // Timeout for visual effect
+                // console.log('Dragging:', draggable.id);
+            });
+
+            draggable.addEventListener('dragend', () => {
+                draggable.classList.remove('dragging');
+                // console.log('Drag ended');
+            });
+        });
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Necessary to allow dropping
+                if (!zone.classList.contains('filled')) {
+                    zone.classList.add('drag-over');
+                }
+                // console.log('Dragging over:', zone.id);
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+                // console.log('Drag left:', zone.id);
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const draggedItemId = e.dataTransfer.getData('text/plain');
+                const draggedItem = document.getElementById(draggedItemId);
+                const expectedId = zone.dataset.expectedId;
+
+                // console.log(`Dropped: ${draggedItemId} on ${zone.id}, Expected: ${expectedId}`);
+
+                if (draggedItem && !zone.querySelector('.draggable-item')) { // If zone is not already filled
+                    if (draggedItemId === expectedId) {
+                        // Correct drop
+                        zone.appendChild(draggedItem);
+                        draggedItem.draggable = false; // Make it no longer draggable
+                        draggedItem.style.cursor = 'default';
+                        draggedItem.classList.remove('dragging'); // Ensure dragging class is removed
+                        zone.classList.add('filled', 'correct-drop');
+                        
+                        // Remove pulse animation class after it finishes
+                        setTimeout(() => zone.classList.remove('correct-drop'), 800);
+
+                        feedbackArea.textContent = 'Correct! Well done.';
+                        feedbackArea.className = 'feedback-area success';
+                        completedSteps++;
+
+                        if (completedSteps === totalSteps) {
+                            feedbackArea.textContent = 'All steps completed! The codex is within reach!';
+                            setTimeout(() => {
+                                successModal.style.display = 'flex';
+                            }, 1000);
+                        }
+
+                    } else {
+                        // Incorrect drop
+                        feedbackArea.textContent = 'That doesn\'t seem to be the right step. Think about the logical flow.';
+                        feedbackArea.className = 'feedback-area error';
+                        zone.classList.add('incorrect-try');
+                        // Remove shake animation class after it finishes
+                        setTimeout(() => zone.classList.remove('incorrect-try'), 500);
+                    }
+                } else if (zone.querySelector('.draggable-item')) {
+                    feedbackArea.textContent = 'This step is already filled.';
+                    feedbackArea.className = 'feedback-area error';
+                }
+                
+                // Clear feedback after a few seconds
+                setTimeout(() => {
+                    if (completedSteps < totalSteps) { // Don't clear if all steps are done
+                       feedbackArea.textContent = '';
+                       feedbackArea.className = 'feedback-area';
+                    }
+                }, 3000);
+            });
+        });
+    });
+
+</script>
+
+</body>
+</html>
