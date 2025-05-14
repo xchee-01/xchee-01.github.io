@@ -3,1044 +3,502 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python Syntax Basics for Precision Health - NUS</title>
-    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v17.css"> 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Load custom scripts -->
-    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v21.js" defer></script> 
-    
-    <!-- Load Pyodide -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
-    
+    <title>Data Types Drag and Drop Exercise</title>
     <style>
-        /* Drag and Drop styling */
-        .drag-drop-container {
-            margin: 20px 0;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        :root {
+            --nus-orange: #ef7c00;
+            --nus-blue: #003d7c;
+            --bg-light: #f8f9fa;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --text-color: #212529;
         }
         
-        .drag-items, .drop-targets {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        .drag-drop-container {
+            background-color: var(--bg-light);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+        }
+        
+        .drag-drop-title {
+            font-size: 1.25rem;
+            color: var(--nus-blue);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .drag-drop-title i {
+            color: var(--nus-orange);
+            margin-right: 10px;
+        }
+        
+        .drag-options {
+            display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 20px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px dashed var(--border-color);
         }
         
         .drag-item {
-            background-color: var(--nus-orange);
+            background-color: var(--nus-blue);
             color: white;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
+            padding: 8px 16px;
+            border-radius: 20px;
             cursor: move;
             user-select: none;
-            transition: all 0.3s;
+            font-weight: 500;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        .drop-target {
-            border: 2px dashed #ccc;
-            min-height: 60px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #fff;
+        .drag-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .drop-questions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .drop-question {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .question-text {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .drop-box {
+            width: 120px;
+            height: 40px;
+            border: 2px dashed var(--border-color);
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s;
         }
         
-        .drop-target.dragover {
-            background-color: rgba(255, 140, 0, 0.1);
+        .drop-box.hover {
+            background-color: rgba(239, 124, 0, 0.1);
             border-color: var(--nus-orange);
         }
         
-        .drop-target .definition {
-            margin-bottom: 10px;
-            font-weight: bold;
+        .drop-box.correct {
+            background-color: rgba(40, 167, 69, 0.1);
+            border-color: var(--success-color);
         }
         
-        .reset-button {
-            background-color: var(--nus-blue);
+        .drop-box.incorrect {
+            background-color: rgba(220, 53, 69, 0.1);
+            border-color: var(--error-color);
+        }
+        
+        .feedback {
+            margin-left: 15px;
+            font-size: 0.9rem;
+            display: none;
+            align-items: center;
+            max-width: 300px;
+        }
+        
+        .feedback.show {
+            display: flex;
+        }
+        
+        .feedback i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .feedback.correct {
+            color: var(--success-color);
+        }
+        
+        .feedback.incorrect {
+            color: var(--error-color);
+        }
+        
+        .submit-btn {
+            margin-top: 20px;
+            background-color: var(--nus-orange);
             color: white;
             border: none;
             padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
         }
         
-        .reset-button:hover {
-            background-color: var(--nus-dark-blue);
+        .submit-btn i {
+            margin-right: 8px;
         }
         
-        .correct {
-            border-color: #4CAF50;
-            background-color: rgba(76, 175, 80, 0.1);
+        .submit-btn:hover {
+            background-color: #d66e00;
+            transform: translateY(-2px);
         }
         
-        .incorrect {
-            border-color: #f44336;
-            background-color: rgba(244, 67, 54, 0.1);
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .results.complete {
+            background-color: rgba(40, 167, 69, 0.1);
+            border: 1px solid var(--success-color);
+        }
+        
+        .results.incomplete {
+            background-color: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+        }
+        
+        @media (max-width: 768px) {
+            .drop-question {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .question-text {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+            
+            .feedback {
+                margin-left: 0;
+                margin-top: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-container">
-            <div class="nus-logo">
-                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
-                NUS <span>Precision Medical Toolkit for Health Analytics</span>
-            </div>
-        </div>
-    </header>
-    
-    <main>
-        <section id="learning-materials">
-            <h1>Python Syntax Basics for Precision Health</h1>
-            
-            <p>Welcome to your journey as a Precision Health Programmer! In this module, you'll learn the fundamental building blocks of Python syntax that will empower you to analyze medical data, process genomic information, and build tools for personalized healthcare. As precision medicine increasingly relies on computational approaches to analyze large biological datasets, these foundational programming skills will be invaluable in your career.</p>
-            
-            <!-- Section 1: First Python Statements -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-1">
-                        <i class="fas fa-code" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Python Statements - The Building Blocks
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>Every great medical discovery begins with an initial hypothesis, and similarly, your Python journey starts with learning how to write and execute simple statements. In Python, a statement is a unit of code that performs an action, like printing text or performing calculations.</p>
-                    
-                    <p>Think of Python statements as instructions you might give to a laboratory assistant - clear, precise, and executed in a specific order. In precision medicine, you'll use these statements to process patient data, analyze biological samples, and interpret clinical results.</p>
-                    
-                    <h3>What are Python statements?</h3>
-                    <p>A statement is a unit of code that performs an action. Think of statements as individual instructions that run one after another.</p>
-                    
-                    <div class="code-block-container" data-block-name="first-python-statement">
-                        <div class="code-block"># Your first Python statement
-print("Hello, Python!")</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Think about it:</strong> What do you think this code will display? Run the code to see if you're right!</p>
-                    </div>
-                    
-                    <h3>Basic Print Statements</h3>
-                    <p>The <code>print()</code> function displays information on screen:</p>
-                    
-                    <div class="code-block-container" data-block-name="basic-print-statements">
-                        <div class="code-block"># Simple print statement
-print("Learning Python for healthcare")
-
-# Print with multiple items
-print("Items:", 5, "Status:", "Complete")</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Check your understanding:</strong> What's the difference between these two statements?</p>
-                        <div class="code-block-container" data-block-name="print-difference">
-                            <div class="code-block">print("2 + 3")
-print(2 + 3)</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                    </div>
-                    
-                    <h3>Healthcare Application</h3>
-                    <p>In precision medicine, print statements help display analysis results:</p>
-                    
-                    <div class="code-block-container" data-block-name="healthcare-print-example">
-                        <div class="code-block"># Healthcare example
-print("Analysis complete")
-print("Samples processed:", 42)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 1: Your First Clinical Report</h3>
-                        <p>As a new bioinformatics analyst at a precision medicine clinic, you need to create a simple report displaying patient information and basic health metrics.</p>
-                        
-                        <div class="code-block-container" data-block-name="lab1-clinical-report-exercise">
-                            <div class="code-block"># Complete the code below
-print("Patient Screening Results")
-print("ID:", "P-12345")
-# Add a line to display temperature of 37.2°C
-# Add a line to display heart rate of 72 bpm</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                        
-                        <p>Expected output:</p>
-                        <div class="expected-output">Patient Screening Results
-ID: P-12345
-Temperature: 37.2 °C
-Heart rate: 72 bpm</div>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab1-clinical-report-solution">
-                                <div class="code-block">print("Patient Screening Results")
-print("ID:", "P-12345")
-print("Temperature:", 37.2, "°C")
-print("Heart rate:", 72, "bpm")</div>
-                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                                <div class="copy-feedback">Copied!</div>
-                            </div>
-                        </div>
-                        <button class="celebrate-button" data-message="Great job! You've created your first clinical report using Python statements. Each statement precisely communicates important patient information, just as you would need in a real healthcare setting." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 2: Data Types -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-2">
-                        <i class="fas fa-database" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Data Types - Different Kinds of Information
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>In medicine, precision matters - a small difference in dosage or biomarker levels can have significant clinical implications. Python uses different data types to represent different kinds of information, just as you might use different laboratory tests to measure different biological parameters.</p>
-                    
-                    <p>Let's explore the three fundamental data types you'll use constantly in biomedical programming:</p>
-                    
-                    <h3>Integers (Whole Numbers)</h3>
-                    <p>Integers are whole numbers without decimal points. In medical contexts, you might use integers to represent patient counts, days since treatment, or discrete measurements.</p>
-                    
-                    <div class="code-block-container" data-block-name="integers-example">
-                        <div class="code-block"># Integer examples
-patients = 25
-days = 7
-
-print("Total patients:", patients)
-print("Days of treatment:", days)
-print("Patients per day:", patients / days)  # Notice what happens here</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Think about it:</strong> Why might we use integers for patient counts instead of strings?</p>
-                    </div>
-                    
-                    <h3>Floating-Point Numbers (Decimals)</h3>
-                    <p>Floats are numbers with decimal points, essential for precise measurements in medical research such as drug concentrations, lab values, or physiological readings.</p>
-                    
-                    <div class="code-block-container" data-block-name="floats-example">
-                        <div class="code-block"># Float examples
-weight = 68.5
-dosage = 2.5
-
-print("Patient weight:", weight, "kg")
-print("Medication dosage:", dosage, "mg/kg")
-print("Total dose:", weight * dosage, "mg")</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Prediction task:</strong> What will the following code output?</p>
-                        <div class="code-block-container" data-block-name="prediction-task">
-                            <div class="code-block">bmi = 24.7
-print("BMI category:", bmi > 25)</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                    </div>
-                    
-                    <h3>Strings (Text)</h3>
-                    <p>Strings represent text data, enclosed in quotation marks. In healthcare, strings store patient names, diagnostic codes, DNA sequences, or any textual information.</p>
-                    
-                    <div class="code-block-container" data-block-name="strings-example">
-                        <div class="code-block"># String examples
-name = "Alex Johnson"
-diagnosis = "Type 2 Diabetes"
-blood_type = "O+"
-
-print("Patient:", name)
-print("Diagnosis:", diagnosis)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Healthcare Data Type Examples</h3>
-                    <p>Different medical data requires different types:</p>
-                    
-                    <div class="code-block-container" data-block-name="healthcare-data-types">
-                        <div class="code-block"># Healthcare data types
-patient_id = "MRN-29348"  # String (mix of letters and numbers)
-age = 42                  # Integer (whole years)
-temperature = 37.2        # Float (precise measurement)
-is_insured = True         # Boolean (yes/no value)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 2: Identifying Data Types</h3>
-                        <p>For each piece of information below, identify the most appropriate data type (integer, float, string, or boolean):</p>
-                        
-                        <ol>
-                            <li>Patient name: __________</li>
-                            <li>Blood pressure reading of 120/80: __________</li>
-                            <li>Number of previous surgeries: __________</li>
-                            <li>Whether a patient is allergic to penicillin: __________</li>
-                            <li>Patient weight of 65.4 kg: __________</li>
-                        </ol>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <ol>
-                                <li>Patient name: <strong>string</strong></li>
-                                <li>Blood pressure reading of 120/80: <strong>string</strong> (contains special character)</li>
-                                <li>Number of previous surgeries: <strong>integer</strong></li>
-                                <li>Whether a patient is allergic to penicillin: <strong>boolean</strong></li>
-                                <li>Patient weight of 65.4 kg: <strong>float</strong></li>
-                            </ol>
-                        </div>
-                        <button class="celebrate-button" data-message="Excellent work! You've demonstrated your understanding of different data types by correctly identifying the most appropriate type for each piece of medical information. This is crucial for properly storing and analyzing healthcare data." data-animation="sides"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 3: Boolean Values -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-3">
-                        <i class="fas fa-check-circle" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Boolean Values - True or False
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>In medicine, many diagnoses and test results come down to binary outcomes - positive or negative, present or absent, eligible or ineligible. Python uses Boolean values (<code>True</code> and <code>False</code>) to represent these binary states, making them perfect for representing diagnostic results and patient statuses.</p>
-                    
-                    <h3>Basic Boolean Values</h3>
-                    
-                    <div class="code-block-container" data-block-name="basic-boolean">
-                        <div class="code-block"># Boolean examples
-has_diabetes = True
-is_fasting = False
-
-print("Diabetes status:", has_diabetes)
-print("Fasting before test:", is_fasting)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Simple Boolean Operations</h3>
-                    <p>Boolean operations combine conditions:</p>
-                    
-                    <div class="code-block-container" data-block-name="boolean-and">
-                        <div class="code-block"># AND operation (both must be True)
-high_glucose = True
-elevated_hba1c = True
-diabetes_indicated = high_glucose and elevated_hba1c
-print("Diabetes indicated by tests:", diabetes_indicated)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="code-block-container" data-block-name="boolean-or">
-                        <div class="code-block"># OR operation (at least one must be True)
-fever = False
-cough = True
-needs_assessment = fever or cough
-print("Needs clinical assessment:", needs_assessment)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="code-block-container" data-block-name="boolean-not">
-                        <div class="code-block"># NOT operation (inverts the value)
-is_normal_range = False
-requires_follow_up = not is_normal_range
-print("Requires follow-up:", requires_follow_up)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Comparison Operations</h3>
-                    <p>Comparisons produce Boolean results:</p>
-                    
-                    <div class="code-block-container" data-block-name="comparison-greater">
-                        <div class="code-block"># Greater than
-blood_pressure = 135
-hypertension_range = blood_pressure > 130
-print("BP in hypertension range:", hypertension_range)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="code-block-container" data-block-name="comparison-equal">
-                        <div class="code-block"># Equal to (note the double equals)
-target_heart_rate = 72
-current_heart_rate = 72
-at_target = current_heart_rate == target_heart_rate
-print("Heart rate at target:", at_target)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Common mistake alert:</strong><br>
-                        Remember to use <code>==</code> (double equals) for comparison, not <code>=</code> (single equals).<br>
-                        <code>x == y</code> checks if x equals y<br>
-                        <code>x = y</code> assigns the value of y to x</p>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 3: Building Conditions</h3>
-                        <p>Complete the code with appropriate Boolean operators:</p>
-                        
-                        <div class="code-block-container" data-block-name="lab3-boolean-conditions">
-                            <div class="code-block"># Patient test results
-glucose = 130
-blood_pressure = 142
-cholesterol = 210
-
-# Complete these conditions
-diabetes_risk = glucose > ___
-hypertension = blood_pressure ___ 140
-high_cholesterol = ___
-
-# Determine overall metabolic syndrome risk (all three must be true)
-metabolic_syndrome = _______________________________
-
-print("Metabolic syndrome indicated:", metabolic_syndrome)</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab3-boolean-conditions-solution">
-                                <div class="code-block"># Patient test results
-glucose = 130
-blood_pressure = 142
-cholesterol = 210
-
-# Complete these conditions
-diabetes_risk = glucose > 125
-hypertension = blood_pressure >= 140
-high_cholesterol = cholesterol > 200
-
-# Determine overall metabolic syndrome risk (all three must be true)
-metabolic_syndrome = diabetes_risk and hypertension and high_cholesterol
-
-print("Metabolic syndrome indicated:", metabolic_syndrome)</div>
-                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                                <div class="copy-feedback">Copied!</div>
-                            </div>
-                        </div>
-                        <button class="celebrate-button" data-message="Excellent work! You've applied Boolean operations to analyze patient data and determine metabolic syndrome risk - a fundamental task in clinical medicine. These techniques help identify complex conditions that require multiple criteria to be met." data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 4: Type Conversion -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-4">
-                        <i class="fas fa-exchange-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Type Conversion - Changing Data Types
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>In healthcare informatics, you'll frequently need to convert between different data types to properly process and analyze patient information. For example, you might need to convert numeric input from a form (which comes in as a string) to a float before calculating a medication dosage.</p>
-                    
-                    <h3>Basic Type Conversion</h3>
-                    
-                    <div class="code-block-container" data-block-name="string-to-int">
-                        <div class="code-block"># String to integer
-patient_age_string = "42"
-patient_age = int(patient_age_string)
-print("Age as integer:", patient_age)
-print("Age in five years:", patient_age + 5)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="code-block-container" data-block-name="string-to-float">
-                        <div class="code-block"># String to float
-temperature_string = "37.5"
-temperature = float(temperature_string)
-print("Temperature as float:", temperature)
-print("Fever threshold exceeded:", temperature > 37.2)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="code-block-container" data-block-name="number-to-string">
-                        <div class="code-block"># Number to string
-days = 7
-message = "Treatment duration: " + str(days) + " days"
-print(message)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Common Conversion Functions</h3>
-                    <ul>
-                        <li><code>int()</code>: Converts to integer</li>
-                        <li><code>float()</code>: Converts to floating-point number</li>
-                        <li><code>str()</code>: Converts to string</li>
-                        <li><code>bool()</code>: Converts to Boolean</li>
-                    </ul>
-                    
-                    <h3>Healthcare Example</h3>
-                    <p>Medical data often arrives as strings but needs to be processed numerically:</p>
-                    
-                    <div class="code-block-container" data-block-name="healthcare-type-conversion">
-                        <div class="code-block"># Lab results as strings
-glucose_string = "105.5"
-cholesterol_string = "185"
-
-# Convert to appropriate numeric types
-glucose = float(glucose_string)
-cholesterol = int(cholesterol_string)
-
-# Now we can perform calculations
-glucose_mmol = glucose * 0.0555  # Convert mg/dL to mmol/L
-cholesterol_status = cholesterol < 200  # Boolean result
-
-print("Glucose:", glucose, "mg/dL (", glucose_mmol, "mmol/L)")
-print("Cholesterol in normal range:", cholesterol_status)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Debug challenge:</strong> What's wrong with this code?</p>
-                        <div class="code-block-container" data-block-name="debug-challenge">
-                            <div class="code-block">height_string = "175.5"
-weight_string = "68.2"
-
-bmi = weight_string / (height_string / 100) ** 2
-print("BMI:", bmi)</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 4: Data Conversion Challenge</h3>
-                        <p>Fix this broken patient data processing code:</p>
-                        
-                        <div class="code-block-container" data-block-name="lab4-type-conversion">
-                            <div class="code-block"># Patient data received from form
-patient_id = "PT-2025-104"
-age_input = "65"
-systolic_bp_input = "142"
-diastolic_bp_input = "88"
-weight_input = "72.5"
-
-# Calculate values for medical report
-age_in_months = age_input * 12
-bp_combined = systolic_bp_input + "/" + diastolic_bp_input
-weight_in_pounds = weight_input * 2.20462
-
-print("Patient:", patient_id)
-print("Age in months:", age_in_months)
-print("Blood pressure:", bp_combined)
-print("Weight in pounds:", weight_in_pounds)</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab4-type-conversion-solution">
-                                <div class="code-block"># Patient data received from form
-patient_id = "PT-2025-104"
-age_input = "65"
-systolic_bp_input = "142"
-diastolic_bp_input = "88"
-weight_input = "72.5"
-
-# Convert strings to appropriate numeric types
-age = int(age_input)
-weight = float(weight_input)
-
-# Calculate values for medical report
-age_in_months = age * 12
-bp_combined = systolic_bp_input + "/" + diastolic_bp_input
-weight_in_pounds = weight * 2.20462
-
-print("Patient:", patient_id)
-print("Age in months:", age_in_months)
-print("Blood pressure:", bp_combined)
-print("Weight in pounds:", weight_in_pounds)</div>
-                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                                <div class="copy-feedback">Copied!</div>
-                            </div>
-                        </div>
-                        <button class="celebrate-button" data-message="Excellent work! You've successfully fixed the data processing code by converting strings to the appropriate numeric types before performing calculations. This is a crucial skill when working with patient data from forms or external systems." data-animation="school"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 5: Integrated Practice -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-5">
-                        <i class="fas fa-flask" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Integrated Practice - Patient Risk Assessment
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>Now let's combine multiple concepts in a more comprehensive practice. You're developing a basic risk assessment tool that analyzes patient data for metabolic syndrome risk factors.</p>
-                    
-                    <h3>Step 1: Define input data (strings, as if from a form)</h3>
-                    
-                    <div class="code-block-container" data-block-name="risk-assessment-step1">
-                        <div class="code-block"># Patient data (as received from medical record system)
-patient_name = "Jane Smith"
-patient_id = "HMS-2025-0473"
-age_string = "58"
-glucose_string = "135"
-systolic_bp_string = "148"
-diastolic_bp_string = "92"
-hdl_cholesterol_string = "38"
-medication_count_string = "3"</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Step 2: Convert data types</h3>
-                    
-                    <div class="code-block-container" data-block-name="risk-assessment-step2">
-                        <div class="code-block"># Convert string values to appropriate numeric types
-age = int(age_string)
-glucose = int(glucose_string)
-systolic_bp = int(systolic_bp_string)
-diastolic_bp = int(diastolic_bp_string)
-hdl = int(hdl_cholesterol_string)
-medication_count = int(medication_count_string)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Step 3: Evaluate risk factors using Boolean operations</h3>
-                    
-                    <div class="code-block-container" data-block-name="risk-assessment-step3">
-                        <div class="code-block"># Evaluate individual risk factors
-glucose_elevated = glucose >= 126
-hypertension = systolic_bp >= 140 or diastolic_bp >= 90
-low_hdl = hdl < 40
-age_risk = age > 55
-poly_pharmacy = medication_count >= 5</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Step 4: Determine overall risk and produce report</h3>
-                    
-                    <div class="code-block-container" data-block-name="risk-assessment-step4">
-                        <div class="code-block"># Calculate overall risk score (count of risk factors)
-risk_count = (
-    int(glucose_elevated) + 
-    int(hypertension) + 
-    int(low_hdl) + 
-    int(age_risk) + 
-    int(poly_pharmacy)
-)
-
-# Determine risk level
-high_risk = risk_count >= 3
-moderate_risk = risk_count == 2
-low_risk = risk_count <= 1
-
-# Generate risk assessment report
-print("PATIENT RISK ASSESSMENT")
-print("Patient:", patient_name, "(ID:", patient_id + ")")
-print("\nRISK FACTORS:")
-print("- Elevated glucose:", glucose_elevated)
-print("- Hypertension:", hypertension)
-print("- Low HDL cholesterol:", low_hdl)
-print("- Age > 55:", age_risk)
-print("- Polypharmacy:", poly_pharmacy)
-print("\nRISK ASSESSMENT:")
-print("Risk factors present:", risk_count, "of 5")
-
-if high_risk:
-    print("Risk level: HIGH - Immediate intervention recommended")
-elif moderate_risk:
-    print("Risk level: MODERATE - Lifestyle modification advised")
-else:
-    print("Risk level: LOW - Routine monitoring")</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Discussion Questions:</strong></p>
-                        <ol>
-                            <li>How would you improve this risk assessment?</li>
-                            <li>What other data types might be useful to include?</li>
-                            <li>Can you think of a way to make the code more efficient?</li>
-                        </ol>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 5: Modify the Risk Assessment</h3>
-                        <p>Try modifying the input values in Step 1 and predict how the risk assessment results will change. Experiment with different values to create low, moderate, and high-risk scenarios.</p>
-                        <button class="celebrate-button" data-message="Great job working with the integrated practice! You've applied multiple Python concepts to create a functional patient risk assessment tool that could be used in a clinical setting. This demonstrates how the basic building blocks of Python can be combined to build real-world healthcare applications." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 6: Concepts Review with Drag and Drop -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-6">
-                        <i class="fas fa-puzzle-piece" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Mission Briefing: Concepts Review
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>Let's review the key concepts we've learned by matching terms with their definitions. This will help solidify your understanding of Python syntax basics for precision health.</p>
-                    
-                    <div class="drag-drop-container">
-                        <h3>Match the Python Concepts with Their Definitions</h3>
-                        <p>Drag each concept from the left to its correct definition on the right.</p>
-                        
-                        <div class="drag-items">
-                            <div class="drag-item" draggable="true" data-item="statement">Statement</div>
-                            <div class="drag-item" draggable="true" data-item="print">print()</div>
-                            <div class="drag-item" draggable="true" data-item="integer">Integer</div>
-                            <div class="drag-item" draggable="true" data-item="float">Float</div>
-                            <div class="drag-item" draggable="true" data-item="string">String</div>
-                            <div class="drag-item" draggable="true" data-item="boolean">Boolean</div>
-                            <div class="drag-item" draggable="true" data-item="int">int()</div>
-                            <div class="drag-item" draggable="true" data-item="equals">==</div>
-                            <div class="drag-item" draggable="true" data-item="or">or</div>
-                            <div class="drag-item" draggable="true" data-item="not">not True</div>
-                        </div>
-                        
-                        <div class="drop-targets">
-                            <div class="drop-target" data-expect="statement">
-                                <div class="definition">A unit of code that performs an action</div>
-                            </div>
-                            <div class="drop-target" data-expect="print">
-                                <div class="definition">Function that displays information on the screen</div>
-                            </div>
-                            <div class="drop-target" data-expect="integer">
-                                <div class="definition">A whole number without a decimal point</div>
-                            </div>
-                            <div class="drop-target" data-expect="float">
-                                <div class="definition">A number with a decimal point</div>
-                            </div>
-                            <div class="drop-target" data-expect="string">
-                                <div class="definition">Text data enclosed in quotation marks</div>
-                            </div>
-                            <div class="drop-target" data-expect="boolean">
-                                <div class="definition">True and False values</div>
-                            </div>
-                            <div class="drop-target" data-expect="int">
-                                <div class="definition">Function to convert a string to an integer</div>
-                            </div>
-                            <div class="drop-target" data-expect="equals">
-                                <div class="definition">Operator to check if two values are equal</div>
-                            </div>
-                            <div class="drop-target" data-expect="or">
-                                <div class="definition">Operator that returns True if either or both conditions are True</div>
-                            </div>
-                            <div class="drop-target" data-expect="not">
-                                <div class="definition">Expression that evaluates to False</div>
-                            </div>
-                        </div>
-                        
-                        <button class="reset-button" id="reset-drag-drop">Reset Exercise</button>
-                    </div>
-                    
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            let dragItem = null;
-                            
-                            // Set up drag and drop functionality
-                            function setupDragAndDrop() {
-                                const dragItems = document.querySelectorAll('.drag-item');
-                                const dropTargets = document.querySelectorAll('.drop-target');
-                                
-                                // Add event listeners to drag items
-                                dragItems.forEach(item => {
-                                    item.addEventListener('dragstart', dragStart);
-                                    item.addEventListener('dragend', dragEnd);
-                                });
-                                
-                                // Add event listeners to drop targets
-                                dropTargets.forEach(target => {
-                                    target.addEventListener('dragover', dragOver);
-                                    target.addEventListener('dragenter', dragEnter);
-                                    target.addEventListener('dragleave', dragLeave);
-                                    target.addEventListener('drop', drop);
-                                });
-                                
-                                // Reset button
-                                document.getElementById('reset-drag-drop').addEventListener('click', resetDragDrop);
-                            }
-                            
-                            // Drag functions
-                            function dragStart() {
-                                dragItem = this;
-                                setTimeout(() => this.style.opacity = '0.5', 0);
-                            }
-                            
-                            function dragEnd() {
-                                setTimeout(() => this.style.opacity = '1', 0);
-                                dragItem = null;
-                            }
-                            
-                            // Drop target functions
-                            function dragOver(e) {
-                                e.preventDefault();
-                            }
-                            
-                            function dragEnter(e) {
-                                e.preventDefault();
-                                this.classList.add('dragover');
-                            }
-                            
-                            function dragLeave() {
-                                this.classList.remove('dragover');
-                            }
-                            
-                            function drop() {
-                                this.classList.remove('dragover');
-                                
-                                // Check if the target already has a drag item
-                                if (this.querySelector('.drag-item')) {
-                                    return;
-                                }
-                                
-                                // Append the drag item to the drop target
-                                this.appendChild(dragItem);
-                                
-                                // Check if the answer is correct
-                                const expectedItem = this.getAttribute('data-expect');
-                                const draggedItem = dragItem.getAttribute('data-item');
-                                
-                                if (expectedItem === draggedItem) {
-                                    this.classList.add('correct');
-                                    this.classList.remove('incorrect');
-                                } else {
-                                    this.classList.add('incorrect');
-                                    this.classList.remove('correct');
-                                }
-                                
-                                // Check if all items are placed
-                                checkCompletion();
-                            }
-                            
-                            // Check if all items are placed correctly
-                            function checkCompletion() {
-                                const dropTargets = document.querySelectorAll('.drop-target');
-                                let allCorrect = true;
-                                let allPlaced = true;
-                                
-                                dropTargets.forEach(target => {
-                                    const dragItem = target.querySelector('.drag-item');
-                                    if (!dragItem) {
-                                        allPlaced = false;
-                                        return;
-                                    }
-                                    
-                                    const expectedItem = target.getAttribute('data-expect');
-                                    const draggedItem = dragItem.getAttribute('data-item');
-                                    
-                                    if (expectedItem !== draggedItem) {
-                                        allCorrect = false;
-                                    }
-                                });
-                                
-                                if (allPlaced && allCorrect) {
-                                    // All items placed correctly
-                                    setTimeout(() => {
-                                        alert('Excellent! You've correctly matched all concepts with their definitions!');
-                                    }, 500);
-                                }
-                            }
-                            
-                            // Reset drag and drop exercise
-                            function resetDragDrop() {
-                                const dragItems = document.querySelectorAll('.drag-item');
-                                const dragItemsContainer = document.querySelector('.drag-items');
-                                const dropTargets = document.querySelectorAll('.drop-target');
-                                
-                                // Move all drag items back to their container
-                                dragItems.forEach(item => {
-                                    dragItemsContainer.appendChild(item);
-                                });
-                                
-                                // Remove classes from drop targets
-                                dropTargets.forEach(target => {
-                                    target.classList.remove('correct', 'incorrect', 'dragover');
-                                });
-                            }
-                            
-                            // Set up drag and drop when the content is visible
-                            const observer = new MutationObserver((mutations) => {
-                                mutations.forEach((mutation) => {
-                                    if (mutation.attributeName === 'style' && 
-                                        mutation.target.classList.contains('section-content') && 
-                                        mutation.target.style.display !== 'none') {
-                                        setupDragAndDrop();
-                                    }
-                                });
-                            });
-                            
-                            // Observe the section content for display changes
-                            const sectionContent = document.querySelector('#section-6 + .section-content');
-                            if (sectionContent) {
-                                observer.observe(sectionContent, { attributes: true });
-                            }
-                            
-                            // Setup if the section is already visible
-                            if (sectionContent && sectionContent.style.display !== 'none') {
-                                setupDragAndDrop();
-                            }
-                        });
-                    </script>
-                </div>
-            </div>
-            
-            <!-- Section 7: Summary -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-7">
-                        <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Summary: Python Syntax Basics for Precision Health
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>Congratulations on completing the Python Syntax Basics module! You've gained essential skills that form the foundation of your precision health programming toolkit:</p>
-                    
-                    <ol>
-                        <li><strong>Python statements</strong>: You learned how to write clear, executable instructions that form the building blocks of your medical data analysis code.</li>
-                        <li><strong>Data types</strong>: You explored how to represent different kinds of biomedical information using integers, floats, and strings - ensuring your precision medicine applications handle data appropriately.</li>
-                        <li><strong>Boolean values and operations</strong>: You discovered how to use Boolean operations to represent and analyze biological states and medical test results, just as medical researchers do when evaluating multiple factors in disease diagnosis.</li>
-                        <li><strong>Type conversion</strong>: You practiced converting between data types, an essential skill for processing medical information from diverse sources and ensuring accurate calculations for patient care.</li>
-                    </ol>
-                    
-                    <p>These fundamental concepts are directly applicable to precision medicine workflows, from analyzing genetic sequencing data to calculating personalized treatment protocols. As healthcare becomes increasingly data-driven, your ability to manipulate and process information will be invaluable.</p>
-                    
-                    <p>In the next module, you'll build on these foundations by learning about variables and assignment in Python, which will allow you to store and manipulate patient data, genetic information, and clinical measurements throughout your programs. This will further enhance your ability to create sophisticated precision medicine applications.</p>
-                    
-                    <h3>Medical Terms Glossary</h3>
-                    <ul>
-                        <li><strong>A1C</strong>: A blood test that measures average blood glucose over 2-3 months</li>
-                        <li><strong>Biomarker</strong>: A measurable indicator of a biological state or condition</li>
-                        <li><strong>BRCA1/BRCA2</strong>: Genes related to breast cancer risk</li>
-                        <li><strong>eGFR</strong>: Estimated glomerular filtration rate, a test of kidney function</li>
-                        <li><strong>HbA1c</strong>: Glycated hemoglobin, used to diagnose diabetes</li>
-                        <li><strong>Metabolic syndrome</strong>: A cluster of conditions that increase risk of heart disease and diabetes</li>
-                    </ul>
-                    
-                    <p>Keep up the great work, and remember that every Python skill you master brings us one step closer to truly personalized healthcare!</p>
-                </div>
-            </div>
-        </section>
+    <div class="drag-drop-container">
+        <h3 class="drag-drop-title">
+            <i class="fas fa-database"></i>
+            Mini-Practice: Identifying Data Types
+        </h3>
+        <p>For each piece of medical information below, drag the most appropriate data type to the drop zone.</p>
         
-        <section id="interpreter-container">
-            <h2 id="interpreter-heading">Python Interpreter</h2>
-            <p>Try out Python code examples as you learn. You can practice with basic commands or experiment with more complex examples from the lesson.</p>
-            
-            <textarea id="python-code">
-# Try Python code here
-
-               
-</textarea>
-            
-            <div class="button-group">
-                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
-                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
-            </div>
-            
-            <div id="status">Loading Python runtime... Please wait.</div>
-            
-            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
-            <pre id="output-area"></pre>
-        </section>
-    </main>
-    
-    <!-- User Information Box -->
-    <div class="user-info-box">
-        <h3>Session Information</h3>
-        <div class="user-info-item">
-            <span class="user-info-label">Username:</span>
-            <span id="username">Loading...</span>
+        <div class="drag-options">
+            <div class="drag-item" draggable="true" data-type="string">string</div>
+            <div class="drag-item" draggable="true" data-type="integer">integer</div>
+            <div class="drag-item" draggable="true" data-type="float">float</div>
+            <div class="drag-item" draggable="true" data-type="boolean">boolean</div>
         </div>
-        <div class="user-info-item">
-            <span class="user-info-label">Access Time:</span>
-            <span id="access-time">Loading...</span>
-        </div>
-        <div class="user-info-item">
-            <span class="user-info-label">Current URL:</span>
-            <span id="current-url">Loading...</span>
-        </div>
-        <div id="status-message"></div>
-    </div>
-    
-    <footer>
-        <div class="footer-content">
-            <div>© 2025 National University of Singapore. All rights reserved.</div>
-        </div>
-    </footer>
-    
-    <!-- Celebration Modal -->
-    <div id="celebrationModal" class="modal">
-        <div class="modal-content">
-            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
-            <p id="celebrationMessage" class="modal-message"></p>
-            <button class="modal-close">Continue Learning</button>
-        </div>
-    </div>
-
-    <!-- Inactivity Modal -->
-    <div id="inactivityModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-top">
-                <div class="modal-icon">
-                    <i class="fas fa-flask"></i>
+        
+        <div class="drop-questions">
+            <div class="drop-question" data-correct="string">
+                <div class="question-text">1. Patient name: </div>
+                <div class="drop-box" data-question="1"></div>
+                <div class="feedback">
+                    <i class="fas"></i>
+                    <span></span>
                 </div>
-                <h3 class="modal-header">Time for a break?</h3>
-                <p class="modal-subheader">Your Python session is waiting</p>
             </div>
             
-            <div class="modal-body">
-                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
-                <button class="modal-close">
-                    <i class="fas fa-code"></i> Resume My Session
-                </button>
+            <div class="drop-question" data-correct="string">
+                <div class="question-text">2. Blood pressure reading of 120/80: </div>
+                <div class="drop-box" data-question="2"></div>
+                <div class="feedback">
+                    <i class="fas"></i>
+                    <span></span>
+                </div>
             </div>
+            
+            <div class="drop-question" data-correct="integer">
+                <div class="question-text">3. Number of previous surgeries: </div>
+                <div class="drop-box" data-question="3"></div>
+                <div class="feedback">
+                    <i class="fas"></i>
+                    <span></span>
+                </div>
+            </div>
+            
+            <div class="drop-question" data-correct="boolean">
+                <div class="question-text">4. Whether a patient is allergic to penicillin: </div>
+                <div class="drop-box" data-question="4"></div>
+                <div class="feedback">
+                    <i class="fas"></i>
+                    <span></span>
+                </div>
+            </div>
+            
+            <div class="drop-question" data-correct="float">
+                <div class="question-text">5. Patient weight of 65.4 kg: </div>
+                <div class="drop-box" data-question="5"></div>
+                <div class="feedback">
+                    <i class="fas"></i>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+        
+        <button class="submit-btn">
+            <i class="fas fa-check-circle"></i>
+            Check My Answers
+        </button>
+        
+        <div class="results">
+            <p><strong>Progress: <span id="score">0</span>/5 correct</strong></p>
+            <p id="results-message"></p>
         </div>
     </div>
     
-    <!-- Confetti Canvas -->
-    <canvas id="confetti-canvas"></canvas>
-    
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dragItems = document.querySelectorAll('.drag-item');
+            const dropBoxes = document.querySelectorAll('.drop-box');
+            const submitBtn = document.querySelector('.submit-btn');
+            const results = document.querySelector('.results');
+            const scoreEl = document.getElementById('score');
+            const resultsMessage = document.getElementById('results-message');
+            
+            // Feedback explanations
+            const feedback = {
+                string: {
+                    patientName: "Correct! Patient names are text data, so they're stored as strings.",
+                    bloodPressure: "Correct! Although blood pressure contains numbers, the special character '/' makes it text data that's stored as a string."
+                },
+                integer: {
+                    surgeries: "Correct! The number of surgeries is a whole number without decimal points, making it an integer."
+                },
+                boolean: {
+                    allergic: "Correct! Allergies are binary states (yes/no), perfectly represented by Boolean values."
+                },
+                float: {
+                    weight: "Correct! Patient weight includes a decimal point for precision, making it a floating-point number."
+                },
+                incorrect: {
+                    patientName: "Incorrect. Patient names contain letters and possibly other characters, requiring text storage.",
+                    bloodPressure: "Incorrect. Blood pressure readings include the '/' character, making them text data, not purely numeric.",
+                    surgeries: "Incorrect. Surgery counts are whole numbers without decimal points.",
+                    allergic: "Incorrect. Allergies are binary yes/no values, perfect for Boolean representation.",
+                    weight: "Incorrect. Patient weight with decimal precision requires floating-point storage."
+                }
+            };
+            
+            // Store the original positions
+            const originalPositions = {};
+            dragItems.forEach(item => {
+                const rect = item.getBoundingClientRect();
+                originalPositions[item.dataset.type] = {
+                    parent: item.parentNode,
+                    nextSibling: item.nextSibling
+                };
+            });
+            
+            // Current dragged element
+            let dragged = null;
+            
+            // Add event listeners to draggable items
+            dragItems.forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    dragged = e.target;
+                    setTimeout(() => {
+                        e.target.style.opacity = '0.4';
+                    }, 0);
+                });
+                
+                item.addEventListener('dragend', function(e) {
+                    e.target.style.opacity = '1';
+                });
+            });
+            
+            // Add event listeners to drop targets
+            dropBoxes.forEach(box => {
+                box.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('hover');
+                });
+                
+                box.addEventListener('dragleave', function() {
+                    this.classList.remove('hover');
+                });
+                
+                box.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('hover');
+                    
+                    if (dragged && !this.hasChildNodes()) {
+                        this.appendChild(dragged);
+                        dragged = null;
+                    }
+                });
+            });
+            
+            // Submit button functionality
+            submitBtn.addEventListener('click', function() {
+                let correctCount = 0;
+                let allAnswered = true;
+                
+                // Check each question
+                document.querySelectorAll('.drop-question').forEach((question, index) => {
+                    const dropBox = question.querySelector('.drop-box');
+                    const feedback = question.querySelector('.feedback');
+                    const feedbackIcon = feedback.querySelector('i');
+                    const feedbackText = feedback.querySelector('span');
+                    
+                    // Remove previous feedback classes
+                    dropBox.classList.remove('correct', 'incorrect');
+                    feedback.classList.remove('show', 'correct', 'incorrect');
+                    
+                    if (dropBox.children.length === 0) {
+                        allAnswered = false;
+                        return;
+                    }
+                    
+                    const answer = dropBox.children[0].dataset.type;
+                    const correctAnswer = question.dataset.correct;
+                    
+                    if (answer === correctAnswer) {
+                        // Correct answer
+                        correctCount++;
+                        dropBox.classList.add('correct');
+                        feedback.classList.add('show', 'correct');
+                        feedbackIcon.className = 'fas fa-check-circle';
+                        
+                        // Set specific feedback based on the question
+                        if (index === 0) {
+                            feedbackText.textContent = feedback.patientName;
+                        } else if (index === 1) {
+                            feedbackText.textContent = feedback.bloodPressure;
+                        } else if (index === 2) {
+                            feedbackText.textContent = feedback.surgeries;
+                        } else if (index === 3) {
+                            feedbackText.textContent = feedback.allergic;
+                        } else if (index === 4) {
+                            feedbackText.textContent = feedback.weight;
+                        }
+                    } else {
+                        // Incorrect answer
+                        dropBox.classList.add('incorrect');
+                        feedback.classList.add('show', 'incorrect');
+                        feedbackIcon.className = 'fas fa-times-circle';
+                        
+                        // Set specific feedback based on the question
+                        if (index === 0) {
+                            feedbackText.textContent = feedback.incorrect.patientName;
+                        } else if (index === 1) {
+                            feedbackText.textContent = feedback.incorrect.bloodPressure;
+                        } else if (index === 2) {
+                            feedbackText.textContent = feedback.incorrect.surgeries;
+                        } else if (index === 3) {
+                            feedbackText.textContent = feedback.incorrect.allergic;
+                        } else if (index === 4) {
+                            feedbackText.textContent = feedback.incorrect.weight;
+                        }
+                        
+                        // Return incorrect items to original position
+                        const dragItem = dropBox.children[0];
+                        const originalData = originalPositions[dragItem.dataset.type];
+                        
+                        setTimeout(() => {
+                            originalData.parent.insertBefore(dragItem, originalData.nextSibling);
+                        }, 1500);
+                    }
+                });
+                
+                // Update results
+                scoreEl.textContent = correctCount;
+                results.className = 'results show';
+                
+                if (correctCount === 5) {
+                    results.classList.add('complete');
+                    resultsMessage.textContent = 'Excellent! You've mastered data type selection for medical information. Understanding appropriate data types is crucial for accurate processing and analysis in precision health applications.';
+                } else if (allAnswered) {
+                    results.classList.add('incomplete');
+                    resultsMessage.textContent = 'Nice try! Review the feedback for each question. Selecting the right data type ensures your health applications process information correctly.';
+                } else {
+                    results.classList.add('incomplete');
+                    resultsMessage.textContent = 'Please answer all questions to complete the exercise.';
+                }
+            });
+            
+            // Fix for specific feedback text
+            const feedbackTexts = document.querySelectorAll('.feedback span');
+            feedbackTexts[0].textContent = '';
+            feedbackTexts[1].textContent = '';
+            feedbackTexts[2].textContent = '';
+            feedbackTexts[3].textContent = '';
+            feedbackTexts[4].textContent = '';
+        });
+        
+        // Initialize with correct feedback handling
+        const feedbackHandler = {
+            patientName: "Correct! Patient names are text data, so they're stored as strings.",
+            bloodPressure: "Correct! Although blood pressure contains numbers, the special character '/' makes it text data that's stored as a string.",
+            surgeries: "Correct! The number of surgeries is a whole number without decimal points, making it an integer.",
+            allergic: "Correct! Allergies are binary states (yes/no), perfectly represented by Boolean values.",
+            weight: "Correct! Patient weight includes a decimal point for precision, making it a floating-point number.",
+            incorrect: {
+                patientName: "Incorrect. Patient names contain letters and possibly other characters, requiring text storage.",
+                bloodPressure: "Incorrect. Blood pressure readings include the '/' character, making them text data, not purely numeric.",
+                surgeries: "Incorrect. Surgery counts are whole numbers without decimal points.",
+                allergic: "Incorrect. Allergies are binary yes/no values, perfect for Boolean representation.",
+                weight: "Incorrect. Patient weight with decimal precision requires floating-point storage."
+            }
+        };
+        
+        function handleFeedback(questionIndex, isCorrect) {
+            const feedbackElements = document.querySelectorAll('.feedback span');
+            
+            if (isCorrect) {
+                if (questionIndex === 0) {
+                    feedbackElements[0].textContent = feedbackHandler.patientName;
+                } else if (questionIndex === 1) {
+                    feedbackElements[1].textContent = feedbackHandler.bloodPressure;
+                } else if (questionIndex === 2) {
+                    feedbackElements[2].textContent = feedbackHandler.surgeries;
+                } else if (questionIndex === 3) {
+                    feedbackElements[3].textContent = feedbackHandler.allergic;
+                } else if (questionIndex === 4) {
+                    feedbackElements[4].textContent = feedbackHandler.weight;
+                }
+            } else {
+                if (questionIndex === 0) {
+                    feedbackElements[0].textContent = feedbackHandler.incorrect.patientName;
+                } else if (questionIndex === 1) {
+                    feedbackElements[1].textContent = feedbackHandler.incorrect.bloodPressure;
+                } else if (questionIndex === 2) {
+                    feedbackElements[2].textContent = feedbackHandler.incorrect.surgeries;
+                } else if (questionIndex === 3) {
+                    feedbackElements[3].textContent = feedbackHandler.incorrect.allergic;
+                } else if (questionIndex === 4) {
+                    feedbackElements[4].textContent = feedbackHandler.incorrect.weight;
+                }
+            }
+        }
+    </script>
 </body>
 </html>
