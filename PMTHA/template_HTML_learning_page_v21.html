@@ -107,6 +107,7 @@
             box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
+            padding-top: 32px; /* Added padding top to make space for label */
         }
         
         .drag-options::before {
@@ -565,6 +566,7 @@
         
         <div class="drag-options">
             <div class="drag-options-label">Available Types</div>
+            <!-- draggable="true" is already in HTML, no need to set in JS -->
             <div class="drag-item" draggable="true" data-type="string">string</div>
             <div class="drag-item" draggable="true" data-type="integer">integer</div>
             <div class="drag-item" draggable="true" data-type="float">float</div>
@@ -572,45 +574,47 @@
         </div>
         
         <div class="drop-questions">
-            <div class="drop-question" data-correct="string">
+            <!-- Added data-question-id for robust feedback mapping -->
+            <!-- Removed unused data-question from drop-box -->
+            <div class="drop-question" data-correct="string" data-question-id="patientName">
                 <div class="question-text">1. Patient name:</div>
-                <div class="drop-box" data-question="1"></div>
+                <div class="drop-box"></div>
                 <div class="feedback">
                     <i class="fas"></i>
                     <span></span>
                 </div>
             </div>
             
-            <div class="drop-question" data-correct="string">
+            <div class="drop-question" data-correct="string" data-question-id="bloodPressure">
                 <div class="question-text">2. Blood pressure reading of 120/80:</div>
-                <div class="drop-box" data-question="2"></div>
+                <div class="drop-box"></div>
                 <div class="feedback">
                     <i class="fas"></i>
                     <span></span>
                 </div>
             </div>
             
-            <div class="drop-question" data-correct="integer">
+            <div class="drop-question" data-correct="integer" data-question-id="surgeries">
                 <div class="question-text">3. Number of previous surgeries:</div>
-                <div class="drop-box" data-question="3"></div>
+                <div class="drop-box"></div>
                 <div class="feedback">
                     <i class="fas"></i>
                     <span></span>
                 </div>
             </div>
             
-            <div class="drop-question" data-correct="boolean">
+            <div class="drop-question" data-correct="boolean" data-question-id="allergic">
                 <div class="question-text">4. Whether a patient is allergic to penicillin:</div>
-                <div class="drop-box" data-question="4"></div>
+                <div class="drop-box"></div>
                 <div class="feedback">
                     <i class="fas"></i>
                     <span></span>
                 </div>
             </div>
             
-            <div class="drop-question" data-correct="float">
+            <div class="drop-question" data-correct="float" data-question-id="weight">
                 <div class="question-text">5. Patient weight of 65.4 kg:</div>
-                <div class="drop-box" data-question="5"></div>
+                <div class="drop-box"></div>
                 <div class="feedback">
                     <i class="fas"></i>
                     <span></span>
@@ -645,7 +649,7 @@
                     <div class="score-pill"></div>
                     <div class="score-pill"></div>
                 </div>
-                <span class="score-text">&nbsp;(<span id="score">0</span>/5)</span>
+                <span class="score-text"> (<span id="score">0</span>/5)</span>
             </div>
             
             <p id="results-message"></p>
@@ -664,21 +668,27 @@
             const scorePills = document.querySelectorAll('.score-pill');
             const resultsMessage = document.getElementById('results-message');
             
-            // Feedback explanations
-            const feedbackData = {
-                correct: {
-                    patientName: "Correct! Patient names are text data, so they're stored as strings.",
-                    bloodPressure: "Correct! Although blood pressure contains numbers, the special character '/' makes it text data that's stored as a string.",
-                    surgeries: "Correct! The number of surgeries is a whole number without decimal points, making it an integer.",
-                    allergic: "Correct! Allergies are binary states (yes/no), perfectly represented by Boolean values.",
-                    weight: "Correct! Patient weight includes a decimal point for precision, making it a floating-point number."
+            // Feedback explanations linked by question ID (from data-question-id attribute)
+            const feedbackMessages = {
+                patientName: {
+                    correct: "Correct! Patient names are text data, so they're stored as strings.",
+                    incorrect: "Incorrect. Patient names contain letters and possibly other characters, requiring text storage."
                 },
-                incorrect: {
-                    patientName: "Incorrect. Patient names contain letters and possibly other characters, requiring text storage.",
-                    bloodPressure: "Incorrect. Blood pressure readings include the '/' character, making them text data, not purely numeric.",
-                    surgeries: "Incorrect. Surgery counts are whole numbers without decimal points.",
-                    allergic: "Incorrect. Allergies are binary yes/no values, perfect for Boolean representation.",
-                    weight: "Incorrect. Patient weight with decimal precision requires floating-point storage."
+                bloodPressure: {
+                    correct: "Correct! Although blood pressure contains numbers, the special character '/' makes it text data that's stored as a string.",
+                    incorrect: "Incorrect. Blood pressure readings include the '/' character, making them text data, not purely numeric."
+                },
+                surgeries: {
+                    correct: "Correct! The number of surgeries is a whole number without decimal points, making it an integer.",
+                    incorrect: "Incorrect. Surgery counts are whole numbers without decimal points."
+                },
+                allergic: {
+                    correct: "Correct! Allergies are binary states (yes/no), perfectly represented by Boolean values.",
+                    incorrect: "Incorrect. Allergies are binary yes/no values, perfect for Boolean representation."
+                },
+                weight: {
+                    correct: "Correct! Patient weight includes a decimal point for precision, making it a floating-point number.",
+                    incorrect: "Incorrect. Patient weight with decimal precision requires floating-point storage."
                 }
             };
             
@@ -701,8 +711,7 @@
             
             // Simplified drag and drop implementation
             dragItems.forEach(item => {
-                // Make items draggable
-                item.setAttribute('draggable', 'true');
+                // draggable="true" is already in HTML, no need to set it here.
                 
                 // Start drag
                 item.addEventListener('dragstart', function(e) {
@@ -748,11 +757,12 @@
                     // Get the dragged data
                     const dataType = e.dataTransfer.getData('text/plain');
                     
-                    // Find the original dragged element
-                    const dragItem = document.querySelector(`.drag-item[data-type="${dataType}"]`);
+                    // Find the original dragged element (can use the globally stored draggedItem if preferred,
+                    // but this is also fine for re-finding based on dataTransfer)
+                    const currentDraggedItem = document.querySelector(`.drag-item[data-type="${dataType}"]`);
                     
                     // Only append if we have a valid drag item
-                    if (dragItem) {
+                    if (currentDraggedItem) { // Changed from dragItem to currentDraggedItem for clarity
                         // Clear any existing content first
                         if (this.children.length > 0) {
                             const existingItem = this.children[0];
@@ -767,7 +777,7 @@
                         }
                         
                         // Add the dragged item to the drop target
-                        this.appendChild(dragItem);
+                        this.appendChild(currentDraggedItem);
                     }
                 });
             });
@@ -778,7 +788,6 @@
                     // Find the first empty drop box
                     const emptyBox = Array.from(dropBoxes).find(box => box.children.length === 0);
                     if (emptyBox) {
-                        // Simulate a drop
                         if (this.parentNode && this.parentNode.classList.contains('drop-box')) {
                             // If already in a drop box, move back to options
                             const originalData = originalPositions[this.dataset.type];
@@ -817,69 +826,47 @@
                     const feedbackIcon = feedback.querySelector('i');
                     const feedbackText = feedback.querySelector('span');
                     
+                    // Get the unique ID for this question from its data attribute
+                    const questionId = question.dataset.questionId;
+                    
                     // Remove previous feedback classes
                     dropBox.classList.remove('correct', 'incorrect');
                     feedback.classList.remove('show', 'correct', 'incorrect');
                     
                     if (dropBox.children.length === 0) {
                         allAnswered = false;
-                        return;
+                        return; // Skip to next question if this one isn't answered
                     }
                     
                     const answer = dropBox.children[0].dataset.type;
                     const correctAnswer = question.dataset.correct;
+                    const messages = feedbackMessages[questionId]; // Get feedback for this specific question
                     
                     if (answer === correctAnswer) {
-                        // Correct answer
                         correctCount++;
                         dropBox.classList.add('correct');
                         feedback.classList.add('show', 'correct');
                         feedbackIcon.className = 'fas fa-check-circle';
+                        feedbackText.textContent = messages ? messages.correct : "Correct!"; // Fallback message
                         
-                        // Fill score pill
-                        scorePills[index].classList.add('filled');
+                        // Fill score pill (index is still fine here for visual pill order)
+                        if (scorePills[index]) scorePills[index].classList.add('filled');
                         
-                        // Set specific feedback based on the question
-                        if (index === 0) {
-                            feedbackText.textContent = feedbackData.correct.patientName;
-                        } else if (index === 1) {
-                            feedbackText.textContent = feedbackData.correct.bloodPressure;
-                        } else if (index === 2) {
-                            feedbackText.textContent = feedbackData.correct.surgeries;
-                        } else if (index === 3) {
-                            feedbackText.textContent = feedbackData.correct.allergic;
-                        } else if (index === 4) {
-                            feedbackText.textContent = feedbackData.correct.weight;
-                        }
                     } else {
-                        // Incorrect answer
                         dropBox.classList.add('incorrect');
                         feedback.classList.add('show', 'incorrect');
                         feedbackIcon.className = 'fas fa-times-circle';
-                        
-                        // Set specific feedback based on the question
-                        if (index === 0) {
-                            feedbackText.textContent = feedbackData.incorrect.patientName;
-                        } else if (index === 1) {
-                            feedbackText.textContent = feedbackData.incorrect.bloodPressure;
-                        } else if (index === 2) {
-                            feedbackText.textContent = feedbackData.incorrect.surgeries;
-                        } else if (index === 3) {
-                            feedbackText.textContent = feedbackData.incorrect.allergic;
-                        } else if (index === 4) {
-                            feedbackText.textContent = feedbackData.incorrect.weight;
-                        }
+                        feedbackText.textContent = messages ? messages.incorrect : "Incorrect."; // Fallback message
                         
                         // Return incorrect items to original position after a delay
-                        const dragItem = dropBox.children[0];
-                        const originalData = originalPositions[dragItem.dataset.type];
+                        const dragItemInBox = dropBox.children[0]; // Renamed for clarity
+                        const originalData = originalPositions[dragItemInBox.dataset.type];
                         
                         setTimeout(() => {
                             if (originalData && originalData.parent) {
-                                originalData.parent.insertBefore(dragItem, originalData.nextSibling);
+                                originalData.parent.insertBefore(dragItemInBox, originalData.nextSibling);
                             } else {
-                                // Fallback if we can't find the original position
-                                document.querySelector('.drag-options').appendChild(dragItem);
+                                document.querySelector('.drag-options').appendChild(dragItemInBox);
                             }
                             dropBox.classList.remove('incorrect');
                         }, 1500);
@@ -894,7 +881,7 @@
                 if (correctCount === 5) {
                     results.classList.add('complete');
                     document.querySelector('.results-header i').className = 'fas fa-trophy';
-                    resultsMessage.textContent = 'Excellent! You've mastered data type selection for medical information. Understanding appropriate data types is crucial for accurate processing and analysis in precision health applications.';
+                    resultsMessage.textContent = 'Excellent! You\'ve mastered data type selection for medical information. Understanding appropriate data types is crucial for accurate processing and analysis in precision health applications.';
                 } else if (correctCount >= 3) {
                     results.classList.add('incomplete');
                     document.querySelector('.results-header i').className = 'fas fa-chart-line';
@@ -919,14 +906,13 @@
                     
                     // Remove all drag items from drop boxes
                     while (dropBox.firstChild) {
-                        const dragItem = dropBox.firstChild;
-                        const originalData = originalPositions[dragItem.dataset.type];
+                        const dragItemInBox = dropBox.firstChild; // Renamed for clarity
+                        const originalData = originalPositions[dragItemInBox.dataset.type];
                         
                         if (originalData && originalData.parent) {
-                            originalData.parent.insertBefore(dragItem, originalData.nextSibling);
+                            originalData.parent.insertBefore(dragItemInBox, originalData.nextSibling);
                         } else {
-                            // Fallback if we can't find the original position
-                            document.querySelector('.drag-options').appendChild(dragItem);
+                            document.querySelector('.drag-options').appendChild(dragItemInBox);
                         }
                     }
                     
