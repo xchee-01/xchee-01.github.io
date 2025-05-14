@@ -92,7 +92,7 @@
             font-size: 1.05rem;
             line-height: 1.6;
             margin-bottom: 28px;
-            max-width: 80%;
+            /* max-width: 80%; */ /* FIX: Removed for better alignment */
         }
         
         .drag-options {
@@ -106,7 +106,7 @@
             border: 1px solid var(--border-color);
             box-shadow: var(--shadow-sm);
             position: relative;
-            overflow: hidden;
+            /* overflow: hidden; */ /* FIX: Removed to show label */
             padding-top: 32px; /* Added padding top to make space for label */
         }
         
@@ -516,7 +516,7 @@
             }
             
             .intro-text {
-                max-width: 100%;
+                max-width: 100%; /* Ensures it uses available width on mobile too */
             }
             
             .drop-question {
@@ -566,7 +566,6 @@
         
         <div class="drag-options">
             <div class="drag-options-label">Available Types</div>
-            <!-- draggable="true" is already in HTML, no need to set in JS -->
             <div class="drag-item" draggable="true" data-type="string">string</div>
             <div class="drag-item" draggable="true" data-type="integer">integer</div>
             <div class="drag-item" draggable="true" data-type="float">float</div>
@@ -574,8 +573,6 @@
         </div>
         
         <div class="drop-questions">
-            <!-- Added data-question-id for robust feedback mapping -->
-            <!-- Removed unused data-question from drop-box -->
             <div class="drop-question" data-correct="string" data-question-id="patientName">
                 <div class="question-text">1. Patient name:</div>
                 <div class="drop-box"></div>
@@ -612,6 +609,8 @@
                 </div>
             </div>
             
+            <!-- FIX: Removed 5th question to match the image -->
+            <!-- 
             <div class="drop-question" data-correct="float" data-question-id="weight">
                 <div class="question-text">5. Patient weight of 65.4 kg:</div>
                 <div class="drop-box"></div>
@@ -620,6 +619,7 @@
                     <span></span>
                 </div>
             </div>
+             -->
         </div>
         
         <div class="action-wrapper">
@@ -647,9 +647,9 @@
                     <div class="score-pill"></div>
                     <div class="score-pill"></div>
                     <div class="score-pill"></div>
-                    <div class="score-pill"></div>
+                    <!-- FIX: Removed one pill for 4 questions total -->
                 </div>
-                <span class="score-text"> (<span id="score">0</span>/5)</span>
+                <span class="score-text"> (<span id="score">0</span>/4)</span> <!-- FIX: Changed to /4 -->
             </div>
             
             <p id="results-message"></p>
@@ -658,7 +658,6 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Get DOM elements
             const dragItems = document.querySelectorAll('.drag-item');
             const dropBoxes = document.querySelectorAll('.drop-box');
             const submitBtn = document.querySelector('.submit-btn');
@@ -668,7 +667,6 @@
             const scorePills = document.querySelectorAll('.score-pill');
             const resultsMessage = document.getElementById('results-message');
             
-            // Feedback explanations linked by question ID (from data-question-id attribute)
             const feedbackMessages = {
                 patientName: {
                     correct: "Correct! Patient names are text data, so they're stored as strings.",
@@ -685,14 +683,16 @@
                 allergic: {
                     correct: "Correct! Allergies are binary states (yes/no), perfectly represented by Boolean values.",
                     incorrect: "Incorrect. Allergies are binary yes/no values, perfect for Boolean representation."
-                },
+                }
+                // FIX: Removed feedback for 'weight' as the 5th question is removed
+                /*
                 weight: {
                     correct: "Correct! Patient weight includes a decimal point for precision, making it a floating-point number.",
                     incorrect: "Incorrect. Patient weight with decimal precision requires floating-point storage."
                 }
+                */
             };
             
-            // Store the original positions of drag items
             const originalPositions = {};
             
             function storeOriginalPositions() {
@@ -706,41 +706,31 @@
             
             storeOriginalPositions();
             
-            // Variable to track the currently dragged element
             let draggedItem = null;
             
-            // Simplified drag and drop implementation
             dragItems.forEach(item => {
-                // draggable="true" is already in HTML, no need to set it here.
-                
-                // Start drag
                 item.addEventListener('dragstart', function(e) {
                     draggedItem = this;
                     setTimeout(() => {
                         this.style.opacity = '0.4';
                     }, 0);
-                    
-                    // Store the dragged item type
                     e.dataTransfer.setData('text/plain', this.dataset.type);
                 });
                 
-                // End drag
                 item.addEventListener('dragend', function() {
                     this.style.opacity = '1';
                     draggedItem = null;
                 });
             });
             
-            // Set up drop zones
             dropBoxes.forEach(box => {
-                // Allow drops
                 box.addEventListener('dragenter', function(e) {
                     e.preventDefault();
                     this.classList.add('hover');
                 });
                 
                 box.addEventListener('dragover', function(e) {
-                    e.preventDefault(); // This is critical
+                    e.preventDefault(); 
                     e.dataTransfer.dropEffect = 'move';
                     this.classList.add('hover');
                 });
@@ -749,21 +739,13 @@
                     this.classList.remove('hover');
                 });
                 
-                // Handle the drop
                 box.addEventListener('drop', function(e) {
                     e.preventDefault();
                     this.classList.remove('hover');
-                    
-                    // Get the dragged data
                     const dataType = e.dataTransfer.getData('text/plain');
-                    
-                    // Find the original dragged element (can use the globally stored draggedItem if preferred,
-                    // but this is also fine for re-finding based on dataTransfer)
                     const currentDraggedItem = document.querySelector(`.drag-item[data-type="${dataType}"]`);
                     
-                    // Only append if we have a valid drag item
-                    if (currentDraggedItem) { // Changed from dragItem to currentDraggedItem for clarity
-                        // Clear any existing content first
+                    if (currentDraggedItem) { 
                         if (this.children.length > 0) {
                             const existingItem = this.children[0];
                             const type = existingItem.dataset.type;
@@ -771,95 +753,76 @@
                             if (originalData && originalData.parent) {
                                 originalData.parent.insertBefore(existingItem, originalData.nextSibling);
                             } else {
-                                // Fallback if we can't find the original position
                                 document.querySelector('.drag-options').appendChild(existingItem);
                             }
                         }
-                        
-                        // Add the dragged item to the drop target
                         this.appendChild(currentDraggedItem);
                     }
                 });
             });
             
-            // Click-to-place functionality (for mobile support)
             dragItems.forEach(item => {
                 item.addEventListener('click', function() {
-                    // Find the first empty drop box
                     const emptyBox = Array.from(dropBoxes).find(box => box.children.length === 0);
                     if (emptyBox) {
                         if (this.parentNode && this.parentNode.classList.contains('drop-box')) {
-                            // If already in a drop box, move back to options
                             const originalData = originalPositions[this.dataset.type];
                             originalData.parent.insertBefore(this, originalData.nextSibling);
                         } else {
-                            // Move to the empty drop box
                             emptyBox.appendChild(this);
                         }
                     }
                 });
             });
             
-            // Double-click to return to original position
             dragItems.forEach(item => {
                 item.addEventListener('dblclick', function() {
                     if (this.parentNode && this.parentNode.classList.contains('drop-box')) {
-                        // Return to original position
                         const originalData = originalPositions[this.dataset.type];
                         originalData.parent.insertBefore(this, originalData.nextSibling);
                     }
                 });
             });
             
-            // Submit button functionality
             submitBtn.addEventListener('click', function() {
                 let correctCount = 0;
                 let allAnswered = true;
+                const totalQuestions = document.querySelectorAll('.drop-question').length; // Should be 4 now
                 
-                // Clear score pills
                 scorePills.forEach(pill => pill.classList.remove('filled'));
                 
-                // Check each question
                 document.querySelectorAll('.drop-question').forEach((question, index) => {
                     const dropBox = question.querySelector('.drop-box');
                     const feedback = question.querySelector('.feedback');
                     const feedbackIcon = feedback.querySelector('i');
                     const feedbackText = feedback.querySelector('span');
-                    
-                    // Get the unique ID for this question from its data attribute
                     const questionId = question.dataset.questionId;
                     
-                    // Remove previous feedback classes
                     dropBox.classList.remove('correct', 'incorrect');
                     feedback.classList.remove('show', 'correct', 'incorrect');
                     
                     if (dropBox.children.length === 0) {
                         allAnswered = false;
-                        return; // Skip to next question if this one isn't answered
+                        return; 
                     }
                     
                     const answer = dropBox.children[0].dataset.type;
                     const correctAnswer = question.dataset.correct;
-                    const messages = feedbackMessages[questionId]; // Get feedback for this specific question
+                    const messages = feedbackMessages[questionId]; 
                     
                     if (answer === correctAnswer) {
                         correctCount++;
                         dropBox.classList.add('correct');
                         feedback.classList.add('show', 'correct');
                         feedbackIcon.className = 'fas fa-check-circle';
-                        feedbackText.textContent = messages ? messages.correct : "Correct!"; // Fallback message
-                        
-                        // Fill score pill (index is still fine here for visual pill order)
+                        feedbackText.textContent = messages ? messages.correct : "Correct!";
                         if (scorePills[index]) scorePills[index].classList.add('filled');
-                        
                     } else {
                         dropBox.classList.add('incorrect');
                         feedback.classList.add('show', 'incorrect');
                         feedbackIcon.className = 'fas fa-times-circle';
-                        feedbackText.textContent = messages ? messages.incorrect : "Incorrect."; // Fallback message
-                        
-                        // Return incorrect items to original position after a delay
-                        const dragItemInBox = dropBox.children[0]; // Renamed for clarity
+                        feedbackText.textContent = messages ? messages.incorrect : "Incorrect.";
+                        const dragItemInBox = dropBox.children[0]; 
                         const originalData = originalPositions[dragItemInBox.dataset.type];
                         
                         setTimeout(() => {
@@ -873,16 +836,16 @@
                     }
                 });
                 
-                // Update results
                 scoreEl.textContent = correctCount;
                 results.classList.remove('complete', 'incomplete');
                 results.classList.add('show');
                 
-                if (correctCount === 5) {
+                // FIX: Adjusted for 4 questions total
+                if (correctCount === totalQuestions) { // totalQuestions will be 4
                     results.classList.add('complete');
                     document.querySelector('.results-header i').className = 'fas fa-trophy';
                     resultsMessage.textContent = 'Excellent! You\'ve mastered data type selection for medical information. Understanding appropriate data types is crucial for accurate processing and analysis in precision health applications.';
-                } else if (correctCount >= 3) {
+                } else if (correctCount >= Math.ceil(totalQuestions * 0.75)) { // e.g., 3 out of 4
                     results.classList.add('incomplete');
                     document.querySelector('.results-header i').className = 'fas fa-chart-line';
                     resultsMessage.textContent = 'Good progress! Review the feedback for each incorrect answer. Selecting the right data type ensures your health applications process information correctly.';
@@ -897,16 +860,13 @@
                 }
             });
             
-            // Reset button functionality
             resetBtn.addEventListener('click', function() {
-                // Reset all drop boxes and feedback
                 document.querySelectorAll('.drop-question').forEach(question => {
                     const dropBox = question.querySelector('.drop-box');
                     const feedback = question.querySelector('.feedback');
                     
-                    // Remove all drag items from drop boxes
                     while (dropBox.firstChild) {
-                        const dragItemInBox = dropBox.firstChild; // Renamed for clarity
+                        const dragItemInBox = dropBox.firstChild; 
                         const originalData = originalPositions[dragItemInBox.dataset.type];
                         
                         if (originalData && originalData.parent) {
@@ -916,17 +876,14 @@
                         }
                     }
                     
-                    // Reset styles
                     dropBox.classList.remove('correct', 'incorrect', 'hover');
                     feedback.classList.remove('show', 'correct', 'incorrect');
                 });
                 
-                // Reset results area
                 results.classList.remove('show', 'complete', 'incomplete');
                 scorePills.forEach(pill => pill.classList.remove('filled'));
                 scoreEl.textContent = '0';
                 
-                // Reset drag items to original state
                 dragItems.forEach(item => {
                     item.style.opacity = '1';
                     item.style.transform = 'none';
