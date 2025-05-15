@@ -540,17 +540,23 @@
                 setTimeout(() => {
                     this.style.opacity = '0.5';
                 }, 0);
-                
+    
                 e.dataTransfer.setData('text/plain', this.dataset.type);
+    
+                // Add auto-scroll during drag
+                document.addEventListener('dragover', handleDragScroll);
             }
             
             function handleDragEnd() {
                 this.style.opacity = '1';
                 draggedItem = null;
-                
+    
                 dropAreas.forEach(area => {
                     area.classList.remove('hover');
                 });
+    
+                // Remove auto-scroll when drag ends
+                document.removeEventListener('dragover', handleDragScroll);
             }
             
             function handleDragOver(e) {
@@ -639,6 +645,20 @@
                         }, 1500);
                     }
                 }
+            }
+
+            function handleDragScroll(e) {
+                    const scrollThreshold = 60; // pixels from viewport edge
+                    const scrollSpeed = 10; // pixels to scroll per event
+                    const viewportHeight = window.innerHeight;
+    
+                    if (e.clientY < scrollThreshold) {
+                        // Scroll up when near top
+                        window.scrollBy(0, -scrollSpeed);
+                    } else if (e.clientY > viewportHeight - scrollThreshold) {
+                        // Scroll down when near bottom
+                        window.scrollBy(0, scrollSpeed);
+                    }
             }
             
             function resetExercise() {
