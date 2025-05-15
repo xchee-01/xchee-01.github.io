@@ -1,6 +1,4 @@
-.reset-button:active {
-        transform: translateY(0);
-    }            <div class="input-section-title">Fill in the expected output below:</div><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,9 +15,21 @@
             --nus-dark-gray: #333333;
             --nus-red: #c41230;
             --nus-green: #2E8540;
+        } /* Fixed: Added closing brace */
+
         .hidden {
-        display: none;
-    }
+            display: none;
+        }
+
+        .celebration { /* Added from stray code */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
 
         * {
             margin: 0;
@@ -248,22 +258,23 @@
         }
 
         .validation-message {
-        display: none;
-        padding: 12px 16px;
-        margin-bottom: 20px;
-        border-radius: 6px;
-        background-color: #fff3e0;
-        border: 1px solid #ffe0b2;
-        color: #e65100;
-    }
+            display: none;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            background-color: #fff3e0;
+            border: 1px solid #ffe0b2;
+            color: #e65100;
+        }
 
-    .validation-message svg {
-        margin-right: 8px;
-        vertical-align: middle;
-    }
+        .validation-message svg {
+            margin-right: 8px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
+    <div class="celebration" id="celebration"></div> <!-- Moved here from stray code -->
     <div class="exercise-container">
         <div class="exercise-header">
             <div class="header-icon">
@@ -271,7 +282,7 @@
                     <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                 </svg>
             </div>
-            <div class="header-text">Learning Checkpoint: Python Output</div>
+            <div class="header-text">🧪 Learning Checkpoint: Python Output</div>
         </div>
         
         <div class="exercise-content">
@@ -286,6 +297,8 @@ print("Standard dose:", 500, "mg")
 print("Child dose (age 8):", 500 / 2, "mg")
 print("Infant dose:", 500 / 10, "mg")</pre>
             </div>
+            
+            <div class="input-section-title">Fill in the expected output below:</div> <!-- Moved here from stray code -->
             
             <div class="validation-message" id="validation-message">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -381,6 +394,7 @@ print("Infant dose:", 500 / 10, "mg")</pre>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Correct answers
@@ -397,13 +411,182 @@ print("Infant dose:", 500 / 10, "mg")</pre>
             const resetButton = document.getElementById('reset-button');
             const successFeedback = document.getElementById('success-feedback');
             const infoFeedback = document.getElementById('info-feedback');
+            const validationMessage = document.getElementById('validation-message');
+            
+            // Audio variables
+            let audioContext = null;
+            let correctSoundBuffer = null;
+            let audioInitialized = false;
+            
+            // Load sound from URL
+            async function loadSound() {
+                if (correctSoundBuffer) {
+                    console.log("Sound buffer already available.");
+                    return;
+                }
+                console.log("Loading sound...");
+                try {
+                    const url = 'https://xchee-01.github.io/PMTHA/answer_correct_sound.mp3';
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to load sound: ${response.statusText}`);
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    if (!audioContext) {
+                        throw new Error("AudioContext not available for decoding sound.");
+                    }
+                    correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    console.log("Sound decoded and buffer ready.");
+                } catch (error) {
+                    console.error('Error loading sound:', error);
+                    correctSoundBuffer = null;
+                    throw error;
+                }
+            }
+            
+            // Initialize audio functionality
+            async function initAudio() {
+                if (audioInitialized) {
+                    console.log("Audio already initialized.");
+                    return Promise.resolve();
+                }
+                
+                console.log("Attempting to initialize audio...");
+                try {
+                    // Create audio context if it doesn't exist or was closed
+                    if (!audioContext || audioContext.state === 'closed') {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        console.log("AudioContext created/recreated.");
+                    }
+
+                    // Ensure AudioContext is running (it might start in a suspended state)
+                    if (audioContext.state === 'suspended') {
+                        await audioContext.resume();
+                        console.log("AudioContext resumed.");
+                    }
+                    
+                    await loadSound(); // Load the sound
+                    
+                    if (correctSoundBuffer) {
+                        audioInitialized = true;
+                        console.log("Audio successfully initialized.");
+                        return Promise.resolve();
+                    } else {
+                        throw new Error("Sound buffer not loaded after loadSound attempt.");
+                    }
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                    audioInitialized = false;
+                    correctSoundBuffer = null;
+                    return Promise.reject(error);
+                }
+            }
+            
+            function actuallyPlayTheSound() {
+                if (!audioContext || !correctSoundBuffer) {
+                    console.warn("Cannot play sound: context or buffer not available");
+                    return;
+                }
+                const source = audioContext.createBufferSource();
+                source.buffer = correctSoundBuffer;
+                
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.4; // Volume
+                
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                source.start();
+                console.log("Correct sound played.");
+            }
+            
+            // Play correct sound
+            function playCorrectSound() {
+                if (!audioInitialized || !audioContext || !correctSoundBuffer) {
+                    console.warn("Audio not ready or initialized");
+                    // Try to initialize again just in case, then play if successful
+                    initAudio().then(() => {
+                        if (audioInitialized && audioContext && correctSoundBuffer) {
+                           if (audioContext.state === 'suspended') {
+                                audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context:", e));
+                            } else {
+                                actuallyPlayTheSound();
+                            }
+                        } else {
+                            console.error("Still not ready to play sound after re-init attempt.");
+                        }
+                    }).catch(err => {
+                        console.error("Failed to init/play sound:", err);
+                    });
+                    return;
+                }
+                
+                if (audioContext.state === 'suspended') {
+                    console.log("AudioContext is suspended, attempting to resume");
+                    audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext:", e));
+                } else {
+                    actuallyPlayTheSound();
+                }
+            }
+            
+            // Initialize audio on first user interaction
+            function attemptPreemptiveAudioInit() {
+                if (!audioInitialized) {
+                    console.log("Pre-emptive audio initialization triggered");
+                    initAudio().catch(err => {
+                        console.warn("Pre-emptive audio initialization failed:", err.message);
+                    });
+                }
+                document.removeEventListener('pointerdown', attemptPreemptiveAudioInit, true);
+            }
+            document.addEventListener('pointerdown', attemptPreemptiveAudioInit, { once: true, capture: true });
+            
+            // Show celebration with confetti and sound
+            function showCelebration() {
+                // Play the correct sound
+                playCorrectSound();
+                
+                // Trigger confetti
+                setTimeout(() => {
+                    // Center burst
+                    confetti({
+                        particleCount: 150,
+                        spread: 160,
+                        origin: { x: 0.5, y: 0.6 },
+                        colors: ['#003D7C', '#EF7C00', '#4D7CAE', '#ffffff']
+                    });
+                    
+                    // Left side burst after a small delay
+                    setTimeout(() => {
+                        confetti({
+                            particleCount: 80,
+                            angle: 60,
+                            spread: 55,
+                            origin: { x: 0, y: 0.65 },
+                            colors: ['#003D7C', '#4D7CAE', '#ffffff']
+                        });
+                        
+                        // Right side burst after a small delay
+                        setTimeout(() => {
+                            confetti({
+                                particleCount: 80,
+                                angle: 120,
+                                spread: 55,
+                                origin: { x: 1, y: 0.65 },
+                                colors: ['#EF7C00', '#4D7CAE', '#ffffff']
+                            });
+                        }, 150);
+                    }, 300);
+                }, 100);
+            }
             
             // Check button click handler
             checkButton.addEventListener('click', function() {
                 // First check if all fields are filled
                 let allFilled = true;
                 let emptyFields = [];
-                const validationMessage = document.getElementById('validation-message');
                 
                 for (let i = 1; i <= 5; i++) {
                     const inputField = document.getElementById(`line${i}`);
@@ -470,6 +653,9 @@ print("Infant dose:", 500 / 10, "mg")</pre>
                 if (allCorrect) {
                     successFeedback.style.display = 'block';
                     infoFeedback.style.display = 'none';
+                    
+                    // Trigger celebration with confetti and sound if all answers are correct
+                    showCelebration();
                 } else {
                     successFeedback.style.display = 'none';
                     infoFeedback.style.display = 'block';
@@ -495,6 +681,11 @@ print("Infant dose:", 500 / 10, "mg")</pre>
                 
                 // Hide validation message
                 document.getElementById('validation-message').style.display = 'none';
+                
+                // Reset audio state for next attempt
+                if (audioContext && audioContext.state === 'running') {
+                    audioContext.suspend();
+                }
                 successFeedback.style.display = 'none';
                 infoFeedback.style.display = 'none';
                 
