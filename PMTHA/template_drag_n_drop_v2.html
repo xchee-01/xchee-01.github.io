@@ -376,76 +376,147 @@
             // Audio variables
             let audioContext = null;
             let correctSoundBuffer = null;
-            let audioInitialized = false;
+            let audioInitialized = false; // True if context is created AND buffer is loaded
             
             let draggedItem = null;
             let dropCount = 0;
             let correctCount = 0;
             
-            // Initialize audio functionality
-            function initAudio() {
-                if (audioInitialized) return;
-                
-                try {
-                    // Create audio context
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    
-                    // Load the sound
-                    loadSound().then(() => {
-                        audioInitialized = true;
-                    });
-                } catch (error) {
-                    console.error('Audio initialization failed:', error);
-                }
-            }
-            
             // Load sound from URL
             async function loadSound() {
+                if (correctSoundBuffer) { // Don't reload if already loaded
+                    console.log("Sound buffer already available.");
+                    return;
+                }
+                console.log("Loading sound...");
                 try {
                     const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
                     const response = await fetch(url);
                     
                     if (!response.ok) {
-                        throw new Error('Failed to load sound');
+                        throw new Error(`Failed to load sound: ${response.statusText}`);
                     }
                     
                     const arrayBuffer = await response.arrayBuffer();
+                    if (!audioContext) { // Ensure audioContext exists before decoding
+                        throw new Error("AudioContext not available for decoding sound.");
+                    }
                     correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    return correctSoundBuffer;
+                    console.log("Sound decoded and buffer ready.");
                 } catch (error) {
                     console.error('Error loading sound:', error);
+                    correctSoundBuffer = null; // Ensure buffer is null on error
+                    throw error; // Re-throw to be caught by initAudio
                 }
             }
-            
-            // Play correct sound
-            function playCorrectSound() {
-                if (!audioContext || !correctSoundBuffer) return;
+
+            // Initialize audio functionality
+            async function initAudio() {
+                if (audioInitialized) {
+                    console.log("Audio already initialized.");
+                    return Promise.resolve();
+                }
                 
+                console.log("Attempting to initialize audio...");
+                try {
+                    // Create audio context if it doesn't exist or was closed
+                    if (!audioContext || audioContext.state === 'closed') {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        console.log("AudioContext created/recreated.");
+                    }
+
+                    // Ensure AudioContext is running (it might start in a suspended state)
+                    if (audioContext.state === 'suspended') {
+                        await audioContext.resume();
+                        console.log("AudioContext resumed.");
+                    }
+                    
+                    await loadSound(); // Load the sound (this will set correctSoundBuffer)
+                    
+                    if (correctSoundBuffer) {
+                        audioInitialized = true;
+                        console.log("Audio successfully initialized (Context & Buffer ready).");
+                        return Promise.resolve();
+                    } else {
+                        // This case should ideally be caught by loadSound throwing an error
+                        throw new Error("Sound buffer not loaded after loadSound attempt.");
+                    }
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                    audioInitialized = false; // Explicitly set to false on failure
+                    correctSoundBuffer = null;
+                    // Don't re-throw here if we want to allow the app to function without sound
+                    // but return a rejected promise so callers know it failed.
+                    return Promise.reject(error);
+                }
+            }
+
+            function actuallyPlayTheSound() {
+                if (!audioContext || !correctSoundBuffer) {
+                    console.warn("actuallyPlayTheSound: Preconditions not met. Context:", !!audioContext, "Buffer:", !!correctSoundBuffer);
+                    return;
+                }
                 const source = audioContext.createBufferSource();
                 source.buffer = correctSoundBuffer;
                 
                 const gainNode = audioContext.createGain();
-                gainNode.gain.value = 0.4;
+                gainNode.gain.value = 0.4; // Volume
                 
                 source.connect(gainNode);
                 gainNode.connect(audioContext.destination);
                 
                 source.start();
+                console.log("Correct sound played.");
             }
             
-            // Initialize audio on first user interaction
-            document.body.addEventListener('click', function() {
-                if (!audioInitialized) {
-                    initAudio();
+            // Play correct sound
+            function playCorrectSound() {
+                if (!audioInitialized || !audioContext || !correctSoundBuffer) {
+                    console.warn("playCorrectSound: Audio not ready or initialized. Initialized:", audioInitialized, "Context:", !!audioContext, "Buffer:", !!correctSoundBuffer);
+                    // Try to initialize again just in case, then play if successful
+                    initAudio().then(() => {
+                        if (audioInitialized && audioContext && correctSoundBuffer) { // Check again after init
+                           if (audioContext.state === 'suspended') {
+                                audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context in playCorrectSound:", e));
+                            } else {
+                                actuallyPlayTheSound();
+                            }
+                        } else {
+                            console.error("Still not ready to play sound after re-init attempt.");
+                        }
+                    }).catch(err => {
+                        console.error("Failed to init/play sound:", err);
+                    });
+                    return;
                 }
-            }, { once: true });
+                
+                if (audioContext.state === 'suspended') {
+                    console.log("AudioContext is suspended, attempting to resume for playback.");
+                    audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext in playCorrectSound:", e));
+                } else {
+                    actuallyPlayTheSound();
+                }
+            }
+            
+            // Initialize audio on first user interaction (e.g., click, drag start)
+            // Using 'pointerdown' as it's more general than 'click' for early interaction
+            function attemptPreemptiveAudioInit() {
+                if (!audioInitialized) { // Only if not already done
+                    console.log("Pre-emptive audio initialization triggered by user interaction.");
+                    initAudio().catch(err => {
+                        console.warn("Pre-emptive audio initialization failed. Will try again on first correct answer.", err.message);
+                        // No critical error, the game can continue without sound initially.
+                    });
+                }
+                // Remove this listener after the first interaction
+                document.body.removeEventListener('pointerdown', attemptPreemptiveAudioInit, true);
+            }
+            document.body.addEventListener('pointerdown', attemptPreemptiveAudioInit, { once: true, capture: true });
             
             // Add event listeners to draggable items
             answers.forEach(answer => {
                 answer.addEventListener('dragstart', handleDragStart);
                 answer.addEventListener('dragend', handleDragEnd);
-                
-                // Store original position
                 answer.setAttribute('data-original-position', Array.from(answersContainer.children).indexOf(answer));
             });
             
@@ -462,6 +533,9 @@
             
             // Drag and drop handler functions
             function handleDragStart(e) {
+                // Attempt pre-emptive audio init on drag start too, if not done by pointerdown
+                attemptPreemptiveAudioInit();
+
                 draggedItem = this;
                 setTimeout(() => {
                     this.style.opacity = '0.5';
@@ -498,12 +572,10 @@
                 e.preventDefault();
                 this.classList.remove('hover');
                 
-                // Only allow drop if the area is empty
-                if (this.children.length === 0) {
+                if (this.children.length === 0) { // Only allow drop if the area is empty
                     const droppedType = e.dataTransfer.getData('text/plain');
                     const correctType = this.dataset.correct;
                     
-                    // Create a clone of the dragged item to place in drop area
                     const clonedItem = draggedItem.cloneNode(true);
                     clonedItem.style.opacity = '1';
                     clonedItem.style.cursor = 'default';
@@ -512,176 +584,109 @@
                     clonedItem.style.textAlign = 'center';
                     clonedItem.draggable = false;
                     
-                    // Add the item to drop area
                     this.appendChild(clonedItem);
-                    
-                    // Remove the original item
                     draggedItem.remove();
-                    
                     dropCount++;
                     
-                    // Check if the answer is correct
                     if (droppedType === correctType) {
                         this.classList.add('correct');
                         correctCount++;
                         
-                        // Show feedback
                         const feedback = this.nextElementSibling;
                         feedback.classList.add('correct');
                         feedback.style.display = 'block';
                         
-                        // Play correct sound
-                        if (audioInitialized) {
-                            playCorrectSound();
-                        } else {
-                            initAudio().then(() => {
-                                playCorrectSound();
+                        // Play correct sound - initAudio will ensure it's ready
+                        initAudio()
+                            .then(() => {
+                                playCorrectSound(); // playCorrectSound handles suspended context
+                            })
+                            .catch(err => {
+                                console.error("Could not play sound on correct drop:", err.message);
                             });
-                        }
                         
-                        // Check if all questions are answered correctly
                         if (correctCount === dropAreas.length) {
                             showCelebration();
                         }
                     } else {
                         this.classList.add('incorrect');
-                        
-                        // Show incorrect feedback
                         const feedback = this.nextElementSibling;
                         feedback.innerHTML = `<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This value should be a ${correctType} in Python.`;
                         feedback.classList.add('incorrect');
                         feedback.style.display = 'block';
                         
-                        // Return the answer to its original container after a short delay
                         setTimeout(() => {
-                            // Create a new draggable answer to replace the one used
                             const newAnswer = document.createElement('div');
                             newAnswer.className = 'answer';
                             newAnswer.setAttribute('draggable', 'true');
                             newAnswer.setAttribute('data-type', droppedType);
                             
-                            // Create the inner span for the new answer
                             const textSpan = document.createElement('span');
-                            
-                            // Set the text content based on the data type
-                            if (droppedType === 'Integer') {
-                                textSpan.textContent = 'int';
-                            } else if (droppedType === 'Float') {
-                                textSpan.textContent = 'float';
-                            } else if (droppedType === 'String') {
-                                textSpan.textContent = 'str';
-                            }
-                            
-                            // Append the span to the new answer
+                            if (droppedType === 'Integer') textSpan.textContent = 'int';
+                            else if (droppedType === 'Float') textSpan.textContent = 'float';
+                            else if (droppedType === 'String') textSpan.textContent = 'str';
                             newAnswer.appendChild(textSpan);
                             
-                            // Add the event listeners
                             newAnswer.addEventListener('dragstart', handleDragStart);
                             newAnswer.addEventListener('dragend', handleDragEnd);
-                            
-                            // Add back to answers container
                             answersContainer.appendChild(newAnswer);
                             
-                            // Clear the drop area
                             this.innerHTML = '';
                             this.classList.remove('incorrect');
-                            
-                            // Hide feedback
                             feedback.style.display = 'none';
                             feedback.classList.remove('incorrect');
-                            
                             dropCount--;
                         }, 1500);
                     }
                 }
             }
             
-            // Reset exercise
             function resetExercise() {
-                // Clear all drop areas
                 dropAreas.forEach(area => {
                     area.innerHTML = '';
                     area.classList.remove('correct', 'incorrect');
                 });
                 
-                // Hide all feedback
                 document.querySelectorAll('.feedback').forEach(feedback => {
                     feedback.style.display = 'none';
                     feedback.classList.remove('correct', 'incorrect');
                 });
                 
-                // Reset counters
                 dropCount = 0;
                 correctCount = 0;
-                
-                // Regenerate original answers
                 answersContainer.innerHTML = '';
                 
                 const answerTypes = ['Integer', 'Float', 'String', 'Integer', 'Float', 'String'];
-                
                 answerTypes.forEach(type => {
                     const newAnswer = document.createElement('div');
                     newAnswer.className = 'answer';
                     newAnswer.setAttribute('draggable', 'true');
                     newAnswer.setAttribute('data-type', type);
-                    
-                    // Create the inner span
                     const textSpan = document.createElement('span');
-                    
-                    // Set the text content based on the data type
-                    if (type === 'Integer') {
-                        textSpan.textContent = 'int';
-                    } else if (type === 'Float') {
-                        textSpan.textContent = 'float';
-                    } else if (type === 'String') {
-                        textSpan.textContent = 'str';
-                    }
-                    
-                    // Append the span to the new answer
+                    if (type === 'Integer') textSpan.textContent = 'int';
+                    else if (type === 'Float') textSpan.textContent = 'float';
+                    else if (type === 'String') textSpan.textContent = 'str';
                     newAnswer.appendChild(textSpan);
-                    
-                    // Add the event listeners
                     newAnswer.addEventListener('dragstart', handleDragStart);
                     newAnswer.addEventListener('dragend', handleDragEnd);
-                    
                     answersContainer.appendChild(newAnswer);
                 });
+
+                // Re-attach the pre-emptive audio init listener if it was removed
+                // Or, more simply, allow it to be re-triggered on next interaction naturally.
+                // For a full reset, if audio was playing, you might want to stop it,
+                // but for this simple case, it's likely fine.
             }
             
-            // Show celebration animation
             function showCelebration() {
-                // Hide celebration div to stop any previous animations
                 celebration.style.display = 'none';
-                
-                // Show it again
                 setTimeout(() => {
                     celebration.style.display = 'block';
-                    
-                    confetti({
-                        particleCount: 150,
-                        spread: 160,
-                        origin: { x: 0.5, y: 0.6 },
-                        colors: ['#003D7C', '#EF7C00', '#4D7CAE', '#ffffff']
-                    });
-                    
+                    confetti({ particleCount: 150, spread: 160, origin: { x: 0.5, y: 0.6 }, colors: ['#003D7C', '#EF7C00', '#4D7CAE', '#ffffff'] });
                     setTimeout(() => {
-                        // Second confetti burst
-                        confetti({
-                            particleCount: 100,
-                            angle: 60,
-                            spread: 55,
-                            origin: { x: 0, y: 0.65 },
-                            colors: ['#003D7C', '#4D7CAE', '#ffffff']
-                        });
-                        
+                        confetti({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0, y: 0.65 }, colors: ['#003D7C', '#4D7CAE', '#ffffff'] });
                         setTimeout(() => {
-                            confetti({
-                                particleCount: 100,
-                                angle: 120,
-                                spread: 55,
-                                origin: { x: 1, y: 0.65 },
-                                colors: ['#EF7C00', '#4D7CAE', '#ffffff']
-                            });
+                            confetti({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1, y: 0.65 }, colors: ['#EF7C00', '#4D7CAE', '#ffffff'] });
                         }, 150);
                     }, 500);
                 }, 100);
