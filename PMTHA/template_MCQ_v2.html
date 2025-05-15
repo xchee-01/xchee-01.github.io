@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Checkpoint</title>
+    <style>
+        /* NUS Colors */
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #4D7CAE;
+            --nus-gray: #666666;
+            --nus-light-gray: #f5f5f5;
+            --nus-dark-gray: #333333;
+            --nus-red: #c41230;
+            --nus-green: #2E8540;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        .mcq-container {
+            max-width: 800px;
+            margin: 30px auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+
+        .mcq-header {
+            background: linear-gradient(135deg, var(--nus-blue) 0%, #002a57 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mcq-header-icon {
+            background: var(--nus-orange);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(239, 124, 0, 0.3);
+        }
+
+        .mcq-header-icon i {
+            font-size: 22px;
+        }
+
+        .mcq-header-text {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .mcq-content {
+            padding: 30px;
+        }
+
+        .mcq-question {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: var(--nus-dark-gray);
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .mcq-options {
+            display: grid;
+            gap: 16px;
+        }
+
+        .mcq-option {
+            background-color: white;
+            border-radius: 10px;
+            padding: 18px 20px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+            border: 1px solid #e8e8e8;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mcq-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-color: #d0d0d0;
+        }
+
+        .mcq-option-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .mcq-option-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .mcq-option-badge {
+            background-color: #f0f0f0;
+            color: #555;
+            font-size: 13px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-left: 8px;
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .mcq-option-content {
+            color: #555;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .mcq-feedback {
+            display: none;
+            margin-top: 15px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .correct {
+            background-color: #e8f5e9;
+            color: #2E7D32;
+        }
+
+        .incorrect {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .feedback-icon {
+            margin-right: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mcq-option.selected-correct {
+            background-color: #f1f8f2;
+            border-color: var(--nus-green);
+            box-shadow: 0 0 0 1px var(--nus-green);
+        }
+
+        .mcq-option.selected-incorrect {
+            background-color: #fff5f5;
+            border-color: var(--nus-red);
+            box-shadow: 0 0 0 1px var(--nus-red);
+        }
+
+        .reset-button {
+            background: linear-gradient(135deg, var(--nus-light-blue) 0%, var(--nus-blue) 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            margin-top: 25px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 61, 124, 0.2);
+        }
+
+        .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 61, 124, 0.3);
+        }
+
+        .reset-button:active {
+            transform: translateY(0);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="mcq-container">
+        <div class="mcq-header">
+            <div class="mcq-header-icon">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="mcq-header-text">Learning Checkpoint</div>
+        </div>
+        
+        <div class="mcq-content">
+            <div class="mcq-question">
+                Would you use an integer or something else to represent a patient's temperature? Why?
+            </div>
+            
+            <div class="mcq-options">
+                <div class="mcq-option" data-correct="false">
+                    <div class="mcq-option-header">
+                        <div class="mcq-option-title">Integer</div>
+                        <div class="mcq-option-badge">int</div>
+                    </div>
+                    <div class="mcq-option-content">
+                        Patient temperatures should be stored as whole numbers to save memory.
+                    </div>
+                    <div class="mcq-feedback incorrect">
+                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite right. Patient temperatures typically include decimal points (e.g., 37.2°C), which can't be accurately represented by integers. Precision is critical in medical contexts.
+                    </div>
+                </div>
+                
+                <div class="mcq-option" data-correct="true">
+                    <div class="mcq-option-header">
+                        <div class="mcq-option-title">Float</div>
+                        <div class="mcq-option-badge">float</div>
+                    </div>
+                    <div class="mcq-option-content">
+                        Patient temperatures often include decimal points requiring precise measurement.
+                    </div>
+                    <div class="mcq-feedback correct">
+                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Body temperatures are measured with decimal precision (e.g., 37.2°C or 98.6°F). Using a float allows you to capture this precision, which is essential for accurate medical assessment.
+                    </div>
+                </div>
+                
+                <div class="mcq-option" data-correct="false">
+                    <div class="mcq-option-header">
+                        <div class="mcq-option-title">Integer</div>
+                        <div class="mcq-option-badge">int</div>
+                    </div>
+                    <div class="mcq-option-content">
+                        Temperatures can be multiplied by 10 to store decimals as integers (e.g., 372 instead of 37.2).
+                    </div>
+                    <div class="mcq-feedback incorrect">
+                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While this approach could work technically, it introduces unnecessary complexity and the risk of conversion errors. It's more straightforward and safer to use floats for values that naturally have decimal points.
+                    </div>
+                </div>
+                
+                <div class="mcq-option" data-correct="false">
+                    <div class="mcq-option-header">
+                        <div class="mcq-option-title">String</div>
+                        <div class="mcq-option-badge">str</div>
+                    </div>
+                    <div class="mcq-option-content">
+                        Patient temperatures should be stored as text to include the unit (°C or °F).
+                    </div>
+                    <div class="mcq-feedback incorrect">
+                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While strings can store temperature values with units, they don't allow for direct mathematical operations (like calculating averages or comparing values). It's better to use floats for the temperature value and handle units separately.
+                    </div>
+                </div>
+            </div>
+            
+            <button class="reset-button">
+                <i class="fas fa-redo"></i> Try Again
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const options = document.querySelectorAll('.mcq-option');
+            const resetButton = document.querySelector('.reset-button');
+            
+            // Audio variables
+            let audioContext = null;
+            let correctSoundBuffer = null;
+            let audioInitialized = false;
+            
+            // Load sound from URL
+            async function loadSound() {
+                if (correctSoundBuffer) {
+                    console.log("Sound buffer already available.");
+                    return;
+                }
+                console.log("Loading sound...");
+                try {
+                    const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to load sound: ${response.statusText}`);
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    if (!audioContext) {
+                        throw new Error("AudioContext not available for decoding sound.");
+                    }
+                    correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    console.log("Sound decoded and buffer ready.");
+                } catch (error) {
+                    console.error('Error loading sound:', error);
+                    correctSoundBuffer = null;
+                    throw error;
+                }
+            }
+
+            // Initialize audio functionality
+            async function initAudio() {
+                if (audioInitialized) {
+                    console.log("Audio already initialized.");
+                    return Promise.resolve();
+                }
+                
+                console.log("Attempting to initialize audio...");
+                try {
+                    // Create audio context if it doesn't exist or was closed
+                    if (!audioContext || audioContext.state === 'closed') {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        console.log("AudioContext created/recreated.");
+                    }
+
+                    // Ensure AudioContext is running (it might start in a suspended state)
+                    if (audioContext.state === 'suspended') {
+                        await audioContext.resume();
+                        console.log("AudioContext resumed.");
+                    }
+                    
+                    await loadSound(); // Load the sound (this will set correctSoundBuffer)
+                    
+                    if (correctSoundBuffer) {
+                        audioInitialized = true;
+                        console.log("Audio successfully initialized (Context & Buffer ready).");
+                        return Promise.resolve();
+                    } else {
+                        throw new Error("Sound buffer not loaded after loadSound attempt.");
+                    }
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                    audioInitialized = false;
+                    correctSoundBuffer = null;
+                    return Promise.reject(error);
+                }
+            }
+
+            // Actually play the sound
+            function actuallyPlayTheSound() {
+                if (!audioContext || !correctSoundBuffer) {
+                    console.warn("actuallyPlayTheSound: Preconditions not met");
+                    return;
+                }
+                const source = audioContext.createBufferSource();
+                source.buffer = correctSoundBuffer;
+                
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.4; // Volume
+                
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                source.start();
+                console.log("Correct sound played.");
+            }
+            
+            // Play correct sound
+            function playCorrectSound() {
+                if (!audioInitialized || !audioContext || !correctSoundBuffer) {
+                    console.warn("playCorrectSound: Audio not ready or initialized.");
+                    // Try to initialize again
+                    initAudio().then(() => {
+                        if (audioInitialized && audioContext && correctSoundBuffer) {
+                           if (audioContext.state === 'suspended') {
+                                audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context:", e));
+                            } else {
+                                actuallyPlayTheSound();
+                            }
+                        } else {
+                            console.error("Still not ready to play sound after re-init attempt.");
+                        }
+                    }).catch(err => {
+                        console.error("Failed to init/play sound:", err);
+                    });
+                    return;
+                }
+                
+                if (audioContext.state === 'suspended') {
+                    console.log("AudioContext is suspended, attempting to resume for playback.");
+                    audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext:", e));
+                } else {
+                    actuallyPlayTheSound();
+                }
+            }
+            
+            // Initialize audio on first user interaction
+            function attemptPreemptiveAudioInit() {
+                if (!audioInitialized) {
+                    console.log("Pre-emptive audio initialization triggered by user interaction.");
+                    initAudio().catch(err => {
+                        console.warn("Pre-emptive audio initialization failed. Will try again on first correct answer.", err.message);
+                    });
+                }
+                // Remove this listener after the first interaction
+                document.body.removeEventListener('pointerdown', attemptPreemptiveAudioInit, true);
+            }
+            document.body.addEventListener('pointerdown', attemptPreemptiveAudioInit, { once: true, capture: true });
+            
+            // Celebration effect when correct
+            function showCelebration() {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#003D7C', '#EF7C00', '#4D7CAE']
+                });
+            }
+            
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Only process clicks if no option is currently selected
+                    if (!document.querySelector('.mcq-option.selected-correct') && 
+                        !document.querySelector('.mcq-option.selected-incorrect')) {
+                        
+                        // Get and show appropriate feedback
+                        const isCorrect = this.getAttribute('data-correct') === 'true';
+                        const feedback = this.querySelector('.mcq-feedback');
+                        
+                        if (isCorrect) {
+                            this.classList.add('selected-correct');
+                            
+                            // Play correct sound & show celebration
+                            initAudio()
+                                .then(() => {
+                                    playCorrectSound();
+                                    showCelebration();
+                                })
+                                .catch(err => {
+                                    console.error("Could not play sound on correct answer:", err.message);
+                                    // Still show celebration even if sound fails
+                                    showCelebration();
+                                });
+                        } else {
+                            this.classList.add('selected-incorrect');
+                        }
+                        
+                        feedback.style.display = 'block';
+                        resetButton.style.display = 'flex';
+                    }
+                });
+            });
+            
+            resetButton.addEventListener('click', function() {
+                options.forEach(option => {
+                    option.classList.remove('selected-correct');
+                    option.classList.remove('selected-incorrect');
+                    option.querySelector('.mcq-feedback').style.display = 'none';
+                });
+                resetButton.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
