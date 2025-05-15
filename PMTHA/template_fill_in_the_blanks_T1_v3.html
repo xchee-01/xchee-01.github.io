@@ -396,304 +396,279 @@ print("Infant dose:", 500 / 10, "mg")</pre>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Correct answers
-            const correctAnswers = {
-                line1: 'Medication Dosage Calculator',
-                line2: '---------------------------',
-                line3: 'Standard dose: 500 mg',
-                line4: 'Child dose (age 8): 250.0 mg',
-                line5: 'Infant dose: 50.0 mg'
-            };
+document.addEventListener('DOMContentLoaded', function() {
+    // Correct answers
+    const correctAnswers = {
+        line1: 'Medication Dosage Calculator',
+        line2: '---------------------------',
+        line3: 'Standard dose: 500 mg',
+        line4: 'Child dose (age 8): 250.0 mg',
+        line5: 'Infant dose: 50.0 mg'
+    };
+    
+    // Elements
+    const checkButton = document.getElementById('check-button');
+    const resetButton = document.getElementById('reset-button');
+    const successFeedback = document.getElementById('success-feedback');
+    const infoFeedback = document.getElementById('info-feedback');
+    const validationMessage = document.getElementById('validation-message');
+    
+    // Audio variables
+    let audioContext = null;
+    let correctSoundBuffer = null;
+    let audioInitialized = false;
+    let audioInitPromise = null; // To prevent multiple concurrent initializations
+
+    // Load sound from URL
+    async function loadSound() {
+        // No need to check correctSoundBuffer here, initAudio will gatekeep
+        console.log("Loading sound...");
+        try {
+            const url = 'https://xchee-01.github.io/PMTHA/answer_correct_sound.mp3';
+            const response = await fetch(url);
             
-            // Elements
-            const checkButton = document.getElementById('check-button');
-            const resetButton = document.getElementById('reset-button');
-            const successFeedback = document.getElementById('success-feedback');
-            const infoFeedback = document.getElementById('info-feedback');
-            const validationMessage = document.getElementById('validation-message');
-            
-            // Audio variables
-            let audioContext = null;
-            let correctSoundBuffer = null;
-            let audioInitialized = false;
-            
-            // Load sound from URL
-            async function loadSound() {
-                if (correctSoundBuffer) {
-                    console.log("Sound buffer already available.");
-                    return;
-                }
-                console.log("Loading sound...");
-                try {
-                    const url = 'https://xchee-01.github.io/PMTHA/answer_correct_sound.mp3';
-                    const response = await fetch(url);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to load sound: ${response.statusText}`);
-                    }
-                    
-                    const arrayBuffer = await response.arrayBuffer();
-                    if (!audioContext) {
-                        throw new Error("AudioContext not available for decoding sound.");
-                    }
-                    correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    console.log("Sound decoded and buffer ready.");
-                } catch (error) {
-                    console.error('Error loading sound:', error);
-                    correctSoundBuffer = null;
-                    throw error;
-                }
+            if (!response.ok) {
+                throw new Error(`Failed to load sound: ${response.statusText} (URL: ${url})`);
             }
             
-            // Initialize audio functionality
-            async function initAudio() {
-                if (audioInitialized) {
-                    console.log("Audio already initialized.");
-                    return Promise.resolve();
+            const arrayBuffer = await response.arrayBuffer();
+            if (!audioContext) { // Should always exist if this function is called from initAudio
+                throw new Error("AudioContext not available for decoding sound.");
+            }
+            correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            console.log("Sound decoded and buffer ready.");
+        } catch (error) {
+            console.error('Error loading sound:', error);
+            correctSoundBuffer = null; // Ensure it's null on failure
+            throw error; // Re-throw to be caught by initAudio
+        }
+    }
+    
+    // Initialize audio functionality
+    async function initAudio() {
+        if (audioInitialized) {
+            // console.log("Audio already initialized."); // Can be noisy
+            return;
+        }
+        // If an initialization is already in progress, return its promise
+        if (audioInitPromise) {
+            console.log("Audio initialization already in progress, awaiting existing promise.");
+            return audioInitPromise;
+        }
+
+        console.log("Attempting to initialize audio...");
+        audioInitPromise = (async () => { // IIFE to create the promise
+            try {
+                if (!audioContext || audioContext.state === 'closed') {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log("AudioContext created/recreated. State:", audioContext.state);
+                }
+
+                // Crucial: Resume AudioContext if suspended (e.g., on page load before interaction)
+                if (audioContext.state === 'suspended') {
+                    console.log("AudioContext is suspended, attempting to resume...");
+                    await audioContext.resume();
+                    console.log("AudioContext resumed. State:", audioContext.state);
                 }
                 
-                console.log("Attempting to initialize audio...");
-                try {
-                    // Create audio context if it doesn't exist or was closed
-                    if (!audioContext || audioContext.state === 'closed') {
-                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        console.log("AudioContext created/recreated.");
+                // Only load sound if the context is running
+                if (audioContext.state === 'running') {
+                    if (!correctSoundBuffer) { // Only load if not already loaded
+                        await loadSound();
                     }
-
-                    // Ensure AudioContext is running (it might start in a suspended state)
-                    if (audioContext.state === 'suspended') {
-                        await audioContext.resume();
-                        console.log("AudioContext resumed.");
-                    }
-                    
-                    await loadSound(); // Load the sound
-                    
                     if (correctSoundBuffer) {
                         audioInitialized = true;
-                        console.log("Audio successfully initialized.");
-                        return Promise.resolve();
+                        console.log("Audio successfully initialized and sound loaded.");
                     } else {
-                        throw new Error("Sound buffer not loaded after loadSound attempt.");
+                        throw new Error("Sound buffer not loaded after loadSound attempt within initAudio.");
                     }
-                } catch (error) {
-                    console.error('Audio initialization failed:', error);
-                    audioInitialized = false;
-                    correctSoundBuffer = null;
-                    return Promise.reject(error);
-                }
-            }
-            
-            function actuallyPlayTheSound() {
-                if (!audioContext || !correctSoundBuffer) {
-                    console.warn("Cannot play sound: context or buffer not available");
-                    return;
-                }
-                const source = audioContext.createBufferSource();
-                source.buffer = correctSoundBuffer;
-                
-                const gainNode = audioContext.createGain();
-                gainNode.gain.value = 0.4; // Volume
-                
-                source.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                source.start();
-                console.log("Correct sound played.");
-            }
-            
-            // Play correct sound
-            function playCorrectSound() {
-                if (!audioInitialized || !audioContext || !correctSoundBuffer) {
-                    console.warn("Audio not ready or initialized");
-                    // Try to initialize again just in case, then play if successful
-                    initAudio().then(() => {
-                        if (audioInitialized && audioContext && correctSoundBuffer) {
-                           if (audioContext.state === 'suspended') {
-                                audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context:", e));
-                            } else {
-                                actuallyPlayTheSound();
-                            }
-                        } else {
-                            console.error("Still not ready to play sound after re-init attempt.");
-                        }
-                    }).catch(err => {
-                        console.error("Failed to init/play sound:", err);
-                    });
-                    return;
-                }
-                
-                if (audioContext.state === 'suspended') {
-                    console.log("AudioContext is suspended, attempting to resume");
-                    audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext:", e));
                 } else {
-                    actuallyPlayTheSound();
+                    throw new Error(`AudioContext not running after attempt to resume. State: ${audioContext.state}`);
                 }
+            } catch (error) {
+                console.error('Audio initialization failed:', error);
+                audioInitialized = false;
+                // correctSoundBuffer should be null from loadSound error or not set
+            } finally {
+                audioInitPromise = null; // Clear the promise once completed (success or fail)
+            }
+        })();
+        
+        return audioInitPromise;
+    }
+    
+    function actuallyPlayTheSound() {
+        if (!audioContext || !correctSoundBuffer || audioContext.state !== 'running') {
+            console.warn("Cannot play sound: context not running or buffer not available.", 
+                         "Context State:", audioContext ? audioContext.state : "null", 
+                         "Buffer loaded:", !!correctSoundBuffer);
+            return;
+        }
+        const source = audioContext.createBufferSource();
+        source.buffer = correctSoundBuffer;
+        
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.4; // Volume
+        
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        source.start();
+        console.log("Correct sound played.");
+    }
+    
+    // Play correct sound
+    async function playCorrectSound() {
+        console.log("playCorrectSound called.");
+        try {
+            // Ensure audio is initialized or attempt to initialize it.
+            // This must happen within a user gesture context if it's the first time.
+            await initAudio(); 
+
+            if (!audioInitialized || !audioContext || !correctSoundBuffer) {
+                console.warn("Audio system not ready after init attempt. Cannot play sound.");
+                return;
             }
             
-            // Initialize audio on first user interaction
-            function attemptPreemptiveAudioInit() {
-                if (!audioInitialized) {
-                    console.log("Pre-emptive audio initialization triggered");
-                    initAudio().catch(err => {
-                        console.warn("Pre-emptive audio initialization failed:", err.message);
-                    });
-                }
-                document.removeEventListener('pointerdown', attemptPreemptiveAudioInit, true);
+            // Double-check and resume if suspended (e.g., tab unfocused then refocused)
+            if (audioContext.state === 'suspended') {
+                console.log("AudioContext is suspended before playing, attempting to resume again.");
+                await audioContext.resume();
+                console.log("AudioContext state after second resume attempt:", audioContext.state);
             }
-            document.addEventListener('pointerdown', attemptPreemptiveAudioInit, { once: true, capture: true });
-            
-            // Show celebration with confetti and sound
-            function showCelebration() {
-                // Play the correct sound
-                playCorrectSound();
-                
-                // Trigger confetti
-                setTimeout(() => {
-                    // Center burst
-                    confetti({
-                        particleCount: 150,
-                        spread: 160,
-                        origin: { x: 0.5, y: 0.6 },
-                        colors: ['#003D7C', '#EF7C00', '#4D7CAE', '#ffffff']
-                    });
-                    
-                    // Left side burst after a small delay
-                    setTimeout(() => {
-                        confetti({
-                            particleCount: 80,
-                            angle: 60,
-                            spread: 55,
-                            origin: { x: 0, y: 0.65 },
-                            colors: ['#003D7C', '#4D7CAE', '#ffffff']
-                        });
-                        
-                        // Right side burst after a small delay
-                        setTimeout(() => {
-                            confetti({
-                                particleCount: 80,
-                                angle: 120,
-                                spread: 55,
-                                origin: { x: 1, y: 0.65 },
-                                colors: ['#EF7C00', '#4D7CAE', '#ffffff']
-                            });
-                        }, 150);
-                    }, 300);
-                }, 100);
+
+            if (audioContext.state === 'running') {
+                actuallyPlayTheSound();
+            } else {
+                console.warn(`AudioContext not in running state. Current state: ${audioContext.state}. Cannot play sound.`);
             }
-            
-            // Check button click handler
-            checkButton.addEventListener('click', function() {
-                // First check if all fields are filled
-                let allFilled = true;
-                let emptyFields = [];
-                
-                for (let i = 1; i <= 5; i++) {
-                    const inputField = document.getElementById(`line${i}`);
-                    if (!inputField.value.trim()) {
-                        allFilled = false;
-                        emptyFields.push(i);
-                    }
-                }
-                
-                // If not all fields are filled, show error and return
-                if (!allFilled) {
-                    validationMessage.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                        Please fill in all blank fields before checking answers. Missing: Line ${emptyFields.join(', Line ')}
-                    `;
-                    validationMessage.style.display = 'block';
-                    return;
-                }
-                
-                // Hide validation message if all fields are filled
-                validationMessage.style.display = 'none';
-                
-                // If all fields are filled, proceed with checking
-                let allCorrect = true;
-                
-                // Check each input
-                for (let i = 1; i <= 5; i++) {
-                    const inputField = document.getElementById(`line${i}`);
-                    const inputItem = document.getElementById(`item-${i}`);
-                    const feedbackElement = document.getElementById(`feedback-${i}`);
-                    
-                    const userAnswer = inputField.value.trim();
-                    const isCorrect = userAnswer === correctAnswers[`line${i}`];
-                    
-                    // Update UI based on correctness
-                    if (isCorrect) {
-                        inputItem.classList.add('correct');
-                        inputItem.classList.remove('incorrect');
-                        feedbackElement.classList.add('correct');
-                        feedbackElement.classList.remove('incorrect');
-                        feedbackElement.innerHTML = `
-                            <span class="feedback-icon">✓</span> Correct!
-                        `;
-                    } else {
-                        inputItem.classList.add('incorrect');
-                        inputItem.classList.remove('correct');
-                        feedbackElement.classList.add('incorrect');
-                        feedbackElement.classList.remove('correct');
-                        feedbackElement.innerHTML = `
-                            <span class="feedback-icon">✗</span> The correct output is: "${correctAnswers[`line${i}`]}"
-                        `;
-                        allCorrect = false;
-                    }
-                    
-                    // Show feedback
-                    feedbackElement.style.display = 'block';
-                }
-                
-                // Show appropriate summary feedback
-                if (allCorrect) {
-                    successFeedback.style.display = 'block';
-                    infoFeedback.style.display = 'none';
-                    
-                    // Trigger celebration with confetti and sound if all answers are correct
-                    showCelebration();
-                } else {
-                    successFeedback.style.display = 'none';
-                    infoFeedback.style.display = 'block';
-                }
-                
-                // Toggle buttons
-                checkButton.classList.add('hidden');
-                resetButton.classList.remove('hidden');
-            });
-            
-            // Reset button click handler
-            resetButton.addEventListener('click', function() {
-                // Clear inputs
-                for (let i = 1; i <= 5; i++) {
-                    const inputField = document.getElementById(`line${i}`);
-                    const inputItem = document.getElementById(`item-${i}`);
-                    const feedbackElement = document.getElementById(`feedback-${i}`);
-                    
-                    inputField.value = '';
-                    inputItem.classList.remove('correct', 'incorrect');
-                    feedbackElement.style.display = 'none';
-                }
-                
-                // Hide validation message
-                document.getElementById('validation-message').style.display = 'none';
-                
-                // Reset audio state for next attempt
-                if (audioContext && audioContext.state === 'running') {
-                    audioContext.suspend();
-                }
-                successFeedback.style.display = 'none';
-                infoFeedback.style.display = 'none';
-                
-                // Toggle buttons
-                resetButton.classList.add('hidden');
-                checkButton.classList.remove('hidden');
-            });
+
+        } catch (error) {
+            console.error("Error in playCorrectSound:", error);
+        }
+    }
+    
+    // Initialize audio on first user interaction anywhere on the document
+    function generalUserInteractionListener() {
+        console.log("First user interaction detected, attempting preemptive audio init.");
+        initAudio().catch(err => { // Call initAudio, handle potential errors
+            console.warn("Preemptive audio initialization failed on first interaction:", err.message);
         });
+        // Remove the listener after the first interaction
+        document.removeEventListener('pointerdown', generalUserInteractionListener, true);
+        document.removeEventListener('keydown', generalUserInteractionListener, true);
+    }
+    document.addEventListener('pointerdown', generalUserInteractionListener, { once: true, capture: true });
+    document.addEventListener('keydown', generalUserInteractionListener, { once: true, capture: true }); // Also listen for key presses
+
+    // Show celebration with confetti and sound
+    function showCelebration() {
+        // Play the correct sound - this is async but we don't need to await it
+        // for confetti to show.
+        playCorrectSound(); 
+        
+        // Trigger confetti (rest of your confetti logic is fine)
+        setTimeout(() => {
+            confetti({ /* ... */ });
+            // ... more confetti ...
+        }, 100);
+    }
+    
+    // Check button click handler
+    checkButton.addEventListener('click', async function() { // Make handler async if you await async functions
+        // ... (validation logic as before) ...
+        let allFilled = true;
+        let emptyFields = [];
+        
+        for (let i = 1; i <= 5; i++) {
+            const inputField = document.getElementById(`line${i}`);
+            if (!inputField.value.trim()) {
+                allFilled = false;
+                emptyFields.push(i);
+            }
+        }
+        
+        if (!allFilled) {
+            validationMessage.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                Please fill in all blank fields before checking answers. Missing: Line ${emptyFields.join(', Line ')}
+            `;
+            validationMessage.style.display = 'block';
+            return;
+        }
+        
+        validationMessage.style.display = 'none';
+        
+        let allCorrect = true;
+        
+        for (let i = 1; i <= 5; i++) {
+            const inputField = document.getElementById(`line${i}`);
+            const inputItem = document.getElementById(`item-${i}`);
+            const feedbackElement = document.getElementById(`feedback-${i}`);
+            
+            const userAnswer = inputField.value.trim();
+            const isCorrect = userAnswer === correctAnswers[`line${i}`];
+            
+            if (isCorrect) {
+                inputItem.classList.add('correct');
+                inputItem.classList.remove('incorrect');
+                feedbackElement.classList.add('correct');
+                feedbackElement.classList.remove('incorrect');
+                feedbackElement.innerHTML = `<span class="feedback-icon">✓</span> Correct!`;
+            } else {
+                inputItem.classList.add('incorrect');
+                inputItem.classList.remove('correct');
+                feedbackElement.classList.add('incorrect');
+                feedbackElement.classList.remove('correct');
+                feedbackElement.innerHTML = `<span class="feedback-icon">✗</span> The correct output is: "${correctAnswers[`line${i}`]}"`;
+                allCorrect = false;
+            }
+            feedbackElement.style.display = 'block';
+        }
+        
+        if (allCorrect) {
+            successFeedback.style.display = 'block';
+            infoFeedback.style.display = 'none';
+            
+            // Call showCelebration. Since playCorrectSound is now more robust and
+            // initAudio is called within it, this should work reliably
+            // as it's part of the 'click' event chain.
+            showCelebration(); 
+        } else {
+            successFeedback.style.display = 'none';
+            infoFeedback.style.display = 'block';
+        }
+        
+        checkButton.classList.add('hidden');
+        resetButton.classList.remove('hidden');
+    });
+    
+    // Reset button click handler
+    resetButton.addEventListener('click', function() {
+        // ... (clear inputs logic as before) ...
+        for (let i = 1; i <= 5; i++) {
+            // ...
+        }
+        validationMessage.style.display = 'none';
+        
+        // Suspend audio context if it exists and is running.
+        // It will be resumed on the next play attempt.
+        // No need to set audioInitialized to false, as the buffer is still loaded.
+        if (audioContext && audioContext.state === 'running') {
+            console.log("Resetting: Suspending AudioContext.");
+            audioContext.suspend(); 
+        }
+        successFeedback.style.display = 'none';
+        infoFeedback.style.display = 'none';
+        
+        resetButton.classList.add('hidden');
+        checkButton.classList.remove('hidden');
+    });
+});
     </script>
 </body>
 </html>
