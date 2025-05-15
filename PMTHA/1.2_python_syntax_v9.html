@@ -1301,155 +1301,155 @@ print(summary_text)</div>
     
     <!-- MCQ Script -->
     <script>
+        // Global audio variables and functions
+        let audioContext = null;
+        let correctSoundBuffer = null;
+        let audioInitialized = false;
+        
+        // Load sound from URL
+        async function loadSound() {
+            if (correctSoundBuffer) {
+                console.log("Sound buffer already available.");
+                return;
+            }
+            console.log("Loading sound...");
+            try {
+                const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load sound: ${response.statusText}`);
+                }
+                
+                const arrayBuffer = await response.arrayBuffer();
+                if (!audioContext) {
+                    throw new Error("AudioContext not available for decoding sound.");
+                }
+                correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                console.log("Sound decoded and buffer ready.");
+            } catch (error) {
+                console.error('Error loading sound:', error);
+                correctSoundBuffer = null;
+                throw error;
+            }
+        }
+
+        // Initialize audio functionality
+        async function initAudio() {
+            if (audioInitialized) {
+                console.log("Audio already initialized.");
+                return Promise.resolve();
+            }
+            
+            console.log("Attempting to initialize audio...");
+            try {
+                // Create audio context if it doesn't exist or was closed
+                if (!audioContext || audioContext.state === 'closed') {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log("AudioContext created/recreated.");
+                }
+
+                // Ensure AudioContext is running (it might start in a suspended state)
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                    console.log("AudioContext resumed.");
+                }
+                
+                await loadSound(); // Load the sound (this will set correctSoundBuffer)
+                
+                if (correctSoundBuffer) {
+                    audioInitialized = true;
+                    console.log("Audio successfully initialized (Context & Buffer ready).");
+                    return Promise.resolve();
+                } else {
+                    throw new Error("Sound buffer not loaded after loadSound attempt.");
+                }
+            } catch (error) {
+                console.error('Audio initialization failed:', error);
+                audioInitialized = false;
+                correctSoundBuffer = null;
+                return Promise.reject(error);
+            }
+        }
+
+        // Actually play the sound
+        function actuallyPlayTheSound() {
+            if (!audioContext || !correctSoundBuffer) {
+                console.warn("actuallyPlayTheSound: Preconditions not met");
+                return;
+            }
+            const source = audioContext.createBufferSource();
+            source.buffer = correctSoundBuffer;
+            
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 0.4; // Volume
+            
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            source.start();
+            console.log("Correct sound played.");
+        }
+        
+        // Play correct sound
+        function playCorrectSound() {
+            if (!audioInitialized || !audioContext || !correctSoundBuffer) {
+                console.warn("playCorrectSound: Audio not ready or initialized.");
+                // Try to initialize again
+                initAudio().then(() => {
+                    if (audioInitialized && audioContext && correctSoundBuffer) {
+                       if (audioContext.state === 'suspended') {
+                            audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context:", e));
+                        } else {
+                            actuallyPlayTheSound();
+                        }
+                    } else {
+                        console.error("Still not ready to play sound after re-init attempt.");
+                    }
+                }).catch(err => {
+                    console.error("Failed to init/play sound:", err);
+                });
+                return;
+            }
+            
+            if (audioContext.state === 'suspended') {
+                console.log("AudioContext is suspended, attempting to resume for playback.");
+                audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext:", e));
+            } else {
+                actuallyPlayTheSound();
+            }
+        }
+        
+        // Initialize audio on first user interaction
+        function attemptPreemptiveAudioInit() {
+            if (!audioInitialized) {
+                console.log("Pre-emptive audio initialization triggered by user interaction.");
+                initAudio().catch(err => {
+                    console.warn("Pre-emptive audio initialization failed. Will try again on first correct answer.", err.message);
+                });
+            }
+        }
+        
+        // Show celebration confetti
+        function showCelebration() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#003D7C', '#EF7C00', '#4D7CAE']
+            });
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize audio on first interaction
+            document.body.addEventListener('pointerdown', attemptPreemptiveAudioInit, { once: true });
+            
             // Set up MCQ functionality for all MCQ containers
             const mcqContainers = document.querySelectorAll('.mcq-container');
             
             mcqContainers.forEach(container => {
                 const options = container.querySelectorAll('.mcq-option');
                 const resetButton = container.querySelector('.reset-button');
-                
-                // Audio variables
-                let audioContext = null;
-                let correctSoundBuffer = null;
-                let audioInitialized = false;
-                
-                // Load sound from URL
-                async function loadSound() {
-                    if (correctSoundBuffer) {
-                        console.log("Sound buffer already available.");
-                        return;
-                    }
-                    console.log("Loading sound...");
-                    try {
-                        const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
-                        const response = await fetch(url);
-                        
-                        if (!response.ok) {
-                            throw new Error(`Failed to load sound: ${response.statusText}`);
-                        }
-                        
-                        const arrayBuffer = await response.arrayBuffer();
-                        if (!audioContext) {
-                            throw new Error("AudioContext not available for decoding sound.");
-                        }
-                        correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                        console.log("Sound decoded and buffer ready.");
-                    } catch (error) {
-                        console.error('Error loading sound:', error);
-                        correctSoundBuffer = null;
-                        throw error;
-                    }
-                }
-
-                // Initialize audio functionality
-                async function initAudio() {
-                    if (audioInitialized) {
-                        console.log("Audio already initialized.");
-                        return Promise.resolve();
-                    }
-                    
-                    console.log("Attempting to initialize audio...");
-                    try {
-                        // Create audio context if it doesn't exist or was closed
-                        if (!audioContext || audioContext.state === 'closed') {
-                            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                            console.log("AudioContext created/recreated.");
-                        }
-
-                        // Ensure AudioContext is running (it might start in a suspended state)
-                        if (audioContext.state === 'suspended') {
-                            await audioContext.resume();
-                            console.log("AudioContext resumed.");
-                        }
-                        
-                        await loadSound(); // Load the sound (this will set correctSoundBuffer)
-                        
-                        if (correctSoundBuffer) {
-                            audioInitialized = true;
-                            console.log("Audio successfully initialized (Context & Buffer ready).");
-                            return Promise.resolve();
-                        } else {
-                            throw new Error("Sound buffer not loaded after loadSound attempt.");
-                        }
-                    } catch (error) {
-                        console.error('Audio initialization failed:', error);
-                        audioInitialized = false;
-                        correctSoundBuffer = null;
-                        return Promise.reject(error);
-                    }
-                }
-
-                // Actually play the sound
-                function actuallyPlayTheSound() {
-                    if (!audioContext || !correctSoundBuffer) {
-                        console.warn("actuallyPlayTheSound: Preconditions not met");
-                        return;
-                    }
-                    const source = audioContext.createBufferSource();
-                    source.buffer = correctSoundBuffer;
-                    
-                    const gainNode = audioContext.createGain();
-                    gainNode.gain.value = 0.4; // Volume
-                    
-                    source.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    source.start();
-                    console.log("Correct sound played.");
-                }
-                
-                // Play correct sound
-                function playCorrectSound() {
-                    if (!audioInitialized || !audioContext || !correctSoundBuffer) {
-                        console.warn("playCorrectSound: Audio not ready or initialized.");
-                        // Try to initialize again
-                        initAudio().then(() => {
-                            if (audioInitialized && audioContext && correctSoundBuffer) {
-                               if (audioContext.state === 'suspended') {
-                                    audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context:", e));
-                                } else {
-                                    actuallyPlayTheSound();
-                                }
-                            } else {
-                                console.error("Still not ready to play sound after re-init attempt.");
-                            }
-                        }).catch(err => {
-                            console.error("Failed to init/play sound:", err);
-                        });
-                        return;
-                    }
-                    
-                    if (audioContext.state === 'suspended') {
-                        console.log("AudioContext is suspended, attempting to resume for playback.");
-                        audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext:", e));
-                    } else {
-                        actuallyPlayTheSound();
-                    }
-                }
-                
-                // Initialize audio on first user interaction
-                function attemptPreemptiveAudioInit() {
-                    if (!audioInitialized) {
-                        console.log("Pre-emptive audio initialization triggered by user interaction.");
-                        initAudio().catch(err => {
-                            console.warn("Pre-emptive audio initialization failed. Will try again on first correct answer.", err.message);
-                        });
-                    }
-                    // Remove this listener after the first interaction
-                    document.body.removeEventListener('pointerdown', attemptPreemptiveAudioInit, true);
-                }
-                document.body.addEventListener('pointerdown', attemptPreemptiveAudioInit, { once: true, capture: true });
-                
-                // Celebration effect when correct
-                function showCelebration() {
-                    confetti({
-                        particleCount: 100,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#003D7C', '#EF7C00', '#4D7CAE']
-                    });
-                }
                 
                 if (options && options.length > 0) {
                     options.forEach(option => {
@@ -1547,6 +1547,9 @@ print(summary_text)</div>
             
             // Drag and drop handler functions
             function handleDragStart(e) {
+                // Try to initialize audio on drag start
+                attemptPreemptiveAudioInit();
+                
                 draggedItem = this;
                 setTimeout(() => {
                     this.style.opacity = '0.5';
@@ -1613,15 +1616,14 @@ print(summary_text)</div>
                         feedback.classList.add('correct');
                         feedback.style.display = 'block';
                         
-                        // Play correct sound using the existing function
-                        if (typeof playCorrectSound === 'function') {
-                            // Use the function if available, otherwise do nothing
-                            try {
+                        // Play correct sound using the global function
+                        initAudio()
+                            .then(() => {
                                 playCorrectSound();
-                            } catch (e) {
-                                console.error("Error playing sound:", e);
-                            }
-                        }
+                            })
+                            .catch(err => {
+                                console.error("Could not play sound on correct drop:", err.message);
+                            });
                         
                         if (correctCount === dropAreas.length) {
                             showDragDropCelebration();
