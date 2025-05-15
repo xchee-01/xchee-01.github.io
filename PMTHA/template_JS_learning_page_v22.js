@@ -1,12 +1,10 @@
-// Interactive Learning Page JavaScript
-// Enhanced with support for Fill in the Blanks, Drag and Drop, and MCQ exercises
+//NOTE: Batches data before sending out but a bit wonky. DOES NOT send data out when page is close. -->
 
 // Replace with your deployed Google Apps Script Web App URL
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSxyvmPYsdnimwhEj572QuTvow9nTpkc13rOd1rQY9neh0mp-a4Bx5p6tERWRzR9d1tA/exec';
 const SIGN_IN_URL = 'https://xchee-01.github.io/PMTHA/SOM-PMTHA_signin.html';
 const COPY_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbz88biGq3GAIfH77lEt_IeWcRbBrZ8r2K-4Z5C0foZDMHQGsuqaGIvhGOBKA5eqW65_AA/exec';
 const EXTRA_INFO_INTERACTION_URL = 'https://script.google.com/macros/s/AKfycbxXHMDDEnZq0krPyE96d22zEp3DqdLmwO74OsxSRW1Rq_JvHEYRXc5IgnaV-6J1l4o_GQ/exec';
-const EXERCISE_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbxXHMDDEnZq0krPyE96d22zEp3DqdLmwO74OsxSRW1Rq_JvHEYRXc5IgnaV-6J1l4o_GQ/exec';
 
 // Configuration and constants
 const TRACKING_INTERVAL = 20000; // 20 seconds for periodic tracking 
@@ -36,10 +34,6 @@ let visibilitySession = Date.now();
 let lastUpdateTime = new Date().toISOString(); // Track last update time
 let isPageClosing = false;
 
-// Audio Context and Buffer for interactive exercises
-let audioContext = null;
-let correctSoundBuffer = null;
-let audioInitialized = false;
 
 // Event priority mapping (higher number = higher priority)
 const EVENT_PRIORITY = {
@@ -53,10 +47,7 @@ const EVENT_PRIORITY = {
     'visibility_lost': 2,
     'answer_viewed': 3,
     'challenge_completed': 4,
-    'inactivity_popup_shown': 3,
-    'fill_in_blanks_completed': 4,
-    'drag_drop_completed': 4,
-    'mcq_completed': 4
+    'inactivity_popup_shown': 3
 };
 
 // Cache DOM elements
@@ -80,10 +71,12 @@ const domElements = {
     reactionFeedback: document.querySelector('.reaction-feedback'),
     modalClose: document.querySelector('.modal-close'),
     inactivityCloseButton: document.querySelector('#inactivityModal .modal-close'),
-    // New elements for interactive exercises
-    fillInBlanksExercise: document.querySelector('.fill-in-blanks-exercise'),
-    dragDropExercise: document.querySelector('.drag-drop-exercise'),
-    mcqExercise: document.querySelector('.mcq-exercise')
+    // Exercise elements
+    checkAnswersButton: document.getElementById('check-button'),
+    resetButton: document.getElementById('reset-button'),
+    resetButtonDrag: document.getElementById('reset-button-drag'),
+    resetButtonMcq: document.getElementById('reset-button-mcq'),
+    celebration: document.getElementById('celebration')
 };
 
 // Optimized initialization function
@@ -101,19 +94,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePython();
     
     // Initialize interactive exercises
-    initializeInteractiveExercises();
+    initializeExercises();
 });
-
-// Initialize all interactive exercises
-function initializeInteractiveExercises() {
-    // Initialize audio for all exercises
-    initAudio();
-    
-    // Initialize all exercise types if they exist on the page
-    initializeFillInBlanks();
-    initializeDragAndDrop();
-    initializeMCQ();
-}
 
 // Generate a unique session ID
 function generateSessionId() {
@@ -1559,380 +1541,843 @@ const confettiAnimations = {
     }
 };
 
-// ============================================
-// NEW INTERACTIVE EXERCISE FUNCTIONS
-// ============================================
-
-// Load sound resources
-async function loadSound() {
-    if (correctSoundBuffer) {
-        console.log("Sound buffer already available.");
-        return;
-    }
-    console.log("Loading sound...");
-    try {
-        const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`Failed to load sound: ${response.statusText}`);
-        }
-        
-        const arrayBuffer = await response.arrayBuffer();
-        if (!audioContext) {
-            throw new Error("AudioContext not available for decoding sound.");
-        }
-        correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        console.log("Sound decoded and buffer ready.");
-    } catch (error) {
-        console.error('Error loading sound:', error);
-        correctSoundBuffer = null;
-        throw error;
-    }
-}
-
-// Initialize audio functionality
-async function initAudio() {
-    if (audioInitialized) {
-        console.log("Audio already initialized.");
-        return Promise.resolve();
-    }
+// Initialize interactive exercises
+function initializeExercises() {
+    // Initialize fill in the blanks exercise
+    initializeFillInTheBlanks();
     
-    console.log("Attempting to initialize audio...");
-    try {
-        // Create audio context if it doesn't exist or was closed
-        if (!audioContext || audioContext.state === 'closed') {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            console.log("AudioContext created/recreated.");
-        }
-
-        // Ensure AudioContext is running (it might start in a suspended state)
-        if (audioContext.state === 'suspended') {
-            await audioContext.resume();
-            console.log("AudioContext resumed.");
-        }
-        
-        await loadSound(); // Load the sound
-        
-        if (correctSoundBuffer) {
-            audioInitialized = true;
-            console.log("Audio successfully initialized.");
-            return Promise.resolve();
-        } else {
-            throw new Error("Sound buffer not loaded after loadSound attempt.");
-        }
-    } catch (error) {
-        console.error('Audio initialization failed:', error);
-        audioInitialized = false;
-        correctSoundBuffer = null;
-        return Promise.reject(error);
-    }
+    // Initialize drag and drop exercise
+    initializeDragAndDrop();
+    
+    // Initialize MCQ exercise
+    initializeMCQ();
 }
 
-// Play sound on correct answers
-function playCorrectSound() {
-    if (!audioInitialized || !audioContext || !correctSoundBuffer) {
-        console.warn("Audio not ready or initialized");
-        // Try to initialize again just in case, then play if successful
-        initAudio().then(() => {
-            if (audioInitialized && audioContext && correctSoundBuffer) {
-               if (audioContext.state === 'suspended') {
-                    audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context:", e));
-                } else {
-                    actuallyPlayTheSound();
+// Fill in the Blanks Exercise Functions
+function initializeFillInTheBlanks() {
+    // Correct answers
+    const correctAnswers = {
+        line1: 'Medication Dosage Calculator',
+        line2: '---------------------------',
+        line3: 'Standard dose: 500 mg',
+        line4: 'Child dose (age 8): 250.0 mg',
+        line5: 'Infant dose: 50.0 mg'
+    };
+    
+    // Audio variables for feedback sound
+    let audioContext = null;
+    let correctSoundBuffer = null;
+    let audioInitialized = false;
+    
+    // Check button click handler
+    if (domElements.checkAnswersButton) {
+        domElements.checkAnswersButton.addEventListener('click', function() {
+            // First check if all fields are filled
+            let allFilled = true;
+            let emptyFields = [];
+            
+            for (let i = 1; i <= 5; i++) {
+                const inputField = document.getElementById(`line${i}`);
+                if (!inputField.value.trim()) {
+                    allFilled = false;
+                    emptyFields.push(i);
                 }
-            } else {
-                console.error("Still not ready to play sound after re-init attempt.");
             }
-        }).catch(err => {
-            console.error("Failed to init/play sound:", err);
+            
+            // If not all fields are filled, show error and return
+            const validationMessage = document.getElementById('validation-message');
+            if (!allFilled) {
+                validationMessage.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    Please fill in all blank fields before checking answers. Missing: Line ${emptyFields.join(', Line ')}
+                `;
+                validationMessage.style.display = 'block';
+                return;
+            }
+            
+            // Hide validation message if all fields are filled
+            validationMessage.style.display = 'none';
+            
+            // If all fields are filled, proceed with checking
+            let allCorrect = true;
+            
+            // Check each input
+            for (let i = 1; i <= 5; i++) {
+                const inputField = document.getElementById(`line${i}`);
+                const inputItem = document.getElementById(`item-${i}`);
+                const feedbackElement = document.getElementById(`feedback-${i}`);
+                
+                const userAnswer = inputField.value.trim();
+                const isCorrect = userAnswer === correctAnswers[`line${i}`];
+                
+                // Update UI based on correctness
+                if (isCorrect) {
+                    inputItem.classList.add('correct');
+                    inputItem.classList.remove('incorrect');
+                    feedbackElement.classList.add('correct');
+                    feedbackElement.classList.remove('incorrect');
+                    feedbackElement.innerHTML = `
+                        <span class="feedback-icon">✓</span> Correct!
+                    `;
+                } else {
+                    inputItem.classList.add('incorrect');
+                    inputItem.classList.remove('correct');
+                    feedbackElement.classList.add('incorrect');
+                    feedbackElement.classList.remove('correct');
+                    feedbackElement.innerHTML = `
+                        <span class="feedback-icon">✗</span> The correct output is: "${correctAnswers[`line${i}`]}"
+                    `;
+                    allCorrect = false;
+                }
+                
+                // Show feedback
+                feedbackElement.style.display = 'block';
+            }
+            
+            // Show appropriate summary feedback
+            const successFeedback = document.getElementById('success-feedback');
+            const infoFeedback = document.getElementById('info-feedback');
+            
+            if (allCorrect) {
+                successFeedback.style.display = 'block';
+                infoFeedback.style.display = 'none';
+                
+                // Trigger celebration with confetti and sound if all answers are correct
+                showCelebrationWithSound();
+            } else {
+                successFeedback.style.display = 'none';
+                infoFeedback.style.display = 'block';
+            }
+            
+            // Toggle buttons
+            domElements.checkAnswersButton.classList.add('hidden');
+            domElements.resetButton.classList.remove('hidden');
         });
-        return;
     }
     
-    if (audioContext.state === 'suspended') {
-        console.log("AudioContext is suspended, attempting to resume");
-        audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext:", e));
-    } else {
-        actuallyPlayTheSound();
-    }
-}
-
-function actuallyPlayTheSound() {
-    if (!audioContext || !correctSoundBuffer) {
-        console.warn("Cannot play sound: context or buffer not available");
-        return;
-    }
-    const source = audioContext.createBufferSource();
-    source.buffer = correctSoundBuffer;
-    
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = 0.4; // Volume
-    
-    source.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    source.start();
-    console.log("Correct sound played.");
-}
-
-// Track exercise completion
-function trackExerciseCompletion(exerciseType, exerciseId, score) {
-    try {
-        // Create the event object for tracking
-        const eventData = {
-            type: `${exerciseType}_completed`,
-            sectionId: getCurrentSectionId(),
-            startTime: new Date(),
-            endTime: new Date(),
-            duration: 0,
-            additionalInfo: `Exercise: ${exerciseId}, Score: ${score}`,
-            sessionId: sessionId,
-            username: getUsername()
-        };
-        
-        // Add to the tracking queue
-        sectionEvents.push(eventData);
-        
-        // Save to localStorage
-        saveEventsToLocalStorage();
-        
-        // Also send to the exercise tracking endpoint
-        const data = {
-            type: exerciseType,
-            username: getUsername(),
-            timestamp: new Date().toISOString(),
-            exerciseId: exerciseId,
-            score: score,
-            pageUrl: window.location.href
-        };
-        
-        fetch(EXERCISE_TRACKING_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-            mode: 'no-cors'
-        }).catch(error => {
-            console.error('Exercise tracking error:', error);
+    // Reset button click handler
+    if (domElements.resetButton) {
+        domElements.resetButton.addEventListener('click', function() {
+            // Clear inputs
+            for (let i = 1; i <= 5; i++) {
+                const inputField = document.getElementById(`line${i}`);
+                const inputItem = document.getElementById(`item-${i}`);
+                const feedbackElement = document.getElementById(`feedback-${i}`);
+                
+                inputField.value = '';
+                inputItem.classList.remove('correct', 'incorrect');
+                feedbackElement.style.display = 'none';
+            }
+            
+            // Hide validation message
+            document.getElementById('validation-message').style.display = 'none';
+            
+            // Reset audio state for next attempt
+            if (audioContext && audioContext.state === 'running') {
+                audioContext.suspend();
+            }
+            
+            document.getElementById('success-feedback').style.display = 'none';
+            document.getElementById('info-feedback').style.display = 'none';
+            
+            // Toggle buttons
+            domElements.resetButton.classList.add('hidden');
+            domElements.checkAnswersButton.classList.remove('hidden');
         });
-    } catch (error) {
-        console.error('Error tracking exercise completion:', error);
+    }
+    
+    // Load sound from URL
+    async function loadSound() {
+        if (correctSoundBuffer) {
+            console.log("Sound buffer already available.");
+            return;
+        }
+        console.log("Loading sound...");
+        try {
+            const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load sound: ${response.statusText}`);
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            if (!audioContext) {
+                throw new Error("AudioContext not available for decoding sound.");
+            }
+            correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            console.log("Sound decoded and buffer ready.");
+        } catch (error) {
+            console.error('Error loading sound:', error);
+            correctSoundBuffer = null;
+            throw error;
+        }
+    }
+    
+    // Initialize audio functionality
+    async function initAudio() {
+        if (audioInitialized) {
+            console.log("Audio already initialized.");
+            return Promise.resolve();
+        }
+        
+        console.log("Attempting to initialize audio...");
+        try {
+            // Create audio context if it doesn't exist or was closed
+            if (!audioContext || audioContext.state === 'closed') {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("AudioContext created/recreated.");
+            }
+
+            // Ensure AudioContext is running (it might start in a suspended state)
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+                console.log("AudioContext resumed.");
+            }
+            
+            await loadSound(); // Load the sound
+            
+            if (correctSoundBuffer) {
+                audioInitialized = true;
+                console.log("Audio successfully initialized.");
+                return Promise.resolve();
+            } else {
+                throw new Error("Sound buffer not loaded after loadSound attempt.");
+            }
+        } catch (error) {
+            console.error('Audio initialization failed:', error);
+            audioInitialized = false;
+            correctSoundBuffer = null;
+            return Promise.reject(error);
+        }
+    }
+    
+    function actuallyPlayTheSound() {
+        if (!audioContext || !correctSoundBuffer) {
+            console.warn("Cannot play sound: context or buffer not available");
+            return;
+        }
+        const source = audioContext.createBufferSource();
+        source.buffer = correctSoundBuffer;
+        
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.4; // Volume
+        
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        source.start();
+        console.log("Correct sound played.");
+    }
+    
+    // Play correct sound
+    function playCorrectSound() {
+        if (!audioInitialized || !audioContext || !correctSoundBuffer) {
+            console.warn("Audio not ready or initialized");
+            // Try to initialize again just in case, then play if successful
+            initAudio().then(() => {
+                if (audioInitialized && audioContext && correctSoundBuffer) {
+                   if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context:", e));
+                    } else {
+                        actuallyPlayTheSound();
+                    }
+                } else {
+                    console.error("Still not ready to play sound after re-init attempt.");
+                }
+            }).catch(err => {
+                console.error("Failed to init/play sound:", err);
+            });
+            return;
+        }
+        
+        if (audioContext.state === 'suspended') {
+            console.log("AudioContext is suspended, attempting to resume");
+            audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext:", e));
+        } else {
+            actuallyPlayTheSound();
+        }
+    }
+    
+    // Initialize audio on first user interaction
+    function attemptPreemptiveAudioInit() {
+        if (!audioInitialized) {
+            console.log("Pre-emptive audio initialization triggered");
+            initAudio().catch(err => {
+                console.warn("Pre-emptive audio initialization failed:", err.message);
+            });
+        }
+        document.removeEventListener('pointerdown', attemptPreemptiveAudioInit, true);
+    }
+    document.addEventListener('pointerdown', attemptPreemptiveAudioInit, { once: true, capture: true });
+    
+    // Show celebration with confetti and sound
+    function showCelebrationWithSound() {
+        // Play the correct sound
+        playCorrectSound();
+        
+        // Trigger confetti
+        setTimeout(() => {
+            // Center burst
+            confetti({
+                particleCount: 150,
+                spread: 160,
+                origin: { x: 0.5, y: 0.6 },
+                colors: [nusBlue, nusOrange, nusLightBlue, '#ffffff']
+            });
+            
+            // Left side burst after a small delay
+            setTimeout(() => {
+                confetti({
+                    particleCount: 80,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.65 },
+                    colors: [nusBlue, nusLightBlue, '#ffffff']
+                });
+                
+                // Right side burst after a small delay
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 80,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1, y: 0.65 },
+                        colors: [nusOrange, nusLightBlue, '#ffffff']
+                    });
+                }, 150);
+            }, 300);
+        }, 100);
     }
 }
 
-// Initialize Fill in the Blanks exercise
-function initializeFillInBlanks() {
-    const fillInBlanksExercise = document.querySelector('.fill-in-blanks-exercise');
-    if (!fillInBlanksExercise || fillInBlanksExercise.style.display === 'none') return;
-    
-    // Get elements
-    const checkButton = fillInBlanksExercise.querySelector('#check-button');
-    const resetButton = fillInBlanksExercise.querySelector('#reset-button');
-    const validationMessage = fillInBlanksExercise.querySelector('#validation-message');
-    const successFeedback = fillInBlanksExercise.querySelector('#success-feedback');
-    const infoFeedback = fillInBlanksExercise.querySelector('#info-feedback');
-    
-    if (!checkButton || !resetButton) return;
-
-    // Set exercise ID for tracking
-    const exerciseId = fillInBlanksExercise.getAttribute('data-exercise-id') || 'fill-in-blanks';
-    
-    // Check button handler
-    checkButton.addEventListener('click', function() {
-        // Validation logic for filled fields (implemented in the parser)
-        const inputFields = fillInBlanksExercise.querySelectorAll('.input-field');
-        const inputItems = fillInBlanksExercise.querySelectorAll('.input-item');
-        
-        // Count correct answers (to be implemented by parser)
-        let correctCount = 0;
-        let totalFields = inputFields.length;
-        
-        // The actual validation and scoring logic will be implemented in the parser
-        
-        // For demo purposes, just toggle the UI elements
-        checkButton.classList.add('hidden');
-        resetButton.classList.remove('hidden');
-        
-        // Track completion
-        trackExerciseCompletion('fill_in_blanks', exerciseId, correctCount / totalFields);
-    });
-    
-    // Reset button handler
-    resetButton.addEventListener('click', function() {
-        // Clear inputs
-        const inputFields = fillInBlanksExercise.querySelectorAll('.input-field');
-        const inputItems = fillInBlanksExercise.querySelectorAll('.input-item');
-        const feedbacks = fillInBlanksExercise.querySelectorAll('.feedback');
-        
-        inputFields.forEach(field => field.value = '');
-        inputItems.forEach(item => item.classList.remove('correct', 'incorrect'));
-        feedbacks.forEach(feedback => feedback.style.display = 'none');
-        
-        // Hide validation message
-        if (validationMessage) validationMessage.style.display = 'none';
-        
-        // Hide feedback
-        if (successFeedback) successFeedback.style.display = 'none';
-        if (infoFeedback) infoFeedback.style.display = 'none';
-        
-        // Toggle buttons
-        resetButton.classList.add('hidden');
-        checkButton.classList.remove('hidden');
-    });
-}
-
-// Initialize Drag and Drop exercise
+// Drag and Drop Exercise Functions
 function initializeDragAndDrop() {
-    const dragDropExercise = document.querySelector('.drag-drop-exercise');
-    if (!dragDropExercise || dragDropExercise.style.display === 'none') return;
+    const answers = document.querySelectorAll('.answer');
+    const dropAreas = document.querySelectorAll('.drop-area');
+    const resetButtonDrag = document.getElementById('reset-button-drag');
+    const answersContainer = document.getElementById('answers');
+    const celebration = document.getElementById('celebration');
     
-    // Get elements
-    const answers = dragDropExercise.querySelectorAll('.answer');
-    const dropAreas = dragDropExercise.querySelectorAll('.drop-area');
-    const resetButton = dragDropExercise.querySelector('#drag-drop-reset-button');
-    
-    if (!answers.length || !dropAreas.length || !resetButton) return;
-    
-    // Set exercise ID for tracking
-    const exerciseId = dragDropExercise.getAttribute('data-exercise-id') || 'drag-drop';
+    // Audio variables
+    let audioContext = null;
+    let correctSoundBuffer = null;
+    let audioInitialized = false;
     
     let draggedItem = null;
     let dropCount = 0;
     let correctCount = 0;
     
-    // Add event listeners to draggable items
-    answers.forEach(answer => {
-        answer.addEventListener('dragstart', function(e) {
-            draggedItem = this;
-            setTimeout(() => {
-                this.style.opacity = '0.5';
-            }, 0);
-            e.dataTransfer.setData('text/plain', this.dataset.type);
-        });
-        
-        answer.addEventListener('dragend', function() {
-            this.style.opacity = '1';
-            draggedItem = null;
-            dropAreas.forEach(area => {
-                area.classList.remove('hover');
-            });
-        });
-    });
-    
-    // Add event listeners to drop areas
-    dropAreas.forEach(dropArea => {
-        dropArea.addEventListener('dragover', function(e) {
-            e.preventDefault();
-        });
-        
-        dropArea.addEventListener('dragenter', function(e) {
-            e.preventDefault();
-            if (!this.hasChildNodes()) {
-                this.classList.add('hover');
-            }
-        });
-        
-        dropArea.addEventListener('dragleave', function() {
-            this.classList.remove('hover');
-        });
-        
-        dropArea.addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.classList.remove('hover');
+    // Initialize audio functions - similar to fill in the blanks but separate instance
+    async function loadSound() {
+        if (correctSoundBuffer) {
+            console.log("Sound buffer already available.");
+            return;
+        }
+        console.log("Loading sound...");
+        try {
+            const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+            const response = await fetch(url);
             
-            // The actual drop logic will be implemented in the parser
-            // This is a simplified version for the template
-            if (this.children.length === 0 && draggedItem) {
-                // Logic to check if drop is correct (to be implemented by parser)
-                
-                // Track count for 100% completion celebration
-                dropCount++;
-                
-                // If all areas are filled correctly, celebrate and track completion
-                if (dropCount === dropAreas.length) {
-                    // Calculate score
-                    const score = correctCount / dropAreas.length;
-                    
-                    // Track completion
-                    trackExerciseCompletion('drag_drop', exerciseId, score);
-                    
-                    // Show celebration if perfect score
-                    if (score === 1) {
-                        confettiAnimations.center();
-                        playCorrectSound();
-                    }
-                }
+            if (!response.ok) {
+                throw new Error(`Failed to load sound: ${response.statusText}`);
             }
-        });
+            
+            const arrayBuffer = await response.arrayBuffer();
+            if (!audioContext) {
+                throw new Error("AudioContext not available for decoding sound.");
+            }
+            correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            console.log("Sound decoded and buffer ready.");
+        } catch (error) {
+            console.error('Error loading sound:', error);
+            correctSoundBuffer = null;
+            throw error;
+        }
+    }
+
+    async function initAudio() {
+        if (audioInitialized) {
+            console.log("Audio already initialized.");
+            return Promise.resolve();
+        }
+        
+        console.log("Attempting to initialize audio...");
+        try {
+            // Create audio context if it doesn't exist or was closed
+            if (!audioContext || audioContext.state === 'closed') {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("AudioContext created/recreated.");
+            }
+
+            // Ensure AudioContext is running (it might start in a suspended state)
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+                console.log("AudioContext resumed.");
+            }
+            
+            await loadSound();
+            
+            if (correctSoundBuffer) {
+                audioInitialized = true;
+                console.log("Audio successfully initialized (Context & Buffer ready).");
+                return Promise.resolve();
+            } else {
+                throw new Error("Sound buffer not loaded after loadSound attempt.");
+            }
+        } catch (error) {
+            console.error('Audio initialization failed:', error);
+            audioInitialized = false;
+            correctSoundBuffer = null;
+            return Promise.reject(error);
+        }
+    }
+
+    function actuallyPlayTheSound() {
+        if (!audioContext || !correctSoundBuffer) {
+            console.warn("actuallyPlayTheSound: Preconditions not met. Context:", !!audioContext, "Buffer:", !!correctSoundBuffer);
+            return;
+        }
+        const source = audioContext.createBufferSource();
+        source.buffer = correctSoundBuffer;
+        
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.4; // Volume
+        
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        source.start();
+        console.log("Correct sound played.");
+    }
+    
+    function playCorrectSound() {
+        if (!audioInitialized || !audioContext || !correctSoundBuffer) {
+            console.warn("playCorrectSound: Audio not ready or initialized. Initialized:", audioInitialized, "Context:", !!audioContext, "Buffer:", !!correctSoundBuffer);
+            // Try to initialize again just in case, then play if successful
+            initAudio().then(() => {
+                if (audioInitialized && audioContext && correctSoundBuffer) {
+                   if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context in playCorrectSound:", e));
+                    } else {
+                        actuallyPlayTheSound();
+                    }
+                } else {
+                    console.error("Still not ready to play sound after re-init attempt.");
+                }
+            }).catch(err => {
+                console.error("Failed to init/play sound:", err);
+            });
+            return;
+        }
+        
+        if (audioContext.state === 'suspended') {
+            console.log("AudioContext is suspended, attempting to resume for playback.");
+            audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext in playCorrectSound:", e));
+        } else {
+            actuallyPlayTheSound();
+        }
+    }
+    
+    // Initialize audio on first user interaction
+    function attemptPreemptiveAudioInit() {
+        if (!audioInitialized) {
+            console.log("Pre-emptive audio initialization triggered by user interaction.");
+            initAudio().catch(err => {
+                console.warn("Pre-emptive audio initialization failed. Will try again on first correct answer.", err.message);
+            });
+        }
+        document.removeEventListener('pointerdown', attemptPreemptiveAudioInit, true);
+    }
+    document.addEventListener('pointerdown', attemptPreemptiveAudioInit, { once: true, capture: true });
+    
+    // Set up drag and drop
+    answers.forEach(answer => {
+        answer.addEventListener('dragstart', handleDragStart);
+        answer.addEventListener('dragend', handleDragEnd);
+        if (answersContainer) {
+            answer.setAttribute('data-original-position', Array.from(answersContainer.children).indexOf(answer));
+        }
     });
     
-    // Reset button handler
-    resetButton.addEventListener('click', function() {
-        // The actual reset logic will be implemented in the parser
+    dropAreas.forEach(dropArea => {
+        dropArea.addEventListener('dragover', handleDragOver);
+        dropArea.addEventListener('dragenter', handleDragEnter);
+        dropArea.addEventListener('dragleave', handleDragLeave);
+        dropArea.addEventListener('drop', handleDrop);
+    });
+    
+    if (resetButtonDrag) {
+        resetButtonDrag.addEventListener('click', resetExercise);
+    }
+    
+    function handleDragStart(e) {
+        attemptPreemptiveAudioInit();
+        draggedItem = this;
+        setTimeout(() => {
+            this.style.opacity = '0.5';
+        }, 0);
+        e.dataTransfer.setData('text/plain', this.dataset.type);
+        document.addEventListener('dragover', handleDragScroll);
+    }
+    
+    function handleDragEnd() {
+        this.style.opacity = '1';
+        draggedItem = null;
+        dropAreas.forEach(area => {
+            area.classList.remove('hover');
+        });
+        document.removeEventListener('dragover', handleDragScroll);
+    }
+    
+    function handleDragOver(e) {
+        e.preventDefault();
+    }
+    
+    function handleDragEnter(e) {
+        e.preventDefault();
+        if (!this.hasChildNodes()) {
+            this.classList.add('hover');
+        }
+    }
+    
+    function handleDragLeave() {
+        this.classList.remove('hover');
+    }
+    
+    function handleDrop(e) {
+        e.preventDefault();
+        this.classList.remove('hover');
         
-        // Reset counters
+        if (this.children.length === 0) { // Only allow drop if the area is empty
+            const droppedType = e.dataTransfer.getData('text/plain');
+            const correctType = this.dataset.correct;
+            
+            const clonedItem = draggedItem.cloneNode(true);
+            clonedItem.style.opacity = '1';
+            clonedItem.style.cursor = 'default';
+            clonedItem.style.margin = '0';
+            clonedItem.style.width = '100%';
+            clonedItem.style.textAlign = 'center';
+            clonedItem.draggable = false;
+            
+            this.appendChild(clonedItem);
+            draggedItem.remove();
+            dropCount++;
+            
+            if (droppedType === correctType) {
+                this.classList.add('correct');
+                correctCount++;
+                
+                const feedback = this.nextElementSibling;
+                feedback.classList.add('correct');
+                feedback.style.display = 'block';
+                
+                // Play correct sound - initAudio will ensure it's ready
+                initAudio()
+                    .then(() => {
+                        playCorrectSound();
+                    })
+                    .catch(err => {
+                        console.error("Could not play sound on correct drop:", err.message);
+                    });
+                
+                if (correctCount === dropAreas.length) {
+                    showCelebration();
+                }
+            } else {
+                this.classList.add('incorrect');
+                const feedback = this.nextElementSibling;
+                feedback.innerHTML = `<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This value should be a ${correctType} in Python.`;
+                feedback.classList.add('incorrect');
+                feedback.style.display = 'block';
+                
+                setTimeout(() => {
+                    const newAnswer = document.createElement('div');
+                    newAnswer.className = 'answer';
+                    newAnswer.setAttribute('draggable', 'true');
+                    newAnswer.setAttribute('data-type', droppedType);
+                    
+                    const textSpan = document.createElement('span');
+                    if (droppedType === 'Integer') textSpan.textContent = 'int';
+                    else if (droppedType === 'Float') textSpan.textContent = 'float';
+                    else if (droppedType === 'String') textSpan.textContent = 'str';
+                    newAnswer.appendChild(textSpan);
+                    
+                    newAnswer.addEventListener('dragstart', handleDragStart);
+                    newAnswer.addEventListener('dragend', handleDragEnd);
+                    if (answersContainer) {
+                        answersContainer.appendChild(newAnswer);
+                    }
+                    
+                    this.innerHTML = '';
+                    this.classList.remove('incorrect');
+                    feedback.style.display = 'none';
+                    feedback.classList.remove('incorrect');
+                    dropCount--;
+                }, 1500);
+            }
+        }
+    }
+
+    function handleDragScroll(e) {
+        const scrollThreshold = 60; // pixels from viewport edge
+        const scrollSpeed = 10; // pixels to scroll per event
+        const viewportHeight = window.innerHeight;
+
+        if (e.clientY < scrollThreshold) {
+            // Scroll up when near top
+            window.scrollBy(0, -scrollSpeed);
+        } else if (e.clientY > viewportHeight - scrollThreshold) {
+            // Scroll down when near bottom
+            window.scrollBy(0, scrollSpeed);
+        }
+    }
+    
+    function resetExercise() {
+        dropAreas.forEach(area => {
+            area.innerHTML = '';
+            area.classList.remove('correct', 'incorrect');
+        });
+        
+        document.querySelectorAll('.feedback').forEach(feedback => {
+            feedback.style.display = 'none';
+            feedback.classList.remove('correct', 'incorrect');
+        });
+        
         dropCount = 0;
         correctCount = 0;
-    });
+        if (answersContainer) {
+            answersContainer.innerHTML = '';
+            
+            const answerTypes = ['Integer', 'Float', 'String', 'Integer', 'Float', 'String'];
+            answerTypes.forEach(type => {
+                const newAnswer = document.createElement('div');
+                newAnswer.className = 'answer';
+                newAnswer.setAttribute('draggable', 'true');
+                newAnswer.setAttribute('data-type', type);
+                const textSpan = document.createElement('span');
+                if (type === 'Integer') textSpan.textContent = 'int';
+                else if (type === 'Float') textSpan.textContent = 'float';
+                else if (type === 'String') textSpan.textContent = 'str';
+                newAnswer.appendChild(textSpan);
+                newAnswer.addEventListener('dragstart', handleDragStart);
+                newAnswer.addEventListener('dragend', handleDragEnd);
+                answersContainer.appendChild(newAnswer);
+            });
+        }
+    }
+    
+    function showCelebration() {
+        if (celebration) {
+            celebration.style.display = 'none';
+            setTimeout(() => {
+                celebration.style.display = 'block';
+                confetti({ particleCount: 150, spread: 160, origin: { x: 0.5, y: 0.6 }, colors: [nusBlue, nusOrange, nusLightBlue, '#ffffff'] });
+                setTimeout(() => {
+                    confetti({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0, y: 0.65 }, colors: [nusBlue, nusLightBlue, '#ffffff'] });
+                    setTimeout(() => {
+                        confetti({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1, y: 0.65 }, colors: [nusOrange, nusLightBlue, '#ffffff'] });
+                    }, 150);
+                }, 500);
+            }, 100);
+        }
+    }
 }
 
-// Initialize MCQ exercise
+// MCQ Exercise Functions
 function initializeMCQ() {
-    const mcqExercise = document.querySelector('.mcq-exercise');
-    if (!mcqExercise || mcqExercise.style.display === 'none') return;
+    const options = document.querySelectorAll('.mcq-option');
+    const resetButtonMcq = document.getElementById('reset-button-mcq');
     
-    // Get elements
-    const options = mcqExercise.querySelectorAll('.mcq-option');
-    const resetButton = mcqExercise.querySelector('#mcq-reset-button');
+    // Audio variables
+    let audioContext = null;
+    let correctSoundBuffer = null;
+    let audioInitialized = false;
     
-    if (!options.length) return;
+    // Initialize audio functions - similar to others but separate instance
+    async function loadSound() {
+        if (correctSoundBuffer) {
+            console.log("Sound buffer already available.");
+            return;
+        }
+        console.log("Loading sound...");
+        try {
+            const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load sound: ${response.statusText}`);
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            if (!audioContext) {
+                throw new Error("AudioContext not available for decoding sound.");
+            }
+            correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            console.log("Sound decoded and buffer ready.");
+        } catch (error) {
+            console.error('Error loading sound:', error);
+            correctSoundBuffer = null;
+            throw error;
+        }
+    }
+
+    async function initAudio() {
+        if (audioInitialized) {
+            console.log("Audio already initialized.");
+            return Promise.resolve();
+        }
+        
+        console.log("Attempting to initialize audio...");
+        try {
+            // Create audio context if it doesn't exist or was closed
+            if (!audioContext || audioContext.state === 'closed') {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("AudioContext created/recreated.");
+            }
+
+            // Ensure AudioContext is running (it might start in a suspended state)
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+                console.log("AudioContext resumed.");
+            }
+            
+            await loadSound();
+            
+            if (correctSoundBuffer) {
+                audioInitialized = true;
+                console.log("Audio successfully initialized (Context & Buffer ready).");
+                return Promise.resolve();
+            } else {
+                throw new Error("Sound buffer not loaded after loadSound attempt.");
+            }
+        } catch (error) {
+            console.error('Audio initialization failed:', error);
+            audioInitialized = false;
+            correctSoundBuffer = null;
+            return Promise.reject(error);
+        }
+    }
+
+    function actuallyPlayTheSound() {
+        if (!audioContext || !correctSoundBuffer) {
+            console.warn("actuallyPlayTheSound: Preconditions not met");
+            return;
+        }
+        const source = audioContext.createBufferSource();
+        source.buffer = correctSoundBuffer;
+        
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.4; // Volume
+        
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        source.start();
+        console.log("Correct sound played.");
+    }
     
-    // Set exercise ID for tracking
-    const exerciseId = mcqExercise.getAttribute('data-exercise-id') || 'mcq';
+    function playCorrectSound() {
+        if (!audioInitialized || !audioContext || !correctSoundBuffer) {
+            console.warn("playCorrectSound: Audio not ready or initialized.");
+            // Try to initialize again
+            initAudio().then(() => {
+                if (audioInitialized && audioContext && correctSoundBuffer) {
+                   if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming context:", e));
+                    } else {
+                        actuallyPlayTheSound();
+                    }
+                } else {
+                    console.error("Still not ready to play sound after re-init attempt.");
+                }
+            }).catch(err => {
+                console.error("Failed to init/play sound:", err);
+            });
+            return;
+        }
+        
+        if (audioContext.state === 'suspended') {
+            console.log("AudioContext is suspended, attempting to resume for playback.");
+            audioContext.resume().then(actuallyPlayTheSound).catch(e => console.error("Error resuming AudioContext:", e));
+        } else {
+            actuallyPlayTheSound();
+        }
+    }
     
-    // Add click handler to each option
+    // Initialize audio on first user interaction
+    function attemptPreemptiveAudioInit() {
+        if (!audioInitialized) {
+            console.log("Pre-emptive audio initialization triggered by user interaction.");
+            initAudio().catch(err => {
+                console.warn("Pre-emptive audio initialization failed. Will try again on first correct answer.", err.message);
+            });
+        }
+        document.removeEventListener('pointerdown', attemptPreemptiveAudioInit, true);
+    }
+    document.addEventListener('pointerdown', attemptPreemptiveAudioInit, { once: true, capture: true });
+    
+    // Celebration effect when correct
+    function showCelebration() {
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: [nusBlue, nusOrange, nusLightBlue]
+        });
+    }
+    
+    // Handle option click events
     options.forEach(option => {
         option.addEventListener('click', function() {
             // Only process clicks if no option is currently selected
-            if (!mcqExercise.querySelector('.mcq-option.selected-correct') && 
-                !mcqExercise.querySelector('.mcq-option.selected-incorrect')) {
+            if (!document.querySelector('.mcq-option.selected-correct') && 
+                !document.querySelector('.mcq-option.selected-incorrect')) {
                 
-                // Get correctness from data attribute (will be set by parser)
+                // Get and show appropriate feedback
                 const isCorrect = this.getAttribute('data-correct') === 'true';
                 const feedback = this.querySelector('.mcq-feedback');
                 
                 if (isCorrect) {
                     this.classList.add('selected-correct');
                     
-                    // Play sound and show celebration for correct answer
-                    playCorrectSound();
-                    confettiAnimations.center();
-                    
-                    // Track completion with perfect score
-                    trackExerciseCompletion('mcq', exerciseId, 1.0);
+                    // Play correct sound & show celebration
+                    initAudio()
+                        .then(() => {
+                            playCorrectSound();
+                            showCelebration();
+                        })
+                        .catch(err => {
+                            console.error("Could not play sound on correct answer:", err.message);
+                            // Still show celebration even if sound fails
+                            showCelebration();
+                        });
                 } else {
                     this.classList.add('selected-incorrect');
-                    
-                    // Track completion with zero score
-                    trackExerciseCompletion('mcq', exerciseId, 0.0);
                 }
                 
-                if (feedback) feedback.style.display = 'block';
-                if (resetButton) resetButton.style.display = 'flex';
+                feedback.style.display = 'block';
+                if (resetButtonMcq) {
+                    resetButtonMcq.style.display = 'flex';
+                }
             }
         });
     });
     
     // Reset button handler
-    if (resetButton) {
-        resetButton.addEventListener('click', function() {
+    if (resetButtonMcq) {
+        resetButtonMcq.addEventListener('click', function() {
             options.forEach(option => {
-                option.classList.remove('selected-correct', 'selected-incorrect');
-                const feedback = option.querySelector('.mcq-feedback');
-                if (feedback) feedback.style.display = 'none';
+                option.classList.remove('selected-correct');
+                option.classList.remove('selected-incorrect');
+                option.querySelector('.mcq-feedback').style.display = 'none';
             });
-            
-            resetButton.style.display = 'none';
+            resetButtonMcq.style.display = 'none';
         });
     }
 }
