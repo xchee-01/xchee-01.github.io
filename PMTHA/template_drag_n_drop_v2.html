@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Type Detective</title>
+    <style>
+        /* NUS Colors */
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #4D7CAE;
+            --nus-gray: #666666;
+            --nus-light-gray: #f5f5f5;
+            --nus-dark-gray: #333333;
+            --nus-red: #c41230;
+            --nus-green: #2E8540;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+            color: var(--nus-dark-gray);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .mcq-container {
+            max-width: 800px;
+            margin: 30px auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+
+        .mcq-header {
+            background: linear-gradient(135deg, var(--nus-blue) 0%, #002a57 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mcq-header-icon {
+            background: var(--nus-orange);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(239, 124, 0, 0.3);
+        }
+
+        .mcq-header-text {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .mcq-content {
+            padding: 30px;
+        }
+
+        .mcq-question {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: var(--nus-dark-gray);
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .answers-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            border: 1px solid #e8e8e8;
+        }
+
+        .answer {
+            display: flex;
+            align-items: center;
+            background-color: var(--nus-light-blue);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: move;
+            font-weight: 600;
+            user-select: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+            gap: 8px;
+        }
+
+        .answer:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        }
+
+        .answer .badge {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .questions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .question-item {
+            background-color: white;
+            border-radius: 10px;
+            padding: 18px 20px;
+            border: 1px solid #e8e8e8;
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .question-item:hover {
+            border-color: #d0d0d0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .question-text {
+            font-size: 16px;
+            color: var(--nus-dark-gray);
+        }
+
+        .drop-area {
+            width: 130px;
+            height: 44px;
+            border: 2px dashed var(--nus-gray);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .drop-area.hover {
+            border-color: var(--nus-orange);
+            background-color: rgba(239, 124, 0, 0.1);
+        }
+
+        .drop-area.correct {
+            border-color: var(--nus-green);
+            background-color: rgba(46, 133, 64, 0.05);
+            box-shadow: 0 0 0 1px var(--nus-green);
+        }
+
+        .drop-area.incorrect {
+            border-color: var(--nus-red);
+            background-color: rgba(196, 18, 48, 0.05);
+            box-shadow: 0 0 0 1px var(--nus-red);
+        }
+
+        .feedback {
+            grid-column: 1 / -1;
+            padding: 12px 15px;
+            border-radius: 8px;
+            display: none;
+            margin-top: 15px;
+            animation: fadeIn 0.3s ease;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback.correct {
+            display: block;
+            background-color: #e8f5e9;
+            color: #2E7D32;
+        }
+
+        .feedback.incorrect {
+            display: block;
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .feedback-icon {
+            margin-right: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .reset-button {
+            background: linear-gradient(135deg, var(--nus-light-blue) 0%, var(--nus-blue) 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            margin: 25px auto 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 61, 124, 0.2);
+        }
+
+        .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 61, 124, 0.3);
+        }
+
+        .reset-button:active {
+            transform: translateY(0);
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+            display: none;
+        }
+
+        .celebration.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .question-item {
+                grid-template-columns: 1fr;
+            }
+            
+            .drop-area {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="mcq-container">
+        <div class="mcq-header">
+            <div class="mcq-header-icon">
+                <i class="fas fa-code"></i>
+            </div>
+            <div class="mcq-header-text">Data Type Detective</div>
+        </div>
+        
+        <div class="mcq-content">
+            <div class="mcq-question">
+                For each of these values, can you identify what data type it would be in Python? Drag the correct data type and drop it into the box next to each value.
+            </div>
+            
+            <div class="answers-container" id="answers">
+                <div class="answer" draggable="true" data-type="Integer">
+                    <span>int</span>
+                </div>
+                <div class="answer" draggable="true" data-type="Float">
+                    <span>float</span>
+                </div>
+                <div class="answer" draggable="true" data-type="String">
+                    <span>str</span>
+                </div>
+                <div class="answer" draggable="true" data-type="Integer">
+                    <span>int</span>
+                </div>
+                <div class="answer" draggable="true" data-type="Float">
+                    <span>float</span>
+                </div>
+                <div class="answer" draggable="true" data-type="String">
+                    <span>str</span>
+                </div>
+            </div>
+            
+            <div class="questions-container" id="questions">
+                <div class="question-item">
+                    <div class="question-text">1. Patient age: <strong>42</strong></div>
+                    <div class="drop-area" data-correct="Integer"></div>
+                    <div class="feedback">
+                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
+                        Correct! Ages are typically stored as integers since they are whole numbers.
+                    </div>
+                </div>
+                
+                <div class="question-item">
+                    <div class="question-text">2. Body temperature: <strong>98.6°F</strong></div>
+                    <div class="drop-area" data-correct="Float"></div>
+                    <div class="feedback">
+                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
+                        Correct! Body temperature includes a decimal value, making it a float in Python.
+                    </div>
+                </div>
+                
+                <div class="question-item">
+                    <div class="question-text">3. Patient name: <strong>"Alex Johnson"</strong></div>
+                    <div class="drop-area" data-correct="String"></div>
+                    <div class="feedback">
+                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
+                        Correct! Text data like names are stored as strings in Python.
+                    </div>
+                </div>
+                
+                <div class="question-item">
+                    <div class="question-text">4. Blood glucose: <strong>5.4 mmol/L</strong></div>
+                    <div class="drop-area" data-correct="Float"></div>
+                    <div class="feedback">
+                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
+                        Correct! Blood glucose measurements include decimal values, making them floats.
+                    </div>
+                </div>
+                
+                <div class="question-item">
+                    <div class="question-text">5. Hospital room number: <strong>302</strong></div>
+                    <div class="drop-area" data-correct="Integer"></div>
+                    <div class="feedback">
+                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
+                        Correct! Room numbers are typically whole numbers and would be stored as integers.
+                    </div>
+                </div>
+                
+                <div class="question-item">
+                    <div class="question-text">6. Medication: <strong>"Metformin 500mg"</strong></div>
+                    <div class="drop-area" data-correct="String"></div>
+                    <div class="feedback">
+                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
+                        Correct! Medication information containing both text and numbers is stored as a string.
+                    </div>
+                </div>
+            </div>
+            
+            <button class="reset-button" id="reset-button">
+                <i class="fas fa-redo"></i> Reset Exercise
+            </button>
+        </div>
+    </div>
+
+    <div class="celebration" id="celebration"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const answers = document.querySelectorAll('.answer');
+            const dropAreas = document.querySelectorAll('.drop-area');
+            const resetButton = document.getElementById('reset-button');
+            const answersContainer = document.getElementById('answers');
+            const celebration = document.getElementById('celebration');
+            
+            // Audio variables
+            let audioContext = null;
+            let correctSoundBuffer = null;
+            let audioInitialized = false;
+            
+            let draggedItem = null;
+            let dropCount = 0;
+            let correctCount = 0;
+            
+            // Initialize audio functionality
+            function initAudio() {
+                if (audioInitialized) return;
+                
+                try {
+                    // Create audio context
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Load the sound
+                    loadSound().then(() => {
+                        audioInitialized = true;
+                    });
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                }
+            }
+            
+            // Load sound from URL
+            async function loadSound() {
+                try {
+                    const url = 'https://xchee-01.github.io/answer_correct_sound.mp3';
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load sound');
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    correctSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    return correctSoundBuffer;
+                } catch (error) {
+                    console.error('Error loading sound:', error);
+                }
+            }
+            
+            // Play correct sound
+            function playCorrectSound() {
+                if (!audioContext || !correctSoundBuffer) return;
+                
+                const source = audioContext.createBufferSource();
+                source.buffer = correctSoundBuffer;
+                
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.4;
+                
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                source.start();
+            }
+            
+            // Initialize audio on first user interaction
+            document.body.addEventListener('click', function() {
+                if (!audioInitialized) {
+                    initAudio();
+                }
+            }, { once: true });
+            
+            // Add event listeners to draggable items
+            answers.forEach(answer => {
+                answer.addEventListener('dragstart', handleDragStart);
+                answer.addEventListener('dragend', handleDragEnd);
+                
+                // Store original position
+                answer.setAttribute('data-original-position', Array.from(answersContainer.children).indexOf(answer));
+            });
+            
+            // Add event listeners to drop areas
+            dropAreas.forEach(dropArea => {
+                dropArea.addEventListener('dragover', handleDragOver);
+                dropArea.addEventListener('dragenter', handleDragEnter);
+                dropArea.addEventListener('dragleave', handleDragLeave);
+                dropArea.addEventListener('drop', handleDrop);
+            });
+            
+            // Reset button event listener
+            resetButton.addEventListener('click', resetExercise);
+            
+            // Drag and drop handler functions
+            function handleDragStart(e) {
+                draggedItem = this;
+                setTimeout(() => {
+                    this.style.opacity = '0.5';
+                }, 0);
+                
+                e.dataTransfer.setData('text/plain', this.dataset.type);
+            }
+            
+            function handleDragEnd() {
+                this.style.opacity = '1';
+                draggedItem = null;
+                
+                dropAreas.forEach(area => {
+                    area.classList.remove('hover');
+                });
+            }
+            
+            function handleDragOver(e) {
+                e.preventDefault();
+            }
+            
+            function handleDragEnter(e) {
+                e.preventDefault();
+                if (!this.hasChildNodes()) {
+                    this.classList.add('hover');
+                }
+            }
+            
+            function handleDragLeave() {
+                this.classList.remove('hover');
+            }
+            
+            function handleDrop(e) {
+                e.preventDefault();
+                this.classList.remove('hover');
+                
+                // Only allow drop if the area is empty
+                if (this.children.length === 0) {
+                    const droppedType = e.dataTransfer.getData('text/plain');
+                    const correctType = this.dataset.correct;
+                    
+                    // Create a clone of the dragged item to place in drop area
+                    const clonedItem = draggedItem.cloneNode(true);
+                    clonedItem.style.opacity = '1';
+                    clonedItem.style.cursor = 'default';
+                    clonedItem.style.margin = '0';
+                    clonedItem.style.width = '100%';
+                    clonedItem.style.textAlign = 'center';
+                    clonedItem.draggable = false;
+                    
+                    // Add the item to drop area
+                    this.appendChild(clonedItem);
+                    
+                    // Remove the original item
+                    draggedItem.remove();
+                    
+                    dropCount++;
+                    
+                    // Check if the answer is correct
+                    if (droppedType === correctType) {
+                        this.classList.add('correct');
+                        correctCount++;
+                        
+                        // Show feedback
+                        const feedback = this.nextElementSibling;
+                        feedback.classList.add('correct');
+                        feedback.style.display = 'block';
+                        
+                        // Play correct sound
+                        if (audioInitialized) {
+                            playCorrectSound();
+                        } else {
+                            initAudio().then(() => {
+                                playCorrectSound();
+                            });
+                        }
+                        
+                        // Check if all questions are answered correctly
+                        if (correctCount === dropAreas.length) {
+                            showCelebration();
+                        }
+                    } else {
+                        this.classList.add('incorrect');
+                        
+                        // Show incorrect feedback
+                        const feedback = this.nextElementSibling;
+                        feedback.innerHTML = `<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This value should be a ${correctType} in Python.`;
+                        feedback.classList.add('incorrect');
+                        feedback.style.display = 'block';
+                        
+                        // Return the answer to its original container after a short delay
+                        setTimeout(() => {
+                            // Create a new draggable answer to replace the one used
+                            const newAnswer = document.createElement('div');
+                            newAnswer.className = 'answer';
+                            newAnswer.setAttribute('draggable', 'true');
+                            newAnswer.setAttribute('data-type', droppedType);
+                            
+                            // Create the inner span for the new answer
+                            const textSpan = document.createElement('span');
+                            
+                            // Set the text content based on the data type
+                            if (droppedType === 'Integer') {
+                                textSpan.textContent = 'int';
+                            } else if (droppedType === 'Float') {
+                                textSpan.textContent = 'float';
+                            } else if (droppedType === 'String') {
+                                textSpan.textContent = 'str';
+                            }
+                            
+                            // Append the span to the new answer
+                            newAnswer.appendChild(textSpan);
+                            
+                            // Add the event listeners
+                            newAnswer.addEventListener('dragstart', handleDragStart);
+                            newAnswer.addEventListener('dragend', handleDragEnd);
+                            
+                            // Add back to answers container
+                            answersContainer.appendChild(newAnswer);
+                            
+                            // Clear the drop area
+                            this.innerHTML = '';
+                            this.classList.remove('incorrect');
+                            
+                            // Hide feedback
+                            feedback.style.display = 'none';
+                            feedback.classList.remove('incorrect');
+                            
+                            dropCount--;
+                        }, 1500);
+                    }
+                }
+            }
+            
+            // Reset exercise
+            function resetExercise() {
+                // Clear all drop areas
+                dropAreas.forEach(area => {
+                    area.innerHTML = '';
+                    area.classList.remove('correct', 'incorrect');
+                });
+                
+                // Hide all feedback
+                document.querySelectorAll('.feedback').forEach(feedback => {
+                    feedback.style.display = 'none';
+                    feedback.classList.remove('correct', 'incorrect');
+                });
+                
+                // Reset counters
+                dropCount = 0;
+                correctCount = 0;
+                
+                // Regenerate original answers
+                answersContainer.innerHTML = '';
+                
+                const answerTypes = ['Integer', 'Float', 'String', 'Integer', 'Float', 'String'];
+                
+                answerTypes.forEach(type => {
+                    const newAnswer = document.createElement('div');
+                    newAnswer.className = 'answer';
+                    newAnswer.setAttribute('draggable', 'true');
+                    newAnswer.setAttribute('data-type', type);
+                    
+                    // Create the inner span
+                    const textSpan = document.createElement('span');
+                    
+                    // Set the text content based on the data type
+                    if (type === 'Integer') {
+                        textSpan.textContent = 'int';
+                    } else if (type === 'Float') {
+                        textSpan.textContent = 'float';
+                    } else if (type === 'String') {
+                        textSpan.textContent = 'str';
+                    }
+                    
+                    // Append the span to the new answer
+                    newAnswer.appendChild(textSpan);
+                    
+                    // Add the event listeners
+                    newAnswer.addEventListener('dragstart', handleDragStart);
+                    newAnswer.addEventListener('dragend', handleDragEnd);
+                    
+                    answersContainer.appendChild(newAnswer);
+                });
+            }
+            
+            // Show celebration animation
+            function showCelebration() {
+                // Hide celebration div to stop any previous animations
+                celebration.style.display = 'none';
+                
+                // Show it again
+                setTimeout(() => {
+                    celebration.style.display = 'block';
+                    
+                    confetti({
+                        particleCount: 150,
+                        spread: 160,
+                        origin: { x: 0.5, y: 0.6 },
+                        colors: ['#003D7C', '#EF7C00', '#4D7CAE', '#ffffff']
+                    });
+                    
+                    setTimeout(() => {
+                        // Second confetti burst
+                        confetti({
+                            particleCount: 100,
+                            angle: 60,
+                            spread: 55,
+                            origin: { x: 0, y: 0.65 },
+                            colors: ['#003D7C', '#4D7CAE', '#ffffff']
+                        });
+                        
+                        setTimeout(() => {
+                            confetti({
+                                particleCount: 100,
+                                angle: 120,
+                                spread: 55,
+                                origin: { x: 1, y: 0.65 },
+                                colors: ['#EF7C00', '#4D7CAE', '#ffffff']
+                            });
+                        }, 150);
+                    }, 500);
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>
