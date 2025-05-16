@@ -294,6 +294,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Python
     initializePython();
 
+    // Set up toggle answer functionality
+    setupToggleAnswerButtons();  
+
     // Set up MCQ functionality for all MCQ containers
     const mcqContainers = document.querySelectorAll('.mcq-container');
     
@@ -634,10 +637,10 @@ function handleLearningMaterialsClick(event) {
     }
     
     // Handle toggle answer buttons
-    if (event.target.closest('.toggle-answer')) {
-        const button = event.target.closest('.toggle-answer');
-        toggleAnswer(button);
-    }
+    //if (event.target.closest('.toggle-answer')) {
+      //  const button = event.target.closest('.toggle-answer');
+      //  toggleAnswer(button);
+   // }
     
     // Handle celebration buttons
     if (event.target.closest('.celebrate-button')) {
@@ -659,30 +662,30 @@ function toggleSection(header) {
 }
 
 // Toggle answer visibility
-function toggleAnswer(button) {
+//function toggleAnswer(button) {
     // Find the next sibling which is the answer div
-    const answerDiv = button.nextElementSibling;
+    //const answerDiv = button.nextElementSibling;
     
-    if (!answerDiv || !answerDiv.classList.contains('answer')) {
-        console.error("Could not find answer div for button:", button);
-        return;
-    }
+    //if (!answerDiv || !answerDiv.classList.contains('answer')) {
+        //console.error("Could not find answer div for button:", button);
+        //return;
+    //}
     
     // Toggle the display
-    if (answerDiv.style.display === 'block') {
-        answerDiv.style.display = 'none';
-        button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Answer';
-    } else {
-        answerDiv.style.display = 'block';
-        button.innerHTML = '<i class="fas fa-times"></i> Hide Answer';
+    //if (answerDiv.style.display === 'block') {
+        //answerDiv.style.display = 'none';
+        //button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Answer';
+    //} else {
+        //answerDiv.style.display = 'block';
+        //button.innerHTML = '<i class="fas fa-times"></i> Hide Answer';
         
         // Track that the user viewed an answer
-        const challengeContainer = button.closest('.challenge');
-        const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
+        //const challengeContainer = button.closest('.challenge');
+        //const challengeTitle = challengeContainer ? challengeContainer.querySelector('h3').textContent : 'Unknown Challenge';
         
-        trackEvent('answer_viewed', getCurrentSectionId(), challengeTitle);
-    }
-}
+        //trackEvent('answer_viewed', getCurrentSectionId(), challengeTitle);
+    //}
+//}
 
 // Set up toggle answer buttons functionality
 function setupToggleAnswerButtons() {
