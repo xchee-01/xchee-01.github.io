@@ -1043,17 +1043,23 @@ function getUsername() {
                 return accounts[0].username;
             } else {
                 // No valid username found - redirect to sign-in page
+                // ADD THIS LINE BEFORE REDIRECT:
+                localStorage.setItem('redirectAfterLogin', window.location.href);
                 window.location.href = SIGN_IN_URL;
                 return null;
             }
         } else {
             // No accounts data found - redirect to sign-in page
+            // ADD THIS LINE BEFORE REDIRECT:
+            localStorage.setItem('redirectAfterLogin', window.location.href);
             window.location.href = SIGN_IN_URL;
             return null;
         }
     } catch (error) {
         console.error('Error retrieving username:', error);
         // Error occurred - redirect to sign-in page
+        // ADD THIS LINE BEFORE REDIRECT:
+        localStorage.setItem('redirectAfterLogin', window.location.href);
         window.location.href = SIGN_IN_URL;
         return null;
     }
