@@ -1044,14 +1044,14 @@ function getUsername() {
             } else {
                 // No valid username found - redirect to sign-in page
                 // ADD THIS LINE BEFORE REDIRECT:
-                localStorage.setItem('redirectAfterLogin', window.location.href);
+                localStorage.setItem('lastVisitedUrl', window.location.href);
                 window.location.href = SIGN_IN_URL;
                 return null;
             }
         } else {
             // No accounts data found - redirect to sign-in page
             // ADD THIS LINE BEFORE REDIRECT:
-            localStorage.setItem('redirectAfterLogin', window.location.href);
+            localStorage.setItem('lastVisitedUrl', window.location.href);
             window.location.href = SIGN_IN_URL;
             return null;
         }
@@ -1059,7 +1059,7 @@ function getUsername() {
         console.error('Error retrieving username:', error);
         // Error occurred - redirect to sign-in page
         // ADD THIS LINE BEFORE REDIRECT:
-        localStorage.setItem('redirectAfterLogin', window.location.href);
+        localStorage.setItem('lastVisitedUrl', window.location.href);
         window.location.href = SIGN_IN_URL;
         return null;
     }
