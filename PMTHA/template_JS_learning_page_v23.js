@@ -366,9 +366,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up fill-in-the-blanks exercise
     setupFillInTheBlanks();
-
-    // Set up toggle answer functionality
-    setupToggleAnswerButtons();
     
     // Set up celebrate button functionality
     const celebrateButtons = document.querySelectorAll('.celebrate-button');
