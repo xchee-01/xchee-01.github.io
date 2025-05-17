@@ -1846,29 +1846,45 @@ plt.show = custom_show
     
     // Function to display a plot
     function displayPlot(pyodide) {
-        // Get the plot data from Python
-        const imgData = pyodide.runPython("_plot_image_data");
-        if (imgData) {
+    // Get the plot data from Python
+    const imgData = pyodide.runPython("_plot_image_data");
+    if (imgData) {
+        // Create a data URL for the image
+        const dataUrl = "data:image/png;base64," + imgData;
+
+        // Open the data URL in a new tab
+        const newTab = window.open();
+        if (newTab) {
+            newTab.document.open();
+            newTab.document.write('<html><head><title>Matplotlib Plot</title></head><body style="margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh; background-color:#f0f0f0;">' +
+                                   '<img src="' + dataUrl + '" alt="Matplotlib Plot" style="max-width:95%; max-height:95%;"/>' +
+                                   '</body></html>');
+            newTab.document.close();
+        } else {
+            // Fallback or error message if pop-up was blocked
+            console.warn("Could not open new tab. Pop-up blocker might be active. Displaying plot inline.");
+            // Fallback to inline display (optional, or just an alert)
             const imgElement = document.createElement('img');
-            imgElement.src = "data:image/png;base64," + imgData;
+            imgElement.src = dataUrl;
             imgElement.style.maxWidth = '100%';
             imgElement.style.height = 'auto';
             imgElement.style.display = 'block';
             imgElement.style.margin = '10px auto';
             imgElement.style.border = '1px solid #ccc';
-            imgElement.style.borderRadius = '4px';
-            imgElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
-            
+            // ... (rest of your original inline styling)
+            const plotOutput = document.getElementById('plot-output'); // Ensure plotOutput is defined
             plotOutput.style.display = 'block';
+            plotOutput.innerHTML = ''; // Clear previous plot
             plotOutput.appendChild(imgElement);
-            
-            // Reset the plot data
-            pyodide.runPython("_plot_image_data = None");
-            
-            return true;
         }
-        return false;
+
+        // Reset the plot data in Python
+        pyodide.runPython("_plot_image_data = None");
+
+        return true;
     }
+    return false;
+}
     
     // Modify the Python initialization to set up our matplotlib support
     const originalInitializePython = window.initializePython;
