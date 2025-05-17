@@ -288,6 +288,132 @@ print("Weight after diet change:", weight)  # What will this print?</div>
                             </button>
                         </div>
                     </div>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Prediction exercise answers
+                            const correctAnswers = {
+                                'prediction-line1': '7000',
+                                'prediction-line2': '76.0'
+                            };
+                            
+                            const checkButton = document.getElementById('prediction-check-button');
+                            const resetButton = document.getElementById('prediction-reset-button');
+                            const successFeedback = document.getElementById('prediction-success-feedback');
+                            const infoFeedback = document.getElementById('prediction-info-feedback');
+                            const validationMessage = document.getElementById('prediction-validation-message');
+                            
+                            if (checkButton) {
+                                checkButton.addEventListener('click', function() {
+                                    // Check if all fields are filled
+                                    let allFilled = true;
+                                    let emptyFields = [];
+                                    
+                                    // Check each input
+                                    for (let i = 1; i <= 2; i++) {
+                                        const inputField = document.getElementById(`prediction-line${i}`);
+                                        if (!inputField.value.trim()) {
+                                            allFilled = false;
+                                            emptyFields.push(i);
+                                        }
+                                        // Disable fields after checking
+                                        inputField.disabled = true;
+                                    }
+                                    
+                                    // If not all fields are filled, show error and return
+                                    if (!allFilled) {
+                                        validationMessage.style.display = 'block';
+                                        return;
+                                    }
+                                    
+                                    // Hide validation message if all fields are filled
+                                    validationMessage.style.display = 'none';
+                                    
+                                    // Check answers
+                                    let allCorrect = true;
+                                    
+                                    for (let i = 1; i <= 2; i++) {
+                                        const inputField = document.getElementById(`prediction-line${i}`);
+                                        const inputItem = document.getElementById(`prediction-item-${i}`);
+                                        const feedbackElement = document.getElementById(`prediction-feedback-${i}`);
+                                        
+                                        const userAnswer = inputField.value.trim();
+                                        const isCorrect = userAnswer === correctAnswers[`prediction-line${i}`];
+                                        
+                                        // Update UI based on correctness
+                                        if (isCorrect) {
+                                            inputItem.classList.add('correct');
+                                            inputItem.classList.remove('incorrect');
+                                            feedbackElement.classList.add('correct');
+                                            feedbackElement.classList.remove('incorrect');
+                                            feedbackElement.innerHTML = `
+                                                <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct!
+                                            `;
+                                        } else {
+                                            inputItem.classList.add('incorrect');
+                                            inputItem.classList.remove('correct');
+                                            feedbackElement.classList.add('incorrect');
+                                            feedbackElement.classList.remove('correct');
+                                            feedbackElement.innerHTML = `
+                                                <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The correct output is: "${correctAnswers[`prediction-line${i}`]}"
+                                            `;
+                                            allCorrect = false;
+                                        }
+                                        
+                                        // Show feedback
+                                        feedbackElement.style.display = 'block';
+                                    }
+                                    
+                                    // Show appropriate summary feedback
+                                    if (allCorrect) {
+                                        successFeedback.style.display = 'block';
+                                        infoFeedback.style.display = 'none';
+                                        
+                                        // Trigger celebration if available
+                                        if (typeof playCorrectSound === 'function') {
+                                            playCorrectSound();
+                                            if (typeof showCelebration === 'function') {
+                                                showCelebration();
+                                            }
+                                        }
+                                    } else {
+                                        successFeedback.style.display = 'none';
+                                        infoFeedback.style.display = 'block';
+                                    }
+                                    
+                                    // Toggle buttons
+                                    checkButton.classList.add('hidden');
+                                    resetButton.classList.remove('hidden');
+                                });
+                            }
+                            
+                            if (resetButton) {
+                                resetButton.addEventListener('click', function() {
+                                    // Clear inputs
+                                    for (let i = 1; i <= 2; i++) {
+                                        const inputField = document.getElementById(`prediction-line${i}`);
+                                        inputField.value = '';
+                                        inputField.disabled = false;
+                                        
+                                        const inputItem = document.getElementById(`prediction-item-${i}`);
+                                        inputItem.classList.remove('correct', 'incorrect');
+                                        
+                                        const feedbackElement = document.getElementById(`prediction-feedback-${i}`);
+                                        feedbackElement.style.display = 'none';
+                                    }
+                                    
+                                    // Hide validation message and feedback
+                                    validationMessage.style.display = 'none';
+                                    successFeedback.style.display = 'none';
+                                    infoFeedback.style.display = 'none';
+                                    
+                                    // Toggle buttons
+                                    resetButton.classList.add('hidden');
+                                    checkButton.classList.remove('hidden');
+                                });
+                            }
+                        });
+                    </script>
                 </div>
             </div>
             
@@ -338,7 +464,7 @@ print("Day 3 glucose:", glucose_readings)  # 116.5</div>
                                 Drag the correct augmented assignment operator and drop it in each blank space in the code:
                             </div>
                             
-                            <div class="answers-container" id="operators-answers">
+                            <div id="operators-answers" class="answers-container">
                                 <div class="answer" draggable="true" data-type="+=">
                                     <span>+=</span>
                                 </div>
@@ -371,7 +497,7 @@ print("Day 3 glucose:", glucose_readings)  # 116.5</div>
                                 </div>
                             </div>
                             
-                            <div class="questions-container" id="operators-questions">
+                            <div id="operators-questions" class="questions-container">
                                 <div class="question-item">
                                     <div class="question-text">1. <code>treatment_days_completed ... 7</code> # Add 7 days</div>
                                     <div class="drop-area" data-correct="+="></div>
@@ -469,6 +595,175 @@ print("Day 3 glucose:", glucose_readings)  # 116.5</div>
                         </div>
                     </div>
                     <div class="celebration" id="operators-celebration"></div>
+                    
+                    <!-- Updated script for drag and drop -->
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Treatment Monitoring System drag and drop
+                            let draggedItem = null;
+                            
+                            // Get all draggable items
+                            const operators = document.querySelectorAll('#operators-answers .answer');
+                            const dropAreas = document.querySelectorAll('#operators-questions .drop-area');
+                            const resetButton = document.getElementById('operators-reset-button');
+                            
+                            // Set up drag events
+                            operators.forEach(item => {
+                                item.addEventListener('dragstart', handleDragStart);
+                                item.addEventListener('dragend', handleDragEnd);
+                            });
+                            
+                            // Set up drop events
+                            dropAreas.forEach(area => {
+                                area.addEventListener('dragover', handleDragOver);
+                                area.addEventListener('dragenter', handleDragEnter);
+                                area.addEventListener('dragleave', handleDragLeave);
+                                area.addEventListener('drop', handleDrop);
+                            });
+                            
+                            // Handle reset button
+                            if (resetButton) {
+                                resetButton.addEventListener('click', resetExercise);
+                            }
+                            
+                            function handleDragStart(e) {
+                                draggedItem = this;
+                                setTimeout(() => {
+                                    this.style.opacity = '0.5';
+                                }, 0);
+                                
+                                e.dataTransfer.setData('text/plain', this.getAttribute('data-type'));
+                            }
+                            
+                            function handleDragEnd() {
+                                this.style.opacity = '1';
+                                draggedItem = null;
+                                
+                                dropAreas.forEach(area => {
+                                    area.classList.remove('hover');
+                                });
+                            }
+                            
+                            function handleDragOver(e) {
+                                e.preventDefault();
+                            }
+                            
+                            function handleDragEnter(e) {
+                                e.preventDefault();
+                                if (!this.hasChildNodes() || !this.classList.contains('filled')) {
+                                    this.classList.add('hover');
+                                }
+                            }
+                            
+                            function handleDragLeave() {
+                                this.classList.remove('hover');
+                            }
+                            
+                            function handleDrop(e) {
+                                e.preventDefault();
+                                this.classList.remove('hover');
+                                
+                                // Only allow drop if area is empty
+                                if (this.children.length === 0 || !this.classList.contains('filled')) {
+                                    const droppedType = e.dataTransfer.getData('text/plain');
+                                    const correctType = this.getAttribute('data-correct');
+                                    
+                                    // Clone the dragged item
+                                    const clonedItem = draggedItem.cloneNode(true);
+                                    clonedItem.style.opacity = '1';
+                                    clonedItem.style.cursor = 'default';
+                                    clonedItem.style.margin = '0';
+                                    clonedItem.style.width = '100%';
+                                    clonedItem.style.textAlign = 'center';
+                                    clonedItem.setAttribute('draggable', 'false');
+                                    
+                                    // Clear any existing content
+                                    this.innerHTML = '';
+                                    this.appendChild(clonedItem);
+                                    this.classList.add('filled');
+                                    
+                                    // Check if correct
+                                    if (droppedType === correctType) {
+                                        this.classList.add('correct');
+                                        const feedback = this.nextElementSibling;
+                                        if (feedback) {
+                                            feedback.style.display = 'block';
+                                        }
+                                        
+                                        // Play sound if available
+                                        if (typeof playCorrectSound === 'function') {
+                                            playCorrectSound();
+                                        }
+                                        
+                                        // Remove original from container
+                                        draggedItem.style.visibility = 'hidden';
+                                        
+                                        // Check if all areas have correct answers
+                                        checkAllCorrect();
+                                    } else {
+                                        // Wrong answer
+                                        this.classList.add('incorrect');
+                                        
+                                        // Remove after a delay
+                                        setTimeout(() => {
+                                            this.innerHTML = '';
+                                            this.classList.remove('filled', 'incorrect');
+                                        }, 1500);
+                                    }
+                                }
+                            }
+                            
+                            function checkAllCorrect() {
+                                // Check if all drop areas have correct answers
+                                const allCorrect = Array.from(dropAreas).every(area => {
+                                    return area.classList.contains('correct');
+                                });
+                                
+                                if (allCorrect) {
+                                    // Show celebration
+                                    const celebration = document.getElementById('operators-celebration');
+                                    if (celebration) {
+                                        celebration.style.display = 'block';
+                                        
+                                        // Show confetti if available
+                                        if (typeof confetti === 'function') {
+                                            confetti({
+                                                particleCount: 100,
+                                                spread: 70,
+                                                origin: { y: 0.6 },
+                                                colors: ['#003D7C', '#EF7C00', '#4D7CAE']
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            function resetExercise() {
+                                // Clear all drop areas
+                                dropAreas.forEach(area => {
+                                    area.innerHTML = '';
+                                    area.classList.remove('filled', 'correct', 'incorrect', 'hover');
+                                });
+                                
+                                // Make all operators visible
+                                operators.forEach(op => {
+                                    op.style.visibility = 'visible';
+                                });
+                                
+                                // Hide celebration
+                                const celebration = document.getElementById('operators-celebration');
+                                if (celebration) {
+                                    celebration.style.display = 'none';
+                                }
+                                
+                                // Hide feedback
+                                const feedbacks = document.querySelectorAll('#operators-questions .feedback');
+                                feedbacks.forEach(feedback => {
+                                    feedback.style.display = 'none';
+                                });
+                            }
+                        });
+                    </script>
                     
                     <div class="challenge">
                         <h3>Lab Exercise 4: Treatment Monitoring System (Full Code)</h3>
@@ -715,6 +1010,39 @@ print(f"Exercise minutes: {total_exercise_minutes}")
 print(f"Medication: {medication_dosage} mg")</div>
                             <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                             <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="extension-challenge-solution">
+                                <div class="code-block"># Week 4 updates
+print("---- WEEK 4 ----")
+treatment_days_completed += 7  # Add 7 more days
+
+# Calculate 10% increase in exercise (Hint: Multiply current weekly amount by 1.1)
+weekly_exercise = 30 * 7  # Current weekly exercise
+weekly_exercise *= 1.1    # Increase by 10%
+total_exercise_minutes += weekly_exercise  # Add to total
+
+# Reduce medication by another 5%
+medication_dosage *= 0.95  # Multiply by 0.95
+
+# Decrease glucose by 5 more mg/dL
+blood_glucose -= 5  # Subtract 5
+
+print(f"Glucose: {blood_glucose} mg/dL")
+print(f"Exercise minutes: {round(total_exercise_minutes)}")  # Round for cleaner output
+print(f"Medication: {medication_dosage} mg")
+
+# Expected output:
+# ---- WEEK 4 ----
+# Glucose: 95 mg/dL
+# Exercise minutes: 721
+# Medication: 855.0 mg</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
                         </div>
                         
                         <button class="celebrate-button" data-message="Great extension work! You've applied your understanding of augmented assignment operators to add more functionality to the treatment monitoring system. Tracking incremental progress is key in precision health applications, and these operators make that process cleaner and more intuitive in your code." data-animation="school"><i class="fas fa-star"></i> I've done it!</button>
