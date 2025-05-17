@@ -498,6 +498,7 @@ print("Immediate care needed:", needs_immediate_care)</div>
                                 margin: 0 5px;
                                 background-color: rgba(255,255,255,0.7);
                                 transition: all 0.2s;
+                                position: relative;
                             }
                             
                             .drop-blank.hover {
@@ -512,12 +513,20 @@ print("Immediate care needed:", needs_immediate_care)</div>
                             
                             .drop-blank.correct {
                                 border-color: var(--nus-green);
-                                background-color: rgba(46, 133, 64, 0.1);
+                                background-color: rgba(46, 133, 64, 0.05);
                             }
                             
                             .drop-blank.incorrect {
                                 border-color: var(--nus-red);
-                                background-color: rgba(196, 18, 48, 0.1);
+                                background-color: rgba(196, 18, 48, 0.05);
+                                animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+                            }
+                            
+                            @keyframes shake {
+                                10%, 90% { transform: translateX(-1px); }
+                                20%, 80% { transform: translateX(2px); }
+                                30%, 50%, 70% { transform: translateX(-3px); }
+                                40%, 60% { transform: translateX(3px); }
                             }
                             
                             .dropped-operator {
@@ -543,6 +552,42 @@ print("Immediate care needed:", needs_immediate_care)</div>
                             
                             .dropped-operator.not {
                                 background: linear-gradient(135deg, #555 0%, #333 100%);
+                            }
+                            
+                            .feedback-tooltip {
+                                position: absolute;
+                                bottom: 100%;
+                                left: 50%;
+                                transform: translateX(-50%);
+                                background-color: white;
+                                border-radius: 4px;
+                                padding: 5px 10px;
+                                font-size: 12px;
+                                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                                white-space: nowrap;
+                                box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+                                z-index: 10;
+                                opacity: 0;
+                                visibility: hidden;
+                                transition: opacity 0.3s ease, visibility 0.3s ease;
+                                pointer-events: none;
+                            }
+                            
+                            .feedback-tooltip.visible {
+                                opacity: 1;
+                                visibility: visible;
+                            }
+                            
+                            .feedback-tooltip.correct {
+                                background-color: #e8f5e9;
+                                border-left: 3px solid var(--nus-green);
+                                color: var(--nus-green);
+                            }
+                            
+                            .feedback-tooltip.incorrect {
+                                background-color: #ffebee;
+                                border-left: 3px solid var(--nus-red);
+                                color: var(--nus-red);
                             }
                             
                             .success-banner {
@@ -612,13 +657,13 @@ sore_throat = False
 
 # Diagnosis criteria
 # Flu criteria: Must have fever AND either headache OR sore throat
-flu_indicated = fever <span class="drop-blank" data-correct="and"></span> (headache <span class="drop-blank" data-correct="or"></span> sore_throat)
+flu_indicated = fever <span class="drop-blank" data-correct="and" data-feedback-correct="Correct! Flu requires BOTH fever AND symptoms" data-feedback-incorrect="Not quite. Flu requires BOTH fever AND symptoms"></span> (headache <span class="drop-blank" data-correct="or" data-feedback-correct="Correct! Either headache OR sore throat is needed" data-feedback-incorrect="Not quite. We need EITHER symptom here"></span> sore_throat)
 
 # Allergic reaction criteria: Must have rash AND NOT fever
-allergy_indicated = rash <span class="drop-blank" data-correct="and"></span> <span class="drop-blank" data-correct="not"></span> fever
+allergy_indicated = rash <span class="drop-blank" data-correct="and" data-feedback-correct="Correct! We need BOTH rash AND absence of fever" data-feedback-incorrect="Not quite. We need BOTH conditions"></span> <span class="drop-blank" data-correct="not" data-feedback-correct="Correct! Allergies typically occur WITHOUT fever" data-feedback-incorrect="Not quite. Fever should be ABSENT for allergies"></span> fever
 
 # Rheumatic condition criteria: Must have joint pain AND either rash OR NOT sore throat
-rheumatic_indicated = joint_pain <span class="drop-blank" data-correct="and"></span> (rash <span class="drop-blank" data-correct="or"></span> <span class="drop-blank" data-correct="not"></span> sore_throat)
+rheumatic_indicated = joint_pain <span class="drop-blank" data-correct="and" data-feedback-correct="Correct! Joint pain AND additional criteria" data-feedback-incorrect="Not quite. We need BOTH joint pain AND other signs"></span> (rash <span class="drop-blank" data-correct="or" data-feedback-correct="Correct! EITHER rash OR absence of sore throat" data-feedback-incorrect="Not quite. We need EITHER of these conditions"></span> <span class="drop-blank" data-correct="not" data-feedback-correct="Correct! Absence of sore throat is an alternative sign" data-feedback-incorrect="Not quite. We're checking if sore throat is ABSENT"></span> sore_throat)
 
 # Display diagnosis suggestions
 print("=== Symptom Checker Results ===")
@@ -654,7 +699,15 @@ print("Rheumatic condition:", rheumatic_indicated)
                                 const dropBlanks = document.querySelectorAll('.drop-blank');
                                 const resetButton = document.getElementById('diagnostic-reset-button');
                                 const successBanner = document.getElementById('diagnostic-success');
+                                const operatorsContainer = document.getElementById('boolean-operators');
                                 let draggedItem = null;
+                                
+                                // Create tooltips for each drop-blank
+                                dropBlanks.forEach(blank => {
+                                    const tooltip = document.createElement('div');
+                                    tooltip.className = 'feedback-tooltip';
+                                    blank.appendChild(tooltip);
+                                });
                                 
                                 // Add drag events to operators
                                 operators.forEach(operator => {
@@ -710,6 +763,9 @@ print("Rheumatic condition:", rheumatic_indicated)
                                     e.preventDefault();
                                     this.classList.remove('hover');
                                     
+                                    // Hide any existing tooltips
+                                    hideAllTooltips();
+                                    
                                     // Only allow drop if blank isn't already filled
                                     if (!this.classList.contains('filled')) {
                                         const operatorType = e.dataTransfer.getData('text/plain');
@@ -726,20 +782,63 @@ print("Rheumatic condition:", rheumatic_indicated)
                                         this.appendChild(droppedOp);
                                         this.classList.add('filled');
                                         
+                                        // Create tooltip again (since innerHTML was cleared)
+                                        const tooltip = document.createElement('div');
+                                        tooltip.className = 'feedback-tooltip';
+                                        this.appendChild(tooltip);
+                                        
                                         // Check if correct
                                         if (operatorType === correctType) {
                                             this.classList.add('correct');
-                                            playCorrectSound();
+                                            tooltip.textContent = this.dataset.feedbackCorrect || "Correct!";
+                                            tooltip.classList.add('correct', 'visible');
+                                            
+                                            // Hide the operator that was dragged
+                                            draggedItem.style.visibility = 'hidden';
+                                            
+                                            // Play sound if available
+                                            if (typeof playCorrectSound === 'function') {
+                                                playCorrectSound();
+                                            }
+                                            
+                                            // Hide tooltip after 2 seconds
+                                            setTimeout(() => {
+                                                tooltip.classList.remove('visible');
+                                            }, 2000);
+                                            
+                                            // Check if all blanks are filled correctly
+                                            checkAllCorrect();
                                         } else {
+                                            // Incorrect answer
                                             this.classList.add('incorrect');
+                                            tooltip.textContent = this.dataset.feedbackIncorrect || "Try again!";
+                                            tooltip.classList.add('incorrect', 'visible');
+                                            
+                                            // Remove after a delay and return operator to container
+                                            setTimeout(() => {
+                                                this.classList.remove('filled', 'incorrect');
+                                                this.innerHTML = '';
+                                                
+                                                // Re-create the tooltip
+                                                const newTooltip = document.createElement('div');
+                                                newTooltip.className = 'feedback-tooltip';
+                                                this.appendChild(newTooltip);
+                                                
+                                                // Make sure dragged operator is visible
+                                                if (draggedItem) {
+                                                    draggedItem.style.visibility = 'visible';
+                                                    draggedItem.style.opacity = '1';
+                                                }
+                                            }, 1500);
                                         }
-                                        
-                                        // Hide the operator that was dragged
-                                        draggedItem.style.visibility = 'hidden';
-                                        
-                                        // Check if all blanks are filled correctly
-                                        checkAllCorrect();
                                     }
+                                }
+                                
+                                function hideAllTooltips() {
+                                    const tooltips = document.querySelectorAll('.feedback-tooltip');
+                                    tooltips.forEach(tooltip => {
+                                        tooltip.classList.remove('visible');
+                                    });
                                 }
                                 
                                 function checkAllCorrect() {
@@ -748,7 +847,7 @@ print("Rheumatic condition:", rheumatic_indicated)
                                     const allCorrect = Array.from(allBlanks).every(blank => {
                                         if (!blank.classList.contains('filled')) return false;
                                         const droppedOp = blank.querySelector('.dropped-operator');
-                                        return droppedOp.dataset.operator === blank.dataset.correct;
+                                        return droppedOp && droppedOp.dataset.operator === blank.dataset.correct;
                                     });
                                     
                                     if (allFilled && allCorrect) {
@@ -768,6 +867,11 @@ print("Rheumatic condition:", rheumatic_indicated)
                                     dropBlanks.forEach(blank => {
                                         blank.innerHTML = '';
                                         blank.classList.remove('filled', 'correct', 'incorrect', 'hover');
+                                        
+                                        // Re-create the tooltip
+                                        const tooltip = document.createElement('div');
+                                        tooltip.className = 'feedback-tooltip';
+                                        blank.appendChild(tooltip);
                                     });
                                     
                                     // Restore all operators
