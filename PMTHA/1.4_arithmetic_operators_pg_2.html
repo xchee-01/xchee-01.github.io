@@ -303,6 +303,106 @@ final_bacteria = initial_bacteria * (2 ** total_doublings)
                         </div>
                     </div>
                     
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const checkButton = document.getElementById('bacteria-check-button');
+                        const resetButton = document.getElementById('bacteria-reset-button');
+                        const validationMessage = document.getElementById('bacteria-validation-message');
+                        const inputField = document.getElementById('bacteria-count');
+                        const inputItem = document.getElementById('bacteria-item-1');
+                        const feedbackElement = document.getElementById('bacteria-feedback-1');
+                        const successFeedback = document.getElementById('bacteria-success-feedback');
+                        const infoFeedback = document.getElementById('bacteria-info-feedback');
+                        
+                        const correctAnswer = "640";
+                        
+                        if (checkButton) {
+                            checkButton.addEventListener('click', function() {
+                                // Check if field is filled
+                                if (!inputField.value.trim()) {
+                                    validationMessage.style.display = 'block';
+                                    return;
+                                }
+                                
+                                // Hide validation message
+                                validationMessage.style.display = 'none';
+                                
+                                // Check if answer is correct
+                                const userAnswer = inputField.value.trim();
+                                const isCorrect = userAnswer === correctAnswer;
+                                
+                                // Update UI based on correctness
+                                if (isCorrect) {
+                                    inputItem.classList.add('correct');
+                                    inputItem.classList.remove('incorrect');
+                                    feedbackElement.classList.add('correct');
+                                    feedbackElement.classList.remove('incorrect');
+                                    feedbackElement.innerHTML = `
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! 10 bacteria with 6 doublings = 640 bacteria.
+                                    `;
+                                    
+                                    successFeedback.style.display = 'block';
+                                    infoFeedback.style.display = 'block';
+                                    
+                                    // Try to play sound and show celebration
+                                    if (typeof initAudio === 'function') {
+                                        initAudio()
+                                            .then(() => {
+                                                if (typeof playCorrectSound === 'function') {
+                                                    playCorrectSound();
+                                                }
+                                                if (typeof showCelebration === 'function') {
+                                                    showCelebration();
+                                                }
+                                            })
+                                            .catch(err => {
+                                                console.error("Could not play sound:", err);
+                                            });
+                                    }
+                                } else {
+                                    inputItem.classList.add('incorrect');
+                                    inputItem.classList.remove('correct');
+                                    feedbackElement.classList.add('incorrect');
+                                    feedbackElement.classList.remove('correct');
+                                    feedbackElement.innerHTML = `
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite right. Try calculating 10 × 2<sup>6</sup>.
+                                    `;
+                                    
+                                    successFeedback.style.display = 'none';
+                                    infoFeedback.style.display = 'block';
+                                }
+                                
+                                // Show feedback
+                                feedbackElement.style.display = 'block';
+                                
+                                // Toggle buttons
+                                checkButton.classList.add('hidden');
+                                resetButton.classList.remove('hidden');
+                            });
+                        }
+                        
+                        if (resetButton) {
+                            resetButton.addEventListener('click', function() {
+                                // Clear input
+                                inputField.value = '';
+                                
+                                // Reset styles
+                                inputItem.classList.remove('correct', 'incorrect');
+                                feedbackElement.style.display = 'none';
+                                
+                                // Hide feedback messages
+                                validationMessage.style.display = 'none';
+                                successFeedback.style.display = 'none';
+                                infoFeedback.style.display = 'none';
+                                
+                                // Toggle buttons
+                                resetButton.classList.add('hidden');
+                                checkButton.classList.remove('hidden');
+                            });
+                        }
+                    });
+                    </script>
+                    
                     <div class="fun-fact">
                         <p><strong>Clinical Insight:</strong> The modulus operator is vital in medical scheduling and dosing intervals, while exponentiation is perfect for modeling biological growth, drug metabolism, and compound effects in the body. Even a small exponential change can have a dramatic impact on patient outcomes!</p>
                     </div>
@@ -344,7 +444,7 @@ print("Complete dosing cycle:", perfect_cycle)</div>
                         
                         <p>Now let's tackle our main challenge - complete the half-life calculation by inserting the correct operators:</p>
                         
-                        <!-- Fill-in-the-blanks (Drag-and-Drop) for Half-Life Calculation -->
+                        <!-- Drag-and-Drop for Half-Life Calculation -->
                         <div class="exercise-container">
                             <div class="exercise-header">
                                 <div class="header-icon">
@@ -355,119 +455,506 @@ print("Complete dosing cycle:", perfect_cycle)</div>
                             
                             <div class="exercise-content">
                                 <div class="question-title">
-                                    Fill in the correct operators to complete the drug decay and dosing schedule calculator:
+                                    Fill in the correct operators to complete the drug decay and dosing schedule calculator. Drag each operator to the appropriate blank space:
                                 </div>
                                 
-                                <div class="code-block">
+                                <div class="arithmetic-operators-container" id="drug-operators">
+                                    <div class="arithmetic-operator division" draggable="true" data-operator="/">/</div>
+                                    <div class="arithmetic-operator multiplication" draggable="true" data-operator="*">*</div>
+                                    <div class="arithmetic-operator subtraction" draggable="true" data-operator="-">-</div>
+                                    <div class="arithmetic-operator addition" draggable="true" data-operator="+">+</div>
+                                    <div class="arithmetic-operator exponentiation" draggable="true" data-operator="**">**</div>
+                                    <div class="arithmetic-operator modulo" draggable="true" data-operator="%">%</div>
+                                    <div class="arithmetic-operator floor-division" draggable="true" data-operator="//">//</div>
+                                    <div class="arithmetic-operator division" draggable="true" data-operator="/">/</div>
+                                    <div class="arithmetic-operator multiplication" draggable="true" data-operator="*">*</div>
+                                    <div class="arithmetic-operator floor-division" draggable="true" data-operator="//">//</div>
+                                </div>
+                                
+                                <div class="code-block-calculator" id="drug-code">
 # Drug half-life calculation
 initial_dose = 100  # mg
 half_life = 12  # hours
 treatment_duration = 48  # hours
 
 # Calculate the number of half-lives over the treatment period
-number_of_half_lives = treatment_duration ... half_life
+number_of_half_lives = treatment_duration <span class="drop-blank" data-correct="//" data-feedback-correct="Correct! Floor division gives us the number of complete half-lives." data-feedback-incorrect="Not quite. We need the whole number of half-lives that have elapsed."></span> half_life
 
 # Calculate remaining drug after treatment period
 # Each half-life reduces the drug by half (power of 0.5)
-remaining_drug_percent = 100 ... (0.5 ... number_of_half_lives)
+remaining_drug_percent = 100 <span class="drop-blank" data-correct="*" data-feedback-correct="Correct! We multiply the initial percentage by the decay factor." data-feedback-incorrect="Not quite. We need to multiply the percentage by the decay factor."></span> (0.5 <span class="drop-blank" data-correct="**" data-feedback-correct="Correct! We raise 0.5 to the power of the number of half-lives." data-feedback-incorrect="Not quite. We need to use exponentiation for the decay calculation."></span> number_of_half_lives)
 
 # Calculate dosing schedule
 administration_interval = 8  # hours
-total_doses = treatment_duration ... administration_interval
-doses_per_day = 24 ... administration_interval
+total_doses = treatment_duration <span class="drop-blank" data-correct="//" data-feedback-correct="Correct! Floor division gives us the whole number of doses to administer." data-feedback-incorrect="Not quite. We need the whole number of complete doses."></span> administration_interval
+doses_per_day = 24 <span class="drop-blank" data-correct="//" data-feedback-correct="Correct! Floor division gives us the number of doses per day." data-feedback-incorrect="Not quite. We need the whole number of doses that fit in a day."></span> administration_interval
 
 # Calculate if dosing aligns with the end of treatment
-perfect_alignment = treatment_duration ... administration_interval == 0
+perfect_alignment = treatment_duration <span class="drop-blank" data-correct="%" data-feedback-correct="Correct! The modulus operator checks if there's any remainder." data-feedback-incorrect="Not quite. We need to check if there's a remainder after division."></span> administration_interval == 0
                                 </div>
                                 
-                                <div class="answers-container" id="operators-answers">
-                                    <div class="answer" draggable="true" data-type="//"> 
-                                        <span>//</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="*">
-                                        <span>*</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="**">
-                                        <span>**</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="%">
-                                        <span>%</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="//"> 
-                                        <span>//</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="*">
-                                        <span>*</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="**">
-                                        <span>**</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="%">
-                                        <span>%</span>
-                                    </div>
+                                <div class="success-banner" id="drug-success">
+                                    <h4><i class="fas fa-check-circle"></i> Perfect! You've completed the drug decay calculation</h4>
+                                    <p>You've correctly applied arithmetic operators to implement this pharmaceutical formula:</p>
+                                    <ul>
+                                        <li>Number of half-lives = treatment_duration <strong>//</strong> half_life</li>
+                                        <li>Remaining drug = 100 <strong>*</strong> (0.5 <strong>**</strong> number_of_half_lives)</li>
+                                        <li>Total doses = treatment_duration <strong>//</strong> administration_interval</li>
+                                        <li>Doses per day = 24 <strong>//</strong> administration_interval</li>
+                                        <li>Perfect alignment check = treatment_duration <strong>%</strong> administration_interval == 0</li>
+                                    </ul>
                                 </div>
                                 
-                                <div class="questions-container" id="operators-questions">
-                                    <div class="question-item">
-                                        <div class="question-text">1. <code>number_of_half_lives = treatment_duration</code> <span class="highlight">?</span> <code>half_life</code></div>
-                                        <div class="drop-area" data-correct="//"></div>
-                                        <div class="feedback">
-                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
-                                            Correct! The floor division operator (//) gives us the whole number of half-lives that have elapsed.
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="question-item">
-                                        <div class="question-text">2. <code>remaining_drug_percent = 100</code> <span class="highlight">?</span> <code>(0.5 ... number_of_half_lives)</code></div>
-                                        <div class="drop-area" data-correct="*"></div>
-                                        <div class="feedback">
-                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
-                                            Correct! We multiply the percentage (100) by the decay factor.
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="question-item">
-                                        <div class="question-text">3. <code>remaining_drug_percent = 100 * (0.5</code> <span class="highlight">?</span> <code>number_of_half_lives)</code></div>
-                                        <div class="drop-area" data-correct="**"></div>
-                                        <div class="feedback">
-                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
-                                            Correct! The exponentiation operator (**) is used to calculate the drug decay factor.
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="question-item">
-                                        <div class="question-text">4. <code>total_doses = treatment_duration</code> <span class="highlight">?</span> <code>administration_interval</code></div>
-                                        <div class="drop-area" data-correct="//"></div>
-                                        <div class="feedback">
-                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
-                                            Correct! We use floor division (//) to get the whole number of doses required.
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="question-item">
-                                        <div class="question-text">5. <code>doses_per_day = 24</code> <span class="highlight">?</span> <code>administration_interval</code></div>
-                                        <div class="drop-area" data-correct="//"></div>
-                                        <div class="feedback">
-                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
-                                            Correct! Floor division (//) gives us the number of complete doses that can be administered in a day.
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="question-item">
-                                        <div class="question-text">6. <code>perfect_alignment = treatment_duration</code> <span class="highlight">?</span> <code>administration_interval == 0</code></div>
-                                        <div class="drop-area" data-correct="%"></div>
-                                        <div class="feedback">
-                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
-                                            Correct! The modulus operator (%) checks if there's any remainder, which tells us if dosing aligns perfectly with the treatment duration.
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <button class="reset-button" id="operators-reset-button">
+                                <button class="reset-button" id="drug-reset-button">
                                     <i class="fas fa-redo"></i> Reset Exercise
                                 </button>
                             </div>
                         </div>
+                        
+                        <style>
+                            .arithmetic-operators-container {
+                                display: flex;
+                                gap: 10px;
+                                margin-bottom: 15px;
+                                flex-wrap: wrap;
+                                justify-content: center;
+                                background-color: #eef2f5;
+                                padding: 15px;
+                                border-radius: 8px;
+                                border: 1px dashed var(--nus-light-blue);
+                            }
+                            
+                            .arithmetic-operator {
+                                background: linear-gradient(135deg, var(--nus-blue) 0%, #00468e 100%);
+                                color: white;
+                                padding: 6px 15px;
+                                border-radius: 20px;
+                                cursor: move;
+                                font-family: 'Courier New', Courier, monospace;
+                                font-weight: bold;
+                                font-size: 14px;
+                                user-select: none;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                transition: all 0.2s;
+                                border: 2px solid transparent;
+                            }
+                            
+                            .arithmetic-operator:hover {
+                                transform: translateY(-2px);
+                                box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+                            }
+                            
+                            .arithmetic-operator:active {
+                                transform: translateY(0);
+                            }
+                            
+                            .arithmetic-operator.addition {
+                                background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+                            }
+                            
+                            .arithmetic-operator.subtraction {
+                                background: linear-gradient(135deg, #F44336 0%, #D32F2F 100%);
+                            }
+                            
+                            .arithmetic-operator.multiplication {
+                                background: linear-gradient(135deg, var(--nus-orange) 0%, #d56e00 100%);
+                            }
+                            
+                            .arithmetic-operator.division {
+                                background: linear-gradient(135deg, var(--nus-blue) 0%, #00468e 100%);
+                            }
+                            
+                            .arithmetic-operator.exponentiation {
+                                background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+                            }
+                            
+                            .arithmetic-operator.modulo {
+                                background: linear-gradient(135deg, #555 0%, #333 100%);
+                            }
+                            
+                            .arithmetic-operator.floor-division {
+                                background: linear-gradient(135deg, #3F51B5 0%, #303F9F 100%);
+                            }
+                            
+                            .code-block-calculator {
+                                background-color: #f6f8fa;
+                                border-radius: 5px;
+                                padding: 1rem;
+                                margin: 1rem 0;
+                                font-family: 'Courier New', Courier, monospace;
+                                font-size: 0.95rem;
+                                white-space: pre;
+                                overflow-x: auto;
+                                border-left: 3px solid var(--nus-light-blue);
+                                line-height: 1.8;
+                                position: relative;
+                            }
+                            
+                            .drop-blank {
+                                display: inline-block;
+                                width: 40px;
+                                height: 26px;
+                                border: 2px dashed var(--nus-gray);
+                                border-radius: 5px;
+                                vertical-align: middle;
+                                margin: 0 5px;
+                                background-color: rgba(255,255,255,0.7);
+                                transition: all 0.2s;
+                                position: relative;
+                            }
+                            
+                            .drop-blank.hover {
+                                border-color: var(--nus-orange);
+                                background-color: rgba(239, 124, 0, 0.1);
+                            }
+                            
+                            .drop-blank.filled {
+                                border-color: transparent;
+                                background-color: transparent;
+                            }
+                            
+                            .drop-blank.correct {
+                                border-color: var(--nus-green);
+                                background-color: rgba(46, 133, 64, 0.05);
+                            }
+                            
+                            .drop-blank.incorrect {
+                                border-color: var(--nus-red);
+                                background-color: rgba(196, 18, 48, 0.05);
+                                animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+                            }
+                            
+                            @keyframes shake {
+                                10%, 90% { transform: translateX(-1px); }
+                                20%, 80% { transform: translateX(2px); }
+                                30%, 50%, 70% { transform: translateX(-3px); }
+                                40%, 60% { transform: translateX(3px); }
+                            }
+                            
+                            .dropped-operator {
+                                padding: 2px 8px;
+                                border-radius: 15px;
+                                font-family: 'Courier New', Courier, monospace;
+                                font-weight: bold;
+                                font-size: 14px;
+                                color: white;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                height: 100%;
+                            }
+                            
+                            .dropped-operator.addition {
+                                background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+                            }
+                            
+                            .dropped-operator.subtraction {
+                                background: linear-gradient(135deg, #F44336 0%, #D32F2F 100%);
+                            }
+                            
+                            .dropped-operator.multiplication {
+                                background: linear-gradient(135deg, var(--nus-orange) 0%, #d56e00 100%);
+                            }
+                            
+                            .dropped-operator.division {
+                                background: linear-gradient(135deg, var(--nus-blue) 0%, #00468e 100%);
+                            }
+                            
+                            .dropped-operator.exponentiation {
+                                background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+                            }
+                            
+                            .dropped-operator.modulo {
+                                background: linear-gradient(135deg, #555 0%, #333 100%);
+                            }
+                            
+                            .dropped-operator.floor-division {
+                                background: linear-gradient(135deg, #3F51B5 0%, #303F9F 100%);
+                            }
+                            
+                            .feedback-tooltip {
+                                position: absolute;
+                                bottom: 100%;
+                                left: 50%;
+                                transform: translateX(-50%);
+                                background-color: white;
+                                border-radius: 4px;
+                                padding: 5px 10px;
+                                font-size: 12px;
+                                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                                white-space: nowrap;
+                                box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+                                z-index: 10;
+                                opacity: 0;
+                                visibility: hidden;
+                                transition: opacity 0.3s ease, visibility 0.3s ease;
+                                pointer-events: none;
+                            }
+                            
+                            .feedback-tooltip.visible {
+                                opacity: 1;
+                                visibility: visible;
+                            }
+                            
+                            .feedback-tooltip.correct {
+                                background-color: #e8f5e9;
+                                border-left: 3px solid var(--nus-green);
+                                color: var(--nus-green);
+                            }
+                            
+                            .feedback-tooltip.incorrect {
+                                background-color: #ffebee;
+                                border-left: 3px solid var(--nus-red);
+                                color: var(--nus-red);
+                            }
+                            
+                            .success-banner {
+                                background-color: #e8f5e9;
+                                border-left: 4px solid var(--nus-green);
+                                padding: 15px;
+                                margin: 15px 0;
+                                border-radius: 0 8px 8px 0;
+                                display: none;
+                            }
+                            
+                            .success-banner.visible {
+                                display: block;
+                                animation: fadeInUp 0.5s;
+                            }
+                            
+                            @keyframes fadeInUp {
+                                from {
+                                    opacity: 0;
+                                    transform: translateY(20px);
+                                }
+                                to {
+                                    opacity: 1;
+                                    transform: translateY(0);
+                                }
+                            }
+                            
+                            .success-banner h4 {
+                                color: var(--nus-green);
+                                margin-top: 0;
+                                margin-bottom: 8px;
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                            }
+                            
+                            .success-banner ul {
+                                margin-top: 8px;
+                                margin-bottom: 0;
+                            }
+                            
+                            .success-banner li {
+                                margin-bottom: 5px;
+                            }
+                        </style>
+                        
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const operators = document.querySelectorAll('#drug-operators .arithmetic-operator');
+                                const dropBlanks = document.querySelectorAll('#drug-code .drop-blank');
+                                const resetButton = document.getElementById('drug-reset-button');
+                                const successBanner = document.getElementById('drug-success');
+                                let draggedItem = null;
+                                
+                                // Create tooltips for each drop-blank
+                                dropBlanks.forEach(blank => {
+                                    const tooltip = document.createElement('div');
+                                    tooltip.className = 'feedback-tooltip';
+                                    blank.appendChild(tooltip);
+                                });
+                                
+                                // Add drag events to operators
+                                operators.forEach(operator => {
+                                    operator.addEventListener('dragstart', handleDragStart);
+                                    operator.addEventListener('dragend', handleDragEnd);
+                                });
+                                
+                                // Add drop events to blanks
+                                dropBlanks.forEach(blank => {
+                                    blank.addEventListener('dragover', handleDragOver);
+                                    blank.addEventListener('dragenter', handleDragEnter);
+                                    blank.addEventListener('dragleave', handleDragLeave);
+                                    blank.addEventListener('drop', handleDrop);
+                                });
+                                
+                                // Reset button event
+                                resetButton.addEventListener('click', resetExercise);
+                                
+                                function handleDragStart(e) {
+                                    draggedItem = this;
+                                    setTimeout(() => {
+                                        this.style.opacity = '0.4';
+                                    }, 0);
+                                    
+                                    e.dataTransfer.setData('text/plain', this.dataset.operator);
+                                    e.dataTransfer.setData('operatorType', this.className.split(' ')[1]);
+                                }
+                                
+                                function handleDragEnd() {
+                                    this.style.opacity = '1';
+                                    draggedItem = null;
+                                    
+                                    dropBlanks.forEach(blank => {
+                                        blank.classList.remove('hover');
+                                    });
+                                }
+                                
+                                function handleDragOver(e) {
+                                    e.preventDefault();
+                                }
+                                
+                                function handleDragEnter(e) {
+                                    e.preventDefault();
+                                    if (!this.classList.contains('filled')) {
+                                        this.classList.add('hover');
+                                    }
+                                }
+                                
+                                function handleDragLeave() {
+                                    this.classList.remove('hover');
+                                }
+                                
+                                function handleDrop(e) {
+                                    e.preventDefault();
+                                    this.classList.remove('hover');
+                                    
+                                    // Hide any existing tooltips
+                                    hideAllTooltips();
+                                    
+                                    // Only allow drop if blank isn't already filled
+                                    if (!this.classList.contains('filled')) {
+                                        const operatorType = e.dataTransfer.getData('text/plain');
+                                        const operatorClass = e.dataTransfer.getData('operatorType');
+                                        const correctType = this.dataset.correct;
+                                        
+                                        // Create and add the dropped operator
+                                        const droppedOp = document.createElement('div');
+                                        droppedOp.className = `dropped-operator ${operatorClass}`;
+                                        droppedOp.textContent = operatorType;
+                                        droppedOp.dataset.operator = operatorType;
+                                        
+                                        // Add to blank
+                                        this.innerHTML = '';
+                                        this.appendChild(droppedOp);
+                                        this.classList.add('filled');
+                                        
+                                        // Create tooltip again (since innerHTML was cleared)
+                                        const tooltip = document.createElement('div');
+                                        tooltip.className = 'feedback-tooltip';
+                                        this.appendChild(tooltip);
+                                        
+                                        // Check if correct
+                                        if (operatorType === correctType) {
+                                            this.classList.add('correct');
+                                            tooltip.textContent = this.dataset.feedbackCorrect || "Correct!";
+                                            tooltip.classList.add('correct', 'visible');
+                                            
+                                            // Hide the operator that was dragged
+                                            draggedItem.style.visibility = 'hidden';
+                                            
+                                            // Try to play sound if available
+                                            if (typeof initAudio === 'function' && typeof playCorrectSound === 'function') {
+                                                initAudio()
+                                                    .then(() => {
+                                                        playCorrectSound();
+                                                    })
+                                                    .catch(err => {
+                                                        console.error("Could not play sound:", err);
+                                                    });
+                                            }
+                                            
+                                            // Hide tooltip after 2 seconds
+                                            setTimeout(() => {
+                                                tooltip.classList.remove('visible');
+                                            }, 2000);
+                                            
+                                            // Check if all blanks are filled correctly
+                                            checkAllCorrect();
+                                        } else {
+                                            // Incorrect answer
+                                            this.classList.add('incorrect');
+                                            tooltip.textContent = this.dataset.feedbackIncorrect || "Try again!";
+                                            tooltip.classList.add('incorrect', 'visible');
+                                            
+                                            // Remove after a delay and return operator to container
+                                            setTimeout(() => {
+                                                this.classList.remove('filled', 'incorrect');
+                                                this.innerHTML = '';
+                                                
+                                                // Re-create the tooltip
+                                                const newTooltip = document.createElement('div');
+                                                newTooltip.className = 'feedback-tooltip';
+                                                this.appendChild(newTooltip);
+                                                
+                                                // Make sure dragged operator is visible
+                                                if (draggedItem) {
+                                                    draggedItem.style.visibility = 'visible';
+                                                    draggedItem.style.opacity = '1';
+                                                }
+                                            }, 1500);
+                                        }
+                                    }
+                                }
+                                
+                                function hideAllTooltips() {
+                                    const tooltips = document.querySelectorAll('.feedback-tooltip');
+                                    tooltips.forEach(tooltip => {
+                                        tooltip.classList.remove('visible');
+                                    });
+                                }
+                                
+                                function checkAllCorrect() {
+                                    const allBlanks = document.querySelectorAll('#drug-code .drop-blank');
+                                    const allFilled = Array.from(allBlanks).every(blank => blank.classList.contains('filled'));
+                                    const allCorrect = Array.from(allBlanks).every(blank => {
+                                        if (!blank.classList.contains('filled')) return false;
+                                        const droppedOp = blank.querySelector('.dropped-operator');
+                                        return droppedOp && droppedOp.dataset.operator === blank.dataset.correct;
+                                    });
+                                    
+                                    if (allFilled && allCorrect) {
+                                        // Show success message and celebration
+                                        successBanner.classList.add('visible');
+                                        
+                                        // Trigger confetti celebration
+                                        if (typeof confetti === 'function') {
+                                            confetti({
+                                                particleCount: 100,
+                                                spread: 70,
+                                                origin: { y: 0.6 },
+                                                colors: ['#003D7C', '#EF7C00', '#4D7CAE']
+                                            });
+                                        }
+                                    }
+                                }
+                                
+                                function resetExercise() {
+                                    // Clear all blanks
+                                    dropBlanks.forEach(blank => {
+                                        blank.innerHTML = '';
+                                        blank.classList.remove('filled', 'correct', 'incorrect', 'hover');
+                                        
+                                        // Re-create the tooltip
+                                        const tooltip = document.createElement('div');
+                                        tooltip.className = 'feedback-tooltip';
+                                        blank.appendChild(tooltip);
+                                    });
+                                    
+                                    // Restore all operators
+                                    operators.forEach(operator => {
+                                        operator.style.visibility = 'visible';
+                                        operator.style.opacity = '1';
+                                    });
+                                    
+                                    // Hide success banner
+                                    successBanner.classList.remove('visible');
+                                }
+                            });
+                        </script>
                         <div class="celebration" id="operators-celebration"></div>
                         
                         <div class="code-block-container" data-block-name="lab2-drug-metabolism-solution">
@@ -1005,7 +1492,16 @@ print("Correct calculation:", correct_sodium)      # This gives: 141.92
                                     Drag and drop parentheses to fix these critical medical formulas:
                                 </div>
                                 
-                                <div class="code-block">
+                                <div class="arithmetic-operators-container" id="parentheses-operators">
+                                    <div class="arithmetic-operator" draggable="true" data-operator="(" style="background: linear-gradient(135deg, #795548 0%, #5D4037 100%);">(</div>
+                                    <div class="arithmetic-operator" draggable="true" data-operator=")" style="background: linear-gradient(135deg, #795548 0%, #5D4037 100%);">)</div>
+                                    <div class="arithmetic-operator" draggable="true" data-operator="(" style="background: linear-gradient(135deg, #795548 0%, #5D4037 100%);">(</div>
+                                    <div class="arithmetic-operator" draggable="true" data-operator=")" style="background: linear-gradient(135deg, #795548 0%, #5D4037 100%);">)</div>
+                                    <div class="arithmetic-operator" draggable="true" data-operator="(" style="background: linear-gradient(135deg, #795548 0%, #5D4037 100%);">(</div>
+                                    <div class="arithmetic-operator" draggable="true" data-operator=")" style="background: linear-gradient(135deg, #795548 0%, #5D4037 100%);">)</div>
+                                </div>
+                                
+                                <div class="code-block-calculator" id="formula-code">
 # Patient data
 weight = 70  # kg
 height = 1.70  # m
@@ -1016,76 +1512,258 @@ serum_glucose = 180  # mg/dL
 
 # 1. Corrected Sodium for hyperglycemia
 # CORRECT formula: Corrected Sodium = Measured Sodium + 0.024 * (Serum Glucose - 100)
-corrected_sodium = serum_sodium + 0.024 * serum_glucose - 100
+corrected_sodium = serum_sodium + 0.024 * <span class="drop-blank" data-correct="(" data-feedback-correct="Correct! The opening parenthesis is needed here" data-feedback-incorrect="This is not the right location for this parenthesis"></span>serum_glucose - 100<span class="drop-blank" data-correct=")" data-feedback-correct="Correct! The closing parenthesis completes the glucose adjustment" data-feedback-incorrect="This is not the right location for this parenthesis"></span>
 
 # 2. Ideal Body Weight (IBW) calculation (Devine formula)
 # CORRECT formula: IBW (kg) = 50 + 2.3 * (Height in inches - 60)
 height_inches = height * 39.37  # Convert meters to inches
-ibw = 50 + 2.3 * height_inches - 60
+ibw = 50 + 2.3 * <span class="drop-blank" data-correct="(" data-feedback-correct="Correct! The opening parenthesis is needed here" data-feedback-incorrect="This is not the right location for this parenthesis"></span>height_inches - 60<span class="drop-blank" data-correct=")" data-feedback-correct="Correct! The closing parenthesis completes the height adjustment" data-feedback-incorrect="This is not the right location for this parenthesis"></span>
 
 # 3. Anion Gap
 # CORRECT formula: Anion Gap = Sodium - (Chloride + Bicarbonate)
-anion_gap = serum_sodium - chloride + bicarbonate
+anion_gap = serum_sodium - <span class="drop-blank" data-correct="(" data-feedback-correct="Correct! The opening parenthesis is needed here" data-feedback-incorrect="This is not the right location for this parenthesis"></span>chloride + bicarbonate<span class="drop-blank" data-correct=")" data-feedback-correct="Correct! The closing parenthesis groups the ions properly" data-feedback-incorrect="This is not the right location for this parenthesis"></span>
                                 </div>
                                 
-                                <div class="answers-container" id="formulas-answers">
-                                    <div class="answer" draggable="true" data-type="open-paren">
-                                        <span>(</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="close-paren">
-                                        <span>)</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="open-paren">
-                                        <span>(</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="close-paren">
-                                        <span>)</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="open-paren">
-                                        <span>(</span>
-                                    </div>
-                                    <div class="answer" draggable="true" data-type="close-paren">
-                                        <span>)</span>
-                                    </div>
+                                <div class="success-banner" id="formula-success">
+                                    <h4><i class="fas fa-check-circle"></i> Perfect! You've fixed all the medical formulas</h4>
+                                    <p>You've correctly added parentheses to fix these important clinical formulas:</p>
+                                    <ul>
+                                        <li>Corrected Sodium = serum_sodium + 0.024 * <strong>(</strong>serum_glucose - 100<strong>)</strong></li>
+                                        <li>IBW = 50 + 2.3 * <strong>(</strong>height_inches - 60<strong>)</strong></li>
+                                        <li>Anion Gap = serum_sodium - <strong>(</strong>chloride + bicarbonate<strong>)</strong></li>
+                                    </ul>
+                                    <p>In medical calculations, proper parentheses ensure operations happen in the correct order, which can make a critical difference in patient outcomes!</p>
                                 </div>
                                 
-                                <div class="questions-container" id="formulas-questions">
-                                    <div class="question-item">
-                                        <div class="question-text">1. <code>corrected_sodium = serum_sodium + 0.024 * </code><span class="highlight">?</span><code>serum_glucose - 100</code><span class="highlight">?</span></div>
-                                        <div class="drop-area" data-correct="open-paren"></div>
-                                        <div class="drop-area" data-correct="close-paren"></div>
-                                        <div class="feedback">
-                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
-                                            Correct! Adding parentheses ensures the subtraction happens before applying the coefficient.
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="question-item">
-                                        <div class="question-text">2. <code>ibw = 50 + 2.3 * </code><span class="highlight">?</span><code>height_inches - 60</code><span class="highlight">?</span></div>
-                                        <div class="drop-area" data-correct="open-paren"></div>
-                                        <div class="drop-area" data-correct="close-paren"></div>
-                                        <div class="feedback">
-                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
-                                            Correct! Parentheses ensure you subtract from height before multiplying by the coefficient.
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="question-item">
-                                        <div class="question-text">3. <code>anion_gap = serum_sodium - </code><span class="highlight">?</span><code>chloride + bicarbonate</code><span class="highlight">?</span></div>
-                                        <div class="drop-area" data-correct="open-paren"></div>
-                                        <div class="drop-area" data-correct="close-paren"></div>
-                                        <div class="feedback">
-                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span>
-                                            Correct! Parentheses ensure both chloride and bicarbonate are summed before subtracting from sodium.
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <button class="reset-button" id="formulas-reset-button">
+                                <button class="reset-button" id="formula-reset-button">
                                     <i class="fas fa-redo"></i> Reset Exercise
                                 </button>
                             </div>
                         </div>
+                        
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const operators = document.querySelectorAll('#parentheses-operators .arithmetic-operator');
+                                const dropBlanks = document.querySelectorAll('#formula-code .drop-blank');
+                                const resetButton = document.getElementById('formula-reset-button');
+                                const successBanner = document.getElementById('formula-success');
+                                let draggedItem = null;
+                                
+                                // Create tooltips for each drop-blank
+                                dropBlanks.forEach(blank => {
+                                    const tooltip = document.createElement('div');
+                                    tooltip.className = 'feedback-tooltip';
+                                    blank.appendChild(tooltip);
+                                });
+                                
+                                // Add drag events to operators
+                                operators.forEach(operator => {
+                                    operator.addEventListener('dragstart', handleDragStart);
+                                    operator.addEventListener('dragend', handleDragEnd);
+                                });
+                                
+                                // Add drop events to blanks
+                                dropBlanks.forEach(blank => {
+                                    blank.addEventListener('dragover', handleDragOver);
+                                    blank.addEventListener('dragenter', handleDragEnter);
+                                    blank.addEventListener('dragleave', handleDragLeave);
+                                    blank.addEventListener('drop', handleDrop);
+                                });
+                                
+                                // Reset button event
+                                resetButton.addEventListener('click', resetExercise);
+                                
+                                function handleDragStart(e) {
+                                    draggedItem = this;
+                                    setTimeout(() => {
+                                        this.style.opacity = '0.4';
+                                    }, 0);
+                                    
+                                    e.dataTransfer.setData('text/plain', this.dataset.operator);
+                                }
+                                
+                                function handleDragEnd() {
+                                    this.style.opacity = '1';
+                                    draggedItem = null;
+                                    
+                                    dropBlanks.forEach(blank => {
+                                        blank.classList.remove('hover');
+                                    });
+                                }
+                                
+                                function handleDragOver(e) {
+                                    e.preventDefault();
+                                }
+                                
+                                function handleDragEnter(e) {
+                                    e.preventDefault();
+                                    if (!this.classList.contains('filled')) {
+                                        this.classList.add('hover');
+                                    }
+                                }
+                                
+                                function handleDragLeave() {
+                                    this.classList.remove('hover');
+                                }
+                                
+                                function handleDrop(e) {
+                                    e.preventDefault();
+                                    this.classList.remove('hover');
+                                    
+                                    // Hide any existing tooltips
+                                    hideAllTooltips();
+                                    
+                                    // Only allow drop if blank isn't already filled
+                                    if (!this.classList.contains('filled')) {
+                                        const operatorType = e.dataTransfer.getData('text/plain');
+                                        const correctType = this.dataset.correct;
+                                        
+                                        // Create and add the dropped operator
+                                        const droppedOp = document.createElement('div');
+                                        droppedOp.className = 'dropped-operator';
+                                        droppedOp.style.background = 'linear-gradient(135deg, #795548 0%, #5D4037 100%)';
+                                        droppedOp.textContent = operatorType;
+                                        droppedOp.dataset.operator = operatorType;
+                                        
+                                        // Add to blank
+                                        this.innerHTML = '';
+                                        this.appendChild(droppedOp);
+                                        this.classList.add('filled');
+                                        
+                                        // Create tooltip again (since innerHTML was cleared)
+                                        const tooltip = document.createElement('div');
+                                        tooltip.className = 'feedback-tooltip';
+                                        this.appendChild(tooltip);
+                                        
+                                        // Check if correct
+                                        if (operatorType === correctType) {
+                                            this.classList.add('correct');
+                                            tooltip.textContent = this.dataset.feedbackCorrect || "Correct!";
+                                            tooltip.classList.add('correct', 'visible');
+                                            
+                                            // Hide the operator that was dragged
+                                            draggedItem.style.visibility = 'hidden';
+                                            
+                                            // Try to play sound if available
+                                            if (typeof initAudio === 'function' && typeof playCorrectSound === 'function') {
+                                                initAudio()
+                                                    .then(() => {
+                                                        playCorrectSound();
+                                                    })
+                                                    .catch(err => {
+                                                        console.error("Could not play sound:", err);
+                                                    });
+                                            }
+                                            
+                                            // Hide tooltip after 2 seconds
+                                            setTimeout(() => {
+                                                tooltip.classList.remove('visible');
+                                            }, 2000);
+                                            
+                                            // Check if all blanks are filled correctly
+                                            checkAllCorrect();
+                                        } else {
+                                            // Incorrect answer
+                                            this.classList.add('incorrect');
+                                            tooltip.textContent = this.dataset.feedbackIncorrect || "Try again!";
+                                            tooltip.classList.add('incorrect', 'visible');
+                                            
+                                            // Remove after a delay and return operator to container
+                                            setTimeout(() => {
+                                                this.classList.remove('filled', 'incorrect');
+                                                this.innerHTML = '';
+                                                
+                                                // Re-create the tooltip
+                                                const newTooltip = document.createElement('div');
+                                                newTooltip.className = 'feedback-tooltip';
+                                                this.appendChild(newTooltip);
+                                                
+                                                // Make sure dragged operator is visible
+                                                if (draggedItem) {
+                                                    draggedItem.style.visibility = 'visible';
+                                                    draggedItem.style.opacity = '1';
+                                                }
+                                            }, 1500);
+                                        }
+                                    }
+                                }
+                                
+                                function hideAllTooltips() {
+                                    const tooltips = document.querySelectorAll('.feedback-tooltip');
+                                    tooltips.forEach(tooltip => {
+                                        tooltip.classList.remove('visible');
+                                    });
+                                }
+                                
+                                function checkAllCorrect() {
+                                    const allBlanks = document.querySelectorAll('#formula-code .drop-blank');
+                                    const allFilled = Array.from(allBlanks).every(blank => blank.classList.contains('filled'));
+                                    const allCorrect = Array.from(allBlanks).every(blank => {
+                                        if (!blank.classList.contains('filled')) return false;
+                                        const droppedOp = blank.querySelector('.dropped-operator');
+                                        return droppedOp && droppedOp.dataset.operator === blank.dataset.correct;
+                                    });
+                                    
+                                    if (allFilled && allCorrect) {
+                                        // Show success message and celebration
+                                        successBanner.classList.add('visible');
+                                        
+                                        // Trigger confetti celebration
+                                        if (typeof confetti === 'function') {
+                                            confetti({
+                                                particleCount: 100,
+                                                spread: 70,
+                                                origin: { y: 0.6 },
+                                                colors: ['#003D7C', '#EF7C00', '#4D7CAE']
+                                            });
+                                            
+                                            // Add side confetti
+                                            setTimeout(() => {
+                                                confetti({
+                                                    particleCount: 80,
+                                                    angle: 60,
+                                                    spread: 55,
+                                                    origin: { x: 0, y: 0.65 },
+                                                    colors: ['#003D7C', '#4D7CAE', '#ffffff']
+                                                });
+                                                
+                                                setTimeout(() => {
+                                                    confetti({
+                                                        particleCount: 80,
+                                                        angle: 120,
+                                                        spread: 55,
+                                                        origin: { x: 1, y: 0.65 },
+                                                        colors: ['#EF7C00', '#4D7CAE', '#ffffff']
+                                                    });
+                                                }, 150);
+                                            }, 300);
+                                        }
+                                    }
+                                }
+                                
+                                function resetExercise() {
+                                    // Clear all blanks
+                                    dropBlanks.forEach(blank => {
+                                        blank.innerHTML = '';
+                                        blank.classList.remove('filled', 'correct', 'incorrect', 'hover');
+                                        
+                                        // Re-create the tooltip
+                                        const tooltip = document.createElement('div');
+                                        tooltip.className = 'feedback-tooltip';
+                                        blank.appendChild(tooltip);
+                                    });
+                                    
+                                    // Restore all operators
+                                    operators.forEach(operator => {
+                                        operator.style.visibility = 'visible';
+                                        operator.style.opacity = '1';
+                                    });
+                                    
+                                    // Hide success banner
+                                    successBanner.classList.remove('visible');
+                                }
+                            });
+                        </script>
                         <div class="celebration" id="formulas-celebration"></div>
                         
                         <!-- Fill-in-the-blanks for Anion Gap Debugging -->
