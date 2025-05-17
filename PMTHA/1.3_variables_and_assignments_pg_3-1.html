@@ -412,7 +412,7 @@ print("Patient was on existing medication:", patient_on_medication)</div>
                     <p><strong>Hint:</strong> Variables defined inside a function are not accessible outside it unless they are explicitly returned from the function.</p>
                     
                     <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                    <div class="answer">
+                    <div class="answer" style="display: none;">
                         <h4>Solution:</h4>
                         <div class="code-block-container" data-block-name="lab3-clinical-trial-solution">
                             <div class="code-block"># Complete solution with resolved scope issues
@@ -743,7 +743,47 @@ print("Patient was on existing medication:", patient_on_medication)</div>
         </div>
     </div>
     
-    <!-- Confetti Canvas -->
-    <canvas id="confetti-canvas"></canvas>
+    <script>
+        // Fix for toggle answer buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up toggle answer buttons functionality
+            const toggleButtons = document.querySelectorAll('.toggle-answer');
+            
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Find the closest parent '.challenge' container
+                    const container = this.closest('.section-content');
+                    
+                    if (!container) {
+                        console.error("Debug: toggle-answer button is not inside a section container:", this);
+                        return;
+                    }
+                    
+                    // Find the '.answer' element that follows this button
+                    const answerElement = this.nextElementSibling;
+                    
+                    if (!answerElement || !answerElement.classList.contains('answer')) {
+                        console.error("Debug: No .answer element found after button:", this);
+                        return;
+                    }
+                    
+                    // Toggle the display style
+                    if (answerElement.style.display === 'block') {
+                        answerElement.style.display = 'none';
+                        this.innerHTML = '<i class="fas fa-lightbulb"></i> Show Answer';
+                    } else {
+                        answerElement.style.display = 'block';
+                        this.innerHTML = '<i class="fas fa-times"></i> Hide Answer';
+                        
+                        // Track that the user viewed an answer
+                        if (typeof trackEvent === 'function') {
+                            const sectionId = container.closest('.section-dropdown').querySelector('h2').getAttribute('id');
+                            trackEvent('answer_viewed', sectionId, 'Lab Solution');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
