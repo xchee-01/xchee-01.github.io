@@ -1793,5 +1793,124 @@ for protein, temp in max_stability_temp.items():
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
+
+    <script>
+// This code runs after the page loads but before Pyodide is initialized
+document.addEventListener('DOMContentLoaded', function() {
+    // Create a new div to display plots
+    const plotOutput = document.createElement('div');
+    plotOutput.id = 'plot-output';
+    plotOutput.style.marginTop = '20px';
+    plotOutput.style.width = '100%';
+    plotOutput.style.display = 'none';
+    
+    // Insert it after the output area
+    const outputArea = document.getElementById('output-area');
+    outputArea.parentNode.insertBefore(plotOutput, outputArea.nextSibling);
+    
+    // Store the original setupPythonButtons function to modify it
+    const originalSetupPythonButtons = window.setupPythonButtons;
+    
+    // Override the setupPythonButtons function
+    window.setupPythonButtons = function(pyodide) {
+        // Call the original function first
+        if (originalSetupPythonButtons) {
+            originalSetupPythonButtons(pyodide);
+        }
+        
+        // Get DOM elements
+        const runButton = document.getElementById('run-button');
+        const pythonCode = document.getElementById('python-code');
+        const outputArea = document.getElementById('output-area');
+        const plotOutput = document.getElementById('plot-output');
+        const statusElement = document.getElementById('status');
+        
+        // Override the run button event handler
+        runButton.removeEventListener('click', runButton._clickHandler);
+        runButton._clickHandler = async () => {
+            if (!pyodide) {
+                appendToOutputArea("Error: Python is not loaded yet.");
+                return;
+            }
+            
+            const code = pythonCode.value;
+            outputArea.textContent = ''; // Clear previous output
+            plotOutput.innerHTML = ''; // Clear previous plots
+            plotOutput.style.display = 'none';
+            
+            statusElement.textContent = 'Running code...';
+            runButton.disabled = true;
+            
+            try {
+                // Setup matplotlib to use the 'agg' backend and capture the output
+                await pyodide.runPythonAsync(`
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import io
+import base64
+
+# Create a custom display function to show plots in the HTML
+def show_plot():
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    img_str = base64.b64encode(buf.read()).decode('utf-8')
+    plt.close()
+    return f"data:image/png;base64,{img_str}"
+                `);
+                
+                // Add custom show_plot() to the global namespace
+                pyodide.globals.set("_original_show", pyodide.globals.get("plt").get("show"));
+                
+                // Override plt.show() to use our custom function
+                await pyodide.runPythonAsync(`
+def custom_show(*args, **kwargs):
+    img_data = show_plot()
+    __show_plot_callback(img_data)
+    return _original_show(*args, **kwargs)
+
+plt.show = custom_show
+                `);
+                
+                // Create a JavaScript callback to display the plot
+                pyodide.globals.set("__show_plot_callback", (imgData) => {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = imgData;
+                    imgElement.style.maxWidth = '100%';
+                    imgElement.style.height = 'auto';
+                    imgElement.style.display = 'block';
+                    imgElement.style.margin = '10px auto';
+                    imgElement.style.border = '1px solid #ccc';
+                    imgElement.style.borderRadius = '4px';
+                    imgElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+                    
+                    plotOutput.style.display = 'block';
+                    plotOutput.appendChild(imgElement);
+                });
+                
+                // Run the user's code
+                await pyodide.runPythonAsync(code);
+                
+                statusElement.textContent = 'Execution complete.';
+            } catch (error) {
+                appendToOutputArea(`\n--- Execution Error --- \n${error}\n--------------------`);
+                statusElement.textContent = 'Error during execution.';
+            } finally {
+                runButton.disabled = false;
+            }
+        };
+        
+        runButton.addEventListener('click', runButton._clickHandler);
+    };
+});
+
+// Helper function to append text to output area
+function appendToOutputArea(message) {
+    const outputArea = document.getElementById('output-area');
+    outputArea.textContent += message + (message.endsWith('\n') ? '' : '\n');
+    outputArea.scrollTop = outputArea.scrollHeight; // Scroll to bottom
+}
+</script>
 </body>
 </html>
