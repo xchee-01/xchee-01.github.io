@@ -1793,6 +1793,300 @@ for protein, temp in max_stability_temp.items():
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
+<script>
+// This code runs after the page loads but before Pyodide is initialized
+document.addEventListener('DOMContentLoaded', function() {
+    // Create a new div to display plots (used for fallback)
+    const plotOutput = document.createElement('div');
+    plotOutput.id = 'plot-output';
+    plotOutput.style.marginTop = '20px';
+    plotOutput.style.width = '100%';
+    plotOutput.style.display = 'none'; // Initially hidden
 
+    // Insert it after the output area
+    const outputArea = document.getElementById('output-area');
+    if (outputArea && outputArea.parentNode) { // Check if outputArea exists
+        outputArea.parentNode.insertBefore(plotOutput, outputArea.nextSibling);
+    } else {
+        console.warn("Output area not found, plot output div not inserted (this is okay if only new tab plots are desired).");
+    }
+
+    // Function to initialize Matplotlib support
+    async function setupMatplotlibSupport(pyodide) {
+        // Setup matplotlib to use the 'agg' backend
+        await pyodide.runPythonAsync(`
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import io
+import base64
+
+# Create a global variable to store the image data
+_plot_image_data = None
+
+# Custom function to capture plot as base64
+def capture_plot():
+    global _plot_image_data
+    _plot_image_data = None # Reset first
+    buf = io.BytesIO()
+    # Try to get the current figure, or create one if none exists
+    # This helps if plt.show() is called without an active figure,
+    # though typically plt.show() follows plotting commands on a figure.
+    if not plt.get_fignums(): # Check if there are any active figures
+        # If no figure, this won't save anything meaningful.
+        # A proper plot script should create a figure.
+        # print("Matplotlib: No active figure to show.") # Optional: for Python-side feedback
+        return None
+
+    try:
+        plt.savefig(buf, format='png', dpi=100) # Use a default DPI
+        buf.seek(0)
+        _plot_image_data = base64.b64encode(buf.read()).decode('utf-8')
+    except Exception as e:
+        # print(f"Matplotlib: Error during savefig: {e}") # Optional: for Python-side feedback
+        _plot_image_data = None
+    finally:
+        plt.close('all') # Close all figures to free memory
+    
+    return _plot_image_data
+
+# Store the original show function
+_original_show = plt.show
+
+# Define a new show function
+def custom_show(*args, **kwargs):
+    capture_plot()
+    # We'll retrieve _plot_image_data from JavaScript
+    # Do NOT call _original_show here if we are handling display in JS
+    pass # The capture_plot already did the work
+
+# Replace plt.show with our custom function
+plt.show = custom_show
+        `);
+    }
+
+    // Function to display a plot
+    function displayPlot(pyodide) {
+        // Get the plot data from Python
+        const imgData = pyodide.runPython("_plot_image_data");
+        if (imgData) {
+            // Create a data URL for the image
+            const dataUrl = "data:image/png;base64," + imgData;
+
+            // Open the data URL in a new tab
+            const newTab = window.open('', '_blank'); // Give it a target name for potential reuse/focus
+            if (newTab) {
+                newTab.document.open();
+                newTab.document.write(
+                    '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Matplotlib Plot</title>' +
+                    '<style>body { margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh; background-color:#f0f0f0; } ' +
+                    'img { max-width:95%; max-height:95vh; border:1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: block; }</style></head>' +
+                    '<body>' +
+                    '<img src="' + dataUrl + '" alt="Matplotlib Plot"/>' +
+                    '</body></html>'
+                );
+                newTab.document.close();
+                if (newTab.focus) { // Try to focus the new tab
+                    newTab.focus();
+                }
+            } else {
+                // Fallback or error message if pop-up was blocked
+                console.warn("Could not open new tab. Pop-up blocker might be active. Displaying plot inline as a fallback.");
+                // Fallback to inline display:
+                const imgElement = document.createElement('img');
+                imgElement.src = dataUrl; // Use the dataUrl here as well
+                imgElement.style.maxWidth = '100%';
+                imgElement.style.height = 'auto';
+                imgElement.style.display = 'block';
+                imgElement.style.margin = '10px auto';
+                imgElement.style.border = '1px solid #ccc';
+                imgElement.style.borderRadius = '4px';
+                imgElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+
+                const currentPlotOutput = document.getElementById('plot-output');
+                if (currentPlotOutput) {
+                    currentPlotOutput.style.display = 'block';
+                    currentPlotOutput.innerHTML = ''; // Clear previous plot
+                    currentPlotOutput.appendChild(imgElement);
+                } else {
+                    alert("Plot could not be displayed inline. Check console for errors.");
+                }
+            }
+
+            // Reset the plot data in Python
+            pyodide.runPython("_plot_image_data = None");
+
+            return true;
+        }
+        return false;
+    }
+
+
+    // Modify the Python initialization to set up our matplotlib support
+    const originalInitializePython = (typeof window.initializePython === 'function') ? window.initializePython : async () => {
+        console.warn("window.initializePython not found from template_JS_learning_page_v24.js. Using basic Pyodide loader.");
+        const statusElement = document.getElementById('status');
+        if (statusElement) statusElement.textContent = 'Loading Python runtime (Pyodide)...';
+        
+        if (window.loadPyodide) {
+            const pyodideInstance = await window.loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/"
+            });
+            if (statusElement) statusElement.textContent = 'Loading Matplotlib and NumPy...';
+            await pyodideInstance.loadPackage("matplotlib");
+            await pyodideInstance.loadPackage("numpy");
+            if (statusElement) statusElement.textContent = 'Python packages loaded.';
+            return pyodideInstance;
+        } else {
+            if (statusElement) statusElement.textContent = 'Error: Pyodide script not loaded.';
+            throw new Error("Pyodide script not loaded.");
+        }
+    };
+
+
+    window.initializePython = async function() {
+        const statusElement = document.getElementById('status');
+        const runButton = document.getElementById('run-button');
+        try {
+            if (statusElement) statusElement.textContent = 'Initializing Python environment...';
+            const pyodide = await originalInitializePython();
+
+            if (!pyodide) {
+                throw new Error("Pyodide initialization failed.");
+            }
+            if (statusElement) statusElement.textContent = 'Setting up Matplotlib...';
+            // Setup our matplotlib support
+            await setupMatplotlibSupport(pyodide);
+            if (statusElement) statusElement.textContent = 'Configuring interpreter buttons...';
+
+            // Override the run button setup from template_JS_learning_page_v24.js
+            // or set it up if it's not there.
+            const originalSetupPythonButtons = window.setupPythonButtons;
+
+            window.setupPythonButtons = function(pyodideInstance) {
+                // Get DOM elements
+                const currentRunButton = document.getElementById('run-button');
+                const pythonCode = document.getElementById('python-code');
+                const currentOutputArea = document.getElementById('output-area');
+                const currentStatusElement = document.getElementById('status'); // Re-fetch
+
+                if (!currentRunButton || !pythonCode || !currentOutputArea || !currentStatusElement) {
+                    console.error("One or more Python interpreter DOM elements are missing.");
+                    if (currentStatusElement) currentStatusElement.textContent = 'Error: Interpreter UI elements missing.';
+                    return;
+                }
+
+                // Create a new run handler
+                const runHandler = async () => {
+                    if (!pyodideInstance) {
+                        appendToOutputArea("Error: Python is not loaded yet.", currentOutputArea);
+                        return;
+                    }
+
+                    const code = pythonCode.value;
+                    currentOutputArea.textContent = ''; // Clear previous text output
+                    const currentPlotOutput = document.getElementById('plot-output'); // Re-fetch
+                    if (currentPlotOutput) {
+                         currentPlotOutput.innerHTML = ''; // Clear previous inline plots
+                         currentPlotOutput.style.display = 'none';
+                    }
+
+                    currentStatusElement.textContent = 'Running code...';
+                    currentRunButton.disabled = true;
+
+                    try {
+                        // Capture standard output and error
+                        let stdout_data = "";
+                        let stderr_data = "";
+                        pyodideInstance.setStdout({ batched: (str) => stdout_data += str + "\n" });
+                        pyodideInstance.setStderr({ batched: (str) => stderr_data += str + "\n" });
+
+                        // Run the user's code
+                        await pyodideInstance.runPythonAsync(code);
+
+                        // Display captured stdout
+                        if (stdout_data.trim()) {
+                            appendToOutputArea(stdout_data, currentOutputArea);
+                        }
+                        // Display captured stderr
+                        if (stderr_data.trim()) {
+                            appendToOutputArea(`--- Python Error Log ---\n${stderr_data}----------------------`, currentOutputArea);
+                        }
+
+                        // Check if there's a plot to display
+                        displayPlot(pyodideInstance); // This is our modified function
+
+                        currentStatusElement.textContent = 'Execution complete.';
+                    } catch (error) {
+                        // This catches JS errors during pyodide.runPythonAsync or our JS logic
+                        appendToOutputArea(`\n--- JavaScript Execution Error ---\n${error.message || error}\nStack: ${error.stack || 'N/A'}\n--------------------`, currentOutputArea);
+                        if (stderr_data.trim()) { // Also show Python stderr if any
+                             appendToOutputArea(`--- Python Error Log (from JS catch) ---\n${stderr_data}---------------------------------`, currentOutputArea);
+                        }
+                        currentStatusElement.textContent = 'Error during execution.';
+                    } finally {
+                        currentRunButton.disabled = false;
+                        // Restore default stdout/stderr
+                        pyodideInstance.setStdout({});
+                        pyodideInstance.setStderr({});
+                    }
+                };
+
+                // Remove any existing click listeners to avoid multiple executions
+                const newRunButton = currentRunButton.cloneNode(true);
+                currentRunButton.parentNode.replaceChild(newRunButton, currentRunButton);
+                newRunButton.addEventListener('click', runHandler);
+                newRunButton.disabled = false; // Ensure it's enabled after Pyodide loads
+
+                const clearButton = document.getElementById('clear-button');
+                if (clearButton) {
+                    // Ensure clear button also clears the inline plot area
+                    const newClearButton = clearButton.cloneNode(true);
+                    clearButton.parentNode.replaceChild(newClearButton, clearButton);
+                    newClearButton.addEventListener('click', () => {
+                        currentOutputArea.textContent = '';
+                        const currentPlotOutput = document.getElementById('plot-output');
+                        if (currentPlotOutput) {
+                            currentPlotOutput.innerHTML = '';
+                            currentPlotOutput.style.display = 'none';
+                        }
+                        if (pythonCode) pythonCode.value = '# Try Python code here';
+                        if (currentStatusElement) currentStatusElement.textContent = 'Output cleared. Ready to run code.';
+                    });
+                }
+            }; // end of window.setupPythonButtons
+
+            // Set up the run and clear buttons
+            setupPythonButtons(pyodide);
+            if (runButton) runButton.disabled = false;
+            if (statusElement) statusElement.textContent = 'Python runtime loaded. Ready to run code.';
+
+            return pyodide;
+        } catch (error) {
+             if (statusElement) statusElement.textContent = `Error loading Python: ${error.message || error}`;
+            console.error('Python loading error:', error);
+            if (runButton) runButton.disabled = true;
+            return null;
+        }
+    }; // end of window.initializePython
+
+    // Helper function to append text to output area
+    function appendToOutputArea(message, area) {
+        if (area) {
+            area.textContent += message + (message.endsWith('\n') ? '' : '\n');
+            area.scrollTop = area.scrollHeight; // Scroll to bottom
+        }
+    }
+
+    // Initialize Python if the template script hasn't done it or if it doesn't exist
+    // This ensures Pyodide loads even if template_JS_learning_page_v24.js has issues or doesn't call initializePython
+    if (typeof window.pyodide === 'undefined' && !window.pyodideLoading) {
+        window.pyodideLoading = true; // Prevent multiple initializations
+        window.initializePython().finally(() => {
+            window.pyodideLoading = false;
+        });
+    }
+});
+</script>
 </body>
 </html>
