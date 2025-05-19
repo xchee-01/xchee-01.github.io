@@ -9,7 +9,7 @@ const EXTRA_INFO_INTERACTION_URL = 'https://script.google.com/macros/s/AKfycbxXH
 // Configuration and constants
 const TRACKING_INTERVAL = 20; // 20 seconds for periodic tracking 
 const HEARTBEAT_INTERVAL = 10; // 10 seconds for heartbeat 
-const INACTIVITY_THRESHOLD = 300; // 300 seconds until user is considered inactive
+const INACTIVITY_THRESHOLD = 30000; // 30000 seconds until user is considered inactive
 const THROTTLE_DELAY = 1000; // Throttle delay for frequent events
 const LOCAL_STORAGE_KEY = 'tracking_events_cache'; // Key for localStorage tracking cache
 const EVENT_BATCH_THRESHOLD = 1; // Minimum number of events before sending to server
