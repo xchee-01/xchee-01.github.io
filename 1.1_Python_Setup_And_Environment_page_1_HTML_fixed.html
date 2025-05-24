@@ -457,7 +457,7 @@ python <span class="fill-blank" data-answer="--version"></span>
                                 For precision health programming, we'll assemble a toolkit that works together like a perfectly coordinated medical team. Match each component to its role:
                             </div>
                             
-                            <div class="answers-container" id="datatype-answers">
+                            <div class="answers-container" id="toolkit-answers">
                                 <div class="answer" draggable="true" data-type="Python">
                                     <span>Your chief medical officer (the decision-maker)</span>
                                 </div>
@@ -469,7 +469,7 @@ python <span class="fill-blank" data-answer="--version"></span>
                                 </div>
                             </div>
                             
-                            <div class="questions-container" id="datatype-questions">
+                            <div class="questions-container" id="toolkit-questions">
                                 <div class="question-item">
                                     <div class="question-text"><strong>Python</strong></div>
                                     <div class="drop-area" data-correct="Python"></div>
@@ -498,12 +498,12 @@ python <span class="fill-blank" data-answer="--version"></span>
                                 </div>
                             </div>
                             
-                            <button class="reset-button" id="datatype-reset-button">
+                            <button class="reset-button" id="toolkit-reset-button">
                                 <i class="fas fa-redo"></i> Reset Exercise
                             </button>
                         </div>
                     </div>
-                    <div class="celebration" id="datatype-celebration"></div>
+                    <div class="celebration" id="toolkit-celebration"></div>
                     
                     <p>Let's install Jupyter Notebooks - the gold standard for medical research documentation:</p>
                     
@@ -851,7 +851,10 @@ print("🎉 DIAGNOSTIC COMPLETE: Your environment is ready for precision health 
             <h2 id="interpreter-heading">Python Interpreter</h2>
             <p>Try out Python code examples as you learn. You can test your installation commands or experiment with the diagnostic script.</p>
             
-            <textarea id="python-code">#Type your python codes here</textarea>
+            <textarea id="python-code"># Try Python code here
+
+               
+</textarea>
             
             <div class="button-group">
                 <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
@@ -922,8 +925,11 @@ print("🎉 DIAGNOSTIC COMPLETE: Your environment is ready for precision health 
     <canvas id="confetti-canvas"></canvas>
 
     <script>
-        // Initialize custom fill-in-the-blanks functionality
+        // Setup custom drag-and-drop functionality for toolkit exercise
         document.addEventListener('DOMContentLoaded', function() {
+            setupToolkitDragAndDrop();
+            
+            // Initialize custom fill-in-the-blanks functionality
             // Linux commands exercise
             setupFillExercise('linux', [
                 { id: 'linux-blank1', answer: 'update', feedback: 'Correct! "apt update" refreshes the package list.' },
@@ -959,6 +965,193 @@ print("🎉 DIAGNOSTIC COMPLETE: Your environment is ready for precision health 
                 { id: 'diag-blank3', answer: 'numpy', feedback: 'Perfect! numpy is needed for the performance benchmark.' }
             ]);
         });
+        
+        function setupToolkitDragAndDrop() {
+            const answers = document.querySelectorAll('#toolkit-answers .answer');
+            const dropAreas = document.querySelectorAll('#toolkit-questions .drop-area');
+            const resetButton = document.getElementById('toolkit-reset-button');
+            const answersContainer = document.getElementById('toolkit-answers');
+            const celebration = document.getElementById('toolkit-celebration');
+            
+            let draggedItem = null;
+            let dropCount = 0;
+            let correctCount = 0;
+            
+            if (!answers.length || !dropAreas.length) return;
+            
+            // Add event listeners to draggable items
+            answers.forEach(answer => {
+                answer.addEventListener('dragstart', handleDragStart);
+                answer.addEventListener('dragend', handleDragEnd);
+                answer.setAttribute('data-original-position', Array.from(answersContainer.children).indexOf(answer));
+            });
+            
+            // Add event listeners to drop areas
+            dropAreas.forEach(dropArea => {
+                dropArea.addEventListener('dragover', handleDragOver);
+                dropArea.addEventListener('dragenter', handleDragEnter);
+                dropArea.addEventListener('dragleave', handleDragLeave);
+                dropArea.addEventListener('drop', handleDrop);
+            });
+            
+            // Reset button event listener
+            if (resetButton) {
+                resetButton.addEventListener('click', resetToolkitExercise);
+                resetButton.style.display = 'flex';
+            }
+            
+            function handleDragStart(e) {
+                draggedItem = this;
+                setTimeout(() => {
+                    this.style.opacity = '0.5';
+                }, 0);
+                
+                e.dataTransfer.setData('text/plain', this.dataset.type);
+            }
+            
+            function handleDragEnd() {
+                this.style.opacity = '1';
+                draggedItem = null;
+                
+                dropAreas.forEach(area => {
+                    area.classList.remove('hover');
+                });
+            }
+            
+            function handleDragOver(e) {
+                e.preventDefault();
+            }
+            
+            function handleDragEnter(e) {
+                e.preventDefault();
+                if (!this.hasChildNodes()) {
+                    this.classList.add('hover');
+                }
+            }
+            
+            function handleDragLeave() {
+                this.classList.remove('hover');
+            }
+            
+            function handleDrop(e) {
+                e.preventDefault();
+                this.classList.remove('hover');
+                
+                if (this.children.length === 0) {
+                    const droppedType = e.dataTransfer.getData('text/plain');
+                    const correctType = this.dataset.correct;
+                    
+                    const clonedItem = draggedItem.cloneNode(true);
+                    clonedItem.style.opacity = '1';
+                    clonedItem.style.cursor = 'default';
+                    clonedItem.style.margin = '0';
+                    clonedItem.style.width = '100%';
+                    clonedItem.style.textAlign = 'center';
+                    clonedItem.draggable = false;
+                    
+                    this.appendChild(clonedItem);
+                    draggedItem.remove();
+                    dropCount++;
+                    
+                    if (droppedType === correctType) {
+                        this.classList.add('correct');
+                        correctCount++;
+                        
+                        const feedback = this.nextElementSibling;
+                        feedback.classList.add('correct');
+                        feedback.style.display = 'block';
+                        
+                        // Play sound if available
+                        if (typeof playCorrectSound === 'function') {
+                            playCorrectSound();
+                        }
+                        
+                        if (correctCount === dropAreas.length) {
+                            showToolkitCelebration();
+                        }
+                    } else {
+                        this.classList.add('incorrect');
+                        const feedback = this.nextElementSibling;
+                        feedback.innerHTML = `<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Try again!`;
+                        feedback.classList.add('incorrect');
+                        feedback.style.display = 'block';
+                        
+                        setTimeout(() => {
+                            const newAnswer = document.createElement('div');
+                            newAnswer.className = 'answer';
+                            newAnswer.setAttribute('draggable', 'true');
+                            newAnswer.setAttribute('data-type', droppedType);
+                            
+                            const textSpan = document.createElement('span');
+                            textSpan.textContent = draggedItem.querySelector('span').textContent;
+                            newAnswer.appendChild(textSpan);
+                            
+                            newAnswer.addEventListener('dragstart', handleDragStart);
+                            newAnswer.addEventListener('dragend', handleDragEnd);
+                            answersContainer.appendChild(newAnswer);
+                            
+                            this.innerHTML = '';
+                            this.classList.remove('incorrect');
+                            feedback.style.display = 'none';
+                            feedback.classList.remove('incorrect');
+                            dropCount--;
+                        }, 1500);
+                    }
+                }
+            }
+            
+            function resetToolkitExercise() {
+                dropAreas.forEach(area => {
+                    area.innerHTML = '';
+                    area.classList.remove('correct', 'incorrect');
+                });
+                
+                document.querySelectorAll('#toolkit-questions .feedback').forEach(feedback => {
+                    feedback.style.display = 'none';
+                    feedback.classList.remove('correct', 'incorrect');
+                });
+                
+                dropCount = 0;
+                correctCount = 0;
+                answersContainer.innerHTML = '';
+                
+                const answerData = [
+                    { type: 'Python', text: 'Your chief medical officer (the decision-maker)' },
+                    { type: 'Jupyter', text: 'Your research documentation system (digital lab notebook)' },
+                    { type: 'Libraries', text: 'Your specialized medical instruments' }
+                ];
+                
+                answerData.forEach(data => {
+                    const newAnswer = document.createElement('div');
+                    newAnswer.className = 'answer';
+                    newAnswer.setAttribute('draggable', 'true');
+                    newAnswer.setAttribute('data-type', data.type);
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = data.text;
+                    newAnswer.appendChild(textSpan);
+                    newAnswer.addEventListener('dragstart', handleDragStart);
+                    newAnswer.addEventListener('dragend', handleDragEnd);
+                    answersContainer.appendChild(newAnswer);
+                });
+            }
+            
+            function showToolkitCelebration() {
+                if (celebration) {
+                    celebration.style.display = 'none';
+                    setTimeout(() => {
+                        celebration.style.display = 'block';
+                        if (typeof confetti !== 'undefined') {
+                            confetti({ 
+                                particleCount: 150, 
+                                spread: 160, 
+                                origin: { x: 0.5, y: 0.6 }, 
+                                colors: ['#003D7C', '#EF7C00', '#4D7CAE', '#ffffff'] 
+                            });
+                        }
+                    }, 100);
+                }
+            }
+        }
         
         function setupFillExercise(prefix, blanks) {
             const checkButton = document.getElementById(`${prefix}-check-button`);
