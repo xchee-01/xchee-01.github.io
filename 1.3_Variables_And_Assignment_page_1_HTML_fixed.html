@@ -96,14 +96,14 @@ print("Weight:", patient_weight, "kg")</code></pre>
             <p>Match each medical data example with its appropriate Python data type:</p>
 
             <div class="drag-drop-container">
-                <div id="datatype-questions" class="drag-items">
+                <div id="variables-datatype-questions" class="drag-items">
                     <div class="drag-item" draggable="true" data-answer="string">Patient ID: "MRN-2024-1234"</div>
                     <div class="drag-item" draggable="true" data-answer="integer">Respiratory Rate: 16</div>
                     <div class="drag-item" draggable="true" data-answer="float">Blood Glucose: 126.5 mg/dL</div>
                     <div class="drag-item" draggable="true" data-answer="boolean">Allergic to Penicillin: Yes</div>
                 </div>
                 
-                <div id="datatype-answers" class="drop-zones">
+                <div id="variables-datatype-answers" class="drop-zones">
                     <div class="drop-zone" data-accept="string">
                         <h4><i class="fas fa-font"></i> String (Text)</h4>
                     </div>
@@ -118,11 +118,11 @@ print("Weight:", patient_weight, "kg")</code></pre>
                     </div>
                 </div>
                 
-                <button id="datatype-reset-button" class="reset-button" style="display: none;">
+                <button id="variables-datatype-reset-button" class="reset-button" style="display: none;">
                     <i class="fas fa-redo"></i> Reset Exercise
                 </button>
                 
-                <div id="datatype-celebration" class="celebration-message" style="display: none;">
+                <div id="variables-datatype-celebration" class="celebration-message" style="display: none;">
                     <i class="fas fa-check-circle"></i> Excellent! You correctly matched all data types!
                 </div>
             </div>
@@ -289,149 +289,368 @@ Type your python codes here
     (function() {
         'use strict';
         
-        // Block template function to prevent conflicts
+        // Store original template functions before overriding
+        const originalSetupFillInTheBlanks = window.setupFillInTheBlanks;
+        const originalSetupDragAndDrop = window.setupDragAndDrop;
+        
+        // Aggressively block ALL template functions
         window.setupFillInTheBlanks = function() {
-            console.log('Blocked template function');
+            console.log('Blocked template setupFillInTheBlanks');
             return false;
         };
         
-        // Custom implementation with unique function name
-        function setupVariablesAssignmentFillInBlanks() {
-        const checkButton = document.getElementById('print-check-button');
-        const resetButton = document.getElementById('print-reset-button');
-        const validationMessage = document.getElementById('print-validation-message');
-        const successFeedback = document.getElementById('print-success-feedback');
-        const infoFeedback = document.getElementById('print-info-feedback');
+        window.setupDragAndDrop = function() {
+            console.log('Blocked template setupDragAndDrop');
+            return false;
+        };
         
-        // Show info feedback initially
-        validationMessage.style.display = 'none';
-        infoFeedback.style.display = 'block';
-        
-        const fields = [
-            { id: 'print-line1', itemId: 'print-item-1', feedbackId: 'print-feedback-1' },
-            { id: 'print-line2', itemId: 'print-item-2', feedbackId: 'print-feedback-2' },
-            { id: 'print-line3', itemId: 'print-item-3', feedbackId: 'print-feedback-3' }
-        ];
-        
-        function isValidString(value) {
-            // Check if it's a quoted string
-            return (value.startsWith('"') && value.endsWith('"')) || 
-                   (value.startsWith("'") && value.endsWith("'"));
-        }
-        
-        function isValidNumber(value) {
-            return !isNaN(value) && value.trim() !== '';
-        }
-        
-        checkButton.addEventListener('click', function() {
-            let allFilled = true;
-            let allCorrect = true;
+        // Custom drag and drop implementation with unique namespace
+        function setupVariablesDragAndDrop() {
+            const questionsContainer = document.getElementById('variables-datatype-questions');
+            const answersContainer = document.getElementById('variables-datatype-answers');
+            const resetButton = document.getElementById('variables-datatype-reset-button');
+            const celebration = document.getElementById('variables-datatype-celebration');
             
-            // First check if all fields are filled
-            fields.forEach(field => {
-                const input = document.getElementById(field.id);
-                if (input.value.trim() === '') {
-                    allFilled = false;
-                }
-            });
-            
-            if (!allFilled) {
-                validationMessage.style.display = 'flex';
-                successFeedback.style.display = 'none';
+            if (!questionsContainer || !answersContainer || !resetButton || !celebration) {
+                console.log('Variables drag-drop elements not found, skipping initialization');
                 return;
             }
             
-            validationMessage.style.display = 'none';
-            
-            // Check each answer
-            fields.forEach((field, index) => {
-                const input = document.getElementById(field.id);
-                const item = document.getElementById(field.itemId);
-                const feedback = document.getElementById(field.feedbackId);
-                const value = input.value.trim();
-                
-                let isCorrect = false;
-                let feedbackText = '';
-                
-                if (index === 0) { // Patient name - should be a string
-                    if (isValidString(value)) {
-                        isCorrect = true;
-                        feedbackText = '<span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! You\'ve stored a text value for the patient name.';
-                    } else {
-                        feedbackText = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Remember to use quotes for text values! Try: "John Smith"';
-                    }
-                } else if (index === 1) { // Age - should be a whole number
-                    if (isValidNumber(value) && !value.includes('.')) {
-                        isCorrect = true;
-                        feedbackText = '<span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! Age is stored as a whole number.';
-                    } else {
-                        feedbackText = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Age should be a whole number without quotes. Try: 42';
-                    }
-                } else if (index === 2) { // Weight - can be decimal
-                    if (isValidNumber(value)) {
-                        isCorrect = true;
-                        feedbackText = '<span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Excellent! Weight can include decimals for precision.';
-                    } else {
-                        feedbackText = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Weight should be a number (decimals allowed). Try: 75.5';
-                    }
-                }
-                
-                feedback.innerHTML = feedbackText;
-                feedback.style.display = 'block';
-                
-                if (isCorrect) {
-                    item.classList.add('correct');
-                    item.classList.remove('incorrect');
-                } else {
-                    item.classList.add('incorrect');
-                    item.classList.remove('correct');
-                    allCorrect = false;
-                }
-            });
-            
-            if (allCorrect) {
-                successFeedback.style.display = 'block';
-                infoFeedback.style.display = 'none';
-                checkButton.classList.add('hidden');
-                resetButton.classList.remove('hidden');
+            // Force reset button visibility
+            function forceResetButtonVisibility() {
+                resetButton.style.setProperty('display', 'none', 'important');
+                resetButton.style.setProperty('visibility', 'visible', 'important');
             }
-        });
-        
-        resetButton.addEventListener('click', function() {
-            fields.forEach(field => {
-                const input = document.getElementById(field.id);
-                const item = document.getElementById(field.itemId);
-                const feedback = document.getElementById(field.feedbackId);
-                
-                input.value = '';
-                item.classList.remove('correct', 'incorrect');
-                feedback.style.display = 'none';
+            
+            // MutationObserver for reset button
+            const resetObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        // Only show when exercise is complete
+                        if (resetButton.getAttribute('data-show') === 'true') {
+                            resetButton.style.setProperty('display', 'inline-flex', 'important');
+                        }
+                    }
+                });
             });
             
-            validationMessage.style.display = 'none';
-            successFeedback.style.display = 'none';
-            infoFeedback.style.display = 'block';
-            checkButton.classList.remove('hidden');
-            resetButton.classList.add('hidden');
-        });
-    }
+            resetObserver.observe(resetButton, {
+                attributes: true,
+                attributeFilter: ['style']
+            });
+            
+            // Initial visibility
+            forceResetButtonVisibility();
+            
+            let draggedItem = null;
+            
+            // Add event listeners to drag items
+            const dragItems = questionsContainer.querySelectorAll('.drag-item');
+            const dropZones = answersContainer.querySelectorAll('.drop-zone');
+            
+            dragItems.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+            
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('drop', handleDrop);
+                zone.addEventListener('dragleave', handleDragLeave);
+            });
+            
+            function handleDragStart(e) {
+                draggedItem = this;
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.innerHTML);
+            }
+            
+            function handleDragEnd(e) {
+                this.classList.remove('dragging');
+                draggedItem = null;
+            }
+            
+            function handleDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+                return false;
+            }
+            
+            function handleDragLeave(e) {
+                this.classList.remove('drag-over');
+            }
+            
+            function handleDrop(e) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                
+                this.classList.remove('drag-over');
+                
+                if (draggedItem && !this.querySelector('.drag-item')) {
+                    const clone = draggedItem.cloneNode(true);
+                    clone.draggable = false;
+                    clone.classList.add('placed');
+                    this.appendChild(clone);
+                    
+                    // Check if answer is correct
+                    const isCorrect = draggedItem.getAttribute('data-answer') === this.getAttribute('data-accept');
+                    
+                    if (isCorrect) {
+                        this.classList.add('correct');
+                        draggedItem.style.display = 'none';
+                    } else {
+                        this.classList.add('incorrect');
+                        setTimeout(() => {
+                            this.classList.remove('incorrect');
+                            this.removeChild(clone);
+                        }, 1500);
+                    }
+                    
+                    checkCompletion();
+                }
+                
+                return false;
+            }
+            
+            function checkCompletion() {
+                const allZones = answersContainer.querySelectorAll('.drop-zone');
+                const correctZones = answersContainer.querySelectorAll('.drop-zone.correct');
+                
+                if (allZones.length === correctZones.length) {
+                    celebration.style.display = 'block';
+                    resetButton.setAttribute('data-show', 'true');
+                    resetButton.style.setProperty('display', 'inline-flex', 'important');
+                    
+                    // Play success sound if available
+                    if (window.initAudio && window.playCorrectSound) {
+                        window.initAudio()
+                            .then(() => window.playCorrectSound())
+                            .catch(err => console.error("Audio error:", err));
+                    }
+                }
+            }
+            
+            // Reset button functionality
+            resetButton.addEventListener('click', function() {
+                // Clear all drop zones
+                dropZones.forEach(zone => {
+                    zone.classList.remove('correct', 'incorrect');
+                    const placedItem = zone.querySelector('.drag-item');
+                    if (placedItem) {
+                        zone.removeChild(placedItem);
+                    }
+                });
+                
+                // Show all drag items again
+                dragItems.forEach(item => {
+                    item.style.display = 'block';
+                });
+                
+                // Hide celebration and reset button
+                celebration.style.display = 'none';
+                resetButton.setAttribute('data-show', 'false');
+                resetButton.style.setProperty('display', 'none', 'important');
+            });
+        }
         
-        // Initialize with multiple attempts to handle race conditions
+        // Custom fill-in-the-blanks implementation
+        function setupVariablesFillInBlanks() {
+            const checkButton = document.getElementById('print-check-button');
+            const resetButton = document.getElementById('print-reset-button');
+            const validationMessage = document.getElementById('print-validation-message');
+            const successFeedback = document.getElementById('print-success-feedback');
+            const infoFeedback = document.getElementById('print-info-feedback');
+            
+            if (!checkButton || !resetButton) {
+                console.log('Fill-in-blanks elements not found, skipping initialization');
+                return;
+            }
+            
+            // Force button visibility
+            function forceButtonVisibility(button, show) {
+                if (show) {
+                    button.style.setProperty('display', 'inline-flex', 'important');
+                    button.style.setProperty('visibility', 'visible', 'important');
+                    button.classList.remove('hidden');
+                } else {
+                    button.style.setProperty('display', 'none', 'important');
+                    button.classList.add('hidden');
+                }
+            }
+            
+            // Show info feedback initially
+            validationMessage.style.display = 'none';
+            infoFeedback.style.display = 'block';
+            
+            const fields = [
+                { id: 'print-line1', itemId: 'print-item-1', feedbackId: 'print-feedback-1' },
+                { id: 'print-line2', itemId: 'print-item-2', feedbackId: 'print-feedback-2' },
+                { id: 'print-line3', itemId: 'print-item-3', feedbackId: 'print-feedback-3' }
+            ];
+            
+            function isValidString(value) {
+                return (value.startsWith('"') && value.endsWith('"')) || 
+                       (value.startsWith("'") && value.endsWith("'"));
+            }
+            
+            function isValidNumber(value) {
+                return !isNaN(value) && value.trim() !== '';
+            }
+            
+            checkButton.addEventListener('click', function() {
+                let allFilled = true;
+                let allCorrect = true;
+                
+                // First check if all fields are filled
+                fields.forEach(field => {
+                    const input = document.getElementById(field.id);
+                    if (input.value.trim() === '') {
+                        allFilled = false;
+                    }
+                });
+                
+                if (!allFilled) {
+                    validationMessage.style.display = 'flex';
+                    successFeedback.style.display = 'none';
+                    return;
+                }
+                
+                validationMessage.style.display = 'none';
+                
+                // Check each answer
+                fields.forEach((field, index) => {
+                    const input = document.getElementById(field.id);
+                    const item = document.getElementById(field.itemId);
+                    const feedback = document.getElementById(field.feedbackId);
+                    const value = input.value.trim();
+                    
+                    let isCorrect = false;
+                    let feedbackText = '';
+                    
+                    if (index === 0) { // Patient name - should be a string
+                        if (isValidString(value)) {
+                            isCorrect = true;
+                            feedbackText = '<span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! You\'ve stored a text value for the patient name.';
+                        } else {
+                            feedbackText = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Remember to use quotes for text values! Try: "John Smith"';
+                        }
+                    } else if (index === 1) { // Age - should be a whole number
+                        if (isValidNumber(value) && !value.includes('.')) {
+                            isCorrect = true;
+                            feedbackText = '<span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! Age is stored as a whole number.';
+                        } else {
+                            feedbackText = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Age should be a whole number without quotes. Try: 42';
+                        }
+                    } else if (index === 2) { // Weight - can be decimal
+                        if (isValidNumber(value)) {
+                            isCorrect = true;
+                            feedbackText = '<span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Excellent! Weight can include decimals for precision.';
+                        } else {
+                            feedbackText = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Weight should be a number (decimals allowed). Try: 75.5';
+                        }
+                    }
+                    
+                    feedback.innerHTML = feedbackText;
+                    feedback.style.display = 'block';
+                    
+                    if (isCorrect) {
+                        item.classList.add('correct');
+                        item.classList.remove('incorrect');
+                    } else {
+                        item.classList.add('incorrect');
+                        item.classList.remove('correct');
+                        allCorrect = false;
+                    }
+                });
+                
+                if (allCorrect) {
+                    successFeedback.style.display = 'block';
+                    infoFeedback.style.display = 'none';
+                    forceButtonVisibility(checkButton, false);
+                    forceButtonVisibility(resetButton, true);
+                    
+                    // Play success sound if available
+                    if (window.initAudio && window.playCorrectSound) {
+                        window.initAudio()
+                            .then(() => window.playCorrectSound())
+                            .catch(err => console.error("Audio error:", err));
+                    }
+                }
+            });
+            
+            resetButton.addEventListener('click', function() {
+                fields.forEach(field => {
+                    const input = document.getElementById(field.id);
+                    const item = document.getElementById(field.itemId);
+                    const feedback = document.getElementById(field.feedbackId);
+                    
+                    input.value = '';
+                    item.classList.remove('correct', 'incorrect');
+                    feedback.style.display = 'none';
+                });
+                
+                validationMessage.style.display = 'none';
+                successFeedback.style.display = 'none';
+                infoFeedback.style.display = 'block';
+                forceButtonVisibility(checkButton, true);
+                forceButtonVisibility(resetButton, false);
+            });
+            
+            // MutationObserver for button visibility
+            [checkButton, resetButton].forEach(button => {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                            // Maintain desired visibility state
+                            const shouldShow = !button.classList.contains('hidden');
+                            if (shouldShow && button.style.display === 'none') {
+                                forceButtonVisibility(button, true);
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(button, {
+                    attributes: true,
+                    attributeFilter: ['style']
+                });
+            });
+        }
+        
+        // Initialize all custom exercises
+        function initializeAllExercises() {
+            // Re-block template functions
+            window.setupFillInTheBlanks = function() { return false; };
+            window.setupDragAndDrop = function() { return false; };
+            
+            // Initialize custom implementations
+            setupVariablesDragAndDrop();
+            setupVariablesFillInBlanks();
+        }
+        
+        // Multiple initialization attempts
         const initAttempts = [0, 100, 500, 1000, 2000];
         initAttempts.forEach(delay => {
-            setTimeout(() => {
-                setupVariablesAssignmentFillInBlanks();
-                // Re-block template function in case it was restored
-                window.setupFillInTheBlanks = function() { return false; };
-            }, delay);
+            setTimeout(initializeAllExercises, delay);
         });
         
         // Also initialize on DOM ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setupVariablesAssignmentFillInBlanks);
+            document.addEventListener('DOMContentLoaded', initializeAllExercises);
         } else {
-            setupVariablesAssignmentFillInBlanks();
+            initializeAllExercises();
         }
+        
+        // Periodic re-blocking as ultimate failsafe
+        setInterval(() => {
+            window.setupFillInTheBlanks = function() { return false; };
+            window.setupDragAndDrop = function() { return false; };
+        }, 1000);
     })();
     </script>
 </body>
