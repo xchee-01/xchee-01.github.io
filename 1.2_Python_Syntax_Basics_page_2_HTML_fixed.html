@@ -779,85 +779,182 @@ print(f"Last updated: [timestamp]")</div>
     }
     
     // Custom Drag-and-Drop Exercise Handler
-    function setupICUDisplayDragDrop() {
-        const answersContainer = document.getElementById('icu-display-answers');
-        const questionsContainer = document.getElementById('icu-display-questions');
-        const resetButton = document.getElementById('icu-display-reset-button');
-        const celebration = document.getElementById('icu-display-celebration');
+function setupICUDisplayDragDrop() {
+    const answersContainer = document.getElementById('icu-display-answers');
+    const questionsContainer = document.getElementById('icu-display-questions');
+    const resetButton = document.getElementById('icu-display-reset-button');
+    const celebration = document.getElementById('icu-display-celebration');
+    
+    if (!answersContainer || !questionsContainer || !resetButton) {
+        console.error('Drag-and-drop elements not found');
+        return;
+    }
+    
+    // SOLUTION: Ensure button is always visible from the start
+    resetButton.style.display = 'inline-flex';
+    resetButton.style.visibility = 'visible';
+    
+    let draggedElement = null;
+    const originalAnswersHTML = answersContainer.innerHTML;
+    
+    // Initialize drag events
+    function initializeDragEvents() {
+        const answers = answersContainer.querySelectorAll('.answer');
+        const dropAreas = questionsContainer.querySelectorAll('.drop-area');
         
-        if (!answersContainer || !questionsContainer || !resetButton) {
-            console.error('Drag-and-drop elements not found');
-            return;
-        }
-        
-        let draggedElement = null;
-        const originalAnswersHTML = answersContainer.innerHTML;
-        
-        // Initialize drag events
-        function initializeDragEvents() {
-            const answers = answersContainer.querySelectorAll('.answer');
-            const dropAreas = questionsContainer.querySelectorAll('.drop-area');
-            
-            // Setup drag events for answers
-            answers.forEach(answer => {
-                answer.addEventListener('dragstart', function(e) {
-                    draggedElement = this;
-                    this.style.opacity = '0.5';
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/html', this.innerHTML);
-                });
-                
-                answer.addEventListener('dragend', function(e) {
-                    this.style.opacity = '';
-                });
+        // Setup drag events for answers
+        answers.forEach(answer => {
+            answer.addEventListener('dragstart', function(e) {
+                draggedElement = this;
+                this.style.opacity = '0.5';
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.innerHTML);
             });
             
-            // Setup drop events for drop areas
-            dropAreas.forEach(area => {
-                area.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    this.classList.add('drag-over');
-                });
-                
-                area.addEventListener('dragleave', function(e) {
-                    this.classList.remove('drag-over');
-                });
-                
-                area.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                    this.classList.remove('drag-over');
-                    
-                    // CRITICAL: Prevent double drops (Lesson from double-drop prevention)
-                    if (this.children.length > 0) {
-                        return;
-                    }
-                    
-                    if (draggedElement) {
-                        // CRITICAL: Clone element instead of moving (Lesson from element management)
-                        const clone = draggedElement.cloneNode(true);
-                        clone.draggable = false; // Disable dragging on dropped items
-                        clone.style.opacity = '';
-                        
-                        // Use appendChild instead of innerHTML (Lesson from DOM manipulation)
-                        this.appendChild(clone);
-                        
-                        // Remove original element properly
-                        if (draggedElement.parentNode) {
-                            draggedElement.parentNode.removeChild(draggedElement);
-                        }
-                        
-                        draggedElement = null;
-                        
-                        // Check if this answer is correct
-                        checkAnswer(this);
-                        
-                        // Check if all answers are filled
-                        checkCompletion();
-                    }
-                });
+            answer.addEventListener('dragend', function(e) {
+                this.style.opacity = '';
             });
+        });
+        
+        // Setup drop events for drop areas
+        dropAreas.forEach(area => {
+            area.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+            });
+            
+            area.addEventListener('dragleave', function(e) {
+                this.classList.remove('drag-over');
+            });
+            
+            area.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                
+                // CRITICAL: Prevent double drops
+                if (this.children.length > 0) {
+                    return;
+                }
+                
+                if (draggedElement) {
+                    // CRITICAL: Clone element instead of moving
+                    const clone = draggedElement.cloneNode(true);
+                    clone.draggable = false; // Disable dragging on dropped items
+                    clone.style.opacity = '';
+                    
+                    // Use appendChild instead of innerHTML
+                    this.appendChild(clone);
+                    
+                    // Remove original element properly
+                    if (draggedElement.parentNode) {
+                        draggedElement.parentNode.removeChild(draggedElement);
+                    }
+                    
+                    draggedElement = null;
+                    
+                    // Check if this answer is correct
+                    checkAnswer(this);
+                    
+                    // Check if all answers are filled
+                    checkCompletion();
+                }
+            });
+        });
+    }
+    
+    function checkAnswer(dropArea) {
+        const parent = dropArea.closest('.question-item');
+        if (!parent) return;
+        
+        const feedback = parent.querySelector('.feedback');
+        const droppedAnswer = dropArea.querySelector('.answer');
+        
+        if (!droppedAnswer || !feedback) return;
+        
+        const correctType = dropArea.getAttribute('data-correct');
+        const answerType = droppedAnswer.getAttribute('data-type');
+        
+        if (correctType === answerType) {
+            feedback.style.display = 'block';
+            feedback.style.color = '#2e7d32';
+            
+            // Play success sound for each correct placement
+            playSuccessSound();
         }
+    }
+    
+    function checkCompletion() {
+        const allDropAreas = questionsContainer.querySelectorAll('.drop-area');
+        let allFilled = true;
+        let allCorrect = true;
+        
+        allDropAreas.forEach(area => {
+            if (area.children.length === 0) {
+                allFilled = false;
+            } else {
+                const droppedAnswer = area.querySelector('.answer');
+                if (droppedAnswer) {
+                    const correctType = area.getAttribute('data-correct');
+                    const answerType = droppedAnswer.getAttribute('data-type');
+                    if (correctType !== answerType) {
+                        allCorrect = false;
+                    }
+                }
+            }
+        });
+        
+        if (allFilled && allCorrect) {
+            // Show celebration
+            if (celebration) {
+                celebration.innerHTML = '<div class="celebration-message">🎉 Perfect! All vital signs correctly displayed!</div>';
+                celebration.style.display = 'block';
+            }
+            
+            // Show confetti
+            showCelebration('Perfect! All vital signs correctly displayed!');
+        }
+    }
+    
+    // Reset button functionality - UPDATED WITH DISPLAY MANAGEMENT
+    resetButton.addEventListener('click', function() {
+        // Clear all drop areas using proper DOM methods
+        const dropAreas = questionsContainer.querySelectorAll('.drop-area');
+        dropAreas.forEach(area => {
+            while (area.firstChild) {
+                area.removeChild(area.firstChild);
+            }
+        });
+        
+        // Hide all feedback
+        const feedbacks = questionsContainer.querySelectorAll('.feedback');
+        feedbacks.forEach(feedback => {
+            feedback.style.display = 'none';
+        });
+        
+        // Hide celebration
+        if (celebration) {
+            celebration.style.display = 'none';
+        }
+        
+        // Restore original answers using innerHTML is safe here
+        answersContainer.innerHTML = originalAnswersHTML;
+        
+        // Re-initialize drag events
+        initializeDragEvents();
+        
+        // CRITICAL: Ensure button remains visible after reset
+        resetButton.style.display = 'inline-flex';
+        resetButton.style.visibility = 'visible';
+        
+        console.log('ICU Display exercise reset completed');
+    });
+    
+    // Initialize on load
+    initializeDragEvents();
+    
+    console.log('ICU Display drag-and-drop exercise initialized successfully');
+}}
         
         function checkAnswer(dropArea) {
             const parent = dropArea.closest('.question-item');
