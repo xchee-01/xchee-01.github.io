@@ -668,17 +668,13 @@ Type your python codes here
     
     <!-- Custom JavaScript for Fill-in-the-blanks override -->
     <script>
+    // Custom implementation for fill-in-the-blanks to avoid conflicts
     (function() {
-        'use strict';
+        // Store original function if needed
+        const originalSetupFillInTheBlanks = window.setupFillInTheBlanks || function() {};
         
-        // Block template function to prevent conflicts
+        // Override with custom implementation
         window.setupFillInTheBlanks = function() {
-            console.log('Blocked template function');
-            return false;
-        };
-        
-        // Custom implementation with unique function name
-        function setupVariablesAssignmentFillInBlanks() {
         const checkButton = document.getElementById('print-check-button');
         const resetButton = document.getElementById('print-reset-button');
         const validationMessage = document.getElementById('print-validation-message');
@@ -796,24 +792,168 @@ Type your python codes here
             checkButton.classList.remove('hidden');
             resetButton.classList.add('hidden');
         });
-    }
+    };
         
-        // Initialize with multiple attempts to handle race conditions
-        const initAttempts = [0, 100, 500, 1000, 2000];
+        // Initialize on DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', window.setupFillInTheBlanks);
+        } else {
+            // Delay to ensure template loads first
+            setTimeout(window.setupFillInTheBlanks, 100);
+        }
+    })();
+    
+    // Custom drag-and-drop fix for Medical Naming Best Practices
+    (function() {
+        // Store the original medical naming content IMMEDIATELY
+        const medicalAnswers = [
+            { text: 'hemoglobin_a1c', type: 'good' },
+            { text: 'h', type: 'bad' },
+            { text: 'patient_id_number', type: 'good' },
+            { text: 'wbc', type: 'bad' },
+            { text: 'white_blood_cell_count', type: 'good' },
+            { text: 'id', type: 'bad' }
+        ];
+        
+        // Block template drag-and-drop function
+        window.setupDragAndDrop = function() {
+            console.log('Blocked template drag-and-drop function');
+            return false;
+        };
+        
+        // Function to restore medical naming content
+        function restoreMedicalContent() {
+            const answersContainer = document.getElementById('datatype-answers');
+            if (answersContainer) {
+                // Clear any template content
+                answersContainer.innerHTML = '';
+                
+                // Restore medical naming answers
+                medicalAnswers.forEach(answer => {
+                    const div = document.createElement('div');
+                    div.className = 'answer';
+                    div.draggable = true;
+                    div.setAttribute('data-type', answer.type);
+                    div.innerHTML = `<span>${answer.text}</span>`;
+                    answersContainer.appendChild(div);
+                });
+            }
+        }
+        
+        // Custom implementation for Medical Naming Best Practices exercise
+        function setupMedicalNamingDragDrop() {
+            const resetButton = document.getElementById('datatype-reset-button');
+            const answersContainer = document.getElementById('datatype-answers');
+            const questionsContainer = document.getElementById('datatype-questions');
+            const celebration = document.getElementById('datatype-celebration');
+            
+            if (!resetButton || !answersContainer || !questionsContainer) {
+                console.log('Medical naming elements not found, retrying...');
+                return false;
+            }
+            
+            // ALWAYS restore medical content first
+            restoreMedicalContent();
+            
+            // Force button visibility function
+            function forceResetButtonVisibility() {
+                resetButton.style.setProperty('display', 'inline-flex', 'important');
+                resetButton.style.setProperty('visibility', 'visible', 'important');
+                resetButton.setAttribute('style', 
+                    resetButton.getAttribute('style') + 
+                    '; display: inline-flex !important; visibility: visible !important;'
+                );
+            }
+            
+            // MutationObserver to prevent button hiding
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        if (resetButton.style.display === 'none' || 
+                            resetButton.style.visibility === 'hidden') {
+                            forceResetButtonVisibility();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(resetButton, {
+                attributes: true,
+                attributeFilter: ['style']
+            });
+            
+            // Reset button click handler
+            resetButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // CRITICAL: Restore medical content first to prevent template interference
+                restoreMedicalContent();
+                
+                // Reset all drop areas
+                const dropAreas = questionsContainer.querySelectorAll('.drop-area');
+                dropAreas.forEach(area => {
+                    // Clear content properly without destroying structure
+                    while (area.firstChild) {
+                        area.removeChild(area.firstChild);
+                    }
+                    area.classList.remove('correct', 'filled');
+                    
+                    // Hide feedback for this drop area
+                    const feedback = area.parentElement.querySelector('.feedback');
+                    if (feedback) {
+                        feedback.style.display = 'none';
+                    }
+                });
+                
+                // Hide celebration
+                if (celebration) {
+                    celebration.style.display = 'none';
+                }
+                
+                // Keep reset button visible
+                forceResetButtonVisibility();
+            });
+            
+            // Periodic visibility enforcement
+            setInterval(forceResetButtonVisibility, 500);
+            
+            return true;
+        }
+        
+        // Multiple initialization attempts
+        const initAttempts = [0, 100, 500, 1000, 2000, 3000];
         initAttempts.forEach(delay => {
             setTimeout(() => {
-                setupVariablesAssignmentFillInBlanks();
-                // Re-block template function in case it was restored
-                window.setupFillInTheBlanks = function() { return false; };
+                // ALWAYS restore content before setup
+                restoreMedicalContent();
+                setupMedicalNamingDragDrop();
+                // Re-block template function
+                window.setupDragAndDrop = function() { return false; };
             }, delay);
         });
         
-        // Also initialize on DOM ready
+        // Aggressive content preservation
+        setInterval(() => {
+            const answersContainer = document.getElementById('datatype-answers');
+            if (answersContainer) {
+                const firstAnswer = answersContainer.querySelector('.answer span');
+                // If content has been changed to template content, restore it
+                if (firstAnswer && (firstAnswer.textContent === 'int' || 
+                    firstAnswer.textContent === 'str' || 
+                    firstAnswer.textContent === 'float')) {
+                    restoreMedicalContent();
+                }
+            }
+        }, 100);
+        
+        // Also try on various load events
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setupVariablesAssignmentFillInBlanks);
+            document.addEventListener('DOMContentLoaded', setupMedicalNamingDragDrop);
         } else {
-            setupVariablesAssignmentFillInBlanks();
+            setupMedicalNamingDragDrop();
         }
+        window.addEventListener('load', setupMedicalNamingDragDrop);
     })();
     </script>
 </body>
