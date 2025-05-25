@@ -296,7 +296,7 @@ def daily_medication_check():
                         <div class="copy-feedback">Copied!</div>
                     </div>
                     
-                    <!-- Drag and Drop Exercise -->
+                    <!-- Drag and Drop Exercise - FIXED VERSION -->
                     <div class="mcq-container">
                         <div class="mcq-header">
                             <div class="mcq-header-icon">
@@ -310,7 +310,8 @@ def daily_medication_check():
                                 <strong>Scenario</strong>: The ER triage system is broken! Drag the correct indentation levels to fix the code structure:
                             </div>
                             
-                            <div class="answers-container" id="datatype-answers">
+                            <!-- FIXED: Using unique IDs for indentation exercise -->
+                            <div class="answers-container" id="indentation-answers">
                                 <div class="answer" draggable="true" data-type="0-spaces">
                                     <span>0 spaces</span>
                                 </div>
@@ -328,7 +329,7 @@ def daily_medication_check():
                                 </div>
                             </div>
                             
-                            <div class="questions-container" id="datatype-questions">
+                            <div class="questions-container" id="indentation-questions">
                                 <div class="question-item">
                                     <div class="question-text">1. <code>if vital_signs_critical:</code></div>
                                     <div class="drop-area" data-correct="0-spaces"></div>
@@ -375,12 +376,12 @@ def daily_medication_check():
                                 </div>
                             </div>
                             
-                            <button class="reset-button" id="datatype-reset-button">
+                            <button class="reset-button" id="indentation-reset-button">
                                 <i class="fas fa-redo"></i> Reset Exercise
                             </button>
                         </div>
                     </div>
-                    <div class="celebration" id="datatype-celebration"></div>
+                    <div class="celebration" id="indentation-celebration"></div>
                     
                     <div class="challenge">
                         <h3>Expected Output</h3>
@@ -751,10 +752,9 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
     
-    <!-- Custom JavaScript for Fill-in-the-blanks -->
+    <!-- FIXED JavaScript - Separate systems for different exercises -->
     <script>
-    // Custom setup for this page's fill-in-the-blanks
-    // Using namespaced function to avoid conflicts with template
+    // Custom setup for this page's fill-in-the-blanks (Comments Exercise)
     function setupCommentsExercise() {
         const checkButton = document.getElementById('print-check-button');
         const resetButton = document.getElementById('print-reset-button');
@@ -875,34 +875,171 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
         });
     }
     
-    // Custom function to override the drag-and-drop reset for the indentation exercise
+    // FIXED: Separate Indentation Drag and Drop System
     function setupIndentationDragAndDrop() {
-        const resetButton = document.getElementById('datatype-reset-button');
-        if (!resetButton) return;
+        const answers = document.querySelectorAll('#indentation-answers .answer');
+        const dropAreas = document.querySelectorAll('#indentation-questions .drop-area');
+        const resetButton = document.getElementById('indentation-reset-button');
+        const answersContainer = document.getElementById('indentation-answers');
+        const celebration = document.getElementById('indentation-celebration');
         
-        // Override the reset button's click handler
-        resetButton.addEventListener('click', function(e) {
-            e.stopPropagation(); // Prevent default handler
+        let draggedItem = null;
+        let dropCount = 0;
+        let correctCount = 0;
+        
+        // Initialize drag and drop
+        function initializeDragAndDrop() {
+            // Add event listeners to draggable items
+            const currentAnswers = document.querySelectorAll('#indentation-answers .answer');
+            currentAnswers.forEach(answer => {
+                answer.addEventListener('dragstart', handleDragStart);
+                answer.addEventListener('dragend', handleDragEnd);
+            });
             
-            // Reset drop areas
-            const dropAreas = document.querySelectorAll('#datatype-questions .drop-area');
+            // Add event listeners to drop areas
+            dropAreas.forEach(dropArea => {
+                dropArea.addEventListener('dragover', handleDragOver);
+                dropArea.addEventListener('dragenter', handleDragEnter);
+                dropArea.addEventListener('dragleave', handleDragLeave);
+                dropArea.addEventListener('drop', handleDrop);
+            });
+        }
+        
+        // Initialize on page load
+        initializeDragAndDrop();
+        
+        // Drag and drop handler functions
+        function handleDragStart(e) {
+            draggedItem = this;
+            setTimeout(() => {
+                this.style.opacity = '0.5';
+            }, 0);
+            
+            e.dataTransfer.setData('text/plain', this.dataset.type);
+        }
+        
+        function handleDragEnd() {
+            this.style.opacity = '1';
+            draggedItem = null;
+            
             dropAreas.forEach(area => {
-                area.innerHTML = '';
-                area.classList.remove('correct', 'incorrect');
+                area.classList.remove('hover');
             });
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+        
+        function handleDragEnter(e) {
+            e.preventDefault();
+            if (!this.hasChildNodes()) {
+                this.classList.add('hover');
+            }
+        }
+        
+        function handleDragLeave() {
+            this.classList.remove('hover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('hover');
             
-            // Hide feedback messages
-            document.querySelectorAll('#datatype-questions .feedback').forEach(feedback => {
-                feedback.style.display = 'none';
-                feedback.classList.remove('correct', 'incorrect');
-            });
-            
-            // Rebuild the answer options with correct values for indentation exercise
-            const answersContainer = document.getElementById('datatype-answers');
-            if (answersContainer) {
+            if (this.children.length === 0) { // Only allow drop if the area is empty
+                const droppedType = e.dataTransfer.getData('text/plain');
+                const correctType = this.dataset.correct;
+                
+                const clonedItem = draggedItem.cloneNode(true);
+                clonedItem.style.opacity = '1';
+                clonedItem.style.cursor = 'default';
+                clonedItem.style.margin = '0';
+                clonedItem.style.width = '100%';
+                clonedItem.style.textAlign = 'center';
+                clonedItem.draggable = false;
+                
+                this.appendChild(clonedItem);
+                draggedItem.remove();
+                dropCount++;
+                
+                if (droppedType === correctType) {
+                    this.classList.add('correct');
+                    correctCount++;
+                    
+                    const feedback = this.nextElementSibling;
+                    feedback.classList.add('correct');
+                    feedback.style.display = 'block';
+                    
+                    if (correctCount === dropAreas.length) {
+                        showIndentationCelebration();
+                    }
+                } else {
+                    this.classList.add('incorrect');
+                    const feedback = this.nextElementSibling;
+                    feedback.innerHTML = `<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This should have ${correctType} of indentation.`;
+                    feedback.classList.add('incorrect');
+                    feedback.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        const newAnswer = document.createElement('div');
+                        newAnswer.className = 'answer';
+                        newAnswer.setAttribute('draggable', 'true');
+                        newAnswer.setAttribute('data-type', droppedType);
+                        
+                        const textSpan = document.createElement('span');
+                        textSpan.textContent = droppedType.replace('-', ' ');
+                        newAnswer.appendChild(textSpan);
+                        
+                        newAnswer.addEventListener('dragstart', handleDragStart);
+                        newAnswer.addEventListener('dragend', handleDragEnd);
+                        answersContainer.appendChild(newAnswer);
+                        
+                        this.innerHTML = '';
+                        this.classList.remove('incorrect');
+                        feedback.style.display = 'none';
+                        feedback.classList.remove('incorrect');
+                        dropCount--;
+                    }, 1500);
+                }
+            }
+        }
+        
+        function showIndentationCelebration() {
+            if (celebration) {
+                celebration.style.display = 'none';
+                setTimeout(() => {
+                    celebration.style.display = 'block';
+                    confetti({ 
+                        particleCount: 150, 
+                        spread: 160, 
+                        origin: { x: 0.5, y: 0.6 }, 
+                        colors: ['#003D7C', '#EF7C00', '#4D7CAE', '#ffffff'] 
+                    });
+                }, 100);
+            }
+        }
+        
+        // Reset button event listener
+        if (resetButton) {
+            resetButton.addEventListener('click', function() {
+                // Reset drop areas
+                dropAreas.forEach(area => {
+                    area.innerHTML = '';
+                    area.classList.remove('correct', 'incorrect');
+                });
+                
+                // Hide feedback messages  
+                document.querySelectorAll('#indentation-questions .feedback').forEach(feedback => {
+                    feedback.style.display = 'none';
+                    feedback.classList.remove('correct', 'incorrect');
+                });
+                
+                dropCount = 0;
+                correctCount = 0;
+                
+                // Rebuild the answer options with correct values for indentation exercise
                 answersContainer.innerHTML = '';
                 
-                // Create the correct answer options for indentation
                 const answerOptions = [
                     { type: '0-spaces', text: '0 spaces' },
                     { type: '4-spaces', text: '4 spaces' },
@@ -925,29 +1062,19 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
                 });
                 
                 // Re-initialize drag and drop for the new elements
-                if (typeof window.setupDragAndDrop === 'function') {
-                    window.setupDragAndDrop();
-                }
-            }
-        });
+                initializeDragAndDrop();
+            });
+        }
     }
     
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            // Call template's setup if it exists
-            if (typeof window.setupFillInTheBlanks === 'function') {
-                window.setupFillInTheBlanks();
-            }
-            // Setup our custom exercises
             setupCommentsExercise();
             setupIndentationDragAndDrop();
         });
     } else {
         // DOM already loaded
-        if (typeof window.setupFillInTheBlanks === 'function') {
-            window.setupFillInTheBlanks();
-        }
         setupCommentsExercise();
         setupIndentationDragAndDrop();
     }
