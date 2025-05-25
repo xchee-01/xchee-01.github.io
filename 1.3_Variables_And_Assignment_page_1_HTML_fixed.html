@@ -802,6 +802,115 @@ Type your python codes here
             setTimeout(window.setupFillInTheBlanks, 100);
         }
     })();
+    
+    // Custom drag-and-drop fix for Medical Naming Best Practices
+    (function() {
+        // Block template drag-and-drop function
+        window.setupDragAndDrop = function() {
+            console.log('Blocked template drag-and-drop function');
+            return false;
+        };
+        
+        // Custom implementation for Medical Naming Best Practices exercise
+        function setupMedicalNamingDragDrop() {
+            const resetButton = document.getElementById('datatype-reset-button');
+            const answersContainer = document.getElementById('datatype-answers');
+            const questionsContainer = document.getElementById('datatype-questions');
+            const celebration = document.getElementById('datatype-celebration');
+            
+            if (!resetButton || !answersContainer || !questionsContainer) {
+                console.log('Medical naming elements not found, retrying...');
+                return false;
+            }
+            
+            // Force button visibility function
+            function forceResetButtonVisibility() {
+                resetButton.style.setProperty('display', 'inline-flex', 'important');
+                resetButton.style.setProperty('visibility', 'visible', 'important');
+                resetButton.setAttribute('style', 
+                    resetButton.getAttribute('style') + 
+                    '; display: inline-flex !important; visibility: visible !important;'
+                );
+            }
+            
+            // MutationObserver to prevent button hiding
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        if (resetButton.style.display === 'none' || 
+                            resetButton.style.visibility === 'hidden') {
+                            forceResetButtonVisibility();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(resetButton, {
+                attributes: true,
+                attributeFilter: ['style']
+            });
+            
+            // Reset button click handler
+            resetButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // Reset all drop areas
+                const dropAreas = questionsContainer.querySelectorAll('.drop-area');
+                dropAreas.forEach(area => {
+                    // Clear content properly without destroying structure
+                    while (area.firstChild) {
+                        area.removeChild(area.firstChild);
+                    }
+                    area.classList.remove('correct', 'filled');
+                    
+                    // Hide feedback for this drop area
+                    const feedback = area.parentElement.querySelector('.feedback');
+                    if (feedback) {
+                        feedback.style.display = 'none';
+                    }
+                });
+                
+                // Show all answers again
+                const answers = answersContainer.querySelectorAll('.answer');
+                answers.forEach(answer => {
+                    answer.style.display = 'flex';
+                    answer.draggable = true;
+                });
+                
+                // Hide celebration
+                if (celebration) {
+                    celebration.style.display = 'none';
+                }
+                
+                // Keep reset button visible
+                forceResetButtonVisibility();
+            });
+            
+            // Periodic visibility enforcement
+            setInterval(forceResetButtonVisibility, 500);
+            
+            return true;
+        }
+        
+        // Multiple initialization attempts
+        const initAttempts = [0, 100, 500, 1000, 2000, 3000];
+        initAttempts.forEach(delay => {
+            setTimeout(() => {
+                setupMedicalNamingDragDrop();
+                // Re-block template function
+                window.setupDragAndDrop = function() { return false; };
+            }, delay);
+        });
+        
+        // Also try on various load events
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupMedicalNamingDragDrop);
+        } else {
+            setupMedicalNamingDragDrop();
+        }
+        window.addEventListener('load', setupMedicalNamingDragDrop);
+    })();
     </script>
 </body>
 </html>
