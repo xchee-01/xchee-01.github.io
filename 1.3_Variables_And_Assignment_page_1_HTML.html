@@ -667,21 +667,315 @@ Type your python codes here
     <canvas id="confetti-canvas"></canvas>
     
     <!-- Custom JavaScript for Fill-in-the-blanks override -->
-    <script>
-    // Custom implementation for fill-in-the-blanks to avoid conflicts
-    (function() {
-        // Store original function if needed
-        const originalSetupFillInTheBlanks = window.setupFillInTheBlanks || function() {};
+    <!-- Replace the custom JavaScript section at the bottom of your HTML with this: -->
+
+<script>
+// COMPLETE OVERRIDE: Block template interference and implement medical naming exercise
+(function() {
+    'use strict';
+    
+    // Medical naming exercise data
+    const MEDICAL_ANSWERS = [
+        { text: 'hemoglobin_a1c', type: 'good' },
+        { text: 'h', type: 'bad' },
+        { text: 'patient_id_number', type: 'good' },
+        { text: 'wbc', type: 'bad' },
+        { text: 'white_blood_cell_count', type: 'good' },
+        { text: 'id', type: 'bad' }
+    ];
+    
+    // Global variables
+    let draggedItem = null;
+    let correctDrops = 0;
+    let totalDrops = 6;
+    
+    // BLOCK ALL TEMPLATE DRAG-AND-DROP FUNCTIONS
+    function blockTemplateFunctions() {
+        // Override the template's setupDragAndDrop function completely
+        if (window.setupDragAndDrop) {
+            window.setupDragAndDrop = function() {
+                console.log('Template setupDragAndDrop blocked');
+                return false;
+            };
+        }
         
-        // Override with custom implementation
-        window.setupFillInTheBlanks = function() {
+        // Also block any attempts to call it
+        Object.defineProperty(window, 'setupDragAndDrop', {
+            value: function() { return false; },
+            writable: false,
+            configurable: false
+        });
+    }
+    
+    // Initialize medical naming content
+    function initializeMedicalContent() {
+        const answersContainer = document.getElementById('datatype-answers');
+        if (!answersContainer) return false;
+        
+        // Clear completely
+        answersContainer.innerHTML = '';
+        
+        // Add medical answers
+        MEDICAL_ANSWERS.forEach(answer => {
+            const div = document.createElement('div');
+            div.className = 'answer';
+            div.draggable = true;
+            div.setAttribute('data-type', answer.type);
+            div.innerHTML = `<span>${answer.text}</span>`;
+            
+            // Add drag event listeners
+            div.addEventListener('dragstart', handleDragStart);
+            div.addEventListener('dragend', handleDragEnd);
+            
+            answersContainer.appendChild(div);
+        });
+        
+        return true;
+    }
+    
+    // Drag and drop handlers
+    function handleDragStart(e) {
+        draggedItem = this;
+        this.style.opacity = '0.5';
+        e.dataTransfer.setData('text/plain', this.dataset.type);
+    }
+    
+    function handleDragEnd() {
+        this.style.opacity = '1';
+        draggedItem = null;
+        
+        // Remove hover effects from all drop areas
+        document.querySelectorAll('.drop-area').forEach(area => {
+            area.classList.remove('hover');
+        });
+    }
+    
+    function handleDragOver(e) {
+        e.preventDefault();
+    }
+    
+    function handleDragEnter(e) {
+        e.preventDefault();
+        if (this.children.length === 0) {
+            this.classList.add('hover');
+        }
+    }
+    
+    function handleDragLeave() {
+        this.classList.remove('hover');
+    }
+    
+    function handleDrop(e) {
+        e.preventDefault();
+        this.classList.remove('hover');
+        
+        // Only allow drop if area is empty
+        if (this.children.length === 0) {
+            const droppedType = e.dataTransfer.getData('text/plain');
+            const correctType = this.dataset.correct;
+            
+            // Clone the dragged item
+            const clonedItem = draggedItem.cloneNode(true);
+            clonedItem.style.opacity = '1';
+            clonedItem.style.cursor = 'default';
+            clonedItem.draggable = false;
+            
+            // Add to drop area
+            this.appendChild(clonedItem);
+            draggedItem.remove();
+            
+            // Check if correct
+            const feedback = this.parentElement.querySelector('.feedback');
+            if (droppedType === correctType) {
+                this.classList.add('correct');
+                correctDrops++;
+                
+                if (feedback) {
+                    feedback.style.display = 'block';
+                }
+                
+                // Check if all completed
+                if (correctDrops === totalDrops) {
+                    showCelebration();
+                }
+            } else {
+                this.classList.add('incorrect');
+                
+                // Show incorrect feedback temporarily, then reset
+                if (feedback) {
+                    feedback.innerHTML = `
+                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> 
+                        Try again! This belongs in the ${correctType === 'good' ? 'good' : 'bad'} category.
+                    `;
+                    feedback.style.display = 'block';
+                }
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    this.innerHTML = '';
+                    this.classList.remove('incorrect');
+                    if (feedback) {
+                        feedback.style.display = 'none';
+                    }
+                    
+                    // Recreate the draggable item
+                    const originalAnswer = MEDICAL_ANSWERS.find(a => a.type === droppedType);
+                    if (originalAnswer) {
+                        const answersContainer = document.getElementById('datatype-answers');
+                        const newAnswer = document.createElement('div');
+                        newAnswer.className = 'answer';
+                        newAnswer.draggable = true;
+                        newAnswer.setAttribute('data-type', originalAnswer.type);
+                        newAnswer.innerHTML = `<span>${originalAnswer.text}</span>`;
+                        newAnswer.addEventListener('dragstart', handleDragStart);
+                        newAnswer.addEventListener('dragend', handleDragEnd);
+                        answersContainer.appendChild(newAnswer);
+                    }
+                }, 2000);
+            }
+        }
+    }
+    
+    function showCelebration() {
+        const celebration = document.getElementById('datatype-celebration');
+        if (celebration) {
+            celebration.style.display = 'block';
+            
+            // Trigger confetti
+            if (typeof confetti !== 'undefined') {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#003D7C', '#EF7C00', '#4D7CAE']
+                });
+            }
+        }
+    }
+    
+    // Setup drop areas
+    function setupDropAreas() {
+        const dropAreas = document.querySelectorAll('#datatype-questions .drop-area');
+        dropAreas.forEach(area => {
+            area.addEventListener('dragover', handleDragOver);
+            area.addEventListener('dragenter', handleDragEnter);
+            area.addEventListener('dragleave', handleDragLeave);
+            area.addEventListener('drop', handleDrop);
+        });
+    }
+    
+    // Setup reset button
+    function setupResetButton() {
+        const resetButton = document.getElementById('datatype-reset-button');
+        if (!resetButton) return;
+        
+        // Remove all existing event listeners by cloning
+        const newResetButton = resetButton.cloneNode(true);
+        resetButton.parentNode.replaceChild(newResetButton, resetButton);
+        
+        // Add our custom reset handler
+        newResetButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            // Reset counters
+            correctDrops = 0;
+            
+            // Clear all drop areas
+            document.querySelectorAll('#datatype-questions .drop-area').forEach(area => {
+                area.innerHTML = '';
+                area.classList.remove('correct', 'incorrect', 'hover');
+                
+                const feedback = area.parentElement.querySelector('.feedback');
+                if (feedback) {
+                    feedback.style.display = 'none';
+                }
+            });
+            
+            // Hide celebration
+            const celebration = document.getElementById('datatype-celebration');
+            if (celebration) {
+                celebration.style.display = 'none';
+            }
+            
+            // Restore medical answers
+            initializeMedicalContent();
+        });
+        
+        // Ensure button is visible
+        newResetButton.style.display = 'flex';
+        newResetButton.style.visibility = 'visible';
+    }
+    
+    // Main initialization function
+    function initializeMedicalNamingExercise() {
+        // Block template functions first
+        blockTemplateFunctions();
+        
+        // Initialize content
+        if (!initializeMedicalContent()) {
+            return false;
+        }
+        
+        // Setup interactions
+        setupDropAreas();
+        setupResetButton();
+        
+        console.log('Medical naming exercise initialized successfully');
+        return true;
+    }
+    
+    // Content protection - prevent template from overriding
+    function protectContent() {
+        const answersContainer = document.getElementById('datatype-answers');
+        if (answersContainer) {
+            const firstAnswer = answersContainer.querySelector('.answer span');
+            if (firstAnswer && ['int', 'str', 'float'].includes(firstAnswer.textContent.trim())) {
+                console.log('Template interference detected - restoring medical content');
+                initializeMedicalContent();
+            }
+        }
+    }
+    
+    // Multiple initialization attempts with increasing delays
+    const initDelays = [0, 100, 500, 1000, 2000];
+    initDelays.forEach(delay => {
+        setTimeout(() => {
+            blockTemplateFunctions();
+            initializeMedicalNamingExercise();
+        }, delay);
+    });
+    
+    // Continuous protection against template interference
+    setInterval(protectContent, 200);
+    
+    // Initialize immediately if DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeMedicalNamingExercise);
+    } else {
+        initializeMedicalNamingExercise();
+    }
+    
+    // Also initialize on window load
+    window.addEventListener('load', () => {
+        setTimeout(initializeMedicalNamingExercise, 100);
+    });
+    
+})();
+
+// Fill-in-the-blanks implementation (unchanged from your original)
+(function() {
+    const originalSetupFillInTheBlanks = window.setupFillInTheBlanks || function() {};
+    
+    window.setupFillInTheBlanks = function() {
         const checkButton = document.getElementById('print-check-button');
         const resetButton = document.getElementById('print-reset-button');
         const validationMessage = document.getElementById('print-validation-message');
         const successFeedback = document.getElementById('print-success-feedback');
         const infoFeedback = document.getElementById('print-info-feedback');
         
-        // Show info feedback initially
+        if (!checkButton) return;
+        
         validationMessage.style.display = 'none';
         infoFeedback.style.display = 'block';
         
@@ -692,7 +986,6 @@ Type your python codes here
         ];
         
         function isValidString(value) {
-            // Check if it's a quoted string
             return (value.startsWith('"') && value.endsWith('"')) || 
                    (value.startsWith("'") && value.endsWith("'"));
         }
@@ -705,7 +998,6 @@ Type your python codes here
             let allFilled = true;
             let allCorrect = true;
             
-            // First check if all fields are filled
             fields.forEach(field => {
                 const input = document.getElementById(field.id);
                 if (input.value.trim() === '') {
@@ -721,7 +1013,6 @@ Type your python codes here
             
             validationMessage.style.display = 'none';
             
-            // Check each answer
             fields.forEach((field, index) => {
                 const input = document.getElementById(field.id);
                 const item = document.getElementById(field.itemId);
@@ -731,21 +1022,21 @@ Type your python codes here
                 let isCorrect = false;
                 let feedbackText = '';
                 
-                if (index === 0) { // Patient name - should be a string
+                if (index === 0) {
                     if (isValidString(value)) {
                         isCorrect = true;
                         feedbackText = '<span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! You\'ve stored a text value for the patient name.';
                     } else {
                         feedbackText = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Remember to use quotes for text values! Try: "John Smith"';
                     }
-                } else if (index === 1) { // Age - should be a whole number
+                } else if (index === 1) {
                     if (isValidNumber(value) && !value.includes('.')) {
                         isCorrect = true;
                         feedbackText = '<span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! Age is stored as a whole number.';
                     } else {
                         feedbackText = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Age should be a whole number without quotes. Try: 42';
                     }
-                } else if (index === 2) { // Weight - can be decimal
+                } else if (index === 2) {
                     if (isValidNumber(value)) {
                         isCorrect = true;
                         feedbackText = '<span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Excellent! Weight can include decimals for precision.';
@@ -793,168 +1084,13 @@ Type your python codes here
             resetButton.classList.add('hidden');
         });
     };
-        
-        // Initialize on DOM ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', window.setupFillInTheBlanks);
-        } else {
-            // Delay to ensure template loads first
-            setTimeout(window.setupFillInTheBlanks, 100);
-        }
-    })();
     
-    // Custom drag-and-drop fix for Medical Naming Best Practices
-    (function() {
-        // Store the original medical naming content IMMEDIATELY
-        const medicalAnswers = [
-            { text: 'hemoglobin_a1c', type: 'good' },
-            { text: 'h', type: 'bad' },
-            { text: 'patient_id_number', type: 'good' },
-            { text: 'wbc', type: 'bad' },
-            { text: 'white_blood_cell_count', type: 'good' },
-            { text: 'id', type: 'bad' }
-        ];
-        
-        // Block template drag-and-drop function
-        window.setupDragAndDrop = function() {
-            console.log('Blocked template drag-and-drop function');
-            return false;
-        };
-        
-        // Function to restore medical naming content
-        function restoreMedicalContent() {
-            const answersContainer = document.getElementById('datatype-answers');
-            if (answersContainer) {
-                // Clear any template content
-                answersContainer.innerHTML = '';
-                
-                // Restore medical naming answers
-                medicalAnswers.forEach(answer => {
-                    const div = document.createElement('div');
-                    div.className = 'answer';
-                    div.draggable = true;
-                    div.setAttribute('data-type', answer.type);
-                    div.innerHTML = `<span>${answer.text}</span>`;
-                    answersContainer.appendChild(div);
-                });
-            }
-        }
-        
-        // Custom implementation for Medical Naming Best Practices exercise
-        function setupMedicalNamingDragDrop() {
-            const resetButton = document.getElementById('datatype-reset-button');
-            const answersContainer = document.getElementById('datatype-answers');
-            const questionsContainer = document.getElementById('datatype-questions');
-            const celebration = document.getElementById('datatype-celebration');
-            
-            if (!resetButton || !answersContainer || !questionsContainer) {
-                console.log('Medical naming elements not found, retrying...');
-                return false;
-            }
-            
-            // ALWAYS restore medical content first
-            restoreMedicalContent();
-            
-            // Force button visibility function
-            function forceResetButtonVisibility() {
-                resetButton.style.setProperty('display', 'inline-flex', 'important');
-                resetButton.style.setProperty('visibility', 'visible', 'important');
-                resetButton.setAttribute('style', 
-                    resetButton.getAttribute('style') + 
-                    '; display: inline-flex !important; visibility: visible !important;'
-                );
-            }
-            
-            // MutationObserver to prevent button hiding
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                        if (resetButton.style.display === 'none' || 
-                            resetButton.style.visibility === 'hidden') {
-                            forceResetButtonVisibility();
-                        }
-                    }
-                });
-            });
-            
-            observer.observe(resetButton, {
-                attributes: true,
-                attributeFilter: ['style']
-            });
-            
-            // Reset button click handler
-            resetButton.addEventListener('click', function(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                
-                // CRITICAL: Restore medical content first to prevent template interference
-                restoreMedicalContent();
-                
-                // Reset all drop areas
-                const dropAreas = questionsContainer.querySelectorAll('.drop-area');
-                dropAreas.forEach(area => {
-                    // Clear content properly without destroying structure
-                    while (area.firstChild) {
-                        area.removeChild(area.firstChild);
-                    }
-                    area.classList.remove('correct', 'filled');
-                    
-                    // Hide feedback for this drop area
-                    const feedback = area.parentElement.querySelector('.feedback');
-                    if (feedback) {
-                        feedback.style.display = 'none';
-                    }
-                });
-                
-                // Hide celebration
-                if (celebration) {
-                    celebration.style.display = 'none';
-                }
-                
-                // Keep reset button visible
-                forceResetButtonVisibility();
-            });
-            
-            // Periodic visibility enforcement
-            setInterval(forceResetButtonVisibility, 500);
-            
-            return true;
-        }
-        
-        // Multiple initialization attempts
-        const initAttempts = [0, 100, 500, 1000, 2000, 3000];
-        initAttempts.forEach(delay => {
-            setTimeout(() => {
-                // ALWAYS restore content before setup
-                restoreMedicalContent();
-                setupMedicalNamingDragDrop();
-                // Re-block template function
-                window.setupDragAndDrop = function() { return false; };
-            }, delay);
-        });
-        
-        // Aggressive content preservation
-        setInterval(() => {
-            const answersContainer = document.getElementById('datatype-answers');
-            if (answersContainer) {
-                const firstAnswer = answersContainer.querySelector('.answer span');
-                // If content has been changed to template content, restore it
-                if (firstAnswer && (firstAnswer.textContent === 'int' || 
-                    firstAnswer.textContent === 'str' || 
-                    firstAnswer.textContent === 'float')) {
-                    restoreMedicalContent();
-                }
-            }
-        }, 100);
-        
-        // Also try on various load events
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setupMedicalNamingDragDrop);
-        } else {
-            setupMedicalNamingDragDrop();
-        }
-        window.addEventListener('load', setupMedicalNamingDragDrop);
-    })();
-    </script>
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', window.setupFillInTheBlanks);
+    } else {
+        setTimeout(window.setupFillInTheBlanks, 100);
+    }
+})();
+</script>
 </body>
 </html>
