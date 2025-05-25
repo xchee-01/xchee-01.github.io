@@ -118,13 +118,13 @@ print("Patient:", patient_name, "Room:", room_number)
                                 </ul>
                             </div>
                             
-                            <div class="button-group" style="display: flex; gap: 0.5rem;">
+                            <div class="button-group" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                                 <button class="action-button" id="basic-print-check-button">
                                     <i class="fas fa-clipboard-check"></i>
                                     Check Answers
                                 </button>
                                 
-                                <button class="action-button reset" id="basic-print-reset-button">
+                                <button class="action-button reset" id="basic-print-reset-button" style="display: inline-flex;">
                                     <i class="fas fa-redo"></i>
                                     Reset Exercise
                                 </button>
@@ -354,7 +354,7 @@ blood_pressure_dia = 84
 oxygen_saturation = 96
 temperature = 98.9</div>
                             
-                            <div class="answers-container" id="icu-answers">
+                            <div class="answers-container" id="icu-monitor-answers">
                                 <div class="answer" draggable="true" data-type="patient_name">
                                     <span>{patient_name}</span>
                                 </div>
@@ -375,7 +375,7 @@ temperature = 98.9</div>
                                 </div>
                             </div>
                             
-                            <div class="questions-container" id="icu-questions">
+                            <div class="questions-container" id="icu-monitor-questions">
                                 <div class="question-item">
                                     <div class="question-text">print(f"Patient: ___ (___)")</div>
                                     <div class="drop-area" data-correct="patient_name"></div>
@@ -423,12 +423,12 @@ temperature = 98.9</div>
                                 </div>
                             </div>
                             
-                            <button class="reset-button" id="icu-reset-button">
+                            <button class="reset-button" id="icu-monitor-reset-button" style="display: inline-flex;">
                                 <i class="fas fa-redo"></i> Reset Exercise
                             </button>
                         </div>
                     </div>
-                    <div class="celebration" id="icu-celebration"></div>
+                    <div class="celebration" id="icu-monitor-celebration"></div>
                     
                     <div class="expected-output">
 <strong>Expected Output:</strong>
@@ -635,37 +635,18 @@ print(f"Last updated: [timestamp]")</div>
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
     
-    <!-- Custom CSS for button groups -->
-    <style>
-    .button-group {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
-    
-    .action-button.reset {
-        background-color: var(--nus-gray);
-    }
-    
-    .action-button.reset:hover {
-        background-color: #555555;
-        transform: translateY(-2px);
-    }
-    
-    @media (max-width: 768px) {
-        .button-group {
-            flex-direction: column;
-        }
-        
-        .action-button {
-            width: 100%;
-        }
-    }
-    </style>
-    
-    <!-- Custom JavaScript for Exercises -->
+    <!-- Custom JavaScript for Fill-in-the-blanks and Drag-and-Drop -->
     <script>
-    // Custom setup for Basic Print Exercise
+    // Override template functions to prevent conflicts
+    window.setupFillInTheBlanks = function() {
+        console.log('Using custom fill-in-the-blanks setup');
+    };
+    
+    window.setupDragAndDrop = function() {
+        console.log('Using custom drag-and-drop setup');
+    };
+    
+    // Custom function for the Basic Print fill-in-the-blanks exercise
     function setupBasicPrintExercise() {
         const checkButton = document.getElementById('basic-print-check-button');
         const resetButton = document.getElementById('basic-print-reset-button');
@@ -673,11 +654,7 @@ print(f"Last updated: [timestamp]")</div>
         const successFeedback = document.getElementById('basic-print-success-feedback');
         const infoFeedback = document.getElementById('basic-print-info-feedback');
         
-        // Check if elements exist
-        if (!checkButton || !resetButton) {
-            console.warn('Basic print exercise buttons not found');
-            return;
-        }
+        if (!checkButton || !resetButton) return;
         
         const expectedAnswers = {
             'basic-print-line1': 'Patient admitted successfully',
@@ -685,25 +662,34 @@ print(f"Last updated: [timestamp]")</div>
             'basic-print-line3': 'Patient: Jane Doe Room: 304'
         };
         
-        // Ensure reset button is always visible
-        resetButton.style.display = 'inline-flex';
-        
         checkButton.addEventListener('click', function() {
             let allCorrect = true;
             let allFilled = true;
             
-            // Hide validation message initially
-            if (validationMessage) validationMessage.style.display = 'none';
+            // First check if all fields are filled
+            for (const fieldId of Object.keys(expectedAnswers)) {
+                const field = document.getElementById(fieldId);
+                if (!field || !field.value.trim()) {
+                    allFilled = false;
+                }
+            }
             
+            // Show validation message if not all filled
+            if (!allFilled) {
+                validationMessage.style.display = 'block';
+                return;
+            }
+            
+            // Hide validation message
+            validationMessage.style.display = 'none';
+            
+            // Check answers
             for (const [fieldId, expectedAnswer] of Object.entries(expectedAnswers)) {
                 const field = document.getElementById(fieldId);
                 const item = document.getElementById(fieldId.replace('line', 'item-'));
                 const feedback = document.getElementById(fieldId.replace('line', 'feedback-'));
                 
-                if (!field.value.trim()) {
-                    allFilled = false;
-                    continue;
-                }
+                if (!field || !item || !feedback) continue;
                 
                 if (field.value.trim() === expectedAnswer) {
                     item.classList.add('correct');
@@ -714,111 +700,82 @@ print(f"Last updated: [timestamp]")</div>
                 } else {
                     item.classList.add('incorrect');
                     item.classList.remove('correct');
-                    feedback.innerHTML = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Expected: ' + expectedAnswer;
+                    feedback.innerHTML = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Expected: ' + expectedAnswer;
                     feedback.style.display = 'block';
                     feedback.style.color = '#c62828';
                     allCorrect = false;
                 }
             }
             
-            if (!allFilled) {
-                if (validationMessage) validationMessage.style.display = 'block';
-                return;
-            }
-            
             if (allCorrect) {
-                if (successFeedback) successFeedback.style.display = 'block';
-                if (infoFeedback) infoFeedback.style.display = 'block';
+                successFeedback.style.display = 'block';
+                infoFeedback.style.display = 'block';
                 
-                // Play sound and show confetti
+                // Play success effects
                 if (window.initAudio && window.playCorrectSound) {
                     window.initAudio()
-                        .then(() => {
-                            window.playCorrectSound();
-                        })
-                        .catch(err => {
-                            console.error("Could not play sound:", err.message);
-                        });
-                }
-                
-                if (typeof confetti === 'function') {
-                    confetti({
-                        particleCount: 100,
-                        spread: 70,
-                        origin: { y: 0.6 }
-                    });
+                        .then(() => window.playCorrectSound())
+                        .catch(err => console.error("Audio error:", err));
                 }
             }
         });
         
         resetButton.addEventListener('click', function() {
+            // Reset all fields and feedback
             for (const fieldId of Object.keys(expectedAnswers)) {
                 const field = document.getElementById(fieldId);
                 const item = document.getElementById(fieldId.replace('line', 'item-'));
                 const feedback = document.getElementById(fieldId.replace('line', 'feedback-'));
                 
-                field.value = '';
-                item.classList.remove('correct', 'incorrect');
-                feedback.style.display = 'none';
+                if (field) field.value = '';
+                if (item) item.classList.remove('correct', 'incorrect');
+                if (feedback) feedback.style.display = 'none';
             }
             
-            if (validationMessage) validationMessage.style.display = 'none';
-            if (successFeedback) successFeedback.style.display = 'none';
-            if (infoFeedback) infoFeedback.style.display = 'none';
+            validationMessage.style.display = 'none';
+            successFeedback.style.display = 'none';
+            infoFeedback.style.display = 'none';
         });
     }
     
-    // ICU Monitor Drag and Drop Exercise
-    function setupICUMonitorDragAndDrop() {
-        const answersContainer = document.getElementById('icu-answers');
-        const questionsContainer = document.getElementById('icu-questions');
-        const resetButton = document.getElementById('icu-reset-button');
-        const celebration = document.getElementById('icu-celebration');
+    // Custom function for the ICU Monitor drag-and-drop exercise
+    function setupICUMonitorDragDrop() {
+        const answersContainer = document.getElementById('icu-monitor-answers');
+        const questionsContainer = document.getElementById('icu-monitor-questions');
+        const resetButton = document.getElementById('icu-monitor-reset-button');
+        const celebration = document.getElementById('icu-monitor-celebration');
         
-        if (!answersContainer || !questionsContainer || !resetButton) {
-            console.warn('ICU monitor exercise elements not found');
-            return;
-        }
+        if (!answersContainer || !questionsContainer || !resetButton) return;
         
         let draggedElement = null;
-        let correctAnswersCount = 0;
-        let totalQuestions = 0;
         
-        // Count questions with multiple drop areas
-        const questionItems = questionsContainer.querySelectorAll('.question-item');
-        questionItems.forEach(item => {
-            const dropAreas = item.querySelectorAll('.drop-area');
-            totalQuestions += dropAreas.length;
-        });
-        
-        // Initialize drag and drop functionality
-        function initICUDragDrop() {
-            // Setup draggable items
-            const draggableItems = answersContainer.querySelectorAll('.answer');
-            const dropAreas = questionsContainer.querySelectorAll('.drop-area');
+        // Setup answers with drag functionality
+        function setupAnswerDragEvents() {
+            const answers = answersContainer.querySelectorAll('.answer');
             
-            draggableItems.forEach(item => {
-                item.addEventListener('dragstart', function(e) {
+            answers.forEach(answer => {
+                answer.addEventListener('dragstart', function(e) {
                     draggedElement = this;
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/html', this.outerHTML);
-                    e.dataTransfer.setData('data-type', this.getAttribute('data-type'));
                     this.style.opacity = '0.5';
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/html', this.innerHTML);
                 });
                 
-                item.addEventListener('dragend', function(e) {
-                    this.style.opacity = '1';
-                    draggedElement = null;
+                answer.addEventListener('dragend', function(e) {
+                    this.style.opacity = '';
                 });
             });
+        }
+        
+        // Setup drop areas
+        function setupDropAreaEvents() {
+            const dropAreas = questionsContainer.querySelectorAll('.drop-area');
             
             dropAreas.forEach(area => {
                 area.addEventListener('dragover', function(e) {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
-                    if (this.children.length === 0) {
-                        this.classList.add('drag-over');
-                    }
+                    this.classList.add('drag-over');
                 });
                 
                 area.addEventListener('dragleave', function(e) {
@@ -829,138 +786,95 @@ print(f"Last updated: [timestamp]")</div>
                     e.preventDefault();
                     this.classList.remove('drag-over');
                     
-                    // Only allow drop if area is empty
-                    if (this.children.length > 0) {
-                        return;
-                    }
+                    // Don't allow overwriting existing drops
+                    if (this.children.length > 0) return;
                     
-                    const dataType = e.dataTransfer.getData('data-type');
-                    const correctType = this.getAttribute('data-correct');
-                    
-                    // Create new element in drop area
-                    const newElement = draggedElement.cloneNode(true);
-                    newElement.style.opacity = '1';
-                    newElement.draggable = false;
-                    newElement.style.cursor = 'default';
-                    this.appendChild(newElement);
-                    
-                    // Remove the original dragged element
-                    if (draggedElement && draggedElement.parentNode) {
+                    if (draggedElement) {
+                        // Clone the element instead of moving it
+                        const clone = draggedElement.cloneNode(true);
+                        clone.draggable = false;
+                        clone.style.opacity = '';
+                        this.appendChild(clone);
+                        
+                        // Remove the original element
                         draggedElement.parentNode.removeChild(draggedElement);
+                        draggedElement = null;
+                        
+                        // Check if this answer is correct
+                        checkAnswer(this);
+                        
+                        // Check if all answers are filled
+                        checkCompletion();
                     }
-                    
-                    // Check if answer is correct
-                    if (dataType === correctType) {
-                        this.classList.add('correct');
-                        this.classList.remove('incorrect');
-                        correctAnswersCount++;
-                        
-                        // Play sound for correct answer
-                        if (window.initAudio && window.playCorrectSound) {
-                            window.initAudio()
-                                .then(() => {
-                                    window.playCorrectSound();
-                                })
-                                .catch(err => {
-                                    console.error("Could not play sound:", err.message);
-                                });
-                        }
-                        
-                        // Check if all questions in this item are answered correctly
-                        checkQuestionItemCompletion(this);
-                    } else {
-                        this.classList.add('incorrect');
-                        this.classList.remove('correct');
-                        
-                        // Return incorrect answer to answers container after delay
-                        setTimeout(() => {
-                            const returnedAnswer = document.createElement('div');
-                            returnedAnswer.className = 'answer';
-                            returnedAnswer.setAttribute('draggable', 'true');
-                            returnedAnswer.setAttribute('data-type', dataType);
-                            returnedAnswer.innerHTML = newElement.innerHTML;
-                            
-                            answersContainer.appendChild(returnedAnswer);
-                            
-                            // Clear the drop area
-                            this.innerHTML = '';
-                            this.classList.remove('incorrect');
-                            
-                            // Re-initialize drag functionality for the returned item
-                            initICUDragDrop();
-                        }, 2000);
-                    }
-                    
-                    // Check if all questions are answered correctly
-                    checkICUCompletion();
                 });
             });
         }
         
-        // Check if all drop areas in a question item are correctly filled
-        function checkQuestionItemCompletion(dropArea) {
-            const questionItem = dropArea.closest('.question-item');
-            const dropAreas = questionItem.querySelectorAll('.drop-area');
-            const correctDropAreas = questionItem.querySelectorAll('.drop-area.correct');
+        function checkAnswer(dropArea) {
+            const parent = dropArea.closest('.question-item');
+            const feedback = parent.querySelector('.feedback');
+            const droppedAnswer = dropArea.querySelector('.answer');
             
-            if (dropAreas.length === correctDropAreas.length) {
-                // All drop areas in this question are correct
-                const feedback = questionItem.querySelector('.feedback');
-                if (feedback) {
-                    feedback.style.display = 'block';
+            if (!droppedAnswer) return;
+            
+            const correctType = dropArea.getAttribute('data-correct');
+            const answerType = droppedAnswer.getAttribute('data-type');
+            
+            if (correctType === answerType) {
+                feedback.style.display = 'block';
+                feedback.style.color = '#2e7d32';
+                
+                // Play success sound
+                if (window.initAudio && window.playCorrectSound) {
+                    window.initAudio()
+                        .then(() => window.playCorrectSound())
+                        .catch(err => console.error("Audio error:", err));
                 }
             }
         }
         
-        // Check if all questions are answered correctly
-        function checkICUCompletion() {
-            if (correctAnswersCount === totalQuestions && celebration) {
+        function checkCompletion() {
+            const allDropAreas = questionsContainer.querySelectorAll('.drop-area');
+            let allFilled = true;
+            let allCorrect = true;
+            
+            allDropAreas.forEach(area => {
+                if (area.children.length === 0) {
+                    allFilled = false;
+                } else {
+                    const droppedAnswer = area.querySelector('.answer');
+                    const correctType = area.getAttribute('data-correct');
+                    const answerType = droppedAnswer.getAttribute('data-type');
+                    if (correctType !== answerType) {
+                        allCorrect = false;
+                    }
+                }
+            });
+            
+            if (allFilled && allCorrect) {
                 // Show celebration
-                celebration.innerHTML = '<div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border-radius: 10px; margin: 20px 0; font-size: 18px; font-weight: bold;">🎉 Incredible! You\'ve built a professional ICU monitor! 🎉</div>';
-                celebration.style.display = 'block';
+                if (celebration) {
+                    celebration.innerHTML = '<div class="celebration-message">🎉 Perfect! All answers are correct!</div>';
+                    celebration.style.display = 'block';
+                }
                 
-                // Trigger confetti
+                // Play confetti
                 if (typeof confetti === 'function') {
                     confetti({
-                        particleCount: 150,
-                        spread: 160,
-                        origin: { x: 0.5, y: 0.6 }
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
                     });
-                    
-                    setTimeout(() => {
-                        confetti({
-                            particleCount: 100,
-                            angle: 60,
-                            spread: 55,
-                            origin: { x: 0, y: 0.65 }
-                        });
-                        setTimeout(() => {
-                            confetti({
-                                particleCount: 100,
-                                angle: 120,
-                                spread: 55,
-                                origin: { x: 1, y: 0.65 }
-                            });
-                        }, 150);
-                    }, 300);
                 }
-                
-                setTimeout(() => {
-                    celebration.style.display = 'none';
-                }, 6000);
             }
         }
         
-        // Reset function specific to ICU exercise
+        // Reset button functionality
         resetButton.addEventListener('click', function() {
-            // Reset correct answers count
-            correctAnswersCount = 0;
-            
             // Clear all drop areas
             const dropAreas = questionsContainer.querySelectorAll('.drop-area');
             dropAreas.forEach(area => {
                 area.innerHTML = '';
-                area.classList.remove('correct', 'incorrect', 'drag-over');
             });
             
             // Hide all feedback
@@ -973,73 +887,50 @@ print(f"Last updated: [timestamp]")</div>
                 celebration.style.display = 'none';
             }
             
-            // Rebuild the answer options
-            answersContainer.innerHTML = '';
+            // Restore all answers to the answers container
+            answersContainer.innerHTML = `
+                <div class="answer" draggable="true" data-type="patient_name">
+                    <span>{patient_name}</span>
+                </div>
+                <div class="answer" draggable="true" data-type="patient_id">
+                    <span>{patient_id}</span>
+                </div>
+                <div class="answer" draggable="true" data-type="heart_rate">
+                    <span>{heart_rate}</span>
+                </div>
+                <div class="answer" draggable="true" data-type="blood_pressure">
+                    <span>{blood_pressure_sys}/{blood_pressure_dia}</span>
+                </div>
+                <div class="answer" draggable="true" data-type="oxygen">
+                    <span>{oxygen_saturation}%</span>
+                </div>
+                <div class="answer" draggable="true" data-type="temperature">
+                    <span>{temperature}°F</span>
+                </div>
+            `;
             
-            const answerOptions = [
-                { type: 'patient_name', text: '{patient_name}' },
-                { type: 'patient_id', text: '{patient_id}' },
-                { type: 'heart_rate', text: '{heart_rate}' },
-                { type: 'blood_pressure', text: '{blood_pressure_sys}/{blood_pressure_dia}' },
-                { type: 'oxygen', text: '{oxygen_saturation}%' },
-                { type: 'temperature', text: '{temperature}°F' }
-            ];
-            
-            answerOptions.forEach(option => {
-                const answer = document.createElement('div');
-                answer.className = 'answer';
-                answer.setAttribute('draggable', 'true');
-                answer.setAttribute('data-type', option.type);
-                
-                const span = document.createElement('span');
-                span.textContent = option.text;
-                answer.appendChild(span);
-                
-                answersContainer.appendChild(answer);
-            });
-            
-            // Re-initialize drag and drop
-            initICUDragDrop();
-            
-            // Ensure reset button stays visible
-            resetButton.style.display = 'inline-flex';
+            // Re-setup only the answer drag events (not the whole function)
+            setupAnswerDragEvents();
         });
         
         // Initial setup
-        initICUDragDrop();
-        
-        // Ensure reset button is visible from the start
-        resetButton.style.display = 'inline-flex';
+        setupAnswerDragEvents();
+        setupDropAreaEvents();
     }
     
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            // Wait a bit for template to initialize first
-            setTimeout(() => {
-                setupBasicPrintExercise();
-                setupICUMonitorDragAndDrop();
-            }, 100);
-        });
-    } else {
-        // DOM already loaded
+    // Initialize custom exercises when DOM is ready
+    function initializeCustomExercises() {
         setTimeout(() => {
             setupBasicPrintExercise();
-            setupICUMonitorDragAndDrop();
+            setupICUMonitorDragDrop();
         }, 100);
     }
     
-    // Override the template's setupFillInTheBlanks function to prevent conflicts
-    window.setupFillInTheBlanks = function() {
-        // This overrides the template function to prevent conflicts
-        console.log('Using custom fill-in-the-blanks setup');
-    };
-    
-    // Override the template's setupDragAndDrop function to prevent conflicts
-    window.setupDragAndDrop = function() {
-        // This overrides the template function to prevent conflicts
-        console.log('Using custom drag-and-drop setup');
-    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeCustomExercises);
+    } else {
+        initializeCustomExercises();
+    }
     </script>
 </body>
 </html>
