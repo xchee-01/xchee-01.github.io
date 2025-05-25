@@ -352,7 +352,7 @@ blood_pressure_dia = 84
 oxygen_saturation = 96
 temperature = 98.9</div>
                             
-                            <div class="answers-container" id="datatype-answers">
+                            <div class="answers-container" id="icu-monitor-answers">
                                 <div class="answer" draggable="true" data-type="patient_name">
                                     <span>{patient_name}</span>
                                 </div>
@@ -373,7 +373,7 @@ temperature = 98.9</div>
                                 </div>
                             </div>
                             
-                            <div class="questions-container" id="datatype-questions">
+                            <div class="questions-container" id="icu-monitor-questions">
                                 <div class="question-item">
                                     <div class="question-text">print(f"Patient: ___ (___)")</div>
                                     <div class="drop-area" data-correct="patient_name"></div>
@@ -421,12 +421,12 @@ temperature = 98.9</div>
                                 </div>
                             </div>
                             
-                            <button class="reset-button" id="datatype-reset-button" style="display: inline-flex;">
+                            <button class="reset-button" id="icu-monitor-reset-button" style="display: inline-flex;">
                                 <i class="fas fa-redo"></i> Reset Exercise
                             </button>
                         </div>
                     </div>
-                    <div class="celebration" id="datatype-celebration"></div>
+                    <div class="celebration" id="icu-monitor-celebration"></div>
                     
                     <div class="expected-output">
 <strong>Expected Output:</strong>
@@ -633,12 +633,162 @@ print(f"Last updated: [timestamp]")</div>
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
     
-    <!-- Custom JavaScript for Fill-in-the-blanks -->
+    <!-- Custom JavaScript for Fill-in-the-blanks and Drag-and-Drop -->
     <script>
-    // Setup custom fill-in-blanks without overriding global functions
+    // Setup custom interactions without overriding global functions
     document.addEventListener('DOMContentLoaded', function() {
         setupCustomPrintFillInBlanks();
+        setupICUMonitorDragDrop();
     });
+    
+    function setupICUMonitorDragDrop() {
+        const answers = document.querySelectorAll('#icu-monitor-answers .answer');
+        const dropAreas = document.querySelectorAll('#icu-monitor-questions .drop-area');
+        const resetButton = document.getElementById('icu-monitor-reset-button');
+        const answersContainer = document.getElementById('icu-monitor-answers');
+        const celebration = document.getElementById('icu-monitor-celebration');
+        
+        if (!answers.length || !dropAreas.length || !resetButton) return;
+        
+        let draggedElement = null;
+        let originalAnswers = [];
+        
+        // Store original answers
+        answers.forEach(answer => {
+            originalAnswers.push({
+                element: answer.cloneNode(true),
+                dataType: answer.getAttribute('data-type'),
+                text: answer.textContent.trim()
+            });
+        });
+        
+        // Add drag event listeners
+        function setupDragListeners() {
+            const currentAnswers = document.querySelectorAll('#icu-monitor-answers .answer');
+            
+            currentAnswers.forEach(answer => {
+                answer.addEventListener('dragstart', function(e) {
+                    draggedElement = this;
+                    this.style.opacity = '0.5';
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                answer.addEventListener('dragend', function(e) {
+                    this.style.opacity = '';
+                });
+            });
+        }
+        
+        setupDragListeners();
+        
+        // Setup drop areas
+        dropAreas.forEach(area => {
+            area.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+            });
+            
+            area.addEventListener('dragleave', function(e) {
+                this.classList.remove('drag-over');
+            });
+            
+            area.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                
+                // Don't allow drop if area already has content
+                if (this.children.length > 0) return;
+                
+                if (draggedElement) {
+                    // Clone the element instead of moving it
+                    const clone = draggedElement.cloneNode(true);
+                    clone.draggable = false;
+                    clone.style.opacity = '';
+                    clone.classList.add('dropped');
+                    
+                    this.appendChild(clone);
+                    
+                    // Remove original dragged element
+                    draggedElement.remove();
+                    draggedElement = null;
+                    
+                    // Check if all drops are complete
+                    checkAllDropped();
+                }
+            });
+        });
+        
+        function checkAllDropped() {
+            const filledAreas = document.querySelectorAll('#icu-monitor-questions .drop-area');
+            let allFilled = true;
+            let allCorrect = true;
+            
+            filledAreas.forEach(area => {
+                if (area.children.length === 0) {
+                    allFilled = false;
+                } else {
+                    const droppedAnswer = area.querySelector('.answer');
+                    const correctType = area.getAttribute('data-correct');
+                    const droppedType = droppedAnswer.getAttribute('data-type');
+                    
+                    if (correctType === droppedType) {
+                        const feedback = area.parentElement.querySelector('.feedback');
+                        if (feedback) {
+                            feedback.style.display = 'block';
+                        }
+                    } else {
+                        allCorrect = false;
+                    }
+                }
+            });
+            
+            if (allFilled && allCorrect && celebration) {
+                celebration.style.display = 'block';
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }, 100);
+            }
+        }
+        
+        // Reset button functionality
+        resetButton.addEventListener('click', function() {
+            // Clear all drop areas
+            dropAreas.forEach(area => {
+                while (area.firstChild) {
+                    area.removeChild(area.firstChild);
+                }
+                const feedback = area.parentElement.querySelector('.feedback');
+                if (feedback) {
+                    feedback.style.display = 'none';
+                }
+            });
+            
+            // Clear answers container
+            while (answersContainer.firstChild) {
+                answersContainer.removeChild(answersContainer.firstChild);
+            }
+            
+            // Restore original answers
+            originalAnswers.forEach(answerData => {
+                const newAnswer = answerData.element.cloneNode(true);
+                newAnswer.draggable = true;
+                answersContainer.appendChild(newAnswer);
+            });
+            
+            // Re-setup drag listeners
+            setupDragListeners();
+            
+            // Hide celebration
+            if (celebration) {
+                celebration.style.display = 'none';
+            }
+        });
+    }
     
     function setupCustomPrintFillInBlanks() {
         const checkButton = document.getElementById('print-check-button');
