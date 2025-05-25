@@ -875,6 +875,63 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
         });
     }
     
+    // Custom function to override the drag-and-drop reset for the indentation exercise
+    function setupIndentationDragAndDrop() {
+        const resetButton = document.getElementById('datatype-reset-button');
+        if (!resetButton) return;
+        
+        // Override the reset button's click handler
+        resetButton.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent default handler
+            
+            // Reset drop areas
+            const dropAreas = document.querySelectorAll('#datatype-questions .drop-area');
+            dropAreas.forEach(area => {
+                area.innerHTML = '';
+                area.classList.remove('correct', 'incorrect');
+            });
+            
+            // Hide feedback messages
+            document.querySelectorAll('#datatype-questions .feedback').forEach(feedback => {
+                feedback.style.display = 'none';
+                feedback.classList.remove('correct', 'incorrect');
+            });
+            
+            // Rebuild the answer options with correct values for indentation exercise
+            const answersContainer = document.getElementById('datatype-answers');
+            if (answersContainer) {
+                answersContainer.innerHTML = '';
+                
+                // Create the correct answer options for indentation
+                const answerOptions = [
+                    { type: '0-spaces', text: '0 spaces' },
+                    { type: '4-spaces', text: '4 spaces' },
+                    { type: '4-spaces', text: '4 spaces' },
+                    { type: '8-spaces', text: '8 spaces' },
+                    { type: '8-spaces', text: '8 spaces' }
+                ];
+                
+                answerOptions.forEach(option => {
+                    const newAnswer = document.createElement('div');
+                    newAnswer.className = 'answer';
+                    newAnswer.setAttribute('draggable', 'true');
+                    newAnswer.setAttribute('data-type', option.type);
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = option.text;
+                    newAnswer.appendChild(textSpan);
+                    
+                    answersContainer.appendChild(newAnswer);
+                });
+                
+                // Re-initialize drag and drop for the new elements
+                if (typeof window.setupDragAndDrop === 'function') {
+                    window.setupDragAndDrop();
+                }
+            }
+        });
+    }
+    
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
@@ -882,8 +939,9 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
             if (typeof window.setupFillInTheBlanks === 'function') {
                 window.setupFillInTheBlanks();
             }
-            // Setup our custom exercise
+            // Setup our custom exercises
             setupCommentsExercise();
+            setupIndentationDragAndDrop();
         });
     } else {
         // DOM already loaded
@@ -891,6 +949,7 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
             window.setupFillInTheBlanks();
         }
         setupCommentsExercise();
+        setupIndentationDragAndDrop();
     }
     </script>
 </body>
