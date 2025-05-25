@@ -887,6 +887,9 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
             return;
         }
         
+        let draggedElement = null;
+        let correctAnswersCount = 0;
+        
         // Initialize drag and drop functionality
         function initIndentationDragDrop() {
             // Setup draggable items
@@ -895,14 +898,16 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
             
             draggableItems.forEach(item => {
                 item.addEventListener('dragstart', function(e) {
+                    draggedElement = this;
                     e.dataTransfer.effectAllowed = 'move';
                     e.dataTransfer.setData('text/html', this.outerHTML);
                     e.dataTransfer.setData('data-type', this.getAttribute('data-type'));
-                    this.classList.add('dragging');
+                    this.style.opacity = '0.5';
                 });
                 
                 item.addEventListener('dragend', function(e) {
-                    this.classList.remove('dragging');
+                    this.style.opacity = '1';
+                    draggedElement = null;
                 });
             });
             
@@ -910,7 +915,9 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
                 area.addEventListener('dragover', function(e) {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
-                    this.classList.add('drag-over');
+                    if (this.children.length === 0) { // Only show hover if empty
+                        this.classList.add('drag-over');
+                    }
                 });
                 
                 area.addEventListener('dragleave', function(e) {
@@ -921,17 +928,24 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
                     e.preventDefault();
                     this.classList.remove('drag-over');
                     
+                    // Only allow drop if area is empty
+                    if (this.children.length > 0) {
+                        return;
+                    }
+                    
                     const dataType = e.dataTransfer.getData('data-type');
-                    const htmlContent = e.dataTransfer.getData('text/html');
                     const correctType = this.getAttribute('data-correct');
                     
-                    // Clear the drop area
-                    this.innerHTML = htmlContent;
+                    // Create new element in drop area
+                    const newElement = draggedElement.cloneNode(true);
+                    newElement.style.opacity = '1';
+                    newElement.draggable = false;
+                    newElement.style.cursor = 'default';
+                    this.appendChild(newElement);
                     
-                    // Remove the dragged element from answers container
-                    const draggedElement = answersContainer.querySelector('.dragging');
-                    if (draggedElement) {
-                        draggedElement.remove();
+                    // Remove the original dragged element
+                    if (draggedElement && draggedElement.parentNode) {
+                        draggedElement.parentNode.removeChild(draggedElement);
                     }
                     
                     // Check if answer is correct
@@ -942,12 +956,34 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
                         feedback.classList.add('correct');
                         feedback.classList.remove('incorrect');
                         feedback.style.display = 'block';
+                        correctAnswersCount++;
                     } else {
                         this.classList.add('incorrect');
                         this.classList.remove('correct');
                         feedback.classList.add('incorrect');
                         feedback.classList.remove('correct');
+                        feedback.innerHTML = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Try again with a different indentation level.';
                         feedback.style.display = 'block';
+                        
+                        // Return incorrect answer to answers container after delay
+                        setTimeout(() => {
+                            const returnedAnswer = document.createElement('div');
+                            returnedAnswer.className = 'answer';
+                            returnedAnswer.setAttribute('draggable', 'true');
+                            returnedAnswer.setAttribute('data-type', dataType);
+                            returnedAnswer.innerHTML = newElement.innerHTML;
+                            
+                            answersContainer.appendChild(returnedAnswer);
+                            
+                            // Clear the drop area
+                            this.innerHTML = '';
+                            this.classList.remove('incorrect');
+                            feedback.style.display = 'none';
+                            feedback.classList.remove('incorrect');
+                            
+                            // Re-initialize drag functionality for the returned item
+                            initIndentationDragDrop();
+                        }, 2000);
                     }
                     
                     // Check if all questions are answered correctly
@@ -958,93 +994,104 @@ wbc_count = 7.2        # White blood cell count (thousands/μL)</div>
         
         // Check if all questions are answered correctly
         function checkIndentationCompletion() {
-            const dropAreas = questionsContainer.querySelectorAll('.drop-area');
-            let allCorrect = true;
-            let allFilled = true;
+            const totalQuestions = questionsContainer.querySelectorAll('.drop-area').length;
             
-            dropAreas.forEach(area => {
-                if (area.innerHTML.trim() === '') {
-                    allFilled = false;
-                }
-                if (!area.classList.contains('correct')) {
-                    allCorrect = false;
-                }
-            });
-            
-            if (allFilled && allCorrect && celebration) {
+            if (correctAnswersCount === totalQuestions && celebration) {
                 // Show celebration
-                celebration.innerHTML = '<div class="celebration-message">🎉 Perfect! You\'ve mastered Python indentation!</div>';
+                celebration.innerHTML = '<div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border-radius: 10px; margin: 20px 0; font-size: 18px; font-weight: bold;">🎉 Perfect! You\'ve mastered Python indentation! 🎉</div>';
                 celebration.style.display = 'block';
+                
+                // Trigger confetti
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+                
                 setTimeout(() => {
                     celebration.style.display = 'none';
-                }, 3000);
+                }, 4000);
             }
         }
         
         // Reset function specific to indentation exercise
         resetButton.addEventListener('click', function() {
-    // Clear all drop areas
-    const dropAreas = questionsContainer.querySelectorAll('.drop-area');
-    dropAreas.forEach(area => {
-        area.innerHTML = '';
-        area.classList.remove('correct', 'incorrect');
-    });
-    
-    // Hide all feedback
-    questionsContainer.querySelectorAll('.feedback').forEach(feedback => {
-        feedback.style.display = 'none';
-        feedback.classList.remove('correct', 'incorrect');
-    });
-    
-    // Rebuild the answer options
-    answersContainer.innerHTML = '';
-    
-    const answerOptions = [
-        { type: '0-spaces', text: '0 spaces' },
-        { type: '4-spaces', text: '4 spaces' },
-        { type: '4-spaces', text: '4 spaces' },
-        { type: '8-spaces', text: '8 spaces' },
-        { type: '8-spaces', text: '8 spaces' }
-    ];
-    
-    answerOptions.forEach(option => {
-        const answer = document.createElement('div');
-        answer.className = 'answer';
-        answer.setAttribute('draggable', 'true');
-        answer.setAttribute('data-type', option.type);
+            // Reset correct answers count
+            correctAnswersCount = 0;
+            
+            // Clear all drop areas
+            const dropAreas = questionsContainer.querySelectorAll('.drop-area');
+            dropAreas.forEach(area => {
+                area.innerHTML = '';
+                area.classList.remove('correct', 'incorrect', 'drag-over');
+            });
+            
+            // Hide all feedback
+            questionsContainer.querySelectorAll('.feedback').forEach(feedback => {
+                feedback.style.display = 'none';
+                feedback.classList.remove('correct', 'incorrect');
+            });
+            
+            // Hide celebration
+            if (celebration) {
+                celebration.style.display = 'none';
+            }
+            
+            // Rebuild the answer options
+            answersContainer.innerHTML = '';
+            
+            const answerOptions = [
+                { type: '0-spaces', text: '0 spaces' },
+                { type: '4-spaces', text: '4 spaces' },
+                { type: '4-spaces', text: '4 spaces' },
+                { type: '8-spaces', text: '8 spaces' },
+                { type: '8-spaces', text: '8 spaces' }
+            ];
+            
+            answerOptions.forEach(option => {
+                const answer = document.createElement('div');
+                answer.className = 'answer';
+                answer.setAttribute('draggable', 'true');
+                answer.setAttribute('data-type', option.type);
+                
+                const span = document.createElement('span');
+                span.textContent = option.text;
+                answer.appendChild(span);
+                
+                answersContainer.appendChild(answer);
+            });
+            
+            // Re-initialize drag and drop
+            initIndentationDragDrop();
+            
+            // Ensure reset button stays visible
+            resetButton.style.display = 'inline-flex';
+        });
         
-        const span = document.createElement('span');
-        span.textContent = option.text;
-        answer.appendChild(span);
+        // Initial setup
+        initIndentationDragDrop();
         
-        answersContainer.appendChild(answer);
-    });
-    
-    // Re-initialize drag and drop
-    initIndentationDragDrop();
-    
-    // ✅ FIX: Ensure reset button remains visible
-    resetButton.style.display = 'inline-flex';
-});
+        // Ensure reset button is visible from the start
+        resetButton.style.display = 'inline-flex';
+    }
     
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            // Call template's setup if it exists
-            if (typeof window.setupFillInTheBlanks === 'function') {
-                window.setupFillInTheBlanks();
-            }
-            // Setup our custom exercises
-            setupCommentsExercise();
-            setupIndentationDragAndDrop();
+            // Wait a bit for template to initialize first
+            setTimeout(() => {
+                setupCommentsExercise();
+                setupIndentationDragAndDrop();
+            }, 100);
         });
     } else {
         // DOM already loaded
-        if (typeof window.setupFillInTheBlanks === 'function') {
-            window.setupFillInTheBlanks();
-        }
-        setupCommentsExercise();
-        setupIndentationDragAndDrop();
+        setTimeout(() => {
+            setupCommentsExercise();
+            setupIndentationDragAndDrop();
+        }, 100);
     }
     </script>
 </body>
