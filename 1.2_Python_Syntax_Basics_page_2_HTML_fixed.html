@@ -118,7 +118,7 @@ print("Patient:", patient_name, "Room:", room_number)
                                 </ul>
                             </div>
                             
-                            <div class="button-group" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                            <div class="button-group" style="margin-top: 20px;">
                                 <button class="action-button" id="basic-print-check-button">
                                     <i class="fas fa-clipboard-check"></i>
                                     Check Answers
@@ -126,7 +126,7 @@ print("Patient:", patient_name, "Room:", room_number)
                                 
                                 <button class="action-button reset" id="basic-print-reset-button" style="display: inline-flex;">
                                     <i class="fas fa-redo"></i>
-                                    Reset Exercise
+                                    Try Again
                                 </button>
                             </div>
                         </div>
@@ -423,7 +423,7 @@ temperature = 98.9</div>
                                 </div>
                             </div>
                             
-                            <button class="reset-button" id="icu-monitor-reset-button" style="display: inline-flex !important; visibility: visible !important;">
+                            <button class="reset-button" id="icu-monitor-reset-button" style="display: inline-flex;">
                                 <i class="fas fa-redo"></i> Reset Exercise
                             </button>
                         </div>
@@ -635,34 +635,27 @@ print(f"Last updated: [timestamp]")</div>
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
     
-    <!-- Custom JavaScript for Fill-in-the-blanks and Drag-and-Drop -->
+    <!-- Custom JavaScript with Complete Template Protection -->
     <script>
-    // CRITICAL: Wrap everything in IIFE to prevent conflicts
     (function() {
         'use strict';
         
-        // Store references to original functions before we override them
+        // 1. Store original functions before overriding
         const originalSetupFillInTheBlanks = window.setupFillInTheBlanks;
         const originalSetupDragAndDrop = window.setupDragAndDrop;
-        const originalSetupToggleAnswerButtons = window.setupToggleAnswerButtons;
         
-        // Aggressively block template functions
+        // 2. Aggressively block template functions
         window.setupFillInTheBlanks = function() {
-            console.log('Blocked template setupFillInTheBlanks');
+            console.log('Blocked template fill-in-the-blanks function');
             return false;
         };
         
         window.setupDragAndDrop = function() {
-            console.log('Blocked template setupDragAndDrop');
+            console.log('Blocked template drag-and-drop function');
             return false;
         };
         
-        window.setupToggleAnswerButtons = function() {
-            console.log('Blocked template setupToggleAnswerButtons');
-            return false;
-        };
-        
-        // Custom function for the Basic Print fill-in-the-blanks exercise
+        // 3. Custom Fill-in-the-blanks Implementation
         function setupBasicPrintExercise() {
             const checkButton = document.getElementById('basic-print-check-button');
             const resetButton = document.getElementById('basic-print-reset-button');
@@ -672,6 +665,38 @@ print(f"Last updated: [timestamp]")</div>
             
             if (!checkButton || !resetButton) return;
             
+            // Force button visibility
+            function forceButtonVisibility() {
+                resetButton.style.setProperty('display', 'inline-flex', 'important');
+                resetButton.style.setProperty('visibility', 'visible', 'important');
+                checkButton.style.setProperty('display', 'inline-flex', 'important');
+                checkButton.style.setProperty('visibility', 'visible', 'important');
+            }
+            
+            // MutationObserver for button protection
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        if (resetButton.style.display === 'none' || resetButton.style.visibility === 'hidden') {
+                            forceButtonVisibility();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(resetButton, {
+                attributes: true,
+                attributeFilter: ['style']
+            });
+            
+            observer.observe(checkButton, {
+                attributes: true,
+                attributeFilter: ['style']
+            });
+            
+            // Initial visibility enforcement
+            forceButtonVisibility();
+            
             const expectedAnswers = {
                 'basic-print-line1': 'Patient admitted successfully',
                 'basic-print-line2': '72',
@@ -679,33 +704,31 @@ print(f"Last updated: [timestamp]")</div>
             };
             
             checkButton.addEventListener('click', function() {
-                let allCorrect = true;
+                // FIRST check if all fields are filled
                 let allFilled = true;
+                let allCorrect = true;
                 
-                // First check if all fields are filled
-                for (const fieldId of Object.keys(expectedAnswers)) {
+                for (const [fieldId, expectedAnswer] of Object.entries(expectedAnswers)) {
                     const field = document.getElementById(fieldId);
                     if (!field || !field.value.trim()) {
                         allFilled = false;
                     }
                 }
                 
-                // Show validation message if not all filled
+                // Show validation message if not all filled and exit early
                 if (!allFilled) {
                     validationMessage.style.display = 'block';
                     return;
                 }
                 
-                // Hide validation message
+                // Hide validation message since all fields are filled
                 validationMessage.style.display = 'none';
                 
-                // Check answers
+                // ONLY THEN check answers
                 for (const [fieldId, expectedAnswer] of Object.entries(expectedAnswers)) {
                     const field = document.getElementById(fieldId);
                     const item = document.getElementById(fieldId.replace('line', 'item-'));
                     const feedback = document.getElementById(fieldId.replace('line', 'feedback-'));
-                    
-                    if (!field || !item || !feedback) continue;
                     
                     if (field.value.trim() === expectedAnswer) {
                         item.classList.add('correct');
@@ -727,17 +750,19 @@ print(f"Last updated: [timestamp]")</div>
                     successFeedback.style.display = 'block';
                     infoFeedback.style.display = 'block';
                     
-                    // Play success effects
+                    // Play success sound if available
                     if (window.initAudio && window.playCorrectSound) {
                         window.initAudio()
                             .then(() => window.playCorrectSound())
                             .catch(err => console.error("Audio error:", err));
                     }
                 }
+                
+                // Always keep buttons visible
+                forceButtonVisibility();
             });
             
             resetButton.addEventListener('click', function() {
-                // Reset all fields and feedback
                 for (const fieldId of Object.keys(expectedAnswers)) {
                     const field = document.getElementById(fieldId);
                     const item = document.getElementById(fieldId.replace('line', 'item-'));
@@ -751,10 +776,16 @@ print(f"Last updated: [timestamp]")</div>
                 validationMessage.style.display = 'none';
                 successFeedback.style.display = 'none';
                 infoFeedback.style.display = 'none';
+                
+                // Keep buttons visible
+                forceButtonVisibility();
             });
+            
+            // Periodic visibility enforcement
+            setInterval(forceButtonVisibility, 500);
         }
         
-        // Custom function for the ICU Monitor drag-and-drop exercise
+        // 4. Custom Drag-and-Drop Implementation for ICU Monitor
         function setupICUMonitorDragDrop() {
             const answersContainer = document.getElementById('icu-monitor-answers');
             const questionsContainer = document.getElementById('icu-monitor-questions');
@@ -763,171 +794,156 @@ print(f"Last updated: [timestamp]")</div>
             
             if (!answersContainer || !questionsContainer || !resetButton) return;
             
-            // CRITICAL: Force button visibility function
-            function forceButtonVisibility() {
+            // Force reset button visibility
+            function forceResetVisibility() {
                 resetButton.style.setProperty('display', 'inline-flex', 'important');
                 resetButton.style.setProperty('visibility', 'visible', 'important');
-                resetButton.setAttribute('style', resetButton.getAttribute('style') + 
-                    '; display: inline-flex !important; visibility: visible !important;');
+                resetButton.setAttribute('style', 
+                    resetButton.getAttribute('style') + 
+                    '; display: inline-flex !important; visibility: visible !important;'
+                );
             }
             
-            // CRITICAL: MutationObserver to monitor and prevent style changes
-            const observer = new MutationObserver(function(mutations) {
+            // MutationObserver for reset button
+            const resetObserver = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                        if (resetButton.style.display === 'none' || 
-                            resetButton.style.visibility === 'hidden') {
-                            forceButtonVisibility();
+                        if (resetButton.style.display === 'none' || resetButton.style.visibility === 'hidden') {
+                            forceResetVisibility();
                         }
                     }
                 });
             });
             
-            // Start observing the reset button
-            observer.observe(resetButton, {
+            resetObserver.observe(resetButton, {
                 attributes: true,
                 attributeFilter: ['style']
             });
             
-            // Ensure button is visible initially
-            forceButtonVisibility();
+            // Initial visibility
+            forceResetVisibility();
             
             let draggedElement = null;
             
-            // Get initial HTML for restoration
-            const originalAnswersHTML = answersContainer.innerHTML;
-            
             // Setup drag events for answers
-            function setupDragEvents() {
-                const answers = answersContainer.querySelectorAll('.answer');
-                
-                answers.forEach(answer => {
-                    answer.addEventListener('dragstart', function(e) {
-                        draggedElement = this;
-                        this.style.opacity = '0.5';
-                        e.dataTransfer.effectAllowed = 'move';
-                        e.dataTransfer.setData('text/html', this.innerHTML);
-                    });
-                    
-                    answer.addEventListener('dragend', function(e) {
-                        this.style.opacity = '';
-                    });
+            const answers = answersContainer.querySelectorAll('.answer');
+            answers.forEach(answer => {
+                answer.addEventListener('dragstart', function(e) {
+                    draggedElement = this;
+                    this.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/html', this.innerHTML);
                 });
-            }
+                
+                answer.addEventListener('dragend', function(e) {
+                    this.classList.remove('dragging');
+                });
+            });
             
-            // Setup drop events for drop areas
+            // Setup drop areas
             const dropAreas = questionsContainer.querySelectorAll('.drop-area');
-            dropAreas.forEach(area => {
-                area.addEventListener('dragover', function(e) {
+            dropAreas.forEach(dropArea => {
+                dropArea.addEventListener('dragover', function(e) {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
                     this.classList.add('drag-over');
                 });
                 
-                area.addEventListener('dragleave', function(e) {
+                dropArea.addEventListener('dragleave', function(e) {
                     this.classList.remove('drag-over');
                 });
                 
-                area.addEventListener('drop', function(e) {
+                dropArea.addEventListener('drop', function(e) {
                     e.preventDefault();
                     this.classList.remove('drag-over');
                     
-                    // Don't allow overwriting existing drops
-                    if (this.children.length > 0) return;
-                    
-                    if (draggedElement) {
+                    if (draggedElement && !this.hasChildNodes()) {
                         // Clone the element instead of moving it
                         const clone = draggedElement.cloneNode(true);
                         clone.draggable = false;
-                        clone.style.opacity = '';
+                        clone.classList.remove('dragging');
+                        
+                        // Add the clone to drop area
                         this.appendChild(clone);
                         
-                        // Remove the original element
-                        draggedElement.parentNode.removeChild(draggedElement);
-                        draggedElement = null;
+                        // Check if answer is correct
+                        const droppedType = draggedElement.getAttribute('data-type');
+                        const expectedType = this.getAttribute('data-correct');
                         
-                        // Check if this answer is correct
-                        checkAnswer(this);
+                        if (droppedType === expectedType) {
+                            this.classList.add('correct');
+                            const questionItem = this.closest('.question-item');
+                            if (questionItem) {
+                                const feedback = questionItem.querySelector('.feedback');
+                                if (feedback) {
+                                    feedback.style.display = 'block';
+                                }
+                            }
+                            
+                            // Play success sound
+                            if (window.initAudio && window.playCorrectSound) {
+                                window.initAudio()
+                                    .then(() => window.playCorrectSound())
+                                    .catch(err => console.error("Audio error:", err));
+                            }
+                            
+                            // Check if all answers are correct
+                            checkAllAnswers();
+                        } else {
+                            this.classList.add('incorrect');
+                        }
                         
-                        // Check if all answers are filled
-                        checkCompletion();
-                        
-                        // Force button visibility after drop
-                        forceButtonVisibility();
+                        // Hide the original dragged element
+                        draggedElement.style.display = 'none';
                     }
                 });
             });
             
-            function checkAnswer(dropArea) {
-                const parent = dropArea.closest('.question-item');
-                const feedback = parent.querySelector('.feedback');
-                const droppedAnswer = dropArea.querySelector('.answer');
-                
-                if (!droppedAnswer) return;
-                
-                const correctType = dropArea.getAttribute('data-correct');
-                const answerType = droppedAnswer.getAttribute('data-type');
-                
-                if (correctType === answerType) {
-                    feedback.style.display = 'block';
-                    feedback.style.color = '#2e7d32';
-                    
-                    // Play success sound
-                    if (window.initAudio && window.playCorrectSound) {
-                        window.initAudio()
-                            .then(() => window.playCorrectSound())
-                            .catch(err => console.error("Audio error:", err));
-                    }
-                }
-            }
-            
-            function checkCompletion() {
+            // Check if all answers are correct
+            function checkAllAnswers() {
                 const allDropAreas = questionsContainer.querySelectorAll('.drop-area');
-                let allFilled = true;
                 let allCorrect = true;
                 
-                allDropAreas.forEach(area => {
-                    if (area.children.length === 0) {
-                        allFilled = false;
-                    } else {
-                        const droppedAnswer = area.querySelector('.answer');
-                        const correctType = area.getAttribute('data-correct');
-                        const answerType = droppedAnswer.getAttribute('data-type');
-                        if (correctType !== answerType) {
-                            allCorrect = false;
-                        }
+                allDropAreas.forEach(dropArea => {
+                    if (!dropArea.classList.contains('correct')) {
+                        allCorrect = false;
                     }
                 });
                 
-                if (allFilled && allCorrect) {
+                if (allCorrect) {
                     // Show celebration
                     if (celebration) {
-                        celebration.innerHTML = '<div class="celebration-message">🎉 Perfect! All answers are correct!</div>';
+                        celebration.innerHTML = '<div class="celebration-message">🎉 Perfect! You\'ve mastered the ICU monitor display format! 🎉</div>';
                         celebration.style.display = 'block';
-                    }
-                    
-                    // Play confetti
-                    if (typeof confetti === 'function') {
-                        confetti({
-                            particleCount: 100,
-                            spread: 70,
-                            origin: { y: 0.6 }
-                        });
+                        
+                        // Trigger confetti if available
+                        if (window.confetti) {
+                            window.confetti({
+                                particleCount: 100,
+                                spread: 70,
+                                origin: { y: 0.6 }
+                            });
+                        }
                     }
                 }
             }
             
-            // Reset button functionality
+            // Reset functionality
             resetButton.addEventListener('click', function() {
+                // Show all hidden answers
+                answers.forEach(answer => {
+                    answer.style.display = 'block';
+                });
+                
                 // Clear all drop areas
-                dropAreas.forEach(area => {
-                    while (area.firstChild) {
-                        area.removeChild(area.firstChild);
-                    }
+                dropAreas.forEach(dropArea => {
+                    dropArea.innerHTML = '';
+                    dropArea.classList.remove('correct', 'incorrect');
                 });
                 
                 // Hide all feedback
-                questionsContainer.querySelectorAll('.feedback').forEach(feedback => {
+                const feedbacks = questionsContainer.querySelectorAll('.feedback');
+                feedbacks.forEach(feedback => {
                     feedback.style.display = 'none';
                 });
                 
@@ -936,61 +952,39 @@ print(f"Last updated: [timestamp]")</div>
                     celebration.style.display = 'none';
                 }
                 
-                // Restore all answers to the answers container
-                answersContainer.innerHTML = originalAnswersHTML;
-                
-                // Re-setup drag events for the new elements
-                setupDragEvents();
-                
-                // Force button visibility after reset
-                forceButtonVisibility();
+                // Ensure reset button stays visible
+                forceResetVisibility();
             });
             
-            // Initial setup
-            setupDragEvents();
-            
-            // Periodically force button visibility (belt and suspenders approach)
-            setInterval(forceButtonVisibility, 500);
+            // Periodic visibility enforcement
+            setInterval(forceResetVisibility, 500);
         }
         
-        // Initialize custom exercises with multiple timing strategies
-        function initializeCustomExercises() {
-            console.log('Initializing custom exercises...');
-            
+        // 5. Initialize all exercises with multiple attempts
+        function initializeAllExercises() {
             setupBasicPrintExercise();
             setupICUMonitorDragDrop();
             
-            // Also re-override template functions in case they got restored
-            window.setupFillInTheBlanks = function() {
-                console.log('Blocked template setupFillInTheBlanks (re-override)');
-                return false;
-            };
-            
-            window.setupDragAndDrop = function() {
-                console.log('Blocked template setupDragAndDrop (re-override)');
-                return false;
-            };
+            // Re-override template functions in case they were restored
+            window.setupFillInTheBlanks = function() { return false; };
+            window.setupDragAndDrop = function() { return false; };
         }
         
-        // Multiple initialization attempts with different delays
+        // 6. Try multiple initialization timings
         const initAttempts = [0, 100, 500, 1000, 2000];
         initAttempts.forEach(delay => {
-            setTimeout(() => {
-                initializeCustomExercises();
-            }, delay);
+            setTimeout(initializeAllExercises, delay);
         });
         
-        // Also initialize on DOM ready
+        // 7. Also use multiple event listeners
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeCustomExercises);
+            document.addEventListener('DOMContentLoaded', initializeAllExercises);
         } else {
-            initializeCustomExercises();
+            initializeAllExercises();
         }
+        window.addEventListener('load', initializeAllExercises);
         
-        // Also initialize on window load
-        window.addEventListener('load', initializeCustomExercises);
-        
-    })(); // End IIFE
+    })();
     </script>
 </body>
 </html>
