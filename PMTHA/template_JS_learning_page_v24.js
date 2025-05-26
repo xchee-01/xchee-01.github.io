@@ -15,7 +15,7 @@ const LOCAL_STORAGE_KEY = 'tracking_events_cache'; // Key for localStorage track
 const EVENT_BATCH_THRESHOLD = 1; // Minimum number of events before sending to server
 
 // Required packages for Pyodide
-const requiredPackages = ['numpy', 'pandas', 'matplotlib'];
+const requiredPackages = ['numpy', 'pandas'];
 
 // Global variables
 let pyodide;
