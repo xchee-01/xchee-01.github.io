@@ -687,6 +687,44 @@ Type your python codes here
             const validationMessage = document.getElementById('print-validation-message');
             const successFeedback = document.getElementById('print-success-feedback');
             const infoFeedback = document.getElementById('print-info-feedback');
+            
+            // Aggressive button visibility enforcement
+            function forceButtonVisibility() {
+                if (resetButton) {
+                    resetButton.style.setProperty('display', 'inline-flex', 'important');
+                    resetButton.style.setProperty('visibility', 'visible', 'important');
+                    resetButton.style.setProperty('opacity', '1', 'important');
+                    
+                    // Belt-and-suspenders approach
+                    resetButton.setAttribute('style', 
+                        resetButton.getAttribute('style') + 
+                        '; display: inline-flex !important; visibility: visible !important; opacity: 1 !important;'
+                    );
+                }
+            }
+            
+            // MutationObserver to catch template interference
+            if (resetButton) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && 
+                            mutation.attributeName === 'style') {
+                            if (resetButton.style.display === 'none' || 
+                                resetButton.style.visibility === 'hidden') {
+                                forceButtonVisibility();
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(resetButton, {
+                    attributes: true,
+                    attributeFilter: ['style']
+                });
+                
+                // Periodic enforcement as failsafe
+                setInterval(forceButtonVisibility, 500);
+            }
         
         // Show info feedback initially
         validationMessage.style.display = 'none';
@@ -779,6 +817,7 @@ Type your python codes here
                 infoFeedback.style.display = 'none';
                 checkButton.classList.add('hidden');
                 resetButton.classList.remove('hidden');
+                forceButtonVisibility(); // Force visibility when showing
             }
         });
         
