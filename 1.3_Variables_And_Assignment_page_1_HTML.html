@@ -771,16 +771,214 @@ print(f"RR: {respiratory_rate} breaths/min")</div>
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
     
-    <!-- Custom JavaScript for fill-in-the-blanks -->
+    <!-- Custom JavaScript for fill-in-the-blanks and drag-and-drop -->
     <script>
     (function() {
         'use strict';
+        
+        // Store original drag-and-drop data before any template interference
+        let originalDragDropData = [];
+        const answersContainer = document.getElementById('datatype-answers');
+        if (answersContainer) {
+            const originalAnswers = answersContainer.querySelectorAll('.answer');
+            originalAnswers.forEach(answer => {
+                originalDragDropData.push({
+                    type: answer.getAttribute('data-type'),
+                    text: answer.querySelector('span').textContent
+                });
+            });
+        }
         
         // Aggressive isolation: Override template functions immediately
         window.setupFillInTheBlanks = function() {
             console.log('Using custom fill-in-the-blanks implementation');
             return false;
         };
+        
+        window.setupDragAndDrop = function() {
+            console.log('Using custom drag-and-drop implementation');
+            setupCustomDragAndDrop();
+            return false;
+        };
+        
+        // Custom drag-and-drop implementation
+        function setupCustomDragAndDrop() {
+            const answers = document.querySelectorAll('#datatype-answers .answer');
+            const dropAreas = document.querySelectorAll('#datatype-questions .drop-area');
+            const resetButton = document.getElementById('datatype-reset-button');
+            const answersContainer = document.getElementById('datatype-answers');
+            const celebration = document.getElementById('datatype-celebration');
+            
+            let draggedItem = null;
+            let dropCount = 0;
+            let correctCount = 0;
+            
+            // Add event listeners to draggable items
+            answers.forEach(answer => {
+                answer.addEventListener('dragstart', handleDragStart);
+                answer.addEventListener('dragend', handleDragEnd);
+            });
+            
+            // Add event listeners to drop areas
+            dropAreas.forEach(dropArea => {
+                dropArea.addEventListener('dragover', handleDragOver);
+                dropArea.addEventListener('dragenter', handleDragEnter);
+                dropArea.addEventListener('dragleave', handleDragLeave);
+                dropArea.addEventListener('drop', handleDrop);
+            });
+            
+            // Custom reset button with preserved original data
+            if (resetButton) {
+                // Remove any existing listeners first
+                const newResetButton = resetButton.cloneNode(true);
+                resetButton.parentNode.replaceChild(newResetButton, resetButton);
+                
+                newResetButton.addEventListener('click', function() {
+                    customResetExercise();
+                });
+                
+                // Force visibility
+                newResetButton.style.setProperty('display', 'flex', 'important');
+                newResetButton.style.setProperty('visibility', 'visible', 'important');
+            }
+            
+            // Drag and drop handler functions
+            function handleDragStart(e) {
+                if (window.initAudio) {
+                    window.initAudio().catch(err => console.error("Audio init error:", err));
+                }
+                
+                draggedItem = this;
+                setTimeout(() => {
+                    this.style.opacity = '0.5';
+                }, 0);
+                
+                e.dataTransfer.setData('text/plain', this.dataset.type);
+            }
+            
+            function handleDragEnd() {
+                this.style.opacity = '1';
+                draggedItem = null;
+                
+                dropAreas.forEach(area => {
+                    area.classList.remove('hover');
+                });
+            }
+            
+            function handleDragOver(e) {
+                e.preventDefault();
+            }
+            
+            function handleDragEnter(e) {
+                e.preventDefault();
+                if (!this.hasChildNodes()) {
+                    this.classList.add('hover');
+                }
+            }
+            
+            function handleDragLeave() {
+                this.classList.remove('hover');
+            }
+            
+            function handleDrop(e) {
+                e.preventDefault();
+                this.classList.remove('hover');
+                
+                if (this.children.length === 0) {
+                    const droppedType = e.dataTransfer.getData('text/plain');
+                    const correctType = this.getAttribute('data-correct');
+                    
+                    // Clone the dragged element
+                    const clone = draggedItem.cloneNode(true);
+                    clone.draggable = false;
+                    clone.style.opacity = '1';
+                    this.appendChild(clone);
+                    
+                    // Remove original dragged item
+                    draggedItem.style.display = 'none';
+                    
+                    dropCount++;
+                    
+                    // Check if correct
+                    const feedbackElement = this.closest('.question-item').querySelector('.feedback');
+                    if (droppedType === correctType) {
+                        this.classList.add('correct');
+                        feedbackElement.style.display = 'block';
+                        feedbackElement.classList.add('correct');
+                        correctCount++;
+                        
+                        // Play sound if available
+                        if (window.playCorrectSound) {
+                            window.playCorrectSound();
+                        }
+                    } else {
+                        this.classList.add('incorrect');
+                        feedbackElement.style.display = 'block';
+                        feedbackElement.classList.add('incorrect');
+                        feedbackElement.innerHTML = '<span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Try again!';
+                    }
+                    
+                    // Check if all correct
+                    if (correctCount === 4) {
+                        setTimeout(() => {
+                            if (celebration) {
+                                celebration.style.display = 'block';
+                                if (window.confetti) {
+                                    confetti({
+                                        particleCount: 100,
+                                        spread: 70,
+                                        origin: { y: 0.6 }
+                                    });
+                                }
+                            }
+                        }, 300);
+                    }
+                }
+            }
+            
+            // Custom reset function that preserves original data
+            function customResetExercise() {
+                // Clear drop areas
+                dropAreas.forEach(area => {
+                    area.innerHTML = '';
+                    area.classList.remove('correct', 'incorrect');
+                });
+                
+                // Hide feedback
+                document.querySelectorAll('#datatype-questions .feedback').forEach(feedback => {
+                    feedback.style.display = 'none';
+                    feedback.classList.remove('correct', 'incorrect');
+                });
+                
+                // Hide celebration
+                if (celebration) {
+                    celebration.style.display = 'none';
+                }
+                
+                // Reset counters
+                dropCount = 0;
+                correctCount = 0;
+                
+                // Restore original answers using preserved data
+                answersContainer.innerHTML = '';
+                originalDragDropData.forEach(data => {
+                    const newAnswer = document.createElement('div');
+                    newAnswer.className = 'answer';
+                    newAnswer.setAttribute('draggable', 'true');
+                    newAnswer.setAttribute('data-type', data.type);
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = data.text;
+                    newAnswer.appendChild(textSpan);
+                    
+                    // Re-attach event listeners
+                    newAnswer.addEventListener('dragstart', handleDragStart);
+                    newAnswer.addEventListener('dragend', handleDragEnd);
+                    
+                    answersContainer.appendChild(newAnswer);
+                });
+            }
+        }
         
         // Custom implementation for heart rate exercise
         function setupHeartRateExercise() {
@@ -928,12 +1126,18 @@ print(f"RR: {respiratory_rate} breaths/min")</div>
         // Initialize with multiple attempts to handle race conditions
         function initializeExercises() {
             setupHeartRateExercise();
-            // Re-override template function in case it was restored
+            setupCustomDragAndDrop();
+            // Re-override template functions in case they were restored
             window.setupFillInTheBlanks = function() { return false; };
+            window.setupDragAndDrop = function() { 
+                console.log('Template tried to setup drag-and-drop, using custom instead');
+                setupCustomDragAndDrop();
+                return false; 
+            };
         }
         
         // Try multiple initialization timings
-        [0, 100, 500, 1000].forEach(delay => {
+        [0, 100, 500, 1000, 2000].forEach(delay => {
             setTimeout(initializeExercises, delay);
         });
         
@@ -943,6 +1147,11 @@ print(f"RR: {respiratory_rate} breaths/min")</div>
         } else {
             initializeExercises();
         }
+        
+        // Extra protection: intercept window.load event
+        window.addEventListener('load', function() {
+            setTimeout(initializeExercises, 100);
+        });
     })();
     </script>
 </body>
