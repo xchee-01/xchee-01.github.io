@@ -881,32 +881,57 @@ print(f"Excessive wait warning: {excessive_wait}")</div>
                     const draggedType = e.dataTransfer.getData('data-type');
                     const correctType = this.getAttribute('data-correct');
                     
-                    // Create dropped element
-                    const droppedElement = document.createElement('div');
-                    droppedElement.className = 'answer dropped';
-                    droppedElement.innerHTML = draggedHTML;
-                    droppedElement.setAttribute('data-type', draggedType);
-                    this.appendChild(droppedElement);
-                    
-                    // Remove dragged element
+                    // Get the dragged element
                     const draggedElement = document.querySelector('.answer.dragging');
-                    if (draggedElement) {
-                        draggedElement.remove();
-                    }
+                    if (!draggedElement) return;
                     
                     // Check if correct
                     const feedback = this.nextElementSibling;
                     if (draggedType === correctType) {
+                        // Correct answer - move element
+                        const droppedElement = document.createElement('div');
+                        droppedElement.className = 'answer dropped';
+                        droppedElement.innerHTML = draggedHTML;
+                        droppedElement.setAttribute('data-type', draggedType);
+                        this.appendChild(droppedElement);
+                        
+                        // Remove original dragged element
+                        draggedElement.remove();
+                        
+                        // Add correct styling and show feedback
                         this.classList.add('correct');
                         if (feedback && feedback.classList.contains('feedback')) {
                             feedback.style.display = 'block';
+                            feedback.style.color = '#4caf50'; // Green for correct
+                            const icon = feedback.querySelector('.feedback-icon i');
+                            if (icon) {
+                                icon.style.color = '#4caf50';
+                            }
                         }
+                        
+                        // Check if all complete
+                        checkCompletion();
                     } else {
+                        // Incorrect answer - show feedback and return to original position
                         this.classList.add('incorrect');
+                        if (feedback && feedback.classList.contains('feedback')) {
+                            feedback.style.display = 'block';
+                            feedback.style.color = '#f44336'; // Red for incorrect
+                            
+                            // Update feedback text to show it's incorrect
+                            const originalHTML = feedback.innerHTML;
+                            feedback.innerHTML = '<span class="feedback-icon"><i class="fas fa-times-circle" style="color: #f44336;"></i></span> Incorrect! Try again.';
+                            
+                            // Hide feedback after 2 seconds and restore original
+                            setTimeout(() => {
+                                feedback.style.display = 'none';
+                                feedback.innerHTML = originalHTML;
+                                this.classList.remove('incorrect');
+                            }, 2000);
+                        }
+                        
+                        // Don't remove the dragged element - it stays in place
                     }
-                    
-                    // Check if all complete
-                    checkCompletion();
                 });
             });
             
