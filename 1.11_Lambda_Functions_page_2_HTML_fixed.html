@@ -156,27 +156,27 @@ print(f"Fever rate: {fever_count}/{total_patients} ({fever_count/total_patients*
                             </div>
                             
                             <div class="mcq-options">
-                                <div class="mcq-option" data-correct="true">
+                                <div class="mcq-option" data-correct="false">
                                     <div class="mcq-option-header">
                                         <div class="mcq-option-title">1 patient</div>
                                     </div>
                                     <div class="mcq-option-content">
                                         20% fever rate
                                     </div>
-                                    <div class="mcq-feedback correct">
-                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Only one temperature (38.1°C) meets the fever threshold of ≥38°C. The other temperatures (36.5°C, 37.2°C, 37.8°C, 36.9°C) are all below 38°C.
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Check the temperatures again: [36.5, 37.2, 38.1, 37.8, 36.9]. Which ones are ≥38°C?
                                     </div>
                                 </div>
                                 
-                                <div class="mcq-option" data-correct="false">
+                                <div class="mcq-option" data-correct="true">
                                     <div class="mcq-option-header">
                                         <div class="mcq-option-title">2 patients</div>
                                     </div>
                                     <div class="mcq-option-content">
                                         40% fever rate
                                     </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. While 38.1°C meets the fever threshold, 37.8°C is below 38°C, so only one patient has a fever.
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Two temperatures (38.1°C and 37.8°C) meet the fever threshold of ≥38°C. Wait... actually, 37.8°C is below 38°C, so only one patient (38.1°C) has a fever!
                                     </div>
                                 </div>
                                 
@@ -711,7 +711,7 @@ for name, temp in high_fever:
             <h2 id="interpreter-heading">Python Interpreter</h2>
             <p>Try out Python code examples as you learn. You can practice with basic commands or experiment with more complex examples from the lesson.</p>
             
-            <textarea id="python-code" placeholder="Type your Python code here..."># Type your Python codes here</textarea>
+            <textarea id="python-code" placeholder="Type your Python code here..."># Type your python codes here</textarea>
             
             <div class="button-group">
                 <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
@@ -783,142 +783,110 @@ for name, temp in high_fever:
     
     <!-- Custom JavaScript for Fill-in-the-blanks Exercise -->
     <script>
-    (function() {
-        'use strict';
+    // Override the template's setupFillInTheBlanks function
+    window.setupFillInTheBlanks = function() {
+        const checkButton = document.getElementById('print-check-button');
+        const resetButton = document.getElementById('print-reset-button');
+        const validationMessage = document.getElementById('print-validation-message');
+        const successFeedback = document.getElementById('print-success-feedback');
         
-        // Custom implementation function
-        function setupCustomFillInTheBlanks() {
-            const checkButton = document.getElementById('print-check-button');
-            const resetButton = document.getElementById('print-reset-button');
-            const validationMessage = document.getElementById('print-validation-message');
-            const successFeedback = document.getElementById('print-success-feedback');
+        if (!checkButton) return;
+        
+        // Expected answers for this specific exercise
+        const expectedAnswers = {
+            'print-line1': ['Squared: [1, 4, 9, 16, 25]', '[1, 4, 9, 16, 25]'],
+            'print-line2': ['36.5°C = 97.7°F'],
+            'print-line3': ['37.2°C = 99.0°F']
+        };
+        
+        checkButton.addEventListener('click', function() {
+            let allCorrect = true;
+            let allFilled = true;
             
-            if (!checkButton) return;
-            
-            // Initially hide elements that should be hidden
-            if (validationMessage) validationMessage.style.display = 'none';
-            if (successFeedback) successFeedback.style.display = 'none';
-            if (resetButton) resetButton.style.display = 'none';
-            
-            // Expected answers for this specific exercise
-            const expectedAnswers = {
-                'print-line1': ['Squared: [1, 4, 9, 16, 25]', '[1, 4, 9, 16, 25]'],
-                'print-line2': ['36.5°C = 97.7°F'],
-                'print-line3': ['37.2°C = 99.0°F']
-            };
-            
-            checkButton.addEventListener('click', function() {
-                let allCorrect = true;
-                let allFilled = true;
+            // Check each field
+            Object.keys(expectedAnswers).forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                const inputItem = field.parentElement;
+                const feedback = inputItem.querySelector('.feedback');
                 
-                // Check each field
-                Object.keys(expectedAnswers).forEach(fieldId => {
-                    const field = document.getElementById(fieldId);
-                    const inputItem = field.parentElement;
-                    const feedback = inputItem.querySelector('.feedback');
-                    
-                    if (!field.value.trim()) {
-                        allFilled = false;
-                        return;
-                    }
-                    
-                    const userAnswer = field.value.trim();
-                    let isCorrect = false;
-                    
-                    // Check against all possible correct answers
-                    if (Array.isArray(expectedAnswers[fieldId])) {
-                        isCorrect = expectedAnswers[fieldId].some(answer => 
-                            userAnswer.toLowerCase() === answer.toLowerCase()
-                        );
-                    } else {
-                        isCorrect = userAnswer.toLowerCase() === expectedAnswers[fieldId].toLowerCase();
-                    }
-                    
-                    if (isCorrect) {
-                        inputItem.classList.add('correct');
-                        inputItem.classList.remove('incorrect');
-                        feedback.innerHTML = '<i class="fas fa-check-circle" style="color: #4caf50;"></i> Correct!';
-                        feedback.style.display = 'block';
-                        feedback.style.color = '#4caf50';
-                    } else {
-                        inputItem.classList.add('incorrect');
-                        inputItem.classList.remove('correct');
-                        feedback.innerHTML = '<i class="fas fa-times-circle" style="color: #f44336;"></i> Not quite right';
-                        feedback.style.display = 'block';
-                        feedback.style.color = '#f44336';
-                        allCorrect = false;
-                    }
-                });
-                
-                // Show validation message if not all filled
-                if (!allFilled) {
-                    validationMessage.style.display = 'block';
+                if (!field.value.trim()) {
+                    allFilled = false;
                     return;
                 }
                 
-                validationMessage.style.display = 'none';
+                const userAnswer = field.value.trim();
+                let isCorrect = false;
                 
-                // Show feedback
-                if (allCorrect) {
-                    successFeedback.style.display = 'block';
-                    
-                    // Audio feedback
-                    if (window.initAudio && window.playCorrectSound) {
-                        window.initAudio()
-                            .then(() => window.playCorrectSound())
-                            .catch(err => console.error("Audio error:", err));
-                    }
+                // Check against all possible correct answers
+                if (Array.isArray(expectedAnswers[fieldId])) {
+                    isCorrect = expectedAnswers[fieldId].some(answer => 
+                        userAnswer.toLowerCase() === answer.toLowerCase()
+                    );
+                } else {
+                    isCorrect = userAnswer.toLowerCase() === expectedAnswers[fieldId].toLowerCase();
                 }
                 
-                // Always show reset button after checking
-                checkButton.style.display = 'none';
-                if (resetButton) resetButton.style.display = 'inline-flex';
+                if (isCorrect) {
+                    inputItem.classList.add('correct');
+                    inputItem.classList.remove('incorrect');
+                    feedback.innerHTML = '<i class="fas fa-check-circle" style="color: #4caf50;"></i> Correct!';
+                    feedback.style.display = 'block';
+                    feedback.style.color = '#4caf50';
+                } else {
+                    inputItem.classList.add('incorrect');
+                    inputItem.classList.remove('correct');
+                    feedback.innerHTML = '<i class="fas fa-times-circle" style="color: #f44336;"></i> Not quite right';
+                    feedback.style.display = 'block';
+                    feedback.style.color = '#f44336';
+                    allCorrect = false;
+                }
+                
+                // Disable the field after checking
+                field.disabled = true;
             });
             
-            if (resetButton) {
-                resetButton.addEventListener('click', function() {
-                    // Clear all fields and feedback
-                    Object.keys(expectedAnswers).forEach(fieldId => {
-                        const field = document.getElementById(fieldId);
-                        field.value = '';
-                        const inputItem = field.parentElement;
-                        inputItem.classList.remove('correct', 'incorrect');
-                        const feedback = inputItem.querySelector('.feedback');
-                        feedback.style.display = 'none';
-                    });
-                    
-                    // Reset UI
-                    validationMessage.style.display = 'none';
-                    successFeedback.style.display = 'none';
-                    checkButton.style.display = 'inline-flex';
-                    resetButton.style.display = 'none';
-                });
+            // Show validation message if not all filled
+            if (!allFilled) {
+                validationMessage.style.display = 'block';
+                return;
             }
-        }
+            
+            validationMessage.style.display = 'none';
+            
+            // Show feedback
+            if (allCorrect) {
+                successFeedback.style.display = 'block';
+                checkButton.style.display = 'none';
+                resetButton.classList.remove('hidden');
+                
+                // Trigger celebration
+                if (window.playCorrectSound) {
+                    window.playCorrectSound();
+                }
+            } else {
+                resetButton.classList.remove('hidden');
+            }
+        });
         
-        // Override template function
-        window.setupFillInTheBlanks = function() {
-            console.log('Custom setupFillInTheBlanks called');
-            setupCustomFillInTheBlanks();
-            return false;
-        };
-        
-        // Multiple initialization strategy
-        function initializeExercises() {
-            setupCustomFillInTheBlanks();
-        }
-        
-        // Try multiple initialization approaches
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeExercises);
-        } else {
-            initializeExercises();
-        }
-        
-        window.addEventListener('load', initializeExercises);
-        setTimeout(initializeExercises, 100);
-        setTimeout(initializeExercises, 500);
-    })();
+        resetButton.addEventListener('click', function() {
+            // Clear all fields and feedback
+            Object.keys(expectedAnswers).forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                field.value = '';
+                field.disabled = false; // Re-enable input fields
+                const inputItem = field.parentElement;
+                inputItem.classList.remove('correct', 'incorrect');
+                const feedback = inputItem.querySelector('.feedback');
+                feedback.style.display = 'none';
+            });
+            
+            // Reset UI
+            validationMessage.style.display = 'none';
+            successFeedback.style.display = 'none';
+            checkButton.style.display = 'inline-flex';
+            resetButton.classList.add('hidden');
+        });
+    };
     </script>
 </body>
 </html>
