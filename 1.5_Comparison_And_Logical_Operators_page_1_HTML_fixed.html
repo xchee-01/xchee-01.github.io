@@ -614,101 +614,129 @@ cleared_for_surgery = _________  # Fill in using AND!</pre>
     (function() {
         'use strict';
         
-        // Override the template's setupFillInTheBlanks function
-        window.setupFillInTheBlanks = function() {
+        // Custom implementation for Temperature Converter exercise
+        function setupTemperatureConverterExercise() {
             const validationMessage = document.getElementById('print-validation-message');
             const checkButton = document.getElementById('print-check-button');
             const resetButton = document.getElementById('print-reset-button');
             const successFeedback = document.getElementById('print-success-feedback');
+            const field = document.getElementById('print-line1');
+            const feedbackElement = document.getElementById('print-feedback-1');
+            const itemElement = document.getElementById('print-item-1');
             
-            const answers = {
-                'print-line1': ['temp_celsius > 37.5', 'temp_celsius>37.5']
-            };
+            // Initially hide the validation message and success feedback
+            if (validationMessage) validationMessage.style.display = 'none';
+            if (successFeedback) successFeedback.style.display = 'none';
+            
+            const answers = ['temp_celsius > 37.5', 'temp_celsius>37.5'];
             
             if (checkButton) {
                 checkButton.addEventListener('click', function() {
                     // Hide all feedback initially
-                    validationMessage.style.display = 'none';
-                    successFeedback.style.display = 'none';
+                    if (validationMessage) validationMessage.style.display = 'none';
+                    if (successFeedback) successFeedback.style.display = 'none';
+                    if (feedbackElement) feedbackElement.style.display = 'none';
                     
-                    // Check all fields are filled
-                    let allFilled = true;
-                    let allCorrect = true;
-                    
-                    Object.keys(answers).forEach(fieldId => {
-                        const field = document.getElementById(fieldId);
-                        const feedbackElement = document.getElementById(fieldId.replace('line', 'feedback-'));
-                        const itemElement = document.getElementById(fieldId.replace('line', 'item-'));
-                        
-                        if (field) {
-                            const value = field.value.trim();
-                            
-                            if (!value) {
-                                allFilled = false;
-                            } else {
-                                const isCorrect = answers[fieldId].some(answer => 
-                                    value.replace(/\s+/g, '') === answer.replace(/\s+/g, '')
-                                );
-                                
-                                if (isCorrect) {
-                                    itemElement.classList.add('correct');
-                                    itemElement.classList.remove('incorrect');
-                                    feedbackElement.innerHTML = '<span style="color: #4caf50;"><i class="fas fa-check-circle"></i> Correct!</span>';
-                                    feedbackElement.style.display = 'block';
-                                } else {
-                                    itemElement.classList.add('incorrect');
-                                    itemElement.classList.remove('correct');
-                                    feedbackElement.innerHTML = '<span style="color: #f44336;"><i class="fas fa-times-circle"></i> Try using: temp_celsius > 37.5</span>';
-                                    feedbackElement.style.display = 'block';
-                                    allCorrect = false;
-                                }
-                            }
+                    // Check if field is filled
+                    if (!field || !field.value.trim()) {
+                        if (validationMessage) {
+                            validationMessage.style.display = 'block';
                         }
-                    });
+                        return;
+                    }
                     
-                    if (!allFilled) {
-                        validationMessage.style.display = 'block';
-                    } else if (allCorrect) {
-                        successFeedback.style.display = 'block';
-                        checkButton.classList.add('hidden');
-                        resetButton.classList.remove('hidden');
+                    // Check answer
+                    const value = field.value.trim();
+                    const isCorrect = answers.some(answer => 
+                        value.replace(/\s+/g, '') === answer.replace(/\s+/g, '')
+                    );
+                    
+                    if (isCorrect) {
+                        if (itemElement) {
+                            itemElement.classList.add('correct');
+                            itemElement.classList.remove('incorrect');
+                        }
+                        if (feedbackElement) {
+                            feedbackElement.innerHTML = '<span style="color: #4caf50;"><i class="fas fa-check-circle"></i> Correct!</span>';
+                            feedbackElement.style.display = 'block';
+                        }
+                        if (successFeedback) {
+                            successFeedback.style.display = 'block';
+                        }
                         
                         // Play success sound if available
-                        if (window.playCorrectSound) {
-                            window.playCorrectSound();
+                        if (window.initAudio && window.playCorrectSound) {
+                            window.initAudio()
+                                .then(() => window.playCorrectSound())
+                                .catch(err => console.error("Audio error:", err));
                         }
                     } else {
-                        checkButton.classList.add('hidden');
-                        resetButton.classList.remove('hidden');
+                        if (itemElement) {
+                            itemElement.classList.add('incorrect');
+                            itemElement.classList.remove('correct');
+                        }
+                        if (feedbackElement) {
+                            feedbackElement.innerHTML = '<span style="color: #f44336;"><i class="fas fa-times-circle"></i> Try using: temp_celsius > 37.5</span>';
+                            feedbackElement.style.display = 'block';
+                        }
                     }
+                    
+                    // Always show reset button after checking
+                    checkButton.style.display = 'none';
+                    if (resetButton) resetButton.style.display = 'inline-flex';
                 });
             }
             
             if (resetButton) {
+                // Initially hide reset button
+                resetButton.style.display = 'none';
+                
                 resetButton.addEventListener('click', function() {
-                    // Clear all fields
-                    Object.keys(answers).forEach(fieldId => {
-                        const field = document.getElementById(fieldId);
-                        const feedbackElement = document.getElementById(fieldId.replace('line', 'feedback-'));
-                        const itemElement = document.getElementById(fieldId.replace('line', 'item-'));
-                        
-                        if (field) {
-                            field.value = '';
-                            feedbackElement.style.display = 'none';
-                            itemElement.classList.remove('correct', 'incorrect');
-                        }
-                    });
+                    // Clear field
+                    if (field) field.value = '';
                     
                     // Hide feedback
-                    validationMessage.style.display = 'none';
-                    successFeedback.style.display = 'none';
+                    if (feedbackElement) feedbackElement.style.display = 'none';
+                    if (validationMessage) validationMessage.style.display = 'none';
+                    if (successFeedback) successFeedback.style.display = 'none';
+                    
+                    // Remove classes
+                    if (itemElement) {
+                        itemElement.classList.remove('correct', 'incorrect');
+                    }
                     
                     // Swap buttons
-                    checkButton.classList.remove('hidden');
-                    resetButton.classList.add('hidden');
+                    if (checkButton) checkButton.style.display = 'inline-flex';
+                    resetButton.style.display = 'none';
                 });
             }
+        }
+        
+        // Override the template's setupFillInTheBlanks function
+        window.setupFillInTheBlanks = function() {
+            console.log('Custom setupFillInTheBlanks called');
+            setupTemperatureConverterExercise();
+            return false;
         };
+        
+        // Initialize on multiple events to ensure it runs
+        function initializeExercises() {
+            setupTemperatureConverterExercise();
+        }
+        
+        // Try multiple initialization approaches
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeExercises);
+        } else {
+            initializeExercises();
+        }
+        
+        // Also try on window load
+        window.addEventListener('load', initializeExercises);
+        
+        // And with a delay
+        setTimeout(initializeExercises, 100);
+        setTimeout(initializeExercises, 500);
     })();
     </script>
 </body>
