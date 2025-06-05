@@ -256,17 +256,15 @@ heart_rate = 110
                                 </ul>
                             </div>
                             
-                            <div class="button-group" style="display: flex; gap: 10px; align-items: center;">
-                                <button class="action-button" id="print-check-button">
-                                    <i class="fas fa-clipboard-check"></i>
-                                    Check Answers
-                                </button>
-                                
-                                <button class="action-button reset" id="print-reset-button" style="display: none;">
-                                    <i class="fas fa-redo"></i>
-                                    Try Again
-                                </button>
-                            </div>
+                            <button class="action-button" id="print-check-button">
+                                <i class="fas fa-clipboard-check"></i>
+                                Check Answers
+                            </button>
+                            
+                            <button class="action-button reset hidden" id="print-reset-button">
+                                <i class="fas fa-redo"></i>
+                                Try Again
+                            </button>
                         </div>
                     </div>
                     
@@ -744,23 +742,21 @@ print(f"Final BP: {systolic}")
             </div>
         </section>
         
-        <section class="code-editor">
+        <section id="interpreter-container">
             <h2 id="interpreter-heading">Python Interpreter</h2>
             <p>Try out the while loop examples here. Experiment with different conditions and see how they behave!</p>
             
-            <div class="interpreter-container">
-                <textarea id="python-code"># Type your python codes here</textarea>
-                
-                <div class="button-group">
-                    <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
-                    <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
-                </div>
-                
-                <div id="status">Loading Python runtime... Please wait.</div>
-                
-                <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
-                <pre id="output-area"></pre>
+            <textarea id="python-code"># Type your python codes here</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
             </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
         </section>
     </main>
     
@@ -825,8 +821,10 @@ print(f"Final BP: {systolic}")
     (function() {
         'use strict';
         
-        // Custom implementation function
-        function setupCustomFillInTheBlanks() {
+        // Override the template's setupFillInTheBlanks function
+        window.setupFillInTheBlanks = function() {
+            console.log('Using custom fill-in-the-blanks for heart rate exercise');
+            
             const checkButton = document.getElementById('print-check-button');
             const resetButton = document.getElementById('print-reset-button');
             const validationMessage = document.getElementById('print-validation-message');
@@ -834,14 +832,6 @@ print(f"Final BP: {systolic}")
             if (!checkButton || !resetButton) {
                 console.log('Fill-in-the-blanks elements not found');
                 return;
-            }
-            
-            // Force button visibility
-            function forceButtonVisibility() {
-                if (resetButton.style.display === 'inline-flex') {
-                    resetButton.style.setProperty('display', 'inline-flex', 'important');
-                    resetButton.style.setProperty('visibility', 'visible', 'important');
-                }
             }
             
             // Expected answers
@@ -897,23 +887,18 @@ print(f"Final BP: {systolic}")
                     }
                 });
                 
-                // Show summary feedback and buttons
+                // Show summary feedback
                 if (allCorrect) {
                     document.getElementById('print-success-feedback').style.display = 'block';
                     document.getElementById('print-info-feedback').style.display = 'block';
+                    checkButton.style.display = 'none';
+                    resetButton.classList.remove('hidden');
                     resetButton.style.display = 'inline-flex';
-                    forceButtonVisibility();
                     
                     // Play success sound if available
-                    if (window.initAudio && window.playCorrectSound) {
-                        window.initAudio()
-                            .then(() => window.playCorrectSound())
-                            .catch(err => console.error("Audio error:", err));
+                    if (window.playCorrectSound) {
+                        window.playCorrectSound();
                     }
-                } else {
-                    // Show reset button for incorrect answers too
-                    resetButton.style.display = 'inline-flex';
-                    forceButtonVisibility();
                 }
             });
             
@@ -931,47 +916,13 @@ print(f"Final BP: {systolic}")
                 document.getElementById('print-info-feedback').style.display = 'none';
                 validationMessage.style.display = 'none';
                 
+                checkButton.style.display = 'inline-flex';
                 resetButton.style.display = 'none';
             });
-            
-            // MutationObserver to prevent template interference
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                        forceButtonVisibility();
-                    }
-                });
-            });
-            
-            observer.observe(resetButton, {
-                attributes: true,
-                attributeFilter: ['style']
-            });
-        }
-        
-        // Override template function
-        window.setupFillInTheBlanks = function() {
-            console.log('Custom setupFillInTheBlanks called');
-            setupCustomFillInTheBlanks();
-            return false;
         };
         
-        // Multiple initialization strategy
-        function initializeExercises() {
-            setupCustomFillInTheBlanks();
-        }
-        
-        // Try multiple initialization approaches
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeExercises);
-        } else {
-            initializeExercises();
-        }
-        
-        window.addEventListener('load', initializeExercises);
-        setTimeout(initializeExercises, 100);
-        setTimeout(initializeExercises, 500);
-        setTimeout(initializeExercises, 1000);
+        // Call the setup function after a delay to ensure DOM is ready
+        setTimeout(setupFillInTheBlanks, 500);
     })();
     </script>
 </body>
