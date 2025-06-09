@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Medical Heatmap Techniques - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Precision Medical Toolkit for Health Analytics</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>MODULE 2: Advanced Medical Heatmap Techniques</h1>
+            
+            <!-- Section 1: Clustering - Finding Hidden Patient Groups -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-search" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🔬 Mission Briefing: Clustering - Finding Hidden Patient Groups 🔍
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Here's where heatmaps become truly magical! Clustering is like having an AI assistant that automatically groups similar patients together. Imagine sorting M&Ms by color... but for patient data! 🍫</p>
+                    
+                    <p><strong>Why Clustering Matters in Medicine</strong>:</p>
+                    <ul>
+                        <li>Discovers disease subtypes invisible to the naked eye</li>
+                        <li>Groups patients who might respond to the same treatment</li>
+                        <li>Reveals genetic signatures of different cancers</li>
+                        <li>Identifies outbreak patterns in epidemiology</li>
+                    </ul>
+                    
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Quick Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What is the primary purpose of clustering in medical heatmaps?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To make the visualization more colorful</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite right. While clustering can change the visual arrangement, its primary purpose is analytical, not aesthetic.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To automatically group similar patients or data points together</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Clustering automatically identifies and groups similar patterns in data, helping researchers discover hidden patient subgroups or disease subtypes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To increase the size of the heatmap</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not correct. Clustering doesn't change the size of the heatmap, it reorganizes the data to reveal patterns.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To remove outliers from the data</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. While clustering can help identify outliers, its primary purpose is to group similar data points, not remove them.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>Let's simulate a groundbreaking leukemia study:</p>
+                    
+                    <div class="code-block-container" data-block-name="leukemia-simulation">
+                        <div class="code-block"># Generate data for a leukemia subtype discovery study
+# This mimics the famous ALL vs AML discovery!
+
+np.random.seed(42)  # For reproducibility (good science!)
+
+# Create genes and patients
+n_genes = 20
+n_patients = 15
+
+gene_list = [f'Gene_{i}' for i in range(1, n_genes + 1)]
+patient_list = [f'Patient_{i}' for i in range(1, n_patients + 1)]
+
+# Simulate three hidden patient groups (like different leukemia types)
+# Group 1: ALL-like (Patients 1-5)
+group1 = np.random.normal(2, 0.5, (n_genes, 5))
+# Group 2: AML-like (Patients 6-10)
+group2 = np.random.normal(0, 0.5, (n_genes, 5))
+# Group 3: Mixed phenotype (Patients 11-15)
+group3 = np.random.normal(-2, 0.5, (n_genes, 5))
+
+# Make certain genes "signature genes" for each group
+group1[0:7, :] += 2    # Genes 1-7 high in ALL
+group2[7:14, :] += 2   # Genes 8-14 high in AML
+group3[14:20, :] += 2  # Genes 15-20 high in mixed
+
+# Combine all patient data
+expression_matrix = np.hstack([group1, group2, group3])
+
+# Create DataFrame
+df_expression = pd.DataFrame(expression_matrix,
+                           index=gene_list,
+                           columns=patient_list)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Code Understanding</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the leukemia simulation above, why do we add different values to specific gene ranges for each group?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To make the code run faster</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. Adding values doesn't affect code performance. This is about creating realistic biological patterns.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To create distinct "signature genes" that characterize each patient group</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Exactly right! By making certain genes highly expressed in specific patient groups, we're simulating how real diseases have characteristic gene expression patterns that help identify them.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To normalize the data</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Normalization would make values more similar, not create distinct patterns between groups.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To remove noise from the measurements</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. We're actually adding patterns to the data, not removing noise.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>Now watch the magic of automatic clustering:</p>
+                    
+                    <div class="code-block-container" data-block-name="clustered-heatmap">
+                        <div class="code-block"># Create a clustered heatmap - prepare to be amazed! 🎩✨
+plt.figure(figsize=(12, 10))
+cluster_map = sns.clustermap(df_expression,
+                            cmap='RdBu_r',
+                            center=0,          # Center at zero
+                            figsize=(12, 10),
+                            dendrogram_ratio=0.15,
+                            cbar_pos=(0.02, 0.83, 0.03, 0.15),
+                            yticklabels=True,
+                            xticklabels=True)
+
+# Add title (clustermap needs special handling)
+cluster_map.fig.suptitle('The Leukemia Revelation: 3 Diseases Hiding as 1! 🔬\n' +
+                        'Watch how patients group themselves by molecular signature', 
+                        fontsize=16, y=0.98)
+
+plt.show()</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Parameter Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does the <code>dendrogram_ratio=0.15</code> parameter control in sns.clustermap?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The color intensity of the heatmap</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. Color intensity is controlled by the colormap and vmin/vmax parameters, not dendrogram_ratio.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The size of the dendrogram (tree structure) relative to the heatmap</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! dendrogram_ratio=0.15 means the dendrogram takes up 15% of the figure space, with the heatmap taking the remaining 85%.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The clustering algorithm used</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The clustering algorithm is controlled by the method parameter, not dendrogram_ratio.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The font size of labels</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Font sizes are controlled by other parameters, not dendrogram_ratio.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p><strong>🤯 Mind-Blowing Fact</strong>: This exact approach led to one of medicine's biggest breakthroughs! In 1999, researchers used clustering on gene expression data and discovered that "acute leukemia" was actually multiple distinct diseases. This discovery revolutionized treatment – patients now get targeted therapy based on their molecular subtype!</p>
+                    
+                    <p><strong>Pattern Recognition Challenge</strong>: Can you see how the clustering algorithm automatically grouped patients 1-5, 6-10, and 11-15 together? The dendrograms (tree structures) show the "family tree" of similarity!</p>
+                </div>
+            </div>
+            
+            <!-- Section 2: Masking - Spotlight on What Matters -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-lightbulb" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🔬 Mission Briefing: Masking - Spotlight on What Matters 🔦
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>In a busy emergency room, doctors need to focus on abnormal values instantly. Masking in heatmaps is like having a smart filter that hides the boring stuff and screams "LOOK HERE!" for the important bits.</p>
+                    
+                    <p><strong>Medical Masking Applications</strong>:</p>
+                    <ul>
+                        <li>Hide normal lab values to highlight abnormalities</li>
+                        <li>Show only statistically significant drug interactions</li>
+                        <li>Focus on genes with major expression changes</li>
+                        <li>Highlight patients needing immediate attention</li>
+                    </ul>
+                    
+                    <!-- MCQ 4 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Concept Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What is the main benefit of using masking in medical heatmaps?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It makes the heatmap smaller</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Masking doesn't change the size of the heatmap, it selectively hides certain values.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It hides unimportant values to highlight critical information</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Exactly! Masking helps focus attention on the most important values by hiding normal or uninteresting data points.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It changes the color scheme</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not correct. Masking hides values but doesn't change the color scheme itself.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It removes all negative values</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not right. Masking can hide any values based on custom criteria, not just negative ones.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>Let's create an ER dashboard that could save precious seconds:</p>
+                    
+                    <div class="code-block-container" data-block-name="er-lab-results">
+                        <div class="code-block"># Create clinical lab results for multiple patients
+# Values are z-scores (standard deviations from normal)
+# This is how labs often report results internally
+
+lab_tests = ['Glucose', 'Cholesterol', 'Triglycerides', 'HDL', 'LDL', 
+             'Creatinine', 'ALT', 'AST', 'Hemoglobin', 'WBC']
+patients = [f'P{i:03d}' for i in range(1, 13)]  # P001 to P012
+
+# Generate mostly normal data
+np.random.seed(123)
+lab_data = np.random.normal(0, 1, (len(lab_tests), len(patients)))
+
+# Inject some concerning values (medical emergencies!)
+lab_data[0, [2, 5, 8]] = [3.2, 2.8, 3.5]      # Diabetes alert! 🚨
+lab_data[5, [1, 7, 10]] = [2.5, 3.1, 2.7]     # Kidney problems! 
+lab_data[8, [3, 6, 9]] = [-2.8, -3.2, -2.5]   # Severe anemia!
+
+# Create DataFrame
+df_labs = pd.DataFrame(lab_data,
+                      index=lab_tests,
+                      columns=patients)
+
+# Create mask for normal values (hide the boring stuff)
+mask_normal = (df_labs > -2) & (df_labs < 2)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 5 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Logic Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the code above, what will the mask_normal variable contain?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only values greater than 2</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The mask uses both > -2 AND < 2 conditions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only values less than -2</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The mask is looking for values between -2 and 2.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">True for values between -2 and 2, False otherwise</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! The mask will be True for normal values (between -2 and 2 standard deviations) and False for abnormal values.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">False for all values</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Most values in the normal distribution will fall between -2 and 2, so many will be True.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>Now create the "ER Alert Dashboard":</p>
+                    
+                    <div class="code-block-container" data-block-name="er-alert-dashboard">
+                        <div class="code-block"># Create the emergency room alert heatmap
+plt.figure(figsize=(12, 8))
+sns.heatmap(df_labs,
+            mask=mask_normal,        # Hide normal values
+            cmap='coolwarm',
+            center=0,
+            vmin=-4, vmax=4,
+            annot=True,
+            fmt='.1f',
+            cbar_kws={'label': 'Z-score (σ from Normal)\n← Low | Normal | High →'},
+            linewidths=0.5)
+
+plt.title('🚨 ER Lab Alert Dashboard - Abnormal Values Only! 🚨\n' +
+          'If you see color, take action!', fontsize=14, pad=20)
+plt.xlabel('Patient ID', fontsize=12)
+plt.ylabel('Lab Test', fontsize=12)
+
+# Add interpretation guide
+plt.text(12.5, 5, '🔴 Red Alert:\nAbove Normal\n\n🔵 Blue Alert:\nBelow Normal\n\n⬜ White:\nNormal Range', 
+         fontsize=10, bbox=dict(boxstyle='round', facecolor='lightyellow', edgecolor='black'))
+
+# Add specific alerts
+plt.text(2.5, -0.5, '⚠️ Diabetes Risk!', fontsize=8, ha='center', color='red')
+plt.text(6.5, -0.5, '⚠️ Check Kidneys!', fontsize=8, ha='center', color='red')
+plt.text(9.5, -0.5, '⚠️ Anemia Alert!', fontsize=8, ha='center', color='blue')
+
+plt.tight_layout()
+plt.show()</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Clinical Reasoning</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                If a patient's hemoglobin z-score is -3.2, what does this indicate?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The patient has too much hemoglobin</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. A negative z-score means the value is below the mean, not above it.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The patient has severe anemia (low hemoglobin)</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! A z-score of -3.2 means the hemoglobin is 3.2 standard deviations below normal, indicating severe anemia that requires immediate medical attention.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The hemoglobin level is normal</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. A z-score of -3.2 is far from normal (which would be around 0).
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The test result is invalid</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not necessarily. While -3.2 is very low, it's a valid result indicating a serious medical condition.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p><strong>💊 Clinical Reality Check</strong>: This type of visualization is actively used in modern electronic health records. Doctors report it reduces the time to identify critical values by up to 75%!</p>
+                </div>
+            </div>
+            
+            <!-- Section 3: Lab Exercise 3 - Cardiovascular Risk Factor Web -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-flask" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🧪 Lab Exercise 3: Cardiovascular Risk Factor Web
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p><strong>Your Challenge</strong>: Create a correlation heatmap revealing hidden connections between heart disease risk factors. Can you discover which factors are secret accomplices in cardiovascular disease? 🕵️‍♂️</p>
+                    
+                    <div class="code-block-container" data-block-name="cardiovascular-exercise">
+                        <div class="code-block"># Lab scenario: Cardiovascular biomarker correlations
+# TODO: Create correlation matrix and visualize with masking
+
+# Biomarker names
+biomarkers = ['Cholesterol', 'LDL', 'HDL', 'Triglycerides', 
+              'CRP', 'Blood Pressure', 'BMI', 'HbA1c']
+
+# Generate synthetic patient data (100 patients)
+np.random.seed(456)
+n_patients = 100
+
+# Create correlated data (mimicking real relationships)
+cholesterol = np.random.normal(200, 30, n_patients)
+ldl = 0.7 * cholesterol + np.random.normal(0, 20, n_patients)
+hdl = -0.3 * cholesterol + np.random.normal(60, 10, n_patients)
+triglycerides = 0.5 * cholesterol + np.random.normal(150, 40, n_patients)
+# Add more biomarkers...
+
+# TODO: Create DataFrame, calculate correlations, and create masked heatmap
+# Mask weak correlations (absolute value < 0.3)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 7 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Think First</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which relationship would you expect between HDL (good cholesterol) and total cholesterol?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Strong positive correlation</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not typically. HDL often has an inverse relationship with total cholesterol.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Strong negative correlation</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! HDL (good cholesterol) typically has a negative correlation with total cholesterol - when one goes up, the other tends to go down.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">No correlation</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> There is usually some relationship between HDL and total cholesterol.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Perfect correlation of 1.0</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> A perfect positive correlation would be unusual for HDL and total cholesterol.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p><strong>Think First</strong>: Which biomarkers do you expect to be best friends (positive correlation) or enemies (negative correlation)?</p>
+                    
+                    <p>Expected output: A triangular correlation heatmap showing only significant relationships</p>
+                    
+                    <div class="code-block-container" data-block-name="cardiovascular-solution">
+                        <div class="code-block"># Complete solution with medical insights
+# Biomarker names
+biomarkers = ['Cholesterol', 'LDL', 'HDL', 'Triglycerides', 
+              'CRP', 'BP', 'BMI', 'HbA1c']
+
+# Generate realistically correlated patient data
+np.random.seed(456)
+n_patients = 100
+
+# Create the "cardiovascular conspiracy network" 🕸️
+cholesterol = np.random.normal(200, 30, n_patients)
+ldl = 0.7 * cholesterol + np.random.normal(0, 20, n_patients)  # Bad cholesterol
+hdl = -0.3 * cholesterol + np.random.normal(60, 10, n_patients)  # Good cholesterol
+triglycerides = 0.5 * cholesterol + np.random.normal(150, 40, n_patients)
+crp = 0.4 * cholesterol + np.random.normal(3, 1, n_patients)  # Inflammation
+bp = 0.3 * cholesterol + 0.4 * np.random.normal(120, 15, n_patients)
+bmi = 0.6 * triglycerides/10 + np.random.normal(25, 4, n_patients)
+hba1c = 0.5 * bmi/10 + np.random.normal(5.5, 0.8, n_patients)  # Blood sugar
+
+# Create DataFrame
+biomarker_data = pd.DataFrame({
+    'Cholesterol': cholesterol,
+    'LDL': ldl,
+    'HDL': hdl,
+    'Triglycerides': triglycerides,
+    'CRP': crp,
+    'BP': bp,
+    'BMI': bmi,
+    'HbA1c': hba1c
+})
+
+# Calculate correlation matrix
+corr_matrix = biomarker_data.corr()
+
+# Create masks for cleaner visualization
+mask_upper = np.triu(np.ones_like(corr_matrix), k=1)  # Hide duplicate upper triangle
+mask_weak = np.abs(corr_matrix) < 0.3                 # Hide weak relationships
+
+# Combine masks
+combined_mask = mask_upper | mask_weak
+
+# Create the correlation web visualization
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr_matrix,
+            mask=combined_mask,
+            annot=True,
+            fmt='.2f',
+            cmap='RdBu_r',
+            center=0,
+            vmin=-1, vmax=1,
+            square=True,
+            linewidths=1,
+            cbar_kws={'label': 'Correlation Coefficient\n← Enemies | Neutral | Best Friends →'})
+
+plt.title('The Cardiovascular Risk Factor Conspiracy Web 🕸️\n' +
+          'Revealing hidden connections in heart disease!', 
+          fontsize=14, pad=20)
+
+# Add interpretation guide
+plt.text(-1, 4, '💡 Reading Guide:\n\n' +
+         '🔴 Positive = Partners\nin crime\n\n' +
+         '🔵 Negative = Natural\nenemies', 
+         fontsize=9, bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.5))
+
+# Add clinical insight
+plt.text(8.5, 6, '⚡ Key Finding:\nLDL & Cholesterol\nare BFFs (0.87)!\n\n' +
+         'HDL is the hero\nfighting against\ncholesterol (-0.34)', 
+         fontsize=9, bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.7))
+
+plt.tight_layout()
+plt.show()</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 8 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Data Interpretation</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the correlation matrix, what does <code>mask_upper = np.triu(np.ones_like(corr_matrix), k=1)</code> accomplish?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Removes all positive correlations</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. This function creates a triangular mask, not based on correlation values.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Hides the upper triangle to avoid showing duplicate correlation values</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Exactly! Since correlation matrices are symmetric, showing both triangles would be redundant. This mask hides the upper triangle.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Increases all correlation values</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. Masking doesn't change values, it just hides them.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Changes the color scheme</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Color schemes are controlled by the cmap parameter, not masking.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p><strong>🏆 Achievement Unlocked</strong>: You've discovered the cardiovascular conspiracy! Notice how LDL (bad cholesterol) and total cholesterol are partners in crime (0.87 correlation), while HDL (good cholesterol) fights against them (-0.34). This is why doctors say "raise your HDL, lower your LDL"!</p>
+                </div>
+            </div>
+            
+            <!-- Section 4: Publication-Ready Masterpieces -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-chart-bar" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🔬 Mission Briefing: Publication-Ready Masterpieces 📊
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Time to level up! Creating heatmaps for top medical journals requires ninja-level attention to detail. Your visualization might be the key figure that gets your research into Nature Medicine!</p>
+                    
+                    <p><strong>Publication Checklist</strong> ✅:</p>
+                    <ul>
+                        <li>High resolution (300 DPI minimum)</li>
+                        <li>Statistical significance markers</li>
+                        <li>Clear, self-contained legends</li>
+                        <li>Professional color schemes</li>
+                        <li>Comprehensive captions</li>
+                        <li>Accessibility considerations</li>
+                    </ul>
+                    
+                    <!-- MCQ 9 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Publication Standards</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What is the minimum DPI (dots per inch) typically required for figures in medical journals?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">72 DPI</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Too low. 72 DPI is standard for web display but not sufficient for print publications.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">150 DPI</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Getting closer, but most journals require higher resolution for quality printing.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">300 DPI</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! 300 DPI is the standard minimum for publication-quality figures in medical journals.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">50 DPI</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Much too low. This would result in very poor print quality.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>Let's create a drug synergy heatmap worthy of the New England Journal of Medicine:</p>
+                    
+                    <div class="code-block-container" data-block-name="drug-synergy-setup">
+                        <div class="code-block"># Create a comprehensive drug combination study
+# Testing if drugs work better together (1+1=3?)
+
+# Define drugs for combination therapy
+drugs_a = ['Drug A1', 'Drug A2', 'Drug A3', 'Drug A4', 'Drug A5']
+drugs_b = ['Drug B1', 'Drug B2', 'Drug B3', 'Drug B4', 'Drug B5']
+
+# Generate synergy scores (Bliss independence model)
+# Positive = synergistic (teamwork!), Negative = antagonistic (fighting!)
+np.random.seed(789)
+synergy_scores = np.random.randn(5, 5) * 20
+
+# Add some blockbuster combinations
+synergy_scores[0, 2] = 45  # Wow! Super synergy! 💪
+synergy_scores[1, 3] = 38
+synergy_scores[3, 4] = 42
+
+# Add some terrible combinations
+synergy_scores[2, 1] = -35  # These drugs hate each other! 😠
+synergy_scores[4, 0] = -28
+
+# Create p-values for statistical significance
+p_values = np.random.uniform(0.001, 0.1, (5, 5))
+p_values[0, 2] = 0.0001  # Highly significant!
+p_values[1, 3] = 0.001
+p_values[3, 4] = 0.0005</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 10 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Drug Synergy</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                If two drugs have a synergy score of 45, what does this indicate?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The drugs cancel each other out</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. A high positive score indicates synergy, not cancellation.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The drugs work much better together than separately (synergistic effect)</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Exactly! A synergy score of 45 indicates strong positive synergy - the combination is much more effective than either drug alone.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The drugs have no interaction</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> A score of 45 indicates strong interaction, not no interaction.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The drugs are toxic when combined</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Positive scores indicate beneficial synergy, not toxicity.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>Now create the publication-quality visualization:</p>
+                    
+                    <div class="code-block-container" data-block-name="publication-heatmap">
+                        <div class="code-block"># Helper function for significance stars
+def get_significance_marker(p_val):
+    if p_val < 0.001:
+        return '***'
+    elif p_val < 0.01:
+        return '**'
+    elif p_val < 0.05:
+        return '*'
+    else:
+        return ''
+
+# Create annotation matrix with values and significance
+annot_matrix = []
+for i in range(5):
+    row = []
+    for j in range(5):
+        val = synergy_scores[i, j]
+        sig = get_significance_marker(p_values[i, j])
+        row.append(f'{val:.1f}{sig}')
+    annot_matrix.append(row)
+    
+annot_array = np.array(annot_matrix)
+
+# Create the publication-ready masterpiece
+fig, ax = plt.subplots(figsize=(10, 8))
+
+# Main heatmap with custom annotations
+sns.heatmap(synergy_scores,
+            annot=annot_array,
+            fmt='',              # Use string annotations
+            cmap='RdBu_r',
+            center=0,
+            vmin=-50, vmax=50,
+            xticklabels=drugs_b,
+            yticklabels=drugs_a,
+            linewidths=0.5,
+            linecolor='gray',
+            cbar_kws={'label': 'Synergy Score', 'shrink': 0.8})
+
+# Professional labeling
+ax.set_xlabel('Drug B', fontsize=12, fontweight='bold')
+ax.set_ylabel('Drug A', fontsize=12, fontweight='bold')
+ax.set_title('Drug Combination Synergy Analysis for MCF-7 Breast Cancer Cells\n' +
+             'Identifying Powerful Drug Partnerships', 
+             fontsize=14, fontweight='bold', pad=20)
+
+# Add significance legend
+legend_text = 'Statistical Significance:\n* p < 0.05\n** p < 0.01\n*** p < 0.001'
+plt.text(5.5, 2.5, legend_text, fontsize=10, 
+         bbox=dict(boxstyle='round', facecolor='white', edgecolor='black'))
+
+# Add interpretation guides
+plt.text(5.5, 0.5, '🔥 Synergistic\n(> 20)', fontsize=9, ha='center',
+         bbox=dict(boxstyle='round', facecolor='#d73027', alpha=0.3))
+plt.text(5.5, 4.5, '❄️ Antagonistic\n(< -20)', fontsize=9, ha='center',
+         bbox=dict(boxstyle='round', facecolor='#4575b4', alpha=0.3))
+
+# Add breakthrough callout
+plt.text(2.2, -0.7, '💊 Breakthrough!\nA1+B3 combo\nshows amazing\nsynergy!', 
+         fontsize=9, ha='center', 
+         bbox=dict(boxstyle='round', facecolor='gold', alpha=0.7))
+
+plt.tight_layout()
+# In real publication: plt.savefig('drug_synergy_heatmap.pdf', dpi=300, bbox_inches='tight')
+plt.show()</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 11 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Statistical Significance</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                According to the significance legend, what does '**' indicate about a p-value?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">p > 0.05</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. Two stars indicate a significant p-value, not a non-significant one.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">p < 0.05 but ≥ 0.01</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be one star (*), not two stars.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">p < 0.01 but ≥ 0.001</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! Two stars (**) indicate p < 0.01 but not as extreme as p < 0.001 (which would be three stars).
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">p < 0.001</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be three stars (***), not two.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p><strong>🌟 Real Success Story</strong>: The FDA-approved drug combination of pertuzumab + trastuzumab (Perjeta + Herceptin) for HER2-positive breast cancer was discovered through exactly this type of synergy analysis! Their heatmap showed a synergy score of >40, leading to a treatment that extends patient survival by months or even years.</p>
+                </div>
+            </div>
+            
+            <!-- Section 5: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-5">
+                        <i class="fas fa-trophy" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🎓 Summary: Your Heatmap Mastery Certificate 🏆
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Congratulations, future precision health hero! 🦸‍♀️ You've unlocked the power of medical heatmaps and gained skills that can literally help save lives. Let's celebrate what you've mastered:</p>
+                    
+                    <p><strong>Your New Superpowers</strong> 💪:</p>
+                    <ul>
+                        <li><strong>Basic Heatmap Creation</strong> - Transforming gene expression data into visual insights</li>
+                        <li><strong>Color Scheme Mastery</strong> - Choosing the perfect palette for your medical message</li>
+                        <li><strong>Seaborn Wizardry</strong> - Creating publication-ready visualizations with minimal code</li>
+                        <li><strong>Clustering Magic</strong> - Discovering hidden patient groups and disease subtypes</li>
+                        <li><strong>Masking Techniques</strong> - Spotlighting critical values in clinical dashboards</li>
+                        <li><strong>Correlation Detection</strong> - Revealing hidden connections between biomarkers</li>
+                        <li><strong>Publication Excellence</strong> - Creating journal-worthy figures with statistical rigor</li>
+                    </ul>
+                    
+                    <!-- MCQ 12 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Application Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which of the following is NOT a real-world application of medical heatmaps?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Identifying cancer subtypes for personalized therapy</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This IS a real application. Heatmaps are routinely used to identify cancer subtypes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Creating ICU dashboards for patient monitoring</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This IS a real application. Many ICUs use heatmap-style displays for patient data.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Replacing doctors with automated diagnosis</div>
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Heatmaps are tools to assist medical professionals, not replace them. They help visualize complex data but don't make autonomous medical decisions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Discovering effective drug combinations</div>
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This IS a real application. Drug synergy heatmaps are widely used in pharmaceutical research.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p><strong>Real-World Impact</strong> 🌍:</p>
+                    <p>Your heatmap skills directly translate to:</p>
+                    <ul>
+                        <li>🧬 Identifying cancer subtypes for personalized therapy</li>
+                        <li>🏥 Creating ICU dashboards that help nurses spot deteriorating patients</li>
+                        <li>💊 Discovering drug combinations that work better together</li>
+                        <li>📊 Publishing research that advances medical knowledge</li>
+                        <li>🔬 Analyzing clinical trial results to find effective treatments</li>
+                    </ul>
+                    
+                    <p><strong>What's Next on Your Journey?</strong> 🚀</p>
+                    <p>Your adventure continues with even more powerful visualization techniques:</p>
+                    <ul>
+                        <li>🌋 <strong>Volcano plots</strong> for finding significant genes in diseases</li>
+                        <li>📈 <strong>Survival curves</strong> for analyzing patient outcomes over time</li>
+                        <li>🕸️ <strong>Network diagrams</strong> for mapping molecular pathways</li>
+                        <li>📊 <strong>Interactive dashboards</strong> for real-time patient monitoring</li>
+                    </ul>
+                    
+                    <p><strong>Final Challenge</strong> 🎯: Find a real medical dataset (check out GEO, TCGA, or Kaggle) and create a heatmap that tells a story. Share it with the medical data viz community – your visualization might inspire the next breakthrough!</p>
+                    
+                    <p>Remember: Every pixel in your heatmap could represent a patient whose life might be saved by the patterns you reveal. Keep learning, keep visualizing, and keep making a difference! 🌟</p>
+                    
+                    <p><em>"In God we trust. All others must bring data... and beautiful heatmaps!"</em> - Modern medical researcher's motto 😄</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out the heatmap examples from this module. Experiment with different parameters and create your own medical visualizations!</p>
+            
+            <textarea id="python-code"># Type your python codes here</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Python session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your heatmap visualization session has been inactive. Ready to continue creating stunning medical visualizations?</p>
+                <button class="modal-close">
+                    <i class="fas fa-chart-bar"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
