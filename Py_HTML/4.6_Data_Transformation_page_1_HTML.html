@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Transformation for Precision Health - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Precision Medical Toolkit for Health Analytics</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>MODULE 1: Core Transformation Techniques - Unit Conversion and String Operations</h1>
+            
+            <h2>🧬 Data Transformation for Precision Health 🧬</h2>
+            
+            <p>Welcome to the extraordinary world of biomedical data engineering! Think of yourself as a translator for the Tower of Babel that is modern healthcare data. In precision health, you'll encounter data that speaks a thousand different dialects - from American glucose measurements in mg/dL to European mmol/L, from cryptic "120/80" blood pressure strings to the structured numeric values that machine learning models crave.</p>
+            
+            <div class="fun-fact">
+                <p><strong>🎯 Fun Fact:</strong> Did you know that the confusion between metric and imperial units once caused NASA to lose a $125 million Mars orbiter? In healthcare, unit conversion errors can have even more serious consequences - which is why your data transformation skills are literally life-saving!</p>
+            </div>
+            
+            <!-- Section 1: Understanding Data Transformation -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-microscope" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mission Briefing: Understanding Data Transformation in Clinical Context
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Think of data transformation as being like a master chef preparing ingredients. Just as a chef transforms raw vegetables into a perfectly diced mirepoix, you'll transform messy clinical data into pristine, analysis-ready formats. Whether you're converting Fahrenheit body temperatures to Celsius for a European study or parsing genetic variant notations from different sequencing platforms, every transformation must preserve the clinical truth while making the data analytically delicious!</p>
+                    
+                    <p><strong>📊 Why This Matters:</strong> In precision health, data transformation bridges the gap between:</p>
+                    <ul>
+                        <li>The chaotic reality of clinical data collection (where every hospital has its own format)</li>
+                        <li>The structured requirements of AI models that predict treatment outcomes</li>
+                        <li>The standardized formats needed for international research collaborations</li>
+                    </ul>
+                    
+                    <p>Let's start with the basics and build up your transformation toolkit!</p>
+                    
+                    <div class="code-block-container" data-block-name="import-libraries">
+                        <div class="code-block"># Import essential libraries for data transformation
+import pandas as pd
+import numpy as np
+
+# Pro tip: Always import at the beginning - it's like mise en place in cooking!</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="code-block-container" data-block-name="create-clinical-dataset">
+                        <div class="code-block"># Create a sample clinical dataset that needs transformation
+# This mimics real Electronic Health Record (EHR) data you'll encounter
+
+clinical_data = {
+    'patient_id': ['P001', 'P002', 'P003', 'P004', 'P005'],
+    'age': [45, 62, 28, 53, 71],
+    'bmi': [24.5, 31.2, 22.8, 28.9, 26.3],
+    'glucose_mg_dl': [95, 142, 88, 156, 108],  # US format
+    'cholesterol_mg_dl': [185, 223, 165, 241, 198],  # US format
+    'blood_pressure': ['120/80', '145/92', '118/75', '152/95', '130/85']  # String format - oh no!
+}</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- Learning Check MCQ -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-lightbulb"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                💡 Before we create the DataFrame, can you predict which columns will need transformation? (Hint: Which ones aren't ready for mathematical operations?)
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only glucose_mg_dl and cholesterol_mg_dl</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        These columns contain numerical values that need unit conversion.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite right. While these do need unit conversion, there's another column that needs transformation too. Look for data that isn't in a numerical format!
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">glucose_mg_dl, cholesterol_mg_dl, and blood_pressure</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The unit columns need conversion and blood_pressure is a string that needs parsing.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Excellent! You've identified that glucose and cholesterol need unit conversion, AND you spotted that blood_pressure is stored as a string (like "120/80") which can't be used for calculations until we split it into numeric values.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">All columns need transformation</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Every column in the dataset requires some form of transformation.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The patient_id, age, and bmi columns are already in usable formats. Focus on columns that either need unit conversion or are stored as strings but contain numerical data.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only blood_pressure needs transformation</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The blood_pressure string is the only problematic column.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> You're partially right - blood_pressure does need transformation. But don't forget about the glucose and cholesterol columns that need unit conversion for international studies!
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="code-block-container" data-block-name="create-dataframe">
+                        <div class="code-block"># Create DataFrame
+df_clinical = pd.DataFrame(clinical_data)
+print("Original Clinical Data:")
+print(df_clinical)
+print("\nData types:")
+print(df_clinical.dtypes)  # Always check your data types!</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>Notice how blood pressure is stored as a string? This is incredibly common in real clinical systems where data entry forms accept text. But you can't calculate mean arterial pressure from a string!</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Real-World Connection:</strong> In actual hospital systems, you might find blood pressure recorded as:</p>
+                        <ul>
+                            <li>"120/80"</li>
+                            <li>"120 over 80"</li>
+                            <li>"systolic: 120, diastolic: 80"</li>
+                            <li>"120/80 mmHg"</li>
+                        </ul>
+                        <p>Your transformation code needs to be robust enough to handle these variations!</p>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>🧪 Lab Exercise 1: Unit Conversion for International Studies</h3>
+                        <p>Picture this: You're working on a groundbreaking diabetes study spanning 5 continents. American labs report glucose in mg/dL, but European and Asian labs use mmol/L. Without proper conversion, you'd be comparing apples to oranges (or in this case, milligrams to millimoles)!</p>
+                        
+                        <p><strong>The Conversion Magic Numbers 🔢:</strong></p>
+                        <ul>
+                            <li>Glucose: divide by 18.016 (because of glucose's molecular weight)</li>
+                            <li>Cholesterol: divide by 38.67 (cholesterol is a bigger molecule!)</li>
+                        </ul>
+                        
+                        <div class="code-block-container" data-block-name="lab1-exercise">
+                            <div class="code-block"># Lab scenario: Convert glucose values from mg/dL to mmol/L
+# TODO: Create new column 'glucose_mmol_l' with converted values
+
+# Step 1: Apply the conversion formula
+df_clinical['glucose_mmol_l'] = # Your code here
+
+# TODO: Create new column 'cholesterol_mmol_l' with converted values
+
+# Step 2: Apply the cholesterol conversion
+df_clinical['cholesterol_mmol_l'] = # Your code here
+
+# Display the transformed data
+print(df_clinical[['patient_id', 'glucose_mg_dl', 'glucose_mmol_l']])</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab1-solution">
+                                <div class="code-block"># Complete solution
+df_clinical['glucose_mmol_l'] = df_clinical['glucose_mg_dl'] / 18.016
+df_clinical['cholesterol_mmol_l'] = df_clinical['cholesterol_mg_dl'] / 38.67
+
+# Let's also round for clinical relevance (no one needs 10 decimal places!)
+df_clinical['glucose_mmol_l'] = df_clinical['glucose_mmol_l'].round(1)
+df_clinical['cholesterol_mmol_l'] = df_clinical['cholesterol_mmol_l'].round(2)
+
+print("Transformed Clinical Data:")
+print(df_clinical[['patient_id', 'glucose_mg_dl', 'glucose_mmol_l', 
+                   'cholesterol_mg_dl', 'cholesterol_mmol_l']])
+
+# Bonus: Let's check if any values are in diabetic range
+print("\n🩺 Clinical Alert - Patients with elevated glucose (>7.0 mmol/L):")
+print(df_clinical[df_clinical['glucose_mmol_l'] > 7.0][['patient_id', 'glucose_mmol_l']])</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Excellent work! You've just enabled researchers in Tokyo, London, and New York to collaborate seamlessly on the same dataset!" data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MCQ: Molecular Weight -->
+            <div class="mcq-container">
+                <div class="mcq-header">
+                    <div class="mcq-header-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="mcq-header-text">Think About It</div>
+                </div>
+                
+                <div class="mcq-content">
+                    <div class="mcq-question">
+                        🤔 Why do glucose and cholesterol have different conversion factors? (It's all about molecular weight!)
+                    </div>
+                    
+                    <div class="mcq-options">
+                        <div class="mcq-option" data-correct="false">
+                            <div class="mcq-option-header">
+                                <div class="mcq-option-title">They're measured by different lab equipment</div>
+                            </div>
+                            <div class="mcq-option-content">
+                                Different analyzers use different conversion standards.
+                            </div>
+                            <div class="mcq-feedback incorrect">
+                                <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. The conversion factor is based on chemistry, not equipment. It's determined by the molecular weight of each substance.
+                            </div>
+                        </div>
+                        
+                        <div class="mcq-option" data-correct="true">
+                            <div class="mcq-option-header">
+                                <div class="mcq-option-title">Cholesterol has a much larger molecular weight than glucose</div>
+                            </div>
+                            <div class="mcq-option-content">
+                                Cholesterol (386.65 g/mol) is much heavier than glucose (180.16 g/mol).
+                            </div>
+                            <div class="mcq-feedback correct">
+                                <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Exactly right! Cholesterol's molecular weight (386.65 g/mol) is more than double that of glucose (180.16 g/mol). This is why cholesterol's conversion factor (38.67) is larger than glucose's (18.016) - you need fewer moles of a heavier molecule to make the same mass!
+                            </div>
+                        </div>
+                        
+                        <div class="mcq-option" data-correct="false">
+                            <div class="mcq-option-header">
+                                <div class="mcq-option-title">It's an arbitrary medical convention</div>
+                            </div>
+                            <div class="mcq-option-content">
+                                Medical professionals decided on different factors for historical reasons.
+                            </div>
+                            <div class="mcq-feedback incorrect">
+                                <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The conversion factors are based on fundamental chemistry - specifically, the molecular weight of each compound. It's pure science, not convention!
+                            </div>
+                        </div>
+                        
+                        <div class="mcq-option" data-correct="false">
+                            <div class="mcq-option-header">
+                                <div class="mcq-option-title">Glucose is measured in blood, cholesterol in serum</div>
+                            </div>
+                            <div class="mcq-option-content">
+                                Different body fluids require different conversion factors.
+                            </div>
+                            <div class="mcq-feedback incorrect">
+                                <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. Both can be measured in serum or plasma. The conversion factor depends on the molecular weight of the substance itself, not where it's measured.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="reset-button">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Section 2: String Transformation -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-microscope" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mission Briefing: String Transformation and Extraction
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Time for some string surgery! 🔪 In the world of clinical data, vital information often hides inside text strings like a medical record ninja. Blood pressure readings, genetic variants (like "BRCA1 c.5266dupC"), and diagnostic codes (ICD-10: "E11.9") all arrive as formatted strings that need careful parsing.</p>
+                    
+                    <p>Think of string transformation as performing microsurgery on your data - you need precision, the right tools, and a steady hand (or in this case, robust code)!</p>
+                    
+                    <div class="code-block-container" data-block-name="examine-blood-pressure">
+                        <div class="code-block"># Split blood pressure readings into separate systolic and diastolic columns
+# First, let's examine what we're working with
+print("Blood Pressure Values (The String Puzzle):")
+print(df_clinical[['patient_id', 'blood_pressure']])
+print("\n🔍 Notice the '/' separator - that's our surgical incision point!")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="code-block-container" data-block-name="split-blood-pressure">
+                        <div class="code-block"># Split blood pressure into two columns
+# The .str accessor is like a Swiss Army knife for string operations!
+bp_split = df_clinical['blood_pressure'].str.split('/', expand=True)
+print("Split Blood Pressure (The Magic Revealed):")
+print(bp_split)
+print("\n✨ Pandas just performed string surgery for us!")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="code-block-container" data-block-name="convert-and-calculate">
+                        <div class="code-block"># Assign meaningful column names and convert to integers
+df_clinical['systolic_bp'] = bp_split[0].astype(int)
+df_clinical['diastolic_bp'] = bp_split[1].astype(int)
+
+# Calculate Mean Arterial Pressure (MAP) - a key clinical metric!
+# MAP ≈ Diastolic + (1/3)(Systolic - Diastolic)
+df_clinical['map'] = (df_clinical['diastolic_bp'] + 
+                      (df_clinical['systolic_bp'] - df_clinical['diastolic_bp']) / 3).round(1)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="code-block-container" data-block-name="display-results">
+                        <div class="code-block"># Display the result
+print("Clinical Data with Separated Blood Pressure:")
+print(df_clinical[['patient_id', 'blood_pressure', 'systolic_bp', 'diastolic_bp', 'map']])
+print("\n💡 Now we can perform numerical analyses and identify at-risk patients!")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Real-World Connection:</strong> In emergency departments, automated systems use these transformations to trigger alerts. When systolic BP > 180 or diastolic BP > 120, it's a hypertensive crisis requiring immediate intervention!</p>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>🧪 Lab Exercise 2: Categorizing Patients by Clinical Thresholds</h3>
+                        <p>Now let's transform numbers into clinical insights! You'll create a triage system that automatically categorizes patients based on the latest American Heart Association guidelines.</p>
+                        
+                        <p><strong>🩺 Clinical Context:</strong></p>
+                        <ul>
+                            <li><strong>Normal:</strong> The "Goldilocks zone" of blood pressure</li>
+                            <li><strong>Elevated:</strong> Time for lifestyle changes - less salt, more exercise!</li>
+                            <li><strong>Hypertension:</strong> Medical intervention needed - you're saving lives here!</li>
+                        </ul>
+                        
+                        <div class="code-block-container" data-block-name="lab2-exercise">
+                            <div class="code-block"># Lab scenario: Create hypertension categories
+# TODO: Create a function to categorize blood pressure
+def categorize_bp(systolic, diastolic):
+    """
+    Categorize blood pressure according to AHA guidelines.
+    Remember: It's an OR condition for elevated/hypertension!
+    """
+    # Your code here
+    pass
+
+# TODO: Apply the function to create a new 'bp_category' column
+df_clinical['bp_category'] = # Your code here
+
+# Display categorized results
+print(df_clinical[['patient_id', 'systolic_bp', 'diastolic_bp', 'bp_category']])</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab2-solution">
+                                <div class="code-block"># Complete solution
+def categorize_bp(systolic, diastolic):
+    """
+    Categorize blood pressure according to AHA guidelines.
+    This function could literally save lives by identifying at-risk patients!
+    """
+    if systolic < 120 and diastolic < 80:
+        return 'Normal'
+    elif systolic >= 140 or diastolic >= 90:
+        return 'Hypertension'
+    else:
+        return 'Elevated'
+
+# Apply the categorization function
+df_clinical['bp_category'] = df_clinical.apply(
+    lambda row: categorize_bp(row['systolic_bp'], row['diastolic_bp']), 
+    axis=1
+)
+
+# Add risk indicators with emojis for quick visual scanning
+risk_emoji = {'Normal': '✅', 'Elevated': '⚠️', 'Hypertension': '🚨'}
+df_clinical['risk_indicator'] = df_clinical['bp_category'].map(risk_emoji)
+
+print("Patients Categorized by Blood Pressure:")
+print(df_clinical[['patient_id', 'systolic_bp', 'diastolic_bp', 'bp_category', 'risk_indicator']])
+
+# Clinical summary
+print(f"\n📊 Clinical Summary:")
+print(df_clinical['bp_category'].value_counts())
+print(f"\n🚨 Alert: {len(df_clinical[df_clinical['bp_category'] == 'Hypertension'])} patients need immediate clinical review!")</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Outstanding! You've created an automated triage system that could be deployed in clinics worldwide!" data-animation="school"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MCQ: BP Conditions -->
+            <div class="mcq-container">
+                <div class="mcq-header">
+                    <div class="mcq-header-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="mcq-header-text">Think Before You Code</div>
+                </div>
+                
+                <div class="mcq-content">
+                    <div class="mcq-question">
+                        💭 Why do we use OR conditions for elevated/hypertension? (Hint: Either high systolic OR high diastolic pressure can damage blood vessels!)
+                    </div>
+                    
+                    <div class="mcq-options">
+                        <div class="mcq-option" data-correct="true">
+                            <div class="mcq-option-header">
+                                <div class="mcq-option-title">Either high systolic or diastolic can damage organs independently</div>
+                            </div>
+                            <div class="mcq-option-content">
+                                High pressure from either measurement can cause cardiovascular damage.
+                            </div>
+                            <div class="mcq-feedback correct">
+                                <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Exactly right! Blood vessels and organs can be damaged by high systolic pressure during heart contractions OR high diastolic pressure between beats. That's why medical guidelines use OR - if either number is high, treatment is needed to prevent strokes, heart attacks, and kidney damage.
+                            </div>
+                        </div>
+                        
+                        <div class="mcq-option" data-correct="false">
+                            <div class="mcq-option-header">
+                                <div class="mcq-option-title">It's easier to code with OR than AND</div>
+                            </div>
+                            <div class="mcq-option-content">
+                                OR operations are computationally simpler than AND operations.
+                            </div>
+                            <div class="mcq-feedback incorrect">
+                                <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The choice of OR vs AND isn't about coding ease - it's based on medical science. Either type of high blood pressure can cause organ damage independently.
+                            </div>
+                        </div>
+                        
+                        <div class="mcq-option" data-correct="false">
+                            <div class="mcq-option-header">
+                                <div class="mcq-option-title">Doctors prefer to catch more patients for treatment</div>
+                            </div>
+                            <div class="mcq-option-content">
+                                Using OR identifies more patients who might need medication.
+                            </div>
+                            <div class="mcq-feedback incorrect">
+                                <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not the reason. The OR condition is based on cardiovascular physiology - high systolic pressure stresses arteries during pumping, while high diastolic pressure means vessels never get to relax. Either condition damages blood vessels.
+                            </div>
+                        </div>
+                        
+                        <div class="mcq-option" data-correct="false">
+                            <div class="mcq-option-header">
+                                <div class="mcq-option-title">It's a historical convention from old medical textbooks</div>
+                            </div>
+                            <div class="mcq-option-content">
+                                Medical guidelines haven't been updated to modern standards.
+                            </div>
+                            <div class="mcq-feedback incorrect">
+                                <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not true. These guidelines are based on extensive cardiovascular research and are regularly updated. The OR condition reflects the biological reality that either type of hypertension causes organ damage.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="reset-button">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out the data transformation examples as you learn. You can practice converting units, splitting strings, and categorizing clinical data!</p>
+            
+            <textarea id="python-code"># Type your python codes here</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Python session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
