@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.3 Matplotlib Architecture - Page 1</title>
+    
+    <!-- External CSS and JavaScript -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Matplotlib Architecture - Core Concepts</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="learning-materials">
+            <h1>Matplotlib Architecture: Understanding the Core Framework</h1>
+            
+            <p>Welcome to the deep dive into Matplotlib's architecture! This module will take you behind the scenes to understand how Matplotlib creates stunning medical visualizations. From the Artist layer to backend systems, you'll gain the knowledge needed to create professional-grade medical charts and reports.</p>
+
+            <!-- Learning Objectives Section -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-bullseye" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Learning Objectives
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <div class="objectives-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin: 1.5rem 0;">
+                        <div class="objective-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 1rem; background-color: var(--nus-light-gray); border-radius: 8px;">
+                            <i class="fas fa-puzzle-piece" style="color: var(--nus-orange); font-size: 1.5rem;"></i>
+                            <span>Understand Matplotlib's Artist layer and object hierarchy</span>
+                        </div>
+                        <div class="objective-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 1rem; background-color: var(--nus-light-gray); border-radius: 8px;">
+                            <i class="fas fa-exchange-alt" style="color: var(--nus-orange); font-size: 1.5rem;"></i>
+                            <span>Master coordinate transforms for precise element placement</span>
+                        </div>
+                        <div class="objective-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 1rem; background-color: var(--nus-light-gray); border-radius: 8px;">
+                            <i class="fas fa-desktop" style="color: var(--nus-orange); font-size: 1.5rem;"></i>
+                            <span>Learn backend systems for different visualization outputs</span>
+                        </div>
+                        <div class="objective-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 1rem; background-color: var(--nus-light-gray); border-radius: 8px;">
+                            <i class="fas fa-cog" style="color: var(--nus-orange); font-size: 1.5rem;"></i>
+                            <span>Apply RC parameters for professional styling standards</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-book-open" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        MODULE 1: Core Architecture Concepts and Practical Implementation
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Welcome to the fascinating world of Matplotlib's inner workings! 🎨 Think of Matplotlib's architecture like a high-tech hospital - it has different departments (layers) working together seamlessly to create amazing visualizations for medical data. Today, you'll peek behind the curtain and discover how these components work together to bring your clinical charts to life!</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>💡 Fun Fact:</strong> Did you know that Matplotlib processes over 1 million medical visualizations daily worldwide? From ICU monitors to research papers, it's the backbone of medical data visualization!</p>
+                    </div>
+
+                    <h3>🔬 Mission Briefing: The Artist Layer - The Heart of Medical Visualizations</h3>
+                    
+                    <p>Everything you see in a Matplotlib figure is an "Artist" object - and no, they don't paint with brushes! 🎨 Think of Artists as the building blocks of your visualization, like LEGO pieces that come together to create something amazing. From the tiniest dot representing a heartbeat to the bold title announcing "Patient Vital Signs," every visual element is an Artist with its own personality and purpose.</p>
+
+                    <p>Artists come in two flavors:</p>
+                    <ul>
+                        <li><strong>Primitives:</strong> The basic shapes and lines (like the wavy line of an ECG)</li>
+                        <li><strong>Containers:</strong> The organizers that hold other artists (like the chart frame)</li>
+                    </ul>
+
+                    <div class="fun-fact">
+                        <p><strong>🏥 Medical Connection:</strong> In your hospital's cardiac monitoring system, each colored zone (green for normal, yellow for caution, red for danger) is actually a Rectangle Artist. When a patient's heart rate jumps into the red zone, that Artist is doing its job - alerting medical staff instantly!</p>
+                    </div>
+
+                    <h3>🧪 Quick Practice: Meet Your First Artists!</h3>
+                    
+                    <div class="code-block-container" data-block-name="artists-example">
+                        <div class="code-block"># Import necessary components for medical visualization
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+# Create a figure and axes for patient data
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# Every element is an Artist - let's count them!
+initial_artists = ax.get_children()
+print(f"Starting with {len(initial_artists)} Artist objects")
+
+# Add some medical data
+heart_rate_data = [72, 75, 78, 85, 92, 88, 76, 74]
+time_points = list(range(len(heart_rate_data)))
+line_artist = ax.plot(time_points, heart_rate_data, 'r-o', label='Heart Rate')[0]
+
+# Create a custom artist - a patch representing the normal zone
+normal_zone = mpatches.Rectangle((0, 60), len(time_points)-1, 40, 
+                                facecolor='lightgreen', alpha=0.3, 
+                                label='Normal Range (60-100 bpm)')
+ax.add_patch(normal_zone)
+
+# Now count again!
+all_artists = ax.get_children()
+print(f"After adding data: {len(all_artists)} Artist objects")
+
+# Let's see what types of artists we have
+print("\nTypes of Artists in our plot:")
+for artist in all_artists[:5]:  # Show first 5
+    print(f"  - {type(artist).__name__}")
+
+ax.set_xlabel('Time (minutes)')
+ax.set_ylabel('Heart Rate (bpm)')
+ax.set_title('Patient Monitoring - Understanding Artists')
+ax.legend()
+plt.show()</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+
+                    <div class="fun-fact">
+                        <p><strong>💡 Pro Tip:</strong> Every time you add something to your plot (a line, text, or shape), you're creating a new Artist! It's like adding new instruments to an orchestra - each one plays its part in the final symphony.</p>
+                    </div>
+
+                    <!-- Interactive MCQ 1 -->
+                    <div class="mcq-container" id="mcq-artists">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Active Learning Check: Artist Detective</div>
+                        </div>
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What type of Artist is the green normal zone in the code above?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Line2D Artist</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        A line object that connects data points
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. The green zone is a filled area, not a line. Look for the Rectangle creation in the code!
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Rectangle Artist</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        A patch object that creates a filled rectangular area
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Excellent! The green zone is created using mpatches.Rectangle(), which is a type of Patch Artist used for filled shapes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Text Artist</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        A text object for labels and annotations
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Text Artists are used for labels and annotations, but the green zone is a filled shape.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+
+                    <h3>🔬 Mission Briefing: The Transform System - Your Universal Translator 🌐</h3>
+                    
+                    <p>Imagine you're a doctor working with international colleagues. One says "the patient has a fever of 39°C" while another says "102.2°F" - different numbers, same fever! Matplotlib's transform system works the same way, translating between different coordinate systems:</p>
+
+                    <ul>
+                        <li><strong>Data coordinates:</strong> Your actual values (39°C, 120 mmHg, etc.)</li>
+                        <li><strong>Axes coordinates:</strong> Normalized 0-1 scale (0 = bottom/left, 1 = top/right)</li>
+                        <li><strong>Figure coordinates:</strong> The entire canvas (also 0-1)</li>
+                    </ul>
+
+                    <p>This is incredibly powerful for medical visualizations! You can place patient IDs in consistent spots regardless of data scale, or add warning labels that always appear in the same position.</p>
+
+                    <h3>🧪 Transform Magic in Action!</h3>
+                    
+                    <div class="code-block-container" data-block-name="transform-example">
+                        <div class="code-block"># Create a medical monitoring display
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Plot some patient temperature data (in Celsius)
+hours = np.array([0, 2, 4, 6, 8, 10, 12])
+temperature = np.array([37.2, 37.5, 38.1, 38.8, 39.2, 38.5, 37.8])
+
+# Add some variation to make it interesting
+temp_variation = temperature + np.random.normal(0, 0.1, len(temperature))
+ax.plot(hours, temp_variation, 'b-o', linewidth=2, markersize=8)
+
+# Add annotation in DATA coordinates (follows the data)
+fever_point = np.argmax(temp_variation)
+ax.annotate('Fever Spike! 🌡️', 
+            xy=(hours[fever_point], temp_variation[fever_point]), 
+            xytext=(hours[fever_point]+1, temp_variation[fever_point]+0.5),
+            arrowprops=dict(arrowstyle='->', color='red', lw=2),
+            fontsize=12, color='red', fontweight='bold')
+
+# Add text in AXES coordinates (stays in corner)
+ax.text(0.02, 0.95, 'Patient: Emma Johnson\nRoom: 204B\nMonitoring Since: 08:00', 
+        transform=ax.transAxes,
+        fontsize=10, verticalalignment='top',
+        bbox=dict(boxstyle='round,pad=0.5', facecolor='lightyellow', alpha=0.8))
+
+# Add text in FIGURE coordinates (outside the plot area)
+fig.text(0.5, 0.02, '⚕️ St. Mary\'s Hospital - Continuous Temperature Monitoring', 
+         ha='center', fontsize=11, style='italic', color='gray')
+
+# Add reference lines
+ax.axhline(y=37.5, color='green', linestyle='--', alpha=0.5, label='Normal limit')
+ax.axhline(y=38.3, color='orange', linestyle='--', alpha=0.5, label='Fever threshold')
+
+ax.set_xlabel('Time (hours since admission)', fontsize=12)
+ax.set_ylabel('Temperature (°C)', fontsize=12)
+ax.set_title('24-Hour Temperature Monitoring Chart', fontsize=14, pad=20)
+ax.set_ylim(36.5, 40)
+ax.grid(True, alpha=0.3)
+ax.legend(loc='lower right')
+
+plt.tight_layout()
+plt.show()</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+
+                    <!-- Interactive MCQ 2 -->
+                    <div class="mcq-container" id="mcq-transforms">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <div class="mcq-header-text">Transform Coordinate System Quiz</div>
+                        </div>
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why would we use axes coordinates for the patient info box? (Hint: What happens if we change the temperature range?)
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To make it look better</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Aesthetic improvement of the visualization
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not the main reason. Axes coordinates serve a functional purpose beyond aesthetics.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To save memory</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Reduces computational resources needed
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The coordinate system choice doesn't significantly affect memory usage.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">So it stays in the same corner regardless of data changes</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Position remains constant when data range varies
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! Axes coordinates (0-1) ensure the patient info stays in the top-left corner even if temperature ranges change from Celsius to Fahrenheit or if we zoom in/out.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To make the text larger</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Increases font size automatically
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. Text size is controlled by fontsize parameter, not the coordinate system.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="challenge">
+                        <h3>Lab Exercise 1: Creating an Annotated Blood Glucose Chart 🩸</h3>
+                        <p>Dr. Martinez needs a blood glucose monitoring chart for a diabetic patient. The chart must clearly show danger zones and include proper annotations. Let's build it step by step!</p>
+                        
+                        <div class="code-block-container" data-block-name="glucose-exercise">
+                            <div class="code-block"># Lab Equipment Setup
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+# Patient's glucose data over 24 hours
+time_hours = list(range(0, 25, 3))
+glucose_levels = [95, 110, 145, 180, 165, 130, 105, 90, 115]
+
+# TODO: Your code starts here!
+# Step 1: Create figure and plot glucose data
+fig, ax = plt.subplots(figsize=(12, 8))  # Hint: Use (12, 8) for good visibility
+
+# Plot the glucose readings with style
+ax.plot(time_hours, glucose_levels, 'b-o', linewidth=2, markersize=8, 
+        label='Blood Glucose', zorder=5)  # zorder ensures line is on top
+
+# Step 2: Add danger zone (>160 mg/dL) using a red patch
+danger_patch = mpatches.Rectangle((0, 160), 24, 80,  # x, y, width, height
+                                 facecolor='red', alpha=0.2,
+                                 label='Hyperglycemia Zone (>160 mg/dL)')
+ax.add_patch(danger_patch)
+
+# Step 3: Add normal range (70-120 mg/dL) using a green patch
+normal_patch = mpatches.Rectangle((0, 70), 24, 50,
+                                 facecolor='green', alpha=0.1,
+                                 label='Normal Range (70-120 mg/dL)')
+ax.add_patch(normal_patch)
+
+# Step 4: Add patient info in axes coordinates (top-left corner)
+patient_info = """Patient: Sarah Chen | Type 2 Diabetes
+Age: 52 | HbA1c: 7.2%
+Monitoring Date: March 15, 2024"""
+
+ax.text(0.02, 0.98, patient_info, 
+        transform=ax.transAxes, fontsize=10, verticalalignment='top',
+        bbox=dict(boxstyle='round,pad=0.5', facecolor='lightyellow', 
+                  edgecolor='gray', alpha=0.9))
+
+# Can you complete the rest? Add these features:
+# - Find and annotate the highest glucose reading
+# - Add proper labels and title
+# - Set appropriate axis limits
+# - Add a grid for easier reading</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="glucose-solution">
+                                <div class="code-block"># Complete solution
+# Find and annotate the highest glucose reading
+max_idx = glucose_levels.index(max(glucose_levels))
+max_time = time_hours[max_idx]
+max_value = glucose_levels[max_idx]
+
+ax.annotate(f'Peak: {max_value} mg/dL', 
+            xy=(max_time, max_value),
+            xytext=(max_time+3, max_value+10),
+            arrowprops=dict(arrowstyle='->', color='red', lw=2),
+            fontsize=11, color='red', fontweight='bold')
+
+# Add proper labels and title
+ax.set_xlabel('Time (hours)', fontsize=12)
+ax.set_ylabel('Blood Glucose (mg/dL)', fontsize=12)
+ax.set_title('24-Hour Blood Glucose Monitoring Chart', fontsize=14, pad=20)
+
+# Set appropriate axis limits
+ax.set_xlim(-1, 25)
+ax.set_ylim(50, 250)
+
+# Add a grid for easier reading
+ax.grid(True, alpha=0.3, linestyle='--')
+
+# Add legend
+ax.legend(loc='upper right')
+
+plt.tight_layout()
+plt.show()</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Outstanding work! You've successfully created a professional blood glucose monitoring chart with proper annotations and danger zones. This type of visualization is crucial for diabetes management!" data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+
+                    <h3>🔬 Mission Briefing: The Backend Layer - Your Display Department 🖥️</h3>
+                    
+                    <p>Time for a behind-the-scenes tour! The backend is like choosing between different medical display systems:</p>
+
+                    <ul>
+                        <li><strong>X-ray film</strong> (Static backends like Agg, PDF)</li>
+                        <li><strong>Digital monitors</strong> (Interactive backends like Qt5Agg, TkAgg)</li>
+                        <li><strong>Tablet screens</strong> (Notebook backends for Jupyter)</li>
+                        <li><strong>Web browsers</strong> (WebAgg for telemedicine)</li>
+                    </ul>
+
+                    <p>Each backend has its superpower! Need to generate 1000 patient reports overnight? Use the Agg backend. Building an interactive ICU monitoring system? Qt5Agg is your friend!</p>
+
+                    <h3>🧪 Backend Explorer</h3>
+                    
+                    <div class="code-block-container" data-block-name="backend-explorer">
+                        <div class="code-block"># Check your current backend
+import matplotlib
+print(f"🖥️ Current backend: {matplotlib.get_backend()}")
+
+# List available backends (like a medical equipment catalog!)
+backend_list = matplotlib.rcsetup.all_backends
+print("\n📋 Available backends for medical displays:")
+print("=" * 40)
+
+# Group backends by type
+interactive_backends = [b for b in backend_list if 'Agg' in b and b != 'Agg']
+static_backends = ['Agg', 'PDF', 'PS', 'SVG']
+notebook_backends = [b for b in backend_list if 'notebook' in b.lower() or 'widget' in b.lower()]
+
+print("🎮 Interactive (for live monitoring):")
+for backend in interactive_backends[:5]:
+    print(f"  - {backend}")
+
+print("\n📄 Static (for reports):")
+for backend in static_backends:
+    if backend in backend_list:
+        print(f"  - {backend}")
+
+print("\n💻 Notebook (for research):")
+for backend in notebook_backends[:3]:
+    print(f"  - {backend}")
+
+# Fun fact about each backend type!
+print("\n💡 Did you know?")
+print("- The 'Agg' in backends stands for 'Anti-Grain Geometry'")
+print("- Qt5Agg can create touch-responsive medical apps")
+print("- The PDF backend is perfect for patient discharge summaries")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+
+                    <!-- Interactive MCQ 3 -->
+                    <div class="mcq-container" id="mcq-backend">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-desktop"></i>
+                            </div>
+                            <div class="mcq-header-text">Backend Selection Quiz</div>
+                        </div>
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                St. Mary's Hospital needs to generate 500 patient reports automatically every night. Which backend would be best for this task?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Qt5Agg</div>
+                                        <div class="mcq-option-badge">Interactive</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        For interactive monitoring applications
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not ideal. Qt5Agg is for interactive applications where users need to zoom/pan. For automated batch processing, you need a non-interactive backend.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Agg</div>
+                                        <div class="mcq-option-badge">Static</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        For automated static report generation
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect choice! Agg (Anti-Grain Geometry) is a non-interactive backend ideal for batch processing. It's fast, memory-efficient, and doesn't require a display server - perfect for automated nightly reports!
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">WebAgg</div>
+                                        <div class="mcq-option-badge">Web</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        For remote browser-based access
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not suitable. WebAgg is for serving visualizations to web browsers, not for automated batch processing of reports.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">TkAgg</div>
+                                        <div class="mcq-option-badge">Desktop</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        For desktop GUI applications
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not the best choice. TkAgg requires a display and is meant for interactive desktop applications, not automated batch processing.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="fun-fact">
+                        <p><strong>🏥 Real-World Example:</strong> St. Mary's Hospital uses:</p>
+                        <ul>
+                            <li><strong>Qt5Agg</strong> for their ICU monitoring stations (nurses can zoom and pan)</li>
+                            <li><strong>Agg</strong> for their automated nightly report generation</li>
+                            <li><strong>WebAgg</strong> for doctors checking patient data from home</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Python Interpreter Section -->
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out the examples here and experiment with creating your own medical visualizations!</p>
+            
+            <textarea id="python-code"># Type your python codes here
+
+</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Congratulations! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Python session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Custom JavaScript wrapped in IIFE -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // MCQ functionality is now handled by template_JS_learning_page_v24.js
+        // No custom JavaScript needed as all functionality is in the template
+    })();
+    </script>
+</body>
+</html>
