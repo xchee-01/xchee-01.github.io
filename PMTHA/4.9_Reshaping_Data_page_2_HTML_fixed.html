@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reshaping Data Page 2 - Advanced Techniques and Clinical Applications - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Precision Medical Toolkit for Health Analytics</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>4.9 Reshaping Data - Module 2</h1>
+            
+            <p>Welcome to the advanced module of data reshaping for precision medicine! In this comprehensive section, you'll master sophisticated techniques for handling complex genomic data, multi-site clinical trials, and advanced analytical workflows that power modern healthcare research.</p>
+            
+            <!-- Section 1: Lab Exercise 2 - Genomic Expression Data -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-dna" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🧪 Lab Exercise 2: Reshaping Genomic Expression Data
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🧬 Welcome to Precision Oncology Data Lab!</h3>
+                    
+                    <p>You're working with gene expression data from tumor samples. The oncology team needs this data in two formats:</p>
+                    <ol>
+                        <li><strong>Wide format</strong> for heatmap visualization (genes as columns)</li>
+                        <li><strong>Wide format with clinical data</strong> for correlation analysis</li>
+                    </ol>
+                    
+                    <p><strong>🔬 Fun Fact</strong>: The human genome has ~20,000 genes. Modern sequencing can measure all of them at once. That's a LOT of reshaping!</p>
+                    
+                    <div class="code-block-container" data-block-name="genomic-data-scenario">
+                        <div class="code-block"># Lab scenario: Gene expression data from tumor samples
+# Each row represents one gene measurement from one sample 🧬
+gene_expression_long = pd.DataFrame({
+    'sample_id': ['S001', 'S001', 'S001', 'S002', 'S002', 'S002', 'S003', 'S003', 'S003'],
+    'gene': ['BRCA1', 'TP53', 'EGFR', 'BRCA1', 'TP53', 'EGFR', 'BRCA1', 'TP53', 'EGFR'],
+    'expression_level': [2.5, 0.8, 4.2, 1.2, 3.5, 1.8, 0.5, 4.8, 2.1],
+    'tumor_stage': ['II', 'II', 'II', 'III', 'III', 'III', 'I', 'I', 'I']
+})
+
+# TODO: Create two transformations:
+# 1. Pivot to wide format for heatmap (samples as rows, genes as columns)
+# 2. Add tumor_stage to the wide format while maintaining gene expression values
+# 🎯 Challenge: Can you create a heatmap-ready matrix AND preserve clinical data?
+# Expected output: 3 rows × 4 columns (sample_id + 3 genes) for basic pivot</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>💡 Think Like a Bioinformatician:</h3>
+                    
+                    <!-- MCQ for reshaping purpose -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Reshaping Purpose</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why might we want genes as columns for heatmap visualization?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To reduce file size</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Make the data more compact for storage.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Reshaping doesn't change file size significantly - the same amount of data is just arranged differently.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To enable visual comparison of expression patterns across samples</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Allow easy comparison of gene expression between different samples.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! With genes as columns, each row represents a sample, making it easy to compare expression patterns across samples and identify clusters or trends in gene expression.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To make the data harder to read</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Deliberately complicate the data structure.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The goal is to make data more suitable for analysis, not harder to read.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To comply with database requirements</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Meet specific database schema requirements.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This is about visualization needs, not database requirements.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ for clinical data preservation -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Clinical Data Preservation</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                How do we keep clinical data (tumor stage) with our expression matrix?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Store it in a separate file</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Keep clinical data completely separate from expression data.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While possible, this makes analysis more complex and increases the risk of mismatched data.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Add it as a column header</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Include clinical data in the column names.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Column headers should be gene names for expression matrices. Clinical data belongs as additional columns.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Merge it with the pivoted expression data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Combine clinical metadata with the expression matrix.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Merging clinical data with the pivoted expression data keeps everything together while maintaining the matrix structure needed for analysis.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Convert it to numeric values</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Transform clinical categories into numbers.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Converting to numeric might be useful for some analyses, but doesn't solve the structural problem of keeping data together.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ for scalability -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Scalability Challenge</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What if we had 20,000 genes instead of 3?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The pivot operation would fail</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Pandas cannot handle that many columns.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Pandas can handle thousands of columns, though it might be slow and memory-intensive.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">We'd need a supercomputer</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only high-performance computing could handle it.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Modern laptops can handle genomic data, though more memory and processing power helps.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The resulting DataFrame would have 20,000+ columns</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        One column for each gene plus clinical data columns.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The resulting DataFrame would have 20,000+ columns (one per gene plus clinical metadata), which is exactly what happens in real genomic analysis - it's challenging but manageable with proper tools.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">We'd need to use a different programming language</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Python/pandas isn't suitable for large genomic data.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Python and pandas are widely used in bioinformatics for large-scale genomic analysis.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>🎯 Complete Solution</h3>
+                    
+                    <div class="code-block-container" data-block-name="genomic-solution">
+                        <div class="code-block"># 1. Basic pivot for heatmap visualization
+# Creating the expression matrix - the foundation of precision medicine! 🎨
+expression_matrix = gene_expression_long.pivot(
+    index='sample_id',      # Each sample gets a row
+    columns='gene',         # Each gene gets a column
+    values='expression_level'  # Expression values fill the matrix
+)
+
+print("🧬 Gene Expression Matrix (Ready for Heatmap):")
+print("=" * 50)
+print(expression_matrix)
+print("\n🎨 Perfect for creating those beautiful expression heatmaps!")
+print("Notice: BRCA1 is lowest in S003 - might indicate treatment response!")
+
+# 2. Include tumor stage information for clinical correlation
+# First, extract unique tumor stage for each sample
+tumor_stages = gene_expression_long[['sample_id', 'tumor_stage']].drop_duplicates()
+
+# Merge clinical data with expression matrix - the power of pandas! 💪
+expression_with_stage = expression_matrix.merge(
+    tumor_stages,
+    left_index=True,
+    right_on='sample_id'
+).set_index('sample_id')
+
+# Reorder columns for clarity (clinical data first!)
+expression_with_stage = expression_with_stage[['tumor_stage', 'BRCA1', 'EGFR', 'TP53']]
+
+print("\n🏥 Gene Expression with Clinical Annotation:")
+print("=" * 50)
+print(expression_with_stage)
+print("\n🔬 Now we can correlate expression patterns with disease stage!")
+print("Look: Higher TP53 in earlier stages - potential biomarker? 🎯")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ for pivot syntax -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Pivot Output Shape</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                After running the pivot operation, what will be the shape of expression_matrix?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">9 rows × 3 columns</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Same as the original long format data.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This is the shape of the original data, not after pivoting.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">3 rows × 3 columns</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        One row per sample, one column per gene.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! With 3 unique samples (rows) and 3 unique genes (columns), the pivoted matrix will be 3×3.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">3 rows × 4 columns</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Sample rows plus an extra column.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Only the expression values are pivoted - tumor_stage is not included in this pivot.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">3 rows × 5 columns</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Samples plus genes plus extra metadata.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The basic pivot only includes the specified value columns (expression levels).
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>🎉 <strong>Outstanding!</strong> You've just created the exact data structures used in:</p>
+                    <ul>
+                        <li>Cancer subtype discovery (unsupervised clustering)</li>
+                        <li>Biomarker identification (differential expression)</li>
+                        <li>Precision medicine (treatment selection based on molecular profiles)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Section 2: Advanced Reshaping with Multiple Operations -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-cogs" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🔬 Mission Briefing: Advanced Reshaping with Multiple Operations
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🎪 The Grand Finale: Reshaping Gymnastics!</h3>
+                    
+                    <p>In real research, you rarely do just one reshape. You combine operations like a chef combines ingredients - melt here, pivot there, aggregate somewhere else. Let's tackle a complex scenario that mirrors actual clinical research workflows!</p>
+                    
+                    <p><strong>🏥 Scenario</strong>: You're analyzing a pain management study comparing physical therapy vs. medication across multiple outcome measures.</p>
+                    
+                    <div class="code-block-container" data-block-name="treatment-data-complex">
+                        <div class="code-block"># Create complex treatment response dataset
+# This mimics real clinical trial data with multiple measurements! 📊
+treatment_data = pd.DataFrame({
+    'patient_id': ['P001', 'P001', 'P002', 'P002', 'P003', 'P003'] * 2,
+    'visit': ['Baseline', 'Week4', 'Baseline', 'Week4', 'Baseline', 'Week4'] * 2,
+    'measurement': ['Pain_Score', 'Pain_Score', 'Pain_Score', 'Pain_Score', 
+                    'Pain_Score', 'Pain_Score', 'Mobility', 'Mobility', 
+                    'Mobility', 'Mobility', 'Mobility', 'Mobility'],
+    'value': [8, 5, 9, 6, 7, 4, 3, 6, 2, 5, 4, 7],
+    'treatment': ['Physical_Therapy', 'Physical_Therapy', 'Medication', 
+                  'Medication', 'Physical_Therapy', 'Physical_Therapy'] * 2
+})
+
+print("📋 Raw Treatment Data (Long Format):")
+print(treatment_data.head(8))
+print("\n🤯 This is realistic - messy and complex!")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ for data format identification -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Data Format Identification</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What format is the treatment_data DataFrame currently in?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Wide format</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Data spread horizontally across columns.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The data has individual observations as separate rows, not spread across columns.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Long format</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Each observation is a separate row.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Each measurement for each patient at each visit is a separate row, which is the characteristic of long format data.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Matrix format</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Organized as a mathematical matrix.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This isn't a specialized matrix format - it's standard tabular data in long format.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Normalized format</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Data in normalized database form.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While this data is normalized, the question is about wide vs. long format, not database normalization.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>🎯 Complex Reshape: Creating a Treatment Comparison Matrix</h3>
+                    
+                    <div class="code-block-container" data-block-name="complex-reshape-matrix">
+                        <div class="code-block"># Complex reshape: Create matrix with visits as columns and measurements as rows
+# This is the kind of transformation that makes analysts cry tears of joy! 😂
+treatment_matrix = treatment_data.pivot_table(
+    index=['patient_id', 'treatment', 'measurement'],
+    columns='visit',
+    values='value',
+    aggfunc='first'  # Using 'first' because we know there are no duplicates
+).reset_index()
+
+print("\n📊 Treatment Response Matrix:")
+print("=" * 50)
+print(treatment_matrix)
+print("\n✨ Now we can see before/after for each measure!")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ for pivot table parameters -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Pivot Table vs Pivot</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why do we use pivot_table() instead of pivot() for this operation?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">pivot_table() is faster</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Performance reasons for choosing pivot_table.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Performance isn't the main reason - both functions have similar performance characteristics.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">pivot_table() allows multiple index columns</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Can handle complex index structures and aggregation.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! pivot_table() is more flexible and allows multiple index columns, aggregation functions, and handles duplicates, making it ideal for complex reshaping operations.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">pivot() doesn't exist in pandas</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only pivot_table is available.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Both pivot() and pivot_table() exist in pandas - they serve different purposes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">pivot_table() creates prettier output</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Better formatting and appearance.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The choice is based on functionality, not aesthetics.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>📈 Calculate Treatment Effectiveness</h3>
+                    
+                    <div class="code-block-container" data-block-name="treatment-effectiveness">
+                        <div class="code-block"># Calculate improvement scores - the moment of truth! 🎯
+treatment_matrix['improvement'] = treatment_matrix['Baseline'] - treatment_matrix['Week4']
+treatment_matrix['percent_improvement'] = (
+    treatment_matrix['improvement'] / treatment_matrix['Baseline'] * 100
+).round(1)
+
+print("\n🏆 Treatment Effectiveness Analysis:")
+print("=" * 50)
+effectiveness = treatment_matrix[['patient_id', 'treatment', 'measurement', 'percent_improvement']]
+print(effectiveness)
+print("\n💊 Medication vs 💪 Physical Therapy - Fight!")
+print("Spoiler: Both work, but check out P003's mobility improvement with PT!")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ for calculation understanding -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Calculation Understanding</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                If a patient's pain score went from 8 (Baseline) to 5 (Week4), what is their percent improvement?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">37.5%</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        (8-5)/8 * 100 = 37.5%
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Improvement = (8-5)/8 * 100 = 3/8 * 100 = 37.5%. This represents a significant reduction in pain score.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">62.5%</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        5/8 * 100 = 62.5%
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This calculates the remaining pain as a percentage, not the improvement.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">60%</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        3/5 * 100 = 60%
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This uses the final value as the denominator, not the baseline value.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">3%</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Just the difference: 8-5 = 3
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This is the absolute improvement, not the percentage improvement.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p><strong>🏥 Real-World Connection</strong>: The FDA requires exactly this type of analysis for drug approval. Researchers must show improvement across multiple outcome measures, calculated from complex longitudinal data. One misplaced reshape, and your billion-dollar drug might not get approved!</p>
+                </div>
+            </div>
+            
+            <!-- Section 3: Lab Exercise 3 -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-hospital" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🧪 Lab Exercise 3: Complex Reshaping for Clinical Dashboard
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🏥 The Ultimate Challenge: Multi-Clinic Diabetes Dashboard</h3>
+                    
+                    <p>You're the lead data scientist for a healthcare network. The CEO wants a dashboard showing diabetes management performance across all clinics. The catch? The data is a mess, and the board meeting is tomorrow!</p>
+                    
+                    <p><strong>🎯 Your Mission</strong>: Create an executive-ready dashboard showing:</p>
+                    <ol>
+                        <li>Average HbA1c trends by clinic</li>
+                        <li>Patient volume by clinic</li>
+                        <li>Performance indicators (improving vs. worsening)</li>
+                    </ol>
+                    
+                    <div class="code-block-container" data-block-name="diabetes-monitoring-scenario">
+                        <div class="code-block"># Lab scenario: Multi-clinic diabetes monitoring data
+# This is as real as it gets - welcome to healthcare analytics! 🏥
+diabetes_monitoring = pd.DataFrame({
+    'clinic': ['North', 'North', 'North', 'South', 'South', 'South'] * 3,
+    'patient_id': ['DN001', 'DN002', 'DN003', 'DS001', 'DS002', 'DS003'] * 3,
+    'month': ['Jan', 'Jan', 'Jan', 'Jan', 'Jan', 'Jan',
+              'Feb', 'Feb', 'Feb', 'Feb', 'Feb', 'Feb',
+              'Mar', 'Mar', 'Mar', 'Mar', 'Mar', 'Mar'],
+    'hba1c': [7.2, 8.1, 6.9, 7.8, 9.2, 7.1,  # January
+              7.0, 7.8, 6.7, 7.5, 8.9, 6.9,  # February
+              6.8, 7.5, 6.5, 7.2, 8.5, 6.7],  # March
+    'weight_kg': [82, 95, 78, 88, 102, 73,
+                  81, 93, 77, 87, 100, 72,
+                  80, 91, 76, 86, 98, 71]
+})
+
+# TODO: Create a dashboard view that shows:
+# 1. Average HbA1c by clinic and month (clinics as rows, months as columns)
+# 2. Patient count per clinic per month
+# 3. Identify clinics with improving vs worsening average HbA1c trends
+# 🏆 Bonus: Create a single comprehensive dashboard DataFrame
+# 💡 Remember: Lower HbA1c = Better diabetes control!</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>🤔 Strategic Thinking:</h3>
+                    
+                    <!-- MCQ for clinical metrics -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Clinical Metrics</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why track HbA1c by month in diabetes management?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To fill up more spreadsheet cells</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Create more comprehensive-looking reports.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The purpose is clinical, not aesthetic - tracking trends is essential for diabetes management.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To identify seasonal patterns that affect diabetes control</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Monitor trends and patterns in patient health over time.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Monthly tracking helps identify seasonal patterns, medication adherence issues, and treatment effectiveness over time.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Because months are easier to spell than weeks</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Convenience in data entry and reporting.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The choice of timeframe is based on clinical relevance, not convenience.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To make the data look more complex</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Increase the apparent sophistication of the analysis.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Healthcare analytics should be driven by clinical needs, not complexity for its own sake.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>🎯 Complete Solution</h3>
+                    
+                    <div class="code-block-container" data-block-name="diabetes-dashboard-solution">
+                        <div class="code-block"># 1. Calculate average HbA1c by clinic and month
+# Creating the primary quality metric - HbA1c is the gold standard! 🥇
+hba1c_summary = diabetes_monitoring.pivot_table(
+    index='clinic',
+    columns='month',
+    values='hba1c',
+    aggfunc='mean'
+)
+
+# Reorder months correctly (because 'Feb' < 'Jan' alphabetically - oops!)
+month_order = ['Jan', 'Feb', 'Mar']
+hba1c_summary = hba1c_summary[month_order]
+
+print("📊 Average HbA1c by Clinic and Month:")
+print("=" * 50)
+print(hba1c_summary.round(2))
+print("\n💡 Target HbA1c < 7.0 for good control")
+print("North Clinic is crushing it! 🏆")
+
+# 2. Count patients per clinic per month
+# Volume matters - are we comparing apples to apples? 🍎
+patient_counts = diabetes_monitoring.pivot_table(
+    index='clinic',
+    columns='month',
+    values='patient_id',
+    aggfunc='count'
+)[month_order]
+
+print("\n👥 Patient Count by Clinic and Month:")
+print("=" * 50)
+print(patient_counts)
+print("\n✅ Good news: Equal patient counts = fair comparison!")
+
+# 3. Calculate trends - the moment of truth!
+# Are we getting better or worse? 📈📉
+hba1c_summary['trend'] = hba1c_summary['Mar'] - hba1c_summary['Jan']
+hba1c_summary['trend_direction'] = hba1c_summary['trend'].apply(
+    lambda x: '✅ Improving' if x < 0 else '⚠️ Worsening'
+)
+
+print("\n🎯 Clinic Performance Trends:")
+print("=" * 50)
+trend_display = hba1c_summary[['Jan', 'Mar', 'trend', 'trend_direction']]
+print(trend_display)
+
+# Bonus: Create comprehensive executive dashboard
+# This is what the CEO actually wants to see! 💼
+dashboard = pd.DataFrame({
+    'clinic': hba1c_summary.index,
+    'avg_hba1c_jan': hba1c_summary['Jan'].round(2),
+    'avg_hba1c_mar': hba1c_summary['Mar'].round(2),
+    'hba1c_change': hba1c_summary['trend'].round(2),
+    'performance': hba1c_summary['trend_direction'],
+    'total_patients': patient_counts.sum(axis=1),
+    'quality_score': ['⭐⭐⭐⭐⭐' if t < -0.2 else '⭐⭐⭐' for t in hba1c_summary['trend']]
+})
+
+print("\n🏥 Executive Dashboard - Board Ready!")
+print("=" * 50)
+print(dashboard)
+print("\n📢 Key Insights:")
+print("• North Clinic: Best performer with consistent improvement")
+print("• South Clinic: Needs intervention - consider sharing North's best practices")
+print("• Overall: 50% of clinics improving - glass half full! 🥤")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>🎉 <strong>Exceptional work!</strong> You've just created a dashboard that could:</p>
+                    <ul>
+                        <li>Drive quality improvement initiatives</li>
+                        <li>Justify resource allocation</li>
+                        <li>Identify clinics for best practice sharing</li>
+                        <li>Support grant applications for diabetes programs</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Section 4: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-trophy" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🎓 Summary: Mastering Data Reshaping for Precision Health
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🏆 Congratulations, Data Reshaping Champion!</h3>
+                    
+                    <p>You've just completed an epic journey through the shape-shifting world of medical data transformation! Like a master origami artist, you can now fold, unfold, and refold clinical datasets into any shape your analysis demands.</p>
+                    
+                    <h3>🎯 Key Skills Mastered:</h3>
+                    
+                    <h4>1. Melting Operations 🧊➡️💧</h4>
+                    <ul>
+                        <li>Transform wide clinical trial data into analysis-ready long format</li>
+                        <li>Handle multiple measurement types in ICU monitoring data</li>
+                        <li><strong>Power Move</strong>: Melt different vital signs separately, then combine!</li>
+                    </ul>
+                    
+                    <h4>2. Pivoting Techniques 📊</h4>
+                    <ul>
+                        <li>Create instant patient dashboards from laboratory data</li>
+                        <li>Build executive summaries from complex clinical metrics</li>
+                        <li><strong>Pro Tip</strong>: Use <code>pivot_table()</code> when you need aggregation superpowers!</li>
+                    </ul>
+                    
+                    <h4>3. Complex Transformations 🎪</h4>
+                    <ul>
+                        <li>Chain multiple operations for sophisticated analyses</li>
+                        <li>Calculate derived metrics during reshaping</li>
+                        <li><strong>Reality Check</strong>: Real research needs 3-4 reshapes minimum!</li>
+                    </ul>
+                    
+                    <h4>4. Clinical Context 🏥</h4>
+                    <ul>
+                        <li>Know when wide format serves clinicians (patient charts)</li>
+                        <li>Understand when long format serves researchers (statistical models)</li>
+                        <li><strong>Golden Rule</strong>: Let the analysis dictate the format, not the other way around!</li>
+                    </ul>
+                    
+                    <h3>🚀 Direct Applications in Precision Health:</h3>
+                    
+                    <h4>Clinical Trials 💊</h4>
+                    <ul>
+                        <li>Reshape patient outcome data for FDA submissions</li>
+                        <li>Transform safety data for adverse event analysis</li>
+                        <li>Create treatment comparison matrices for publication</li>
+                    </ul>
+                    
+                    <h4>Electronic Health Records 📋</h4>
+                    <ul>
+                        <li>Convert EHR exports for population health studies</li>
+                        <li>Transform lab results for disease progression modeling</li>
+                        <li>Reshape medication data for polypharmacy analysis</li>
+                    </ul>
+                    
+                    <h4>Genomic Studies 🧬</h4>
+                    <ul>
+                        <li>Restructure expression data for pathway analysis</li>
+                        <li>Transform variant calls for association studies</li>
+                        <li>Reshape multi-omics data for integrative analysis</li>
+                    </ul>
+                    
+                    <h4>Healthcare Analytics 📈</h4>
+                    <ul>
+                        <li>Create KPI dashboards for hospital executives</li>
+                        <li>Transform quality metrics for accreditation</li>
+                        <li>Reshape financial data for value-based care analysis</li>
+                    </ul>
+                    
+                    <h3>🌟 Your Next Learning Journey:</h3>
+                    
+                    <p>Armed with these reshaping superpowers, you're ready to tackle <strong>advanced aggregation and summarization</strong>! You'll learn to:</p>
+                    <ul>
+                        <li>Calculate complex medical statistics across grouped data</li>
+                        <li>Create publication-ready summary tables</li>
+                        <li>Build automated reporting pipelines</li>
+                        <li>Generate insights that drive clinical decisions</li>
+                    </ul>
+                    
+                    <h3>💭 Final Thoughts:</h3>
+                    
+                    <p>Remember, every <code>melt()</code>, <code>pivot()</code>, and <code>stack()</code> operation you perform is more than just data manipulation - it's a step toward:</p>
+                    <ul>
+                        <li>🎯 Earlier disease detection through better data analysis</li>
+                        <li>💊 More effective treatments through clearer clinical insights</li>
+                        <li>🧬 Breakthrough discoveries in personalized medicine</li>
+                        <li>🏥 Improved patient outcomes through data-driven decisions</li>
+                    </ul>
+                    
+                    <p><strong>You're not just reshaping data - you're reshaping the future of healthcare!</strong> 🚀</p>
+                    
+                    <p>Keep practicing with real clinical datasets, and always remember: behind every row and column is a patient whose life could be improved by your analysis. Now go forth and transform that medical data! 💪</p>
+                    
+                    <p><em>P.S. - If your data could talk, it would thank you for making it more analysis-friendly. But since it can't, we'll say it: You're awesome! 🌟</em></p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out the examples here, practice with advanced reshaping techniques, or experiment with your own complex clinical datasets from the lesson.</p>
+            
+            <textarea id="python-code"># Type your python codes here</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Python session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
