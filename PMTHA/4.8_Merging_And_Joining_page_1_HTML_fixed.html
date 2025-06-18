@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merging and Joining Page 1 - Clinical Data Integration - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Precision Medical Toolkit for Health Analytics</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>4.8 Merging and Joining Clinical Datasets</h1>
+            
+            <p>Welcome to one of the most critical skills in biomedical data science! 🎯 In precision health and medical research, patient information rarely exists in a single, perfect dataset. Instead, clinical data is distributed across multiple systems: electronic health records (EHRs), laboratory information systems, genomic databases, and clinical trial registries. Your ability to merge and join these disparate data sources is what transforms isolated medical facts into comprehensive patient profiles that enable personalized medicine and groundbreaking research discoveries.</p>
+            
+            <p>💡 <strong>Fun Fact</strong>: Did you know that the average hospital patient generates over 80 megabytes of data per day? That's equivalent to about 40,000 pages of text! Without proper data merging techniques, this information would remain scattered like puzzle pieces across different departments.</p>
+            
+            <!-- Section 1: Understanding Data Integration -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-microscope" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🔬 Mission Briefing: Understanding Data Integration in Healthcare
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🏥 The Clinical Data Landscape</h3>
+                    
+                    <p>In the modern healthcare ecosystem, a single patient's journey generates data across numerous touchpoints. Think of it like a medical detective story where clues are scattered across different rooms:</p>
+                    <ul>
+                        <li><strong>Reception Desk</strong>: Demographics and insurance info</li>
+                        <li><strong>Lab</strong>: Blood work and test results</li>
+                        <li><strong>Radiology</strong>: X-rays and scans</li>
+                        <li><strong>Pharmacy</strong>: Medication history</li>
+                        <li><strong>Genetics Lab</strong>: DNA analysis results</li>
+                    </ul>
+                    
+                    <p>Pandas' merge and join operations are your <strong>molecular glue</strong> 🧲, binding these fragments into a coherent whole that reveals the complete clinical picture.</p>
+                    
+                    <p>🎭 <strong>Metaphor Time</strong>: Think of merging as hosting a dinner party where each guest (dataset) brings their own dish (information). Your job is to arrange everything on the table so that complementary flavors (related data) end up on the same plate (merged dataset)!</p>
+                    
+                    <!-- MCQ for clinical data landscape -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In a typical hospital, patient data is commonly found in which of the following systems?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only in a single centralized database</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        All patient information is stored in one place.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While this would be ideal, healthcare data is typically distributed across multiple specialized systems.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Scattered across multiple systems like EHRs, labs, and pharmacy</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Data exists in various specialized systems throughout the hospital.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Modern healthcare generates data across numerous touchpoints including EHRs, laboratory systems, pharmacy records, and imaging systems. This distributed nature of healthcare data makes merging operations essential.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Exclusively in paper files</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        All records are still kept on paper.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Modern hospitals use digital systems extensively, though some paper records may still exist.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only in the radiology department</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Patient data is limited to imaging systems.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Patient data spans many departments beyond just radiology.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>🚀 Getting Started: Import Your Tools</h3>
+                    
+                    <div class="code-block-container" data-block-name="import-libraries">
+                        <div class="code-block"># Import essential libraries for clinical data integration
+import pandas as pd
+import numpy as np</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>📊 Setting Up Our Clinical Scenario</h3>
+                    
+                    <p>Let's create a realistic healthcare scenario with patient data distributed across different hospital systems:</p>
+                    
+                    <div class="code-block-container" data-block-name="patient-demographics">
+                        <div class="code-block"># Create patient demographic dataset (from hospital registration)
+patient_demographics = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003', 'P004', 'P005'],
+    'name': ['Sarah Chen', 'Marcus Johnson', 'Elena Rodriguez', 'David Kim', 'Amara Patel'],
+    'age': [45, 67, 52, 38, 71],
+    'gender': ['F', 'M', 'F', 'M', 'F'],
+    'blood_type': ['A+', 'O-', 'B+', 'AB+', 'A-']
+})</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>🩸 <strong>Medical Context</strong>: Blood type isn't just trivia—it's crucial for emergency transfusions and can influence disease susceptibility. For instance, people with blood type O have lower risk of heart disease but higher risk of bleeding disorders!</p>
+                    
+                    <div class="code-block-container" data-block-name="lab-results">
+                        <div class="code-block"># Create laboratory results dataset (from LIMS)
+lab_results = pd.DataFrame({
+    'patient_id': ['P001', 'P002', 'P003', 'P004', 'P006'],  # Note: P005 missing, P006 extra
+    'test_date': ['2024-01-15', '2024-01-16', '2024-01-15', '2024-01-17', '2024-01-18'],
+    'hemoglobin': [13.2, 11.8, 14.1, 15.2, 12.5],
+    'white_blood_cells': [6.8, 12.3, 7.2, 5.9, 9.1],
+    'platelet_count': [245, 198, 267, 312, 223]
+})</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p><strong>🔍 What do these lab values mean?</strong></p>
+                    <ul>
+                        <li><strong>Hemoglobin</strong> (normal: 12-16 g/dL for women, 14-18 for men): Carries oxygen in blood</li>
+                        <li><strong>White blood cells</strong> (normal: 4-11 thousand/μL): Your body's defense force</li>
+                        <li><strong>Platelets</strong> (normal: 150-400 thousand/μL): Help blood clot</li>
+                    </ul>
+                    
+                    <!-- MCQ for lab values interpretation -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Lab Values Interpretation</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Based on the normal ranges provided, which patient has an elevated white blood cell count that might indicate infection?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">P001 with WBC of 6.8</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This value falls within the normal range.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> 6.8 thousand/μL is within the normal range of 4-11 thousand/μL.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">P002 with WBC of 12.3</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This value exceeds the normal range.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Patient P002 has a WBC count of 12.3 thousand/μL, which exceeds the normal range of 4-11 thousand/μL. This elevation could indicate infection, inflammation, or other conditions requiring medical attention.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">P003 with WBC of 7.2</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This value is in the normal range.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> 7.2 thousand/μL is within the normal range of 4-11 thousand/μL.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">P004 with WBC of 5.9</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This value is in the normal range.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> 5.9 thousand/μL is within the normal range of 4-11 thousand/μL.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>👀 Let's Examine Our Data</h3>
+                    
+                    <div class="code-block-container" data-block-name="examine-data">
+                        <div class="code-block"># Display both datasets
+print("Patient Demographics (Hospital Registration):")
+print(patient_demographics)
+print("\nLaboratory Results (LIMS):")
+print(lab_results)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>💡 <strong>Data Reality Check</strong>: Notice the mismatches?</p>
+                    <ul>
+                        <li>Patient P005 (Amara Patel) has demographics but no recent lab work—maybe she missed her appointment?</li>
+                        <li>P006 has lab results but isn't in our demographic system—possibly a data entry delay or emergency admission!</li>
+                    </ul>
+                    
+                    <!-- MCQ for data mismatch identification -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Data Discrepancy Analysis</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Looking at the two datasets, which patient appears in patient_demographics but NOT in lab_results?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">P001</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This patient appears in both datasets.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> P001 appears in both the demographics and lab results datasets.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">P003</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This patient appears in both datasets.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> P003 appears in both the demographics and lab results datasets.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">P005</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This patient has demographics but no lab results.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Patient P005 (Amara Patel) appears in the demographics dataset but has no corresponding lab results, which could indicate a missed appointment or pending lab work.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">P006</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This patient has lab results but no demographics.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> P006 appears in lab results but NOT in demographics. The question asks for the opposite scenario.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p><strong>Real-World Connection</strong> 🌍: The challenge of merging healthcare data became critically apparent during the COVID-19 pandemic. Hospitals needed to combine:</p>
+                    <ul>
+                        <li>Patient admission data</li>
+                        <li>Laboratory PCR results</li>
+                        <li>Vaccination records from state databases</li>
+                        <li>Comorbidity information from insurance claims</li>
+                    </ul>
+                    <p>Efficient data merging literally saved lives by identifying high-risk patients who needed immediate intervention. One New York hospital reduced mortality by 23% after implementing proper data integration!</p>
+                </div>
+            </div>
+            
+            <!-- Section 2: Inner Join -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-link" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🔬 Mission Briefing: Inner Join - Finding Complete Patient Records
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🎯 Understanding Inner Joins</h3>
+                    
+                    <p>An inner join is like being a strict bouncer at an exclusive club—only patients with VIP passes (data in BOTH datasets) get in! This is the most conservative merge strategy, perfect for research requiring complete data.</p>
+                    
+                    <p>🎭 <strong>Analogy</strong>: Imagine you're organizing a potluck where everyone must bring both a main dish AND a dessert. Inner join only invites people who have both!</p>
+                    
+                    <div class="code-block-container" data-block-name="inner-join-example">
+                        <div class="code-block"># Perform inner join on patient_id
+complete_records = pd.merge(patient_demographics, lab_results, on='patient_id', how='inner')</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ for inner join syntax -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Merge Syntax</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What is the correct syntax to perform an inner join between two DataFrames in pandas?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">pd.join(df1, df2, on='column', type='inner')</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using join function with type parameter.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This syntax is not correct for pandas. The join function has different parameters.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">pd.merge(df1, df2, on='column', how='inner')</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using merge function with how parameter.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The correct syntax is pd.merge(df1, df2, on='column', how='inner'). The merge function takes the two DataFrames, specifies the column to join on, and uses the 'how' parameter to specify the join type.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">df1.inner_join(df2, on='column')</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using a method directly on the DataFrame.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> There is no inner_join method in pandas. Use pd.merge() instead.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">pd.combine(df1, df2, method='inner')</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using combine function with method parameter.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The combine function exists but has different parameters and is used for different purposes.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>📊 Examining Our Results</h3>
+                    
+                    <div class="code-block-container" data-block-name="display-results">
+                        <div class="code-block"># Display the merged result
+print("Complete Patient Records (Inner Join):")
+print(complete_records)
+print(f"\nNumber of complete records: {len(complete_records)}")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p><strong>What happened?</strong></p>
+                    <ul>
+                        <li>✅ 4 patients made the cut (P001-P004)</li>
+                        <li>❌ P005 excluded (no lab data)</li>
+                        <li>❌ P006 excluded (no demographics)</li>
+                    </ul>
+                    
+                    <!-- MCQ for inner join results -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Inner Join Results</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                After performing an inner join between patient_demographics (5 patients) and lab_results (5 patients with one different), how many records will the result contain?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">10 records (all combined)</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Adding all records from both datasets.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Inner join doesn't simply add records. It only keeps matching ones.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">5 records (maximum possible)</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Taking the larger dataset size.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Inner join only includes records that match in both datasets, not the maximum size.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">4 records (only matching patients)</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only patients with data in both datasets.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! An inner join returns only records that have matching patient_ids in BOTH datasets. Since P005 lacks lab data and P006 lacks demographics, only 4 patients (P001-P004) appear in the result.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">0 records (no matches)</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        No common patient IDs found.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> There are several matching patient IDs between the datasets.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>🧮 Creating New Insights from Merged Data</h3>
+                    
+                    <div class="code-block-container" data-block-name="health-score-calculation">
+                        <div class="code-block"># Calculate BMI-like health score using merged data
+complete_records['health_score'] = (complete_records['hemoglobin'] * 10) / complete_records['age']
+
+# Display enhanced dataset
+print("\nEnhanced Dataset with Calculated Health Score:")
+print(complete_records[['name', 'age', 'hemoglobin', 'health_score']])</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>💡 <strong>Why This Matters</strong>: This health score combines demographic factors (age) with clinical measurements (hemoglobin) to create insights impossible with either dataset alone. Higher scores might indicate better oxygen-carrying capacity relative to age!</p>
+                    
+                    <p><strong>Real-World Connection</strong> 🏥: Inner joins are the gold standard for clinical trials. The FDA requires that primary efficacy analyses include only patients with both baseline and follow-up measurements. Missing data can invalidate multi-million dollar trials!</p>
+                </div>
+            </div>
+            
+            <!-- Section 3: Left Join -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-users" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🔬 Mission Briefing: Left Join - Preserving All Patient Records
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🌟 The Inclusive Approach</h3>
+                    
+                    <p>A left join is like a caring doctor who never abandons a patient—it keeps ALL records from the first dataset, filling in additional data where available. Perfect for patient registries!</p>
+                    
+                    <p>🎭 <strong>Analogy</strong>: It's like taking attendance in class. Everyone on your roster (left dataset) gets marked present or absent, even if they didn't submit homework (right dataset)!</p>
+                    
+                    <div class="code-block-container" data-block-name="left-join-example">
+                        <div class="code-block"># Left join to keep all patients from demographics
+all_patients = pd.merge(patient_demographics, lab_results, on='patient_id', how='left')</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ for left join concept -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Left Join Concept</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In a left join between patient_demographics and lab_results, which patients will appear in the result?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only patients with lab results</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only those who have corresponding lab data.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> A left join preserves all records from the left dataset, not just those with matches.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only patients in both datasets</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only those appearing in both demographics and lab results.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This describes an inner join, not a left join.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">All patients from patient_demographics, regardless of lab results</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Everyone in the demographics dataset will be included.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! A left join preserves ALL records from the left (first) dataset. Patients from patient_demographics will appear even if they don't have matching lab results, with NaN values for missing lab data.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">All patients from lab_results, regardless of demographics</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Everyone in the lab results dataset will be included.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would be a right join, not a left join.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>📋 Viewing the Complete Registry</h3>
+                    
+                    <div class="code-block-container" data-block-name="display-left-join">
+                        <div class="code-block"># Display result showing NaN for missing lab data
+print("All Patients with Available Lab Data (Left Join):")
+print(all_patients)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>🔍 <strong>Notice</strong>: Patient P005 (Amara Patel) is retained with NaN (Not a Number) values for her lab results. In pandas, NaN represents missing data—like blank spaces in a medical form!</p>
+                    
+                    <!-- MCQ for NaN values -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Missing Data Handling</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the left join result, what will appear in the 'hemoglobin' column for patient P005?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">0</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The value will be zero.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Pandas doesn't use 0 for missing data, as 0 could be a valid measurement.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">"Missing"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The text "Missing" will appear.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Pandas doesn't automatically insert text for missing values.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">NaN</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Not a Number (NaN) will appear.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! When a left join cannot find matching data in the right dataset, pandas fills those values with NaN (Not a Number), which is the standard representation for missing numerical data.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The column will be empty</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Nothing will appear in that cell.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Pandas represents missing data explicitly with NaN, not empty cells.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>🚨 Clinical Action Items</h3>
+                    
+                    <div class="code-block-container" data-block-name="missing-labs-identification">
+                        <div class="code-block"># Identify patients needing lab work
+missing_labs = all_patients[all_patients['hemoglobin'].isna()]
+print("\nPatients Needing Laboratory Follow-up:")
+print(missing_labs[['patient_id', 'name', 'age']])</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>💡 <strong>Practical Use</strong>: This query creates an actionable list for the clinical coordinator to schedule follow-up appointments!</p>
+                    
+                    <p><strong>Real-World Connection</strong> 📊: The famous Framingham Heart Study (tracking cardiovascular health since 1948) uses left join logic to maintain complete participant rosters. They discovered that people who miss check-ups have 18% higher cardiovascular risk—the missing data itself was informative!</p>
+                </div>
+            </div>
+            
+            <!-- Section 4: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🎓 Summary: Foundations of Clinical Data Integration
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🏆 Key Takeaways</h3>
+                    
+                    <p>You've mastered fundamental data integration concepts that power modern healthcare:</p>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <tr style="background-color: #f5f5f5; border: 1px solid #ddd;">
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Join Type</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Use Case</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Medical Example</th>
+                        </tr>
+                        <tr style="border: 1px solid #ddd;">
+                            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Inner Join</strong></td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">Complete cases only</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">Clinical trials requiring all data points</td>
+                        </tr>
+                        <tr style="background-color: #f9f9f9; border: 1px solid #ddd;">
+                            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Left Join</strong></td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">Preserve primary records</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">Patient registries, follow-up tracking</td>
+                        </tr>
+                    </table>
+                    
+                    <!-- Final strategy MCQ -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Join Strategy Selection</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                You're conducting a clinical trial where the FDA requires complete baseline and follow-up data for all participants in the primary analysis. Which join type should you use?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Left join - to keep all enrolled patients</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Preserve all patient enrollment records.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While preserving enrollment is important, FDA requires complete data for primary efficacy analysis.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Right join - to keep all follow-up data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Preserve all follow-up measurement records.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Right join would keep follow-ups but might lose patients who only have baseline data.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Inner join - to include only patients with complete data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only patients with both baseline and follow-up measurements.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! For FDA-regulated clinical trials requiring complete data for primary efficacy analyses, an inner join ensures only patients with both baseline and follow-up measurements are included, maintaining data integrity for regulatory approval.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Outer join - to see all possible data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Include all patients regardless of data completeness.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Outer join would include incomplete cases, which doesn't meet FDA requirements for primary analysis.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>💡 Remember These Principles:</h3>
+                    <ol>
+                        <li><strong>Real data is messy</strong> - Expect mismatches and plan accordingly</li>
+                        <li><strong>Missing data tells a story</strong> - Sometimes absence is clinically significant</li>
+                        <li><strong>Merged data enables new insights</strong> - Combine demographics + clinical = personalized medicine</li>
+                        <li><strong>Choose joins thoughtfully</strong> - Each type serves different clinical needs</li>
+                    </ol>
+                    
+                    <h3>🚀 What's Next?</h3>
+                    <p>In the next module, we'll explore:</p>
+                    <ul>
+                        <li><strong>Outer joins</strong> for comprehensive data audits</li>
+                        <li><strong>Multi-column merges</strong> for complex temporal matching</li>
+                        <li><strong>Advanced scenarios</strong> with multiple data sources</li>
+                    </ul>
+                    
+                    <p>Your journey from data fragments to comprehensive patient insights has just begun! 🌟</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out the examples here, practice with merge operations, or experiment with your own clinical datasets from the lesson.</p>
+            
+            <textarea id="python-code"># Type your python codes here
+
+               
+</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Python session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
