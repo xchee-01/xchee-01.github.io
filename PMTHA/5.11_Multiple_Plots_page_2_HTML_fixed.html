@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.11 Multiple Plots - Advanced Clinical Visualizations - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Precision Medical Toolkit for Health Analytics</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>Multiple Plots - Advanced Clinical Visualizations</h1>
+            
+            <!-- Section 1: Sharing Axes Between Plots -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-microscope" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mission Briefing: Sharing Axes Between Plots
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>When comparing treatment groups or tracking multiple patients, shared axes are your best friend! They ensure fair visual comparison and save precious screen space. Let's explore this with a clinical trial visualization.</p>
+                    
+                    <!-- Learning Checkpoint MCQ -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What is the primary benefit of using shared axes when comparing multiple patient groups?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A) It saves memory in the computer</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Saves memory in the computer
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Shared axes ensure that all plots use the same scale, making visual comparison accurate and meaningful, while also optimizing screen space usage.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">B) It ensures fair visual comparison and saves screen space</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Ensures fair visual comparison and saves screen space
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Shared axes ensure that all plots use the same scale, making visual comparison accurate and meaningful, while also optimizing screen space usage.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">C) It makes the code run faster</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Makes the code run faster
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Shared axes ensure that all plots use the same scale, making visual comparison accurate and meaningful, while also optimizing screen space usage.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">D) It automatically colors the plots</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Automatically colors the plots
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Shared axes ensure that all plots use the same scale, making visual comparison accurate and meaningful, while also optimizing screen space usage.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>🔬 Clinical Trial Comparative Analysis</h3>
+                    
+                    <div class="code-block-container" data-block-name="clinical-trial-analysis">
+                        <div class="code-block"># Simulating a randomized controlled trial for a new hypertension drug
+# ==================================================
+np.random.seed(123)
+days = np.arange(0, 90)  # 3-month trial
+
+# Generate realistic treatment responses
+# ======================================
+def generate_treatment_response(baseline, daily_reduction, noise_level):
+    """Simulate treatment response with realistic variability"""
+    # Add weekly cycles (patients often miss weekend doses)
+    weekly_pattern = 2 * np.sin(2 * np.pi * days / 7)
+    response = baseline - daily_reduction * days + weekly_pattern + \
+               np.random.normal(0, noise_level, len(days))
+    return response
+
+# Three treatment arms
+# ====================
+placebo = generate_treatment_response(160, 0.05, 8)
+drug_low_dose = generate_treatment_response(160, 0.15, 6)
+drug_high_dose = generate_treatment_response(160, 0.25, 6)
+
+# Create figure with shared x-axis for easy comparison
+# ==================================================
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 10), 
+                                     sharex=True, sharey=True)
+fig.patch.set_facecolor('white')
+
+# Common styling function
+# =======================
+def style_treatment_plot(ax, data, color, label, group_name):
+    """Apply consistent styling to treatment plots"""
+    # Plot with confidence interval
+    ax.plot(days, data, color=color, linewidth=2, label=label)
+    
+    # Add rolling mean for trend
+    from scipy.ndimage import uniform_filter1d
+    rolling_mean = uniform_filter1d(data, size=7, mode='nearest')
+    ax.plot(days, rolling_mean, color=color, linewidth=3, alpha=0.5, linestyle='--')
+    
+    # Confidence interval
+    ax.fill_between(days, data-10, data+10, alpha=0.2, color=color)
+    
+    # Clinical targets
+    ax.axhline(y=140, color='orange', linestyle=':', label='Stage 1 HTN')
+    ax.axhline(y=130, color='green', linestyle=':', label='Target BP')
+    
+    # Styling
+    ax.set_ylabel('SBP (mmHg)')
+    ax.set_title(f'{group_name} (n=50)', fontsize=12, fontweight='bold', loc='left')
+    ax.grid(True, alpha=0.3)
+    ax.set_ylim(110, 180)
+    
+    # Add endpoint annotation
+    endpoint_bp = data[-1]
+    reduction = 160 - endpoint_bp
+    ax.text(85, endpoint_bp, f'−{reduction:.0f} mmHg', 
+            bbox=dict(boxstyle='round', facecolor='white', edgecolor=color),
+            fontsize=10, ha='right')
+
+# Plot each treatment arm
+# =======================
+style_treatment_plot(ax1, placebo, 'gray', 'Placebo', 'Placebo Group')
+style_treatment_plot(ax2, drug_low_dose, 'blue', 'Drug 5mg', 'Low Dose (5mg)')
+style_treatment_plot(ax3, drug_high_dose, 'darkgreen', 'Drug 10mg', 'High Dose (10mg)')
+
+# Only show legend on first plot
+# ==============================
+ax1.legend(loc='upper right', fontsize=8)
+
+# X-axis label only on bottom
+# ===========================
+ax3.set_xlabel('Days Since Randomization', fontsize=12)
+
+# Add p-values and statistical significance
+# =========================================
+fig.text(0.15, 0.88, 'Baseline: All groups ~160 mmHg', fontsize=10, style='italic')
+fig.text(0.15, 0.55, 'p < 0.01 vs placebo*', fontsize=10, color='blue')
+fig.text(0.15, 0.22, 'p < 0.001 vs placebo**', fontsize=10, color='darkgreen')
+
+# Main title
+# ==========
+fig.suptitle('REDUCE-BP Trial: Antihypertensive Efficacy by Treatment Arm\n' + 
+             'Primary Endpoint: Change in Systolic BP at 90 Days',
+             fontsize=16, fontweight='bold')
+
+plt.tight_layout(rect=[0, 0.02, 1, 0.96])
+plt.show()</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- Learning Checkpoint MCQ -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the code <code>plt.subplots(3, 1, figsize=(12, 10), sharex=True, sharey=True)</code>, what does the <code>sharex=True</code> parameter accomplish?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A) It creates three separate x-axes with different scales</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Creates three separate x-axes with different scales
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The <code>sharex=True</code> parameter ensures all subplots share the same x-axis scale and limits, making it easier to compare data across plots. Changes to one x-axis affect all linked axes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">B) It makes all subplots share the same x-axis scale and limits</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Makes all subplots share the same x-axis scale and limits
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The <code>sharex=True</code> parameter ensures all subplots share the same x-axis scale and limits, making it easier to compare data across plots. Changes to one x-axis affect all linked axes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">C) It automatically labels the x-axis</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Automatically labels the x-axis
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The <code>sharex=True</code> parameter ensures all subplots share the same x-axis scale and limits, making it easier to compare data across plots. Changes to one x-axis affect all linked axes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">D) It removes the x-axis from all plots</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Removes the x-axis from all plots
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The <code>sharex=True</code> parameter ensures all subplots share the same x-axis scale and limits, making it easier to compare data across plots. Changes to one x-axis affect all linked axes.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>💡 <strong>Statistical Note</strong>: The p-values shown would typically come from ANCOVA or mixed-effects models accounting for baseline values and repeated measures!</p>
+                    
+                    <h3>🔄 Side-by-Side Patient Comparison</h3>
+                    
+                    <p>Here's another powerful use of shared axes - comparing individual patient responses:</p>
+                    
+                    <div class="code-block-container" data-block-name="glucose-monitoring">
+                        <div class="code-block"># Create a 2x2 grid with shared axes for glucose monitoring
+# ==================================================
+fig, axes = plt.subplots(2, 2, figsize=(14, 10), 
+                         sharex='col', sharey='row')
+
+# Time points for continuous glucose monitoring
+# =============================================
+hours = np.arange(0, 25, 0.5)  # Every 30 minutes
+
+# Generate realistic glucose patterns for different patient types
+# ==================================================
+def generate_glucose_pattern(patient_type):
+    """Generate 24-hour glucose pattern based on patient type"""
+    base_glucose = {'well_controlled': 100, 'moderate': 140, 
+                    'poor': 180, 'brittle': 150}[patient_type]
+    
+    # Meal effects (breakfast, lunch, dinner)
+    meal_times = [8, 13, 19]
+    meal_effects = {'well_controlled': 30, 'moderate': 60, 
+                    'poor': 80, 'brittle': 100}[patient_type]
+    
+    glucose = np.full_like(hours, base_glucose, dtype=float)
+    
+    for meal_time in meal_times:
+        meal_idx = int(meal_time * 2)
+        # Glucose spike and decay
+        for i in range(len(hours)):
+            if i >= meal_idx:
+                time_since_meal = (i - meal_idx) * 0.5
+                spike = meal_effects * np.exp(-time_since_meal/2)
+                glucose[i] += spike
+    
+    # Add variability
+    if patient_type == 'brittle':
+        glucose += np.random.normal(0, 20, len(hours))
+    else:
+        glucose += np.random.normal(0, 5, len(hours))
+    
+    return np.clip(glucose, 40, 400)  # Physiological limits
+
+# Generate data for 4 patients
+# ============================
+patients = {
+    'Patient A - Excellent Control': generate_glucose_pattern('well_controlled'),
+    'Patient B - Moderate Control': generate_glucose_pattern('moderate'),
+    'Patient C - Poor Control': generate_glucose_pattern('poor'),
+    'Patient D - Brittle Diabetes': generate_glucose_pattern('brittle')
+}
+
+# Plot each patient
+# =================
+for idx, (name, glucose_data) in enumerate(patients.items()):
+    ax = axes.flat[idx]
+    
+    # Main glucose line
+    ax.plot(hours, glucose_data, linewidth=2, color='darkblue')
+    
+    # Color-coded background zones
+    ax.axhspan(0, 70, alpha=0.2, color='red', label='Hypoglycemia')
+    ax.axhspan(70, 140, alpha=0.2, color='green', label='Target range')
+    ax.axhspan(140, 180, alpha=0.2, color='yellow', label='Elevated')
+    ax.axhspan(180, 400, alpha=0.2, color='red', label='Hyperglycemia')
+    
+    # Meal markers
+    for meal_time, meal_name in zip([8, 13, 19], ['B', 'L', 'D']):
+        ax.axvline(x=meal_time, color='gray', linestyle=':', alpha=0.5)
+        ax.text(meal_time, ax.get_ylim()[1]*0.95, meal_name, 
+                ha='center', fontsize=8)
+    
+    # Calculate time in range
+    time_in_range = np.sum((glucose_data >= 70) & (glucose_data <= 140)) / len(glucose_data) * 100
+    
+    # Styling
+    ax.set_title(f'{name}\nTime in Range: {time_in_range:.0f}%', 
+                 fontsize=11, fontweight='bold')
+    ax.grid(True, alpha=0.3)
+    
+    # Only label outer axes
+    if idx >= 2:
+        ax.set_xlabel('Hour of Day')
+    if idx % 2 == 0:
+        ax.set_ylabel('Glucose (mg/dL)')
+    
+    # Add HbA1c estimate
+    avg_glucose = np.mean(glucose_data)
+    estimated_a1c = (avg_glucose + 46.7) / 28.7  # ADAG formula
+    ax.text(0.95, 0.05, f'Est. A1c: {estimated_a1c:.1f}%', 
+            transform=ax.transAxes, ha='right', fontsize=9,
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+
+# Only show legend on first plot
+# ==============================
+axes[0, 0].legend(loc='upper left', fontsize=8)
+
+# Main title
+# ==========
+fig.suptitle('Continuous Glucose Monitoring - 24 Hour Profiles\n' +
+             'Diabetes Clinic Patient Comparison',
+             fontsize=16, fontweight='bold')
+
+# Add meal timing legend
+# ======================
+fig.text(0.5, 0.01, 'B=Breakfast (8am), L=Lunch (1pm), D=Dinner (7pm)', 
+         ha='center', fontsize=10, style='italic')
+
+plt.tight_layout(rect=[0, 0.03, 1, 0.96])
+plt.show()</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- Learning Checkpoint MCQ -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In glucose monitoring, which range is considered the "target range" for good diabetes control?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A) 0-70 mg/dL</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        0-70 mg/dL
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The target range for glucose levels is 70-140 mg/dL. Below 70 is hypoglycemia (low blood sugar), and above 140 indicates elevated glucose levels.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">B) 70-140 mg/dL</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        70-140 mg/dL
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The target range for glucose levels is 70-140 mg/dL. Below 70 is hypoglycemia (low blood sugar), and above 140 indicates elevated glucose levels.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">C) 140-180 mg/dL</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        140-180 mg/dL
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The target range for glucose levels is 70-140 mg/dL. Below 70 is hypoglycemia (low blood sugar), and above 140 indicates elevated glucose levels.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">D) 180-400 mg/dL</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        180-400 mg/dL
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The target range for glucose levels is 70-140 mg/dL. Below 70 is hypoglycemia (low blood sugar), and above 140 indicates elevated glucose levels.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>🧪 Lab Exercise 2: Multi-Patient Glucose Monitoring</h3>
+                        <p>Now it's your turn! Create a visualization system for monitoring blood glucose levels of four diabetes patients throughout a day. Focus on making the comparisons clear and clinically meaningful.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab2-exercise">
+                            <div class="code-block"># Lab scenario: Continuous glucose monitoring for multiple patients
+# ==================================================
+# Your task: Create subplots with shared axes for easy comparison
+# ==================================================
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Time points (every 2 hours)
+# ===========================
+hours = np.array([0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
+
+# Glucose data for 4 patients (mg/dL)
+# ===================================
+patient1 = np.array([95, 110, 140, 180, 160, 130, 150, 170, 140, 160, 130, 110, 100])
+patient2 = np.array([120, 130, 160, 200, 180, 150, 170, 190, 160, 180, 150, 130, 125])
+patient3 = np.array([85, 90, 120, 160, 140, 110, 130, 150, 120, 140, 110, 95, 88])
+patient4 = np.array([110, 125, 180, 220, 200, 170, 190, 210, 180, 200, 170, 140, 115])
+
+# TODO: Create a 2x2 subplot with shared x and y axes
+# ==================================================
+# Use plt.subplots with sharex='all' and sharey='all'
+# ==================================================
+
+# TODO: Plot each patient's glucose levels in a separate subplot
+# ==================================================
+# Add horizontal lines at 70 (hypoglycemia) and 180 (hyperglycemia)
+# ==================================================
+# Use different colors for each patient
+# =====================================
+# Add titles, labels, and grid
+# ============================
+
+# TODO: Calculate and display time in range (70-180 mg/dL) for each patient
+# ==================================================
+
+# TODO: Add a main title for the entire figure
+# ============================================
+# Use tight_layout to prevent overlap
+# ===================================</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <!-- Learning Checkpoint MCQ -->
+                        <div class="mcq-container">
+                            <div class="mcq-header">
+                                <div class="mcq-header-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="mcq-header-text">Learning Checkpoint</div>
+                            </div>
+                            
+                            <div class="mcq-content">
+                                <div class="mcq-question">
+                                    Time in Range (TIR) is calculated as the percentage of time glucose levels stay within the target range. For good diabetes control, what TIR percentage should patients aim for?
+                                </div>
+                                
+                                <div class="mcq-options">
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">A) >50%</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Greater than 50%
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Patients should aim for >70% Time in Range (TIR) for good diabetes control. This means glucose levels should be within the target range for at least 70% of the monitored time period.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">B) >60%</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Greater than 60%
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Patients should aim for >70% Time in Range (TIR) for good diabetes control. This means glucose levels should be within the target range for at least 70% of the monitored time period.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="true">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">C) >70%</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Greater than 70%
+                                        </div>
+                                        <div class="mcq-feedback correct">
+                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Patients should aim for >70% Time in Range (TIR) for good diabetes control. This means glucose levels should be within the target range for at least 70% of the monitored time period.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">D) >90%</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Greater than 90%
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Patients should aim for >70% Time in Range (TIR) for good diabetes control. This means glucose levels should be within the target range for at least 70% of the monitored time period.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="reset-button">
+                                    <i class="fas fa-redo"></i> Try Again
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <p>💡 <strong>Clinical Tip</strong>: Time in Range (TIR) is becoming the gold standard for diabetes management. Aim for >70% TIR for good control!</p>
+                        
+                        <details>
+                            <summary>🔍 Click here for the complete solution!</summary>
+                            
+                            <div class="code-block-container" data-block-name="lab2-solution">
+                                <div class="code-block"># Complete solution with enhanced clinical features
+# =================================================
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Time points
+# ===========
+hours = np.array([0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
+
+# Patient glucose data
+# ====================
+patients_data = {
+    'Patient 1': np.array([95, 110, 140, 180, 160, 130, 150, 170, 140, 160, 130, 110, 100]),
+    'Patient 2': np.array([120, 130, 160, 200, 180, 150, 170, 190, 160, 180, 150, 130, 125]),
+    'Patient 3': np.array([85, 90, 120, 160, 140, 110, 130, 150, 120, 140, 110, 95, 88]),
+    'Patient 4': np.array([110, 125, 180, 220, 200, 170, 190, 210, 180, 200, 170, 140, 115])
+}
+
+# Control quality classifications
+# ===============================
+control_quality = ['Well Controlled', 'Moderate Control', 'Excellent Control', 'Poor Control']
+
+# Create subplots
+# ===============
+fig, axes = plt.subplots(2, 2, figsize=(14, 10), sharex='all', sharey='all')
+fig.patch.set_facecolor('white')
+
+# Color scheme for each patient
+# =============================
+colors = ['blue', 'green', 'purple', 'red']
+markers = ['o', 's', '^', 'd']
+
+# Plot each patient
+# =================
+for idx, ((name, glucose), quality, color, marker) in enumerate(
+    zip(patients_data.items(), control_quality, colors, markers)):
+    
+    ax = axes.flat[idx]
+    
+    # Main glucose plot with markers
+    ax.plot(hours, glucose, color=color, linewidth=2.5, 
+            marker=marker, markersize=8, label=name)
+    
+    # Fill areas based on glucose levels
+    for i in range(len(hours)-1):
+        if glucose[i] < 70 or glucose[i+1] < 70:
+            ax.fill_between(hours[i:i+2], 0, 400, alpha=0.3, color='red')
+        elif glucose[i] > 180 or glucose[i+1] > 180:
+            ax.fill_between(hours[i:i+2], 0, 400, alpha=0.2, color='orange')
+    
+    # Reference lines
+    ax.axhline(y=70, color='red', linestyle='--', linewidth=2, alpha=0.7)
+    ax.axhline(y=180, color='orange', linestyle='--', linewidth=2, alpha=0.7)
+    ax.axhline(y=140, color='green', linestyle=':', linewidth=1, alpha=0.5)
+    
+    # Target range shading
+    ax.axhspan(70, 140, alpha=0.1, color='green', label='Target range')
+    
+    # Calculate metrics
+    time_in_range = np.sum((glucose >= 70) & (glucose <= 180)) / len(glucose) * 100
+    time_below = np.sum(glucose < 70) / len(glucose) * 100
+    time_above = np.sum(glucose > 180) / len(glucose) * 100
+    avg_glucose = np.mean(glucose)
+    glucose_cv = (np.std(glucose) / avg_glucose) * 100  # Coefficient of variation
+    
+    # Title with classification
+    ax.set_title(f'{name} - {quality}', fontsize=12, fontweight='bold')
+    
+    # Metrics box
+    metrics_text = f'TIR: {time_in_range:.0f}%\nAvg: {avg_glucose:.0f} mg/dL\nCV: {glucose_cv:.0f}%'
+    ax.text(0.02, 0.98, metrics_text, transform=ax.transAxes,
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+            verticalalignment='top', fontsize=9)
+    
+    # Meal times
+    meal_times = [8, 13, 19]
+    for meal in meal_times:
+        ax.axvline(x=meal, color='gray', linestyle=':', alpha=0.3)
+    
+    # Grid
+    ax.grid(True, alpha=0.3)
+    ax.set_ylim(50, 250)
+    
+    # Labels for outer plots only
+    if idx >= 2:
+        ax.set_xlabel('Hour of Day', fontsize=11)
+    if idx % 2 == 0:
+        ax.set_ylabel('Glucose (mg/dL)', fontsize=11)
+    
+    # Add warning if hypoglycemia detected
+    if time_below > 0:
+        ax.text(0.5, 0.05, '⚠️ HYPOGLYCEMIA DETECTED', 
+                transform=ax.transAxes, ha='center',
+                color='red', fontweight='bold', fontsize=10)
+
+# Reference lines legend (only on first plot)
+# ===========================================
+axes[0, 0].text(1, 75, 'Hypo limit', fontsize=8, color='red')
+axes[0, 0].text(1, 185, 'Hyper limit', fontsize=8, color='orange')
+
+# Main title with clinical context
+# ================================
+fig.suptitle('24-Hour Continuous Glucose Monitoring - Comparative Analysis\n' +
+             'Diabetes Management Clinic - Weekly Review',
+             fontsize=16, fontweight='bold')
+
+# Add interpretation guide
+# ========================
+interpretation = ('Target Metrics: TIR >70% | TBR <4% | CV <36% | ' +
+                 'Green shading = Target range (70-140 mg/dL)')
+fig.text(0.5, 0.01, interpretation, ha='center', fontsize=10, style='italic')
+
+# Add meal timing note
+# ====================
+fig.text(0.98, 0.01, 'Dotted lines: Meal times (8am, 1pm, 7pm)', 
+         ha='right', fontsize=9, style='italic')
+
+plt.tight_layout(rect=[0, 0.03, 1, 0.96])
+plt.show()</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </details>
+                        
+                        <p>🎉 <strong>Outstanding work!</strong> Your glucose monitoring dashboard provides instant clinical insights. Notice how Patient 3 has the best control (smallest variations, most time in range), while Patient 4 needs urgent intervention with multiple hyperglycemic episodes!</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 2: Combining Different Plot Types -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-microscope" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mission Briefing: Combining Different Plot Types
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>The ultimate power move in medical visualization is combining different plot types to tell a complete story. This is essential for research presentations, clinical reports, and patient education materials.</p>
+                    
+                    <!-- Learning Checkpoint MCQ -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why is combining different plot types particularly useful in medical visualization?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A) It makes the code shorter</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Makes the code shorter
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Combining different plot types allows you to tell a complete story by showing different aspects of the data - trends, distributions, relationships, and summaries all in one comprehensive visualization.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">B) It tells a complete story and shows different aspects of the data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Tells a complete story and shows different aspects of the data
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Combining different plot types allows you to tell a complete story by showing different aspects of the data - trends, distributions, relationships, and summaries all in one comprehensive visualization.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">C) It always uses less memory</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Always uses less memory
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Combining different plot types allows you to tell a complete story by showing different aspects of the data - trends, distributions, relationships, and summaries all in one comprehensive visualization.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">D) It automatically generates statistical tests</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Automatically generates statistical tests
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Combining different plot types allows you to tell a complete story by showing different aspects of the data - trends, distributions, relationships, and summaries all in one comprehensive visualization.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>💊 Comprehensive Pharmacokinetic Analysis</h3>
+                    
+                    <p>Let's create a publication-quality figure for a drug study:</p>
+                    
+                    <div class="code-block-container" data-block-name="pharmacokinetics">
+                        <div class="code-block"># Advanced pharmacokinetics visualization
+# =======================================
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from scipy import stats
+
+# Generate realistic drug concentration data
+# ==========================================
+np.random.seed(456)
+time_points = np.array([0, 0.25, 0.5, 1, 2, 3, 4, 6, 8, 12, 16, 20, 24])
+
+# Two-compartment model with absorption
+# =====================================
+def drug_concentration(t, dose=100, ka=2.0, ke=0.15, V=10):
+    """Two-compartment PK model"""
+    if t == 0:
+        return 0
+    return (dose * ka / (V * (ka - ke))) * (np.exp(-ke * t) - np.exp(-ka * t))
+
+# Generate concentrations with realistic variability
+# ==================================================
+theoretical_conc = [drug_concentration(t) for t in time_points]
+measured_conc = theoretical_conc + np.random.normal(0, 0.1*np.array(theoretical_conc))
+measured_conc[measured_conc < 0] = 0
+
+# Create complex figure layout
+# ============================
+fig = plt.figure(figsize=(16, 12))
+gs = GridSpec(4, 3, figure=fig, height_ratios=[2, 1, 1, 0.8],
+              hspace=0.35, wspace=0.3)
+
+# Main PK curve
+# =============
+ax_main = fig.add_subplot(gs[0, :])
+ax_conc_dist = fig.add_subplot(gs[1, 0])
+ax_elimination = fig.add_subplot(gs[1, 1])
+ax_auc = fig.add_subplot(gs[1, 2])
+ax_compartment = fig.add_subplot(gs[2, :2])
+ax_clinical = fig.add_subplot(gs[2, 2])
+ax_params = fig.add_subplot(gs[3, :])
+
+# 1. Main concentration-time curve
+# ================================
+time_smooth = np.linspace(0, 24, 500)
+theo_smooth = [drug_concentration(t) for t in time_smooth]
+
+# Plot with style
+# ===============
+ax_main.scatter(time_points[1:], measured_conc[1:], s=100, alpha=0.8,
+                color='red', edgecolor='darkred', linewidth=2, 
+                label='Measured', zorder=5)
+ax_main.plot(time_smooth, theo_smooth, 'b-', linewidth=2.5, 
+             label='Model fit', alpha=0.8)
+
+# Add therapeutic window
+# ======================
+ax_main.axhspan(2, 8, alpha=0.2, color='green', label='Therapeutic range')
+ax_main.axhline(y=1, color='orange', linestyle='--', linewidth=2,
+                label='Minimum effective concentration')
+ax_main.axhline(y=10, color='red', linestyle='--', linewidth=2,
+                label='Toxicity threshold')
+
+# Annotations
+# ===========
+tmax_idx = np.argmax(measured_conc)
+ax_main.annotate(f'Cmax = {measured_conc[tmax_idx]:.1f} μg/mL\nTmax = {time_points[tmax_idx]} h',
+                 xy=(time_points[tmax_idx], measured_conc[tmax_idx]),
+                 xytext=(time_points[tmax_idx]+2, measured_conc[tmax_idx]+1),
+                 arrowprops=dict(arrowstyle='->', color='black'),
+                 bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7))
+
+ax_main.set_xlabel('Time (hours)', fontsize=12)
+ax_main.set_ylabel('Plasma Concentration (μg/mL)', fontsize=12)
+ax_main.set_title('Pharmacokinetic Profile - Single Oral Dose (100mg)', 
+                  fontsize=14, fontweight='bold')
+ax_main.legend(loc='upper right')
+ax_main.grid(True, alpha=0.3)
+ax_main.set_xlim(-0.5, 24.5)
+ax_main.set_ylim(0, 12)
+
+# 2. Concentration distribution histogram
+# =======================================
+ax_conc_dist.hist(measured_conc[1:], bins=8, orientation='horizontal',
+                  color='purple', alpha=0.7, edgecolor='black')
+ax_conc_dist.set_xlabel('Frequency')
+ax_conc_dist.set_ylabel('Concentration (μg/mL)')
+ax_conc_dist.set_title('Concentration Distribution', fontsize=11)
+ax_conc_dist.grid(True, alpha=0.3)
+
+# 3. Elimination rate
+# ===================
+elim_rate = -np.diff(measured_conc) / np.diff(time_points)
+time_mid = (time_points[1:] + time_points[:-1]) / 2
+
+ax_elimination.bar(time_mid, elim_rate, width=0.8*np.diff(time_points),
+                   alpha=0.7, color='darkred', edgecolor='black')
+ax_elimination.set_xlabel('Time (hours)')
+ax_elimination.set_ylabel('Elimination Rate\n(μg/mL/h)')
+ax_elimination.set_title('Instantaneous Elimination Rate', fontsize=11)
+ax_elimination.grid(True, alpha=0.3)
+
+# 4. AUC visualization
+# ====================
+ax_auc.fill_between(time_points, 0, measured_conc, alpha=0.5, color='lightblue',
+                    label='AUC₀₋₂₄')
+ax_auc.plot(time_points, measured_conc, 'b-', linewidth=2)
+ax_auc.set_xlabel('Time (hours)')
+ax_auc.set_ylabel('Concentration')
+ax_auc.set_title('Area Under Curve', fontsize=11)
+ax_auc.grid(True, alpha=0.3)
+
+# Calculate AUC using trapezoidal rule
+# ====================================
+from scipy import integrate
+auc_value = integrate.trapz(measured_conc, time_points)
+ax_auc.text(0.5, 0.5, f'AUC = {auc_value:.1f}\nμg·h/mL', 
+            transform=ax_auc.transAxes, ha='center', fontsize=12,
+            bbox=dict(boxstyle='round', facecolor='white'))
+
+# 5. Compartment model visualization
+# ==================================
+ax_compartment.text(0.1, 0.7, 'GI Tract', ha='center', fontsize=12,
+                    bbox=dict(boxstyle='round', facecolor='lightgreen'))
+ax_compartment.arrow(0.2, 0.7, 0.15, 0, head_width=0.05, head_length=0.02,
+                     fc='black', ec='black')
+ax_compartment.text(0.4, 0.7, 'Central\nCompartment\n(Blood)', ha='center', 
+                    fontsize=12, bbox=dict(boxstyle='round', facecolor='lightblue'))
+ax_compartment.arrow(0.55, 0.7, 0.15, 0, head_width=0.05, head_length=0.02,
+                     fc='black', ec='black')
+ax_compartment.text(0.8, 0.7, 'Peripheral\nTissues', ha='center', fontsize=12,
+                    bbox=dict(boxstyle='round', facecolor='lightcoral'))
+
+# Add rate constants
+# ==================
+ax_compartment.text(0.275, 0.8, 'ka', ha='center', fontsize=10)
+ax_compartment.text(0.625, 0.8, 'k12', ha='center', fontsize=10)
+ax_compartment.arrow(0.7, 0.6, -0.15, 0, head_width=0.05, head_length=0.02,
+                     fc='gray', ec='gray', linestyle='--')
+ax_compartment.text(0.625, 0.5, 'k21', ha='center', fontsize=10)
+ax_compartment.arrow(0.4, 0.5, 0, -0.2, head_width=0.05, head_length=0.02,
+                     fc='red', ec='red')
+ax_compartment.text(0.45, 0.35, 'ke', ha='center', fontsize=10)
+ax_compartment.text(0.4, 0.2, 'Elimination', ha='center', fontsize=12)
+
+ax_compartment.set_xlim(0, 1)
+ax_compartment.set_ylim(0, 1)
+ax_compartment.axis('off')
+ax_compartment.set_title('Two-Compartment Model', fontsize=12, fontweight='bold')
+
+# 6. Clinical parameters
+# ======================
+clinical_params = {
+    'Bioavailability': '87%',
+    'Protein Binding': '92%',
+    'Metabolism': 'Hepatic (CYP3A4)',
+    'Excretion': '70% renal, 30% fecal',
+    'Drug Interactions': 'Strong CYP3A4 inhibitors'
+}
+
+y_pos = 0.9
+for param, value in clinical_params.items():
+    ax_clinical.text(0.1, y_pos, f'{param}:', fontweight='bold', fontsize=10)
+    ax_clinical.text(0.15, y_pos-0.15, value, fontsize=9)
+    y_pos -= 0.3
+
+ax_clinical.set_xlim(0, 1)
+ax_clinical.set_ylim(0, 1)
+ax_clinical.axis('off')
+ax_clinical.set_title('Clinical Information', fontsize=12, fontweight='bold')
+
+# 7. Calculated PK parameters
+# ===========================
+half_life = 0.693 / 0.15
+clearance = 0.15 * 10  # ke * V
+vd_ss = 10 * 1.5  # Central + peripheral
+
+params_text = f"""
+Pharmacokinetic Parameters:
+• Half-life (t½): {half_life:.1f} hours
+• Clearance (CL): {clearance:.2f} L/h  
+• Volume of Distribution (Vd): {vd_ss:.1f} L
+• Cmax: {measured_conc[tmax_idx]:.1f} μg/mL
+• Tmax: {time_points[tmax_idx]:.1f} hours
+• AUC₀₋₂₄: {auc_value:.1f} μg·h/mL
+• Bioavailability-adjusted Dose: 87 mg
+
+Dosing Recommendation: 100 mg PO q12h (steady state in ~23 hours)
+"""
+
+ax_params.text(0.05, 0.5, params_text, fontsize=11, verticalalignment='center',
+               bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8))
+ax_params.set_xlim(0, 1)
+ax_params.set_ylim(0, 1)
+ax_params.axis('off')
+
+# Main title
+# ==========
+fig.suptitle('Comprehensive Pharmacokinetic Analysis - Drug XYZ-123\n' +
+             'Phase I Single-Dose Study in Healthy Volunteers (n=24)',
+             fontsize=18, fontweight='bold')
+
+# Add footer
+# ==========
+fig.text(0.5, 0.005, 'Study Protocol: PK-2024-001 | Analysis Date: ' + 
+         pd.Timestamp.now().strftime('%Y-%m-%d'),
+         ha='center', fontsize=9, style='italic')
+
+plt.tight_layout(rect=[0, 0.02, 1, 0.96])
+plt.show()</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- Learning Checkpoint MCQ -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the GridSpec creation <code>GridSpec(4, 3, figure=fig, height_ratios=[2, 1, 1, 0.8])</code>, what does the height_ratios parameter control?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A) The absolute height of each row in pixels</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The absolute height of each row in pixels
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The height_ratios parameter controls the relative heights of rows. With [2, 1, 1, 0.8], the first row is 2x the height of rows 2 and 3, and row 4 is 0.8x their height.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">B) The relative heights of the 4 rows, with the first row being 2x taller than rows 2 and 3</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The relative heights of the 4 rows, with the first row being 2x taller than rows 2 and 3
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The height_ratios parameter controls the relative heights of rows. With [2, 1, 1, 0.8], the first row is 2x the height of rows 2 and 3, and row 4 is 0.8x their height.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">C) The spacing between rows</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The spacing between rows
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The height_ratios parameter controls the relative heights of rows. With [2, 1, 1, 0.8], the first row is 2x the height of rows 2 and 3, and row 4 is 0.8x their height.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">D) The number of subplots in each row</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The number of subplots in each row
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The height_ratios parameter controls the relative heights of rows. With [2, 1, 1, 0.8], the first row is 2x the height of rows 2 and 3, and row 4 is 0.8x their height.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>🎯 <strong>Publication Ready</strong>: This figure contains everything needed for a drug development report or journal publication. The combination of plots tells the complete PK story!</p>
+                    
+                    <div class="challenge">
+                        <h3>🧪 Lab Exercise 3: Comprehensive Patient Health Report</h3>
+                        <p>Your final challenge! Create a multi-panel visualization that combines different plot types to show a complete health assessment for a patient with metabolic syndrome.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab3-exercise">
+                            <div class="code-block"># Lab scenario: Annual health assessment visualization
+# ==================================================
+# Your task: Create a comprehensive report using different plot types
+# ==================================================
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.gridspec import GridSpec
+
+# Patient data over 5 years
+# =========================
+years = np.array([2019, 2020, 2021, 2022, 2023])
+bmi = np.array([31.2, 30.5, 29.8, 28.6, 27.4])
+
+# Lipid panel data (mg/dL)
+# ========================
+total_cholesterol = np.array([240, 225, 210, 195, 180])
+ldl = np.array([160, 150, 140, 125, 110])
+hdl = np.array([35, 38, 42, 45, 48])
+triglycerides = np.array([225, 185, 160, 125, 110])
+
+# Blood pressure readings (30 measurements in 2023)
+# =================================================
+bp_systolic = np.random.normal(135, 10, 30)
+bp_diastolic = np.random.normal(85, 7, 30)
+
+# TODO: Create a figure with GridSpec
+# ===================================
+# Use 3 rows and 2 columns with custom height ratios
+# ==================================================
+
+# TODO: Create main plot showing BMI trend with classification zones
+# ==================================================
+# Add horizontal bands for: Normal (<25), Overweight (25-30), Obese (>30)
+# ==================================================
+
+# TODO: Create a stacked bar chart for lipid panel
+# ================================================
+# Show all four lipid measurements for each year
+# ==============================================
+
+# TODO: Create a scatter plot for blood pressure readings
+# ==================================================
+# Color code by hypertension stage
+# ================================
+
+# TODO: Add a text panel with risk assessment
+# ===========================================
+
+# Add overall title and adjust layout
+# ===================================</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <!-- Learning Checkpoint MCQ -->
+                        <div class="mcq-container">
+                            <div class="mcq-header">
+                                <div class="mcq-header-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="mcq-header-text">Learning Checkpoint</div>
+                            </div>
+                            
+                            <div class="mcq-content">
+                                <div class="mcq-question">
+                                    According to standard BMI classification, which range indicates "Overweight"?
+                                </div>
+                                
+                                <div class="mcq-options">
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">A) BMI < 18.5</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            BMI less than 18.5
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> BMI 25-29.9 is classified as Overweight. Below 18.5 is Underweight, 18.5-24.9 is Normal weight, and 30 or above is Obese.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">B) BMI 18.5-24.9</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            BMI 18.5-24.9
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> BMI 25-29.9 is classified as Overweight. Below 18.5 is Underweight, 18.5-24.9 is Normal weight, and 30 or above is Obese.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="true">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">C) BMI 25-29.9</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            BMI 25-29.9
+                                        </div>
+                                        <div class="mcq-feedback correct">
+                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! BMI 25-29.9 is classified as Overweight. Below 18.5 is Underweight, 18.5-24.9 is Normal weight, and 30 or above is Obese.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">D) BMI ≥ 30</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            BMI 30 or greater
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> BMI 25-29.9 is classified as Overweight. Below 18.5 is Underweight, 18.5-24.9 is Normal weight, and 30 or above is Obese.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="reset-button">
+                                    <i class="fas fa-redo"></i> Try Again
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <p>💡 <strong>Design Tip</strong>: Think about visual hierarchy - what's the most important information? Make it prominent!</p>
+                        
+                        <details>
+                            <summary>🔍 Click here for the complete solution!</summary>
+                            
+                            <div class="code-block-container" data-block-name="lab3-solution">
+                                <div class="code-block"># Comprehensive Metabolic Health Assessment Dashboard
+# ==================================================
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.gridspec import GridSpec
+import matplotlib.patches as mpatches
+
+# Patient data
+# ============
+years = np.array([2019, 2020, 2021, 2022, 2023])
+bmi = np.array([31.2, 30.5, 29.8, 28.6, 27.4])
+
+# Lipid panel data (mg/dL)
+# ========================
+total_cholesterol = np.array([240, 225, 210, 195, 180])
+ldl = np.array([160, 150, 140, 125, 110])
+hdl = np.array([35, 38, 42, 45, 48])
+triglycerides = np.array([225, 185, 160, 125, 110])
+
+# Blood pressure readings
+# =======================
+np.random.seed(789)
+bp_systolic = np.random.normal(135, 10, 30)
+bp_diastolic = np.random.normal(85, 7, 30)
+
+# Create figure with custom layout
+# ================================
+fig = plt.figure(figsize=(16, 12))
+gs = GridSpec(3, 2, figure=fig, height_ratios=[1.5, 1.5, 0.8],
+              hspace=0.3, wspace=0.25)
+
+# 1. BMI Trend with Risk Zones
+# ============================
+ax_bmi = fig.add_subplot(gs[0, :])
+
+# Risk zone backgrounds
+# =====================
+ax_bmi.axhspan(0, 18.5, alpha=0.2, color='blue', label='Underweight')
+ax_bmi.axhspan(18.5, 25, alpha=0.2, color='green', label='Normal')
+ax_bmi.axhspan(25, 30, alpha=0.2, color='yellow', label='Overweight')
+ax_bmi.axhspan(30, 35, alpha=0.2, color='orange', label='Obese I')
+ax_bmi.axhspan(35, 40, alpha=0.2, color='red', label='Obese II')
+
+# BMI trend line with markers
+# ===========================
+line = ax_bmi.plot(years, bmi, 'bo-', linewidth=3, markersize=12, 
+                   markeredgewidth=2, markeredgecolor='darkblue')[0]
+
+# Add value labels
+# ================
+for i, (year, value) in enumerate(zip(years, bmi)):
+    ax_bmi.text(year, value + 0.3, f'{value:.1f}', ha='center', 
+                fontsize=11, fontweight='bold')
+    
+    # Add change from previous year
+    if i > 0:
+        change = value - bmi[i-1]
+        color = 'green' if change < 0 else 'red'
+        ax_bmi.text(year, value - 0.5, f'{change:+.1f}', 
+                    ha='center', fontsize=9, color=color)
+
+# Add trend line
+# ==============
+z = np.polyfit(years, bmi, 1)
+p = np.poly1d(z)
+ax_bmi.plot(years, p(years), "r--", alpha=0.8, linewidth=2)
+
+# Formatting
+# ==========
+ax_bmi.set_xlabel('Year', fontsize=12)
+ax_bmi.set_ylabel('BMI (kg/m²)', fontsize=12)
+ax_bmi.set_title('Body Mass Index Progression with Risk Classification', 
+                 fontsize=14, fontweight='bold')
+ax_bmi.set_ylim(20, 35)
+ax_bmi.set_xlim(2018.5, 2023.5)
+ax_bmi.legend(loc='upper right', ncol=3, fontsize=9)
+ax_bmi.grid(True, alpha=0.3)
+
+# Add achievement badge
+# =====================
+if bmi[-1] < 30:
+    ax_bmi.text(2023.3, 31, '🏆 Moved out of\nObese category!', 
+                fontsize=12, color='green', fontweight='bold',
+                bbox=dict(boxstyle='round', facecolor='lightgreen'))
+
+# 2. Lipid Panel Evolution
+# ========================
+ax_lipids = fig.add_subplot(gs[1, 0])
+
+# Create grouped bar chart
+# ========================
+x = np.arange(len(years))
+width = 0.2
+
+# Plot bars
+# =========
+bars1 = ax_lipids.bar(x - 1.5*width, total_cholesterol, width, 
+                      label='Total Chol', color='navy')
+bars2 = ax_lipids.bar(x - 0.5*width, ldl, width, 
+                      label='LDL (Bad)', color='darkred')
+bars3 = ax_lipids.bar(x + 0.5*width, hdl, width, 
+                      label='HDL (Good)', color='darkgreen')
+bars4 = ax_lipids.bar(x + 1.5*width, triglycerides, width, 
+                      label='Triglycerides', color='orange')
+
+# Add target lines
+# ================
+ax_lipids.axhline(y=200, color='navy', linestyle=':', alpha=0.5)
+ax_lipids.axhline(y=100, color='darkred', linestyle=':', alpha=0.5)
+ax_lipids.axhline(y=40, color='darkgreen', linestyle=':', alpha=0.5)
+ax_lipids.axhline(y=150, color='orange', linestyle=':', alpha=0.5)
+
+# Add value labels on bars
+# ========================
+def autolabel(bars, values):
+    for bar, val in zip(bars, values):
+        height = bar.get_height()
+        ax_lipids.text(bar.get_x() + bar.get_width()/2., height + 2,
+                      f'{val:.0f}', ha='center', va='bottom', fontsize=8)
+
+autolabel(bars1, total_cholesterol)
+autolabel(bars2, ldl)
+autolabel(bars3, hdl)
+autolabel(bars4, triglycerides)
+
+# Formatting
+# ==========
+ax_lipids.set_xlabel('Year', fontsize=12)
+ax_lipids.set_ylabel('Concentration (mg/dL)', fontsize=12)
+ax_lipids.set_title('Lipid Panel Results - 5 Year Trend', 
+                    fontsize=14, fontweight='bold')
+ax_lipids.set_xticks(x)
+ax_lipids.set_xticklabels(years)
+ax_lipids.legend(loc='upper right')
+ax_lipids.grid(True, alpha=0.3, axis='y')
+ax_lipids.set_ylim(0, 260)
+
+# Add improvement indicators
+# ==========================
+improvements = {
+    'Total': (total_cholesterol[0] - total_cholesterol[-1])/total_cholesterol[0]*100,
+    'LDL': (ldl[0] - ldl[-1])/ldl[0]*100,
+    'HDL': (hdl[-1] - hdl[0])/hdl[0]*100,
+    'Trig': (triglycerides[0] - triglycerides[-1])/triglycerides[0]*100
+}
+
+improvement_text = 'Improvements:\n'
+for key, val in improvements.items():
+    improvement_text += f'{key}: {val:.0f}%↓\n' if key != 'HDL' else f'{key}: {val:.0f}%↑\n'
+
+ax_lipids.text(0.02, 0.98, improvement_text[:-1], transform=ax_lipids.transAxes,
+               bbox=dict(boxstyle='round', facecolor='lightgreen'),
+               verticalalignment='top', fontsize=9)
+
+# 3. Blood Pressure Analysis
+# ==========================
+ax_bp = fig.add_subplot(gs[1, 1])
+
+# Categorize BP readings
+# ======================
+colors = []
+categories = {'Normal': 0, 'Elevated': 0, 'Stage 1': 0, 'Stage 2': 0}
+
+for s, d in zip(bp_systolic, bp_diastolic):
+    if s < 120 and d < 80:
+        colors.append('green')
+        categories['Normal'] += 1
+    elif s < 130 and d < 80:
+        colors.append('yellow')
+        categories['Elevated'] += 1
+    elif s < 140 or d < 90:
+        colors.append('orange')
+        categories['Stage 1'] += 1
+    else:
+        colors.append('red')
+        categories['Stage 2'] += 1
+
+# Scatter plot
+# ============
+scatter = ax_bp.scatter(bp_systolic, bp_diastolic, c=colors, s=80, 
+                       alpha=0.6, edgecolors='black', linewidth=1)
+
+# Add reference lines
+# ===================
+ax_bp.axvline(x=120, color='green', linestyle='--', alpha=0.5)
+ax_bp.axvline(x=130, color='yellow', linestyle='--', alpha=0.5)
+ax_bp.axvline(x=140, color='orange', linestyle='--', alpha=0.5)
+ax_bp.axhline(y=80, color='green', linestyle='--', alpha=0.5)
+ax_bp.axhline(y=90, color='orange', linestyle='--', alpha=0.5)
+
+# Add zone labels
+# ===============
+ax_bp.text(110, 75, 'Normal', fontsize=9, color='green', fontweight='bold')
+ax_bp.text(125, 75, 'Elevated', fontsize=9, color='orange', fontweight='bold')
+ax_bp.text(135, 95, 'HTN\nStage 1', fontsize=9, color='orange', 
+           fontweight='bold', ha='center')
+ax_bp.text(145, 95, 'HTN\nStage 2', fontsize=9, color='red', 
+           fontweight='bold', ha='center')
+
+# Calculate and display average
+# =============================
+avg_sys = np.mean(bp_systolic)
+avg_dia = np.mean(bp_diastolic)
+ax_bp.plot(avg_sys, avg_dia, 'kX', markersize=15, markeredgewidth=3,
+           label=f'Average: {avg_sys:.0f}/{avg_dia:.0f}')
+
+# Formatting
+# ==========
+ax_bp.set_xlabel('Systolic BP (mmHg)', fontsize=12)
+ax_bp.set_ylabel('Diastolic BP (mmHg)', fontsize=12)
+ax_bp.set_title('Blood Pressure Distribution (2023)\n30 Readings', 
+                fontsize=14, fontweight='bold')
+ax_bp.legend()
+ax_bp.grid(True, alpha=0.3)
+ax_bp.set_xlim(105, 155)
+ax_bp.set_ylim(65, 105)
+
+# Add category pie chart inset
+# ============================
+ax_bp_inset = fig.add_axes([0.68, 0.42, 0.12, 0.12])
+pie_colors = ['green', 'yellow', 'orange', 'red']
+wedges, texts, autotexts = ax_bp_inset.pie(categories.values(), 
+                                           colors=pie_colors,
+                                           autopct='%1.0f%%',
+                                           startangle=90)
+ax_bp_inset.set_title('Distribution', fontsize=9)
+
+# 4. Comprehensive Risk Assessment
+# ================================
+ax_text = fig.add_subplot(gs[2, :])
+ax_text.axis('off')
+
+# Calculate risk scores
+# =====================
+framingham_score = 12  # Simplified calculation
+ascvd_risk = 15.2  # 10-year risk percentage
+
+# Create detailed assessment text
+# ===============================
+risk_text = f"""
+METABOLIC HEALTH RISK ASSESSMENT SUMMARY (2023)
+{'='*100}
+
+ACHIEVEMENTS:
+✓ BMI: Decreased from 31.2 to 27.4 (-12.2%) - Moved from Obese to Overweight category
+✓ Total Cholesterol: Reduced by 25% (240 → 180 mg/dL) - Now in healthy range
+✓ LDL Cholesterol: Reduced by 31% (160 → 110 mg/dL) - Near optimal level
+✓ HDL Cholesterol: Increased by 37% (35 → 48 mg/dL) - Approaching target of 50+
+✓ Triglycerides: Reduced by 51% (225 → 110 mg/dL) - Now in normal range
+✓ Weight Loss: Approximately 11.5 kg over 5 years (assuming height 1.75m)
+
+AREAS FOR CONTINUED FOCUS:
+⚠ Blood Pressure: Average 135/85 mmHg - Stage 1 Hypertension (Target: <130/80)
+⚠ BMI: Still in overweight category (Target: <25)
+⚠ HDL: Below optimal for cardiovascular protection (Target: >50 mg/dL)
+
+CARDIOVASCULAR RISK SCORES:
+• Framingham 10-year Risk: {framingham_score}% (Moderate risk)
+• ASCVD Risk Score: {ascvd_risk:.1f}% (Consider statin therapy)
+• Metabolic Syndrome: 3/5 criteria met (Borderline)
+
+RECOMMENDATIONS:
+1. Continue lifestyle modifications - excellent progress!
+2. Consider antihypertensive medication (ACE inhibitor or ARB)
+3. Discuss statin therapy with physician given ASCVD risk >10%
+4. Maintain regular exercise (150 min/week moderate intensity)
+5. Continue Mediterranean-style diet
+6. Follow-up in 6 months for BP reassessment
+
+Next Goal: Achieve BMI <25 and BP <130/80 by 2024
+"""
+
+ax_text.text(0.05, 0.95, risk_text, transform=ax_text.transAxes,
+             fontsize=10, verticalalignment='top', fontfamily='monospace',
+             bbox=dict(boxstyle='round,pad=1', facecolor='white', 
+                      edgecolor='gray', linewidth=2))
+
+# Add patient info header
+# =======================
+patient_info = """Patient: John Smith | DOB: 15-Mar-1965 | MRN: MET2023-789 | Provider: Dr. Sarah Johnson"""
+ax_text.text(0.5, 0.02, patient_info, transform=ax_text.transAxes,
+             ha='center', fontsize=9, style='italic')
+
+# Overall title
+# =============
+fig.suptitle('Comprehensive Metabolic Health Assessment\n5-Year Progress Report (2019-2023)', 
+             fontsize=18, fontweight='bold')
+
+# Add color legend for BP categories
+# ==================================
+legend_elements = [mpatches.Patch(color='green', label='Normal'),
+                  mpatches.Patch(color='yellow', label='Elevated'),
+                  mpatches.Patch(color='orange', label='Stage 1 HTN'),
+                  mpatches.Patch(color='red', label='Stage 2 HTN')]
+fig.legend(handles=legend_elements, loc='lower right', 
+          title='BP Categories', fontsize=8)
+
+plt.tight_layout(rect=[0, 0.03, 0.98, 0.96])
+plt.show()</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </details>
+                        
+                        <!-- Learning Checkpoint MCQ -->
+                        <div class="mcq-container">
+                            <div class="mcq-header">
+                                <div class="mcq-header-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="mcq-header-text">Learning Checkpoint</div>
+                            </div>
+                            
+                            <div class="mcq-content">
+                                <div class="mcq-question">
+                                    According to current guidelines, at what ASCVD (Atherosclerotic Cardiovascular Disease) risk score threshold should statin therapy typically be considered?
+                                </div>
+                                
+                                <div class="mcq-options">
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">A) >5%</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Greater than 5%
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Statin therapy is typically considered when the 10-year ASCVD risk score exceeds 10%, though the threshold may be lower (7.5%) for certain patient populations based on additional risk factors.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">B) >7.5%</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Greater than 7.5%
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Statin therapy is typically considered when the 10-year ASCVD risk score exceeds 10%, though the threshold may be lower (7.5%) for certain patient populations based on additional risk factors.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="true">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">C) >10%</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Greater than 10%
+                                        </div>
+                                        <div class="mcq-feedback correct">
+                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Statin therapy is typically considered when the 10-year ASCVD risk score exceeds 10%, though the threshold may be lower (7.5%) for certain patient populations based on additional risk factors.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">D) >20%</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Greater than 20%
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Statin therapy is typically considered when the 10-year ASCVD risk score exceeds 10%, though the threshold may be lower (7.5%) for certain patient populations based on additional risk factors.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="reset-button">
+                                    <i class="fas fa-redo"></i> Try Again
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <p>🎉 <strong>Brilliant work!</strong> You've created a professional-grade medical report that tells a compelling story of health improvement. This comprehensive visualization helps both physicians and patients understand progress and identify areas for continued focus.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-trophy" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Summary: Multiple Plots Mastery Achieved!
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Congratulations! You've mastered the art of creating sophisticated medical visualizations with multiple plots. Let's celebrate what you've accomplished:</p>
+                    
+                    <h3>🏆 Key Skills Acquired:</h3>
+                    
+                    <ul>
+                        <li><strong>Subplot Creation & Management</strong>: You can now create complex grid layouts that organize medical data logically and professionally</li>
+                        <li><strong>Advanced Layouts with GridSpec</strong>: You've learned to create custom layouts that emphasize important data (like giving ECG traces more space)</li>
+                        <li><strong>Shared Axes for Comparison</strong>: You understand how to facilitate visual comparison across patient groups or time periods</li>
+                        <li><strong>Mixed Visualization Types</strong>: You can combine scatter plots, line graphs, bar charts, and text panels to tell complete clinical stories</li>
+                        <li><strong>Clinical Context Integration</strong>: You've learned to add reference ranges, risk zones, and clinical annotations that make plots medically meaningful</li>
+                    </ul>
+                    
+                    <h3>💡 Real-World Applications:</h3>
+                    
+                    <p>Your new skills directly translate to:</p>
+                    <ul>
+                        <li><strong>Electronic Health Records</strong>: Creating patient dashboards for EMR systems</li>
+                        <li><strong>Clinical Research</strong>: Designing publication-quality figures for medical journals</li>
+                        <li><strong>Patient Education</strong>: Building visual tools that help patients understand their health</li>
+                        <li><strong>Telemedicine Platforms</strong>: Developing remote monitoring interfaces</li>
+                        <li><strong>Clinical Decision Support</strong>: Creating visualization tools for diagnostic assistance</li>
+                    </ul>
+                    
+                    <h3>🚀 What's Next?</h3>
+                    
+                    <p>In your precision medicine journey, you'll use these techniques to:</p>
+                    <ul>
+                        <li>Visualize genomic data alongside clinical parameters</li>
+                        <li>Create multi-omics dashboards combining various biological data types</li>
+                        <li>Design personalized treatment response monitors</li>
+                        <li>Build population health analytics dashboards</li>
+                        <li>Develop AI-assisted diagnostic visualization tools</li>
+                    </ul>
+                    
+                    <h3>📚 Quick Reference Cheat Sheet:</h3>
+                    
+                    <div class="code-block-container" data-block-name="quick-reference">
+                        <div class="code-block"># Basic 2x2 subplot
+# =================
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+# Shared axes
+# ===========
+fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
+
+# Custom layout
+# =============
+gs = GridSpec(3, 2, height_ratios=[2, 1, 1])
+ax1 = fig.add_subplot(gs[0, :])  # Spans columns
+
+# Essential for medical plots
+# ===========================
+ax.axhline(y=threshold, color='red', linestyle='--', label='Critical')
+ax.axhspan(lower, upper, alpha=0.2, color='green', label='Normal')
+plt.tight_layout()  # Prevents overlap</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- Learning Checkpoint MCQ -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                When creating medical visualizations, what is the most important principle to follow?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A) Use as many colors as possible</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Use as many colors as possible
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The most important principle in medical visualization is to tell a clear story that helps clinical decision-making. Great medical visualizations don't just show data - they provide insights that can improve patient care and save lives.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">B) Make the plots as complex as possible</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Make the plots as complex as possible
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The most important principle in medical visualization is to tell a clear story that helps clinical decision-making. Great medical visualizations don't just show data - they provide insights that can improve patient care and save lives.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">C) Tell a clear story that helps clinical decision-making</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Tell a clear story that helps clinical decision-making
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The most important principle in medical visualization is to tell a clear story that helps clinical decision-making. Great medical visualizations don't just show data - they provide insights that can improve patient care and save lives.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">D) Always use 3D plots</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Always use 3D plots
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The most important principle in medical visualization is to tell a clear story that helps clinical decision-making. Great medical visualizations don't just show data - they provide insights that can improve patient care and save lives.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>Remember: Great medical visualizations don't just show data - they tell stories that save lives! Keep practicing, and soon you'll be creating visualizations that make complex medical data accessible to everyone from specialists to patients.</p>
+                    
+                    <p>Next up: Interactive visualizations and 3D plotting - taking your medical data visualization skills into the future of digital health! 🚀✨</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out the examples here. You can experiment with different subplot configurations and medical data visualizations.</p>
+            
+            <textarea id="python-code"># Type your python codes here</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Python session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your medical visualization session has been inactive. Ready to continue creating powerful clinical visualizations?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
