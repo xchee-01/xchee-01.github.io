@@ -1718,56 +1718,70 @@
         cleanupJsonp(script, callbackName);
       }, 30000);
 
-      window[callbackName] = function(data) {
-        clearTimeout(timeoutId);
-        debugLog('Received student list data via JSONP:', data);
-        try {
-          // Handle both direct array response and wrapped response
-          let students = data;
-          if (data && data.api && Array.isArray(data.students)) {
-            students = data.students;
-          }
-          
-          if (data && data.error) {
-            debugLog('Server error getting students:', data.error);
-            showKMError('Server Error getting students: ' + data.error);
-            showRecError('Server Error getting students: ' + data.error);
-            if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Error</option>';
-            if (recStudentSelector) recStudentSelector.innerHTML = '<option>Error</option>';
-          } else if (students && Array.isArray(students) && students.length > 0) {
-            allStudents = students;
-            populateStudentSelectors(allStudents);
-            if (allStudents[0]) {
-              kmStudentSelector.value = allStudents[0];
-              if (recStudentSelector) recStudentSelector.value = allStudents[0];
-              handleStudentSelection({ target: { value: allStudents[0] } });
-            } else {
-              showKMError("No students found in the list.");
-              showRecError("No students found in the list.");
-            }
-          } else if (students && Array.isArray(students) && students.length === 0) {
-            debugLog('No students returned from server.');
-            showKMError('No students found in the progress sheet header.');
-            showRecError('No students found in the progress sheet header.');
-            if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>No students</option>';
-            if (recStudentSelector) recStudentSelector.innerHTML = '<option>No students</option>';
-          } else {
-            debugLog('Invalid student list data structure:', data);
-            showKMError('Received invalid student list data.');
-            showRecError('Received invalid student list data.');
-            if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Invalid data</option>';
-            if (recStudentSelector) recStudentSelector.innerHTML = '<option>Invalid data</option>';
-          }
-        } catch (error) {
-          debugLog('Error processing student list:', error);
-          showKMError('Error processing student list: ' + error.message);
-          showRecError('Error processing student list: ' + error.message);
-          if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Processing Error</option>';
-          if (recStudentSelector) recStudentSelector.innerHTML = '<option>Processing Error</option>';
-        } finally {
-          cleanupJsonp(script, callbackName);
-        }
-      };
+window[callbackName] = function(data) {
+  clearTimeout(timeoutId);
+  debugLog('Received student list data via JSONP:', data);
+  try {
+    let students = [];
+    
+    // Handle different response formats
+    if (data && data.error) {
+      // Error response
+      debugLog('Server error getting students:', data.error);
+      showKMError('Server Error getting students: ' + data.error);
+      showRecError('Server Error getting students: ' + data.error);
+      if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Error</option>';
+      if (recStudentSelector) recStudentSelector.innerHTML = '<option>Error</option>';
+      return;
+    }
+    
+    // Check if students are in a 'students' property (new format)
+    if (data && data.students && Array.isArray(data.students)) {
+      students = data.students;
+      debugLog(`Found students array in data.students: ${students.length} students`);
+    }
+    // Check if data itself is an array (old format)
+    else if (Array.isArray(data)) {
+      students = data;
+      debugLog(`Data is directly an array: ${students.length} students`);
+    }
+    // Check if data is an object with numeric keys (current issue)
+    else if (data && typeof data === 'object') {
+      // Extract numeric keys and convert to array
+      const keys = Object.keys(data).filter(key => !isNaN(parseInt(key)));
+      if (keys.length > 0) {
+        students = keys.sort((a, b) => parseInt(a) - parseInt(b)).map(key => data[key]);
+        debugLog(`Converted object with numeric keys to array: ${students.length} students`);
+      }
+    }
+    
+    // Process the students
+    if (students.length > 0) {
+      allStudents = students;
+      populateStudentSelectors(allStudents);
+      if (allStudents[0]) {
+        kmStudentSelector.value = allStudents[0];
+        if (recStudentSelector) recStudentSelector.value = allStudents[0];
+        handleStudentSelection({ target: { value: allStudents[0] } });
+      }
+    } else {
+      debugLog('No students found in the response');
+      showKMError('No students found in the progress sheet header.');
+      showRecError('No students found in the progress sheet header.');
+      if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>No students</option>';
+      if (recStudentSelector) recStudentSelector.innerHTML = '<option>No students</option>';
+    }
+    
+  } catch (error) {
+    debugLog('Error processing student list:', error);
+    showKMError('Error processing student list: ' + error.message);
+    showRecError('Error processing student list: ' + error.message);
+    if (kmStudentSelector) kmStudentSelector.innerHTML = '<option>Processing Error</option>';
+    if (recStudentSelector) recStudentSelector.innerHTML = '<option>Processing Error</option>';
+  } finally {
+    cleanupJsonp(script, callbackName);
+  }
+};
 
       script = document.createElement('script');
       script.src = API_URL + (API_URL.includes('?') ? '&' : '?') + 'action=GetStudents' + '&callback=' + callbackName + '&_=' + Date.now();
