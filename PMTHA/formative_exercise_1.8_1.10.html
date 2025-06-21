@@ -1,0 +1,1183 @@
+<!-- To be used with question_page_v6.gs of the respective question bank sheet -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formative quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --nus-orange: #EF7C00;
+      --nus-blue: #003D7C;
+      --nus-light-orange: #FFE5CC;
+      --nus-light-blue: #E6EEF5;
+      --success-color: #4CAF50;
+      --error-color: #F44336;
+      --success-light: #E8F5E9;
+      --error-light: #FFEBEE;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      background-color: var(--nus-blue);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    
+    .progress-container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .progress-bar {
+      background-color: var(--nus-light-blue);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background-color: var(--nus-orange);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+    
+    .question-card {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .question-id {
+      background-color: var(--nus-light-orange);
+      color: var(--nus-blue);
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-weight: 600;
+    }
+    
+    .difficulty-badge {
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.9em;
+      font-weight: 500;
+    }
+    
+    .difficulty-easy {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+    }
+    
+    .difficulty-medium {
+      background-color: #FFF3E0;
+      color: #EF6C00;
+    }
+    
+    .difficulty-hard {
+      background-color: #FFEBEE;
+      color: #C62828;
+    }
+    
+    .question-text {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    
+    .code-snippet {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      margin-bottom: 20px;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    
+    .options-container {
+      display: grid;
+      gap: 10px;
+    }
+    
+    .option-button {
+      background-color: white;
+      border: 2px solid var(--nus-blue);
+      padding: 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      font-size: 1em;
+    }
+    
+    .option-button:hover:not(.disabled) {
+      background-color: var(--nus-light-blue);
+    }
+    
+    .option-button.selected {
+      background-color: var(--nus-blue);
+      color: white;
+    }
+    
+    .option-button.correct {
+      background-color: var(--success-light);
+      border-color: var(--success-color);
+      color: var(--success-color);
+    }
+    
+    .option-button.incorrect {
+      background-color: var(--error-light);
+      border-color: var(--error-color);
+      color: var(--error-color);
+    }
+    
+    .option-button.disabled {
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+    
+    .feedback-container {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .feedback-header {
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .feedback-correct {
+      color: var(--success-color);
+    }
+    
+    .feedback-incorrect {
+      color: var(--error-color);
+    }
+    
+    .explanation {
+      margin-top: 10px;
+      line-height: 1.8;
+    }
+    
+    .hint-container {
+      background-color: var(--nus-light-orange);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .hint-button {
+      background-color: transparent;
+      border: 1px solid var(--nus-orange);
+      color: var(--nus-orange);
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    
+    .navigation-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    
+    .nav-button {
+      background-color: var(--nus-orange);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+    
+    .nav-button:hover {
+      background-color: #d76d00;
+    }
+    
+    .nav-button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .results-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    .score-circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      margin: 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5em;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .score-high {
+      background-color: var(--success-color);
+    }
+    
+    .score-medium {
+      background-color: var(--nus-orange);
+    }
+    
+    .score-low {
+      background-color: var(--error-color);
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid var(--nus-orange);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    /* Debug panel styles */
+    .debug-panel {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      max-width: 400px;
+      max-height: 300px;
+      overflow: auto;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 2000;
+    }
+    
+    .debug-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 5px 10px;
+      background: var(--nus-orange);
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      z-index: 2001;
+    }
+    
+    /* User info styles */
+    .user-info {
+      background-color: var(--nus-light-blue);
+      padding: 10px 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .user-name {
+      font-weight: 500;
+      color: var(--nus-blue);
+    }
+    
+    .logout-btn {
+      background-color: var(--nus-orange);
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    
+    /* Status message styles */
+    .status-message {
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+      display: none;
+    }
+    
+    .status-message.success {
+      background-color: var(--success-light);
+      color: var(--success-color);
+    }
+    
+    .status-message.error {
+      background-color: var(--error-light);
+      color: var(--error-color);
+    }
+    
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px;
+      }
+      
+      .header {
+        padding: 20px 10px;
+      }
+      
+      .header h1 {
+        font-size: 2em;
+      }
+      
+      .question-card {
+        padding: 20px;
+      }
+      
+      .debug-panel {
+        max-width: 90%;
+        bottom: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Formative Quiz - Section 1.8 to 1.10</h1>
+      <p>Test your knowledge and prepare for the course</p>
+    </div>
+    
+    <div id="user-info" class="user-info">
+      <span class="user-name">Welcome, <span id="username-display">User</span></span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    
+    <!-- Status message container -->
+    <div id="status-message" class="status-message"></div>
+    
+    <div id="progress-container" class="progress-container">
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <div id="progress-text" class="progress-text">Question 1 of 0</div>
+    </div>
+    
+    <div id="quiz-container">
+      <!-- Quiz content will be dynamically loaded here -->
+    </div>
+    
+    <div id="results-container" class="results-container hidden">
+      <!-- Results will be displayed here -->
+    </div>
+  </div>
+  
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+  </div>
+  
+  <!-- Debug panel -->
+  <button id="debug-toggle" class="debug-toggle">Debug</button>
+  <div id="debug-panel" class="debug-panel hidden"></div>
+  
+  <script>
+    // Replace this with your Google Apps Script Web App URL
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLQDDY_Ww0gNSIZtWMkhWRMDV_bNKZPk5GW57TWrpAXAvNWq-NBxthMKDlHUfbBBlZmQ/exec';
+    const SIGN_IN_URL = 'https://xchee-01.github.io/PMTHA/SOM-PMTHA_signin.html';
+    
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = [];
+    let quizResults = [];
+    let jsonpCallbackCount = 0;
+    let questionAnswered = false;
+    let currentUser = null;
+    let sessionID = ''; // Added session ID variable
+    let isAdmin = false; // Flag for admin privileges
+    let quizCompletionTime = null; // To track when the quiz was completed
+    let progressUpdateTimeout = null; // To track auto-update timeout
+    let progressUpdateInProgress = false; // Flag to prevent overlapping updates
+    
+    // Function to generate a session ID
+    function generateSessionID() {
+      return 'sid-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    // Authentication functions
+    function getUsername() {
+      try {
+        const accountsData = localStorage.getItem('accounts');
+        if (accountsData) {
+          const accounts = JSON.parse(accountsData);
+          return (accounts && accounts.length > 0 && accounts[0].username) 
+            ? accounts[0].username 
+            : null;
+        }
+        return null;
+      } catch (error) {
+        debug('Username retrieval error:', error);
+        return null;
+      }
+    }
+    
+    function storeCurrentUrl() {
+      try {
+        localStorage.setItem('lastVisitedUrl', window.location.href);
+      } catch (error) {
+        debug('URL storage error:', error);
+      }
+    }
+    
+    function checkAuthentication() {
+      const username = getUsername();
+      if (!username) {
+        redirectToSignIn();
+        return false;
+      }
+      currentUser = username;
+      document.getElementById('username-display').textContent = username;
+      
+      // Check if user is admin (for this implementation, we'll consider specific users as admins)
+      isAdmin = ['admin', 'teacher', 'xavierchee'].includes(username.toLowerCase());
+      
+      return true;
+    }
+    
+    function redirectToSignIn() {
+      storeCurrentUrl();
+      window.location.href = SIGN_IN_URL;
+    }
+    
+    function logout() {
+      try {
+        localStorage.removeItem('accounts');
+        redirectToSignIn();
+      } catch (error) {
+        debug('Logout error:', error);
+      }
+    }
+    
+    // Debug functionality
+    const debugPanel = document.getElementById('debug-panel');
+    const debugToggle = document.getElementById('debug-toggle');
+    
+    debugToggle.addEventListener('click', () => {
+      debugPanel.classList.toggle('hidden');
+    });
+    
+    function debug(message, data = null) {
+      console.log(message, data);
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      if (data) {
+        logEntry.textContent += '\n' + JSON.stringify(data, null, 2);
+      }
+      debugPanel.appendChild(logEntry);
+      debugPanel.scrollTop = debugPanel.scrollHeight;
+    }
+    
+    // Show loading overlay
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+    
+    // Hide loading overlay
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+    
+    // Show status message
+    function showStatusMessage(message, isSuccess, autoHide = true) {
+      const statusElement = document.getElementById('status-message');
+      statusElement.textContent = message;
+      statusElement.className = 'status-message ' + (isSuccess ? 'success' : 'error');
+      statusElement.style.display = 'block';
+      
+      // Hide the message after 5 seconds if autoHide is true
+      if (autoHide) {
+        setTimeout(() => {
+          statusElement.style.display = 'none';
+        }, 5000);
+      }
+    }
+    
+    // UPDATED: Update student progress automatically
+    function updateStudentProgress() {
+      // Prevent multiple simultaneous calls
+      if (progressUpdateInProgress) {
+        debug('Progress update already in progress, skipping');
+        return;
+      }
+      
+      progressUpdateInProgress = true;
+      showLoading();
+      debug('Automatically updating student progress...');
+      
+      try {
+        // Create a unique callback function name
+        const callbackName = 'jsonpCallback_' + jsonpCallbackCount++;
+        
+        // Define the callback function
+        window[callbackName] = function(data) {
+          // Clean up
+          delete window[callbackName];
+          const script = document.getElementById('jsonp-' + callbackName);
+          if (script) {
+            script.parentNode.removeChild(script);
+          }
+          
+          hideLoading();
+          progressUpdateInProgress = false;
+          
+          if (data && data.success) {
+            debug('Student progress updated successfully');
+            showStatusMessage('Progress updated successfully!', true);
+          } else {
+            debug('Error updating student progress:', data && data.error ? data.error : 'Unknown error');
+            showStatusMessage('Error updating progress: ' + (data && data.error ? data.error : 'Unknown error occurred'), false);
+          }
+        };
+        
+        // Create script element for JSONP
+        const script = document.createElement('script');
+        script.id = 'jsonp-' + callbackName;
+        script.src = `${APPS_SCRIPT_URL}?action=updateStudentProgress&callback=${callbackName}`;
+        
+        // Error handling
+        script.onerror = function() {
+          hideLoading();
+          progressUpdateInProgress = false;
+          debug('Error: Failed to update student progress. Network error.');
+          showStatusMessage('Network error occurred while updating progress.', false);
+        };
+        
+        document.body.appendChild(script);
+        
+      } catch (error) {
+        hideLoading();
+        progressUpdateInProgress = false;
+        debug('Error in updateStudentProgress:', error);
+        showStatusMessage('Error: ' + error.message, false);
+      }
+    }
+    
+    // Schedule automatic progress update
+    function scheduleProgressUpdate(delay = 3000) {
+      // Clear any existing timeout
+      if (progressUpdateTimeout) {
+        clearTimeout(progressUpdateTimeout);
+      }
+      
+      // Schedule new update
+      progressUpdateTimeout = setTimeout(() => {
+        updateStudentProgress();
+      }, delay);
+      
+      debug(`Scheduled progress update in ${delay}ms`);
+    }
+    
+    // Load questions from Google Apps Script using JSONP
+    function loadQuestions() {
+      showLoading();
+      
+      // Generate a unique session ID for this quiz attempt
+      sessionID = generateSessionID();
+      debug('Generated session ID:', sessionID);
+      
+      try {
+        // Create a unique callback function name
+        const callbackName = 'jsonpCallback_' + jsonpCallbackCount++;
+        
+        // Define the callback function
+        window[callbackName] = function(data) {
+          // Clean up
+          delete window[callbackName];
+          const script = document.getElementById('jsonp-' + callbackName);
+          if (script) {
+            script.parentNode.removeChild(script);
+          }
+          
+          handleQuestionsLoad(data);
+        };
+        
+        // Create script element for JSONP
+        const script = document.createElement('script');
+        script.id = 'jsonp-' + callbackName;
+        script.src = `${APPS_SCRIPT_URL}?action=getQuestions&callback=${callbackName}`;
+        
+        // Error handling
+        script.onerror = function() {
+          handleError({ message: 'Failed to load questions. Please check your network connection and the web app URL.' });
+        };
+        
+        document.body.appendChild(script);
+        
+      } catch (error) {
+        handleError(error);
+      }
+    }
+    
+    // Handle questions loaded
+    function handleQuestionsLoad(data) {
+      hideLoading();
+      debug('Questions loaded response:', data);
+      
+      if (data && data.success) {
+        questions = data.data;
+        debug('Number of questions loaded:', questions.length);
+        
+        if (questions.length > 0) {
+          debug('First question structure:', questions[0]);
+          
+          // Validate question data
+          const validQuestions = questions.filter(q => 
+            q && q.questionID && q.questionText && 
+            q.options && Array.isArray(q.options) && q.options.length > 0
+          );
+          
+          if (validQuestions.length !== questions.length) {
+            debug('Warning: Some questions have invalid data structure', {
+              total: questions.length,
+              valid: validQuestions.length
+            });
+            
+            // Continue with valid questions only
+            questions = validQuestions;
+          }
+          
+          userAnswers = new Array(questions.length).fill(null);
+          updateProgressBar();
+          renderQuestion();
+        } else {
+          handleError('No questions found in the spreadsheet');
+        }
+      } else {
+        handleError(data && data.error ? data.error : 'Unknown error occurred while loading questions');
+      }
+    }
+    
+    // Handle errors
+    function handleError(error) {
+      hideLoading();
+      const errorMessage = typeof error === 'string' ? error : (error.message || 'Unknown error occurred');
+      alert('Error: ' + errorMessage);
+      debug('Error:', error);
+      console.error('Quiz error:', error);
+    }
+    
+    // Update progress bar
+    function updateProgressBar() {
+      const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+      document.getElementById('progress-fill').style.width = progress + '%';
+      document.getElementById('progress-text').textContent = 
+        `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+    }
+    
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Render current question
+    function renderQuestion() {
+      try {
+        questionAnswered = false;
+        
+        // Check if we have valid question data
+        if (currentQuestionIndex >= questions.length) {
+          debug('Error: Trying to access question beyond array length', {
+            currentIndex: currentQuestionIndex,
+            totalQuestions: questions.length
+          });
+          showResults();
+          return;
+        }
+        
+        const question = questions[currentQuestionIndex];
+        if (!question) {
+          debug('Error: Question data is undefined or null', {
+            currentIndex: currentQuestionIndex
+          });
+          showResults();
+          return;
+        }
+        
+        debug('Rendering question:', question);
+        
+        const container = document.getElementById('quiz-container');
+        
+        // Create the question card structure
+        const questionCard = document.createElement('div');
+        questionCard.className = 'question-card';
+        
+        // Question header
+        const questionHeader = document.createElement('div');
+        questionHeader.className = 'question-header';
+        
+        const questionId = document.createElement('span');
+        questionId.className = 'question-id';
+        questionId.textContent = question.questionID || 'Unknown ID';
+        
+        const difficultyBadge = document.createElement('span');
+        difficultyBadge.className = `difficulty-badge difficulty-${(question.difficultyLevel || 'medium').toLowerCase()}`;
+        difficultyBadge.textContent = question.difficultyLevel || 'Medium';
+        
+        questionHeader.appendChild(questionId);
+        questionHeader.appendChild(difficultyBadge);
+        
+        // Question text
+        const questionText = document.createElement('div');
+        questionText.className = 'question-text';
+        questionText.textContent = question.questionText || 'No question text available';
+        
+        // Add elements to card
+        questionCard.appendChild(questionHeader);
+        questionCard.appendChild(questionText);
+        
+        // Add code snippet if available
+        if (question.codeSnippets) {
+          const codeSnippet = document.createElement('div');
+          codeSnippet.className = 'code-snippet';
+          codeSnippet.textContent = question.codeSnippets;
+          questionCard.appendChild(codeSnippet);
+        }
+        
+        // Options container
+        const optionsContainer = document.createElement('div');
+        optionsContainer.className = 'options-container';
+        
+        if (question.options && question.options.length > 0) {
+          question.options.forEach((option, index) => {
+            if (option) {
+              const optionButton = document.createElement('button');
+              optionButton.className = 'option-button';
+              optionButton.textContent = option;
+              
+              // Check if this option was previously selected
+              if (userAnswers[currentQuestionIndex] === option) {
+                optionButton.classList.add('selected');
+              }
+              
+              // Add click handler using addEventListener instead of onclick
+              optionButton.addEventListener('click', () => selectOption(option, index));
+              
+              optionsContainer.appendChild(optionButton);
+            }
+          });
+        } else {
+          const errorMsg = document.createElement('p');
+          errorMsg.textContent = 'Error: No options available for this question';
+          optionsContainer.appendChild(errorMsg);
+        }
+        
+        questionCard.appendChild(optionsContainer);
+        
+        // Feedback container
+        const feedbackContainer = document.createElement('div');
+        feedbackContainer.id = 'feedback-container';
+        feedbackContainer.className = 'feedback-container';
+        
+        const feedbackHeader = document.createElement('div');
+        feedbackHeader.id = 'feedback-header';
+        feedbackHeader.className = 'feedback-header';
+        
+        const explanation = document.createElement('div');
+        explanation.id = 'explanation';
+        explanation.className = 'explanation';
+        
+        feedbackContainer.appendChild(feedbackHeader);
+        feedbackContainer.appendChild(explanation);
+        questionCard.appendChild(feedbackContainer);
+        
+        // Hint button and container
+        if (question.hints) {
+          const hintButton = document.createElement('button');
+          hintButton.className = 'hint-button';
+          hintButton.textContent = 'Show Hint';
+          hintButton.addEventListener('click', showHint);
+          
+          const hintContainer = document.createElement('div');
+          hintContainer.id = 'hint-container';
+          hintContainer.className = 'hint-container';
+          hintContainer.textContent = question.hints;
+          
+          questionCard.appendChild(hintButton);
+          questionCard.appendChild(hintContainer);
+        }
+        
+        // Navigation buttons
+        const navButtons = document.createElement('div');
+        navButtons.className = 'navigation-buttons';
+        
+        const prevButton = document.createElement('button');
+        prevButton.className = 'nav-button';
+        prevButton.textContent = 'Previous';
+        prevButton.disabled = currentQuestionIndex === 0;
+        prevButton.addEventListener('click', previousQuestion);
+        
+        const nextButton = document.createElement('button');
+        nextButton.id = 'next-button';
+        nextButton.className = 'nav-button';
+        nextButton.textContent = currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next';
+        nextButton.style.display = 'none';
+        nextButton.addEventListener('click', nextQuestion);
+        
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(nextButton);
+        questionCard.appendChild(navButtons);
+        
+        // Clear container and add the question card
+        container.innerHTML = '';
+        container.appendChild(questionCard);
+        
+        debug('Question rendered successfully', { index: currentQuestionIndex });
+      } catch (error) {
+        debug('Error in renderQuestion:', error);
+        // Show an error message to the user
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = `
+          <div class="question-card">
+            <h3>Error Loading Question</h3>
+            <p>There was a problem loading question #${currentQuestionIndex + 1}.</p>
+            <div class="navigation-buttons">
+              <button class="nav-button" onclick="previousQuestion()" 
+                ${currentQuestionIndex === 0 ? 'disabled' : ''}>Previous</button>
+              <button class="nav-button" onclick="nextQuestion()">
+                ${currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Skip This Question'}
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    // Select option
+    function selectOption(option, index) {
+      if (questionAnswered) return; // Prevent multiple selections
+      
+      questionAnswered = true;
+      userAnswers[currentQuestionIndex] = option;
+      
+      try {
+        // Disable all option buttons
+        const buttons = document.querySelectorAll('.option-button');
+        buttons.forEach(button => {
+          button.classList.add('disabled');
+          button.style.pointerEvents = 'none';
+        });
+        
+        // Mark selected button
+        buttons[index].classList.add('selected');
+        
+        // Check answer and show feedback
+        const question = questions[currentQuestionIndex];
+        const isCorrect = option === question.correctAnswer;
+        
+        // Highlight correct and incorrect answers
+        buttons.forEach((button, idx) => {
+          if (question.options[idx] === question.correctAnswer) {
+            button.classList.add('correct');
+          } else if (idx === index && !isCorrect) {
+            button.classList.add('incorrect');
+          }
+        });
+        
+        // Show feedback
+        const feedbackContainer = document.getElementById('feedback-container');
+        const feedbackHeader = document.getElementById('feedback-header');
+        const explanationDiv = document.getElementById('explanation');
+        
+        feedbackContainer.style.display = 'block';
+        
+        if (isCorrect) {
+          feedbackHeader.className = 'feedback-header feedback-correct';
+          feedbackHeader.innerHTML = '✓ Correct!';
+        } else {
+          feedbackHeader.className = 'feedback-header feedback-incorrect';
+          feedbackHeader.innerHTML = '✗ Incorrect';
+        }
+        
+        explanationDiv.innerHTML = `<strong>Explanation:</strong> ${escapeHtml(question.explanation || 'No explanation available.')}`;
+        
+        // Show next button
+        const nextButton = document.getElementById('next-button');
+        if (nextButton) {
+          nextButton.style.display = 'block';
+        } else {
+          debug('Error: Next button not found in the DOM');
+        }
+        
+        // Save result immediately
+        saveResultToSheet({
+          questionID: question.questionID,
+          questionType: question.questionType,
+          questionText: question.questionText,
+          userAnswer: option,
+          correctAnswer: question.correctAnswer,
+          isCorrect: isCorrect,
+          learningConcepts: question.learningConcepts,
+          difficultyLevel: question.difficultyLevel,
+          bloomsLevel: question.bloomsLevel,
+          user_ID: currentUser || 'Guest',
+          sessionID: sessionID
+        });
+        
+        // Schedule progress updates
+        if (currentQuestionIndex === questions.length - 1) {
+          scheduleProgressUpdate(5000);
+        } else if ((currentQuestionIndex + 1) % 5 === 0) {
+          scheduleProgressUpdate();
+        }
+      } catch (error) {
+        debug('Error in selectOption:', error);
+        // Ensure next button is displayed even if an error occurs
+        const nextButton = document.getElementById('next-button');
+        if (nextButton) {
+          nextButton.style.display = 'block';
+        }
+      }
+    }
+    
+    // Save individual result to Google Sheets
+    function saveResultToSheet(result) {
+      try {
+        debug('Attempting to save result', { 
+          questionID: result.questionID, 
+          user: result.user_ID,
+          sessionID: result.sessionID 
+        });
+        
+        // Create a safe copy of the result object
+        const safeResult = {
+          questionID: result.questionID || 'unknown',
+          questionType: result.questionType || '',
+          questionText: result.questionText || '',
+          userAnswer: result.userAnswer || 'Not answered',
+          correctAnswer: result.correctAnswer || '',
+          isCorrect: !!result.isCorrect,
+          learningConcepts: result.learningConcepts || [],
+          difficultyLevel: result.difficultyLevel || 'Medium',
+          bloomsLevel: result.bloomsLevel || '',
+          user_ID: result.user_ID || 'Guest',
+          sessionID: result.sessionID || ''
+        };
+        
+        const img = new Image();
+        const data = encodeURIComponent(JSON.stringify({
+          action: 'saveResult',
+          result: safeResult
+        }));
+        
+        img.src = `${APPS_SCRIPT_URL}?data=${data}`;
+        
+        img.onload = function() {
+          debug('Result saved successfully', { 
+            questionID: result.questionID,
+            sessionID: result.sessionID
+          });
+        };
+        
+        img.onerror = function() {
+          debug('Failed to save result to server', { questionID: result.questionID });
+        };
+        
+        setTimeout(function() {
+          debug('Save result request timed out - continuing anyway');
+        }, 3000);
+        
+      } catch (error) {
+        debug('Error in saveResultToSheet:', error);
+      }
+    }
+    
+    // Show hint
+    function showHint() {
+      document.getElementById('hint-container').style.display = 'block';
+    }
+    
+    // Navigate to previous question
+    function previousQuestion() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        updateProgressBar();
+        renderQuestion();
+      }
+    }
+    
+    // Navigate to next question or submit
+    function nextQuestion() {
+      try {
+        if (currentQuestionIndex < questions.length - 1) {
+          currentQuestionIndex++;
+          updateProgressBar();
+          renderQuestion();
+          
+          debug('Moving to next question', { 
+            newIndex: currentQuestionIndex, 
+            totalQuestions: questions.length 
+          });
+        } else {
+          debug('Reached the end of questions, showing results');
+          showResults();
+        }
+      } catch (error) {
+        debug('Error in nextQuestion:', error);
+        showResults();
+      }
+    }
+    
+    // Show results and update progress
+    function showResults() {
+      // Calculate score
+      const correctCount = userAnswers.reduce((count, answer, index) => {
+        return count + (answer === questions[index].correctAnswer ? 1 : 0);
+      }, 0);
+      const percentage = (correctCount / questions.length) * 100;
+      
+      // Record quiz completion time
+      quizCompletionTime = new Date();
+      
+      // Hide quiz container
+      document.getElementById('quiz-container').style.display = 'none';
+      document.getElementById('progress-container').style.display = 'none';
+      
+      // Show results container
+      const resultsContainer = document.getElementById('results-container');
+      resultsContainer.classList.remove('hidden');
+      
+      // Determine score category
+      let scoreClass;
+      if (percentage >= 80) {
+        scoreClass = 'score-high';
+      } else if (percentage >= 60) {
+        scoreClass = 'score-medium';
+      } else {
+        scoreClass = 'score-low';
+      }
+      
+      // Render results
+      resultsContainer.innerHTML = `
+        <h2>Quiz Completed!</h2>
+        <div class="score-circle ${scoreClass}">
+          ${percentage.toFixed(1)}%
+        </div>
+        <p>You answered ${correctCount} out of ${questions.length} questions correctly.</p>
+        <p>Session ID: ${sessionID}</p>
+        <div id="progress-status" class="status-message">Updating progress...</div>
+        <button class="nav-button" onclick="location.reload()">Try Again</button>
+      `;
+      
+      // Automatically update student progress
+      const progressStatus = document.getElementById('progress-status');
+      progressStatus.style.display = 'block';
+      progressStatus.className = 'status-message';
+      progressStatus.textContent = 'Updating your progress...';
+      
+      // Schedule immediate progress update
+      setTimeout(() => {
+        updateStudentProgress();
+        
+        // Set a timeout to check if update was successful
+        setTimeout(() => {
+          progressStatus.className = 'status-message success';
+          progressStatus.textContent = 'Progress updated successfully!';
+          
+          // Hide the message after 5 seconds
+          setTimeout(() => {
+            progressStatus.style.display = 'none';
+          }, 5000);
+        }, 3000);
+      }, 1000);
+    }
+    
+    // Initialize quiz
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check authentication first
+      if (checkAuthentication()) {
+        // If authenticated, load questions
+        loadQuestions();
+      }
+    });
+  </script>
+</body>
+</html>
