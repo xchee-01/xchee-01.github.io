@@ -663,5 +663,76 @@ print("\nThank you! A healthcare provider will see you soon. 💙")</div>
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
+
+<!-- Add this script just before the closing </body> tag -->
+<script>
+// Simple copy button fix that works independently of template
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit to ensure all elements are loaded
+    setTimeout(function() {
+        initializeCopyButtonsFix();
+    }, 500);
+});
+
+function initializeCopyButtonsFix() {
+    // Get all copy buttons (fresh query, not cached)
+    const copyButtons = document.querySelectorAll('.copy-button');
+    
+    copyButtons.forEach(button => {
+        // Remove any existing listeners to avoid duplicates
+        button.removeEventListener('click', handleCopyClick);
+        
+        // Add new listener
+        button.addEventListener('click', handleCopyClick);
+    });
+    
+    console.log(`Initialized ${copyButtons.length} copy buttons`);
+}
+
+function handleCopyClick(event) {
+    const button = event.currentTarget;
+    const container = button.closest('.code-block-container');
+    const codeBlock = container.querySelector('.code-block');
+    const feedback = container.querySelector('.copy-feedback');
+    
+    if (!codeBlock) {
+        console.error('Code block not found');
+        return;
+    }
+    
+    // Copy the text
+    navigator.clipboard.writeText(codeBlock.textContent)
+        .then(() => {
+            // Show feedback
+            if (feedback) {
+                feedback.classList.add('show');
+                setTimeout(() => {
+                    feedback.classList.remove('show');
+                }, 2000);
+            }
+            
+            console.log('Code copied successfully');
+        })
+        .catch(err => {
+            console.error('Copy failed:', err);
+            
+            // Fallback: select text for manual copy
+            const range = document.createRange();
+            range.selectNode(codeBlock);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            
+            if (feedback) {
+                feedback.textContent = 'Selected - press Ctrl+C to copy';
+                feedback.classList.add('show');
+                setTimeout(() => {
+                    feedback.classList.remove('show');
+                    feedback.textContent = 'Copied!';
+                }, 3000);
+            }
+        });
+}
+</script>
+    
 </body>
 </html>
