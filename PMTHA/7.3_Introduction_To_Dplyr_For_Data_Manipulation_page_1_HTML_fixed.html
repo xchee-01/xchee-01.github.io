@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dplyr Fundamentals for Medical Data - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide (required by template even though this is R content) -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Precision Medical Toolkit for Health Analytics</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>dplyr Fundamentals for Medical Data</h1>
+            
+            <p>Welcome to modern medical data analysis! 🎉 The dplyr package revolutionizes clinical dataset manipulation in R - your data manipulation Swiss Army knife. Major pharmaceutical companies use dplyr in their clinical trial pipelines, and FDA reviewers often receive dplyr-based analysis code.</p>
+            
+            <!-- Section 1: Quick Start -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Quick Start 🏥
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <div class="code-block-container" data-block-name="install-dplyr">
+                        <div class="code-block"># Install and load dplyr
+install.packages("dplyr")
+library(dplyr)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What is the correct command to load the dplyr package in R?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">load(dplyr)</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Uses the load() function
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The load() function is used for loading saved R data files, not for loading packages.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">library(dplyr)</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Uses the library() function
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The library() function is the standard way to load installed packages in R.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">import dplyr</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Uses Python-style import syntax
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This is Python syntax, not R. R uses library() or require() to load packages.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">require("dplyr")</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Uses the require() function with quotes
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While require() can load packages, library() is the preferred method. Also, quotes are optional for both functions.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 2: Clinical Trial Dataset -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-chart-bar" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Clinical Trial Dataset 📊
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <div class="code-block-container" data-block-name="clinical-trial-data">
+                        <div class="code-block"># Sample hypertension study data
+clinical_trial <- data.frame(
+  patient_id = paste0("PT", 1001:1010),
+  age = c(45, 52, 38, 61, 55, 49, 42, 58, 47, 53),
+  treatment = rep(c("Drug_A", "Drug_B"), each = 5),
+  baseline_bp = c(145, 152, 138, 160, 148, 142, 155, 149, 144, 158),
+  final_bp = c(125, 138, 128, 142, 130, 135, 140, 132, 129, 141),
+  diabetes = c(TRUE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE)
+)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the clinical_trial dataset, how many patients are assigned to each treatment group?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">3 patients per group</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Each treatment has 3 patients
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Look again at the rep() function: rep(c("Drug_A", "Drug_B"), each = 5)
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">5 patients per group</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Each treatment has 5 patients
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The rep() function with each = 5 assigns 5 patients to Drug_A and 5 to Drug_B.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">10 patients per group</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Each treatment has 10 patients
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be 20 patients total, but we only have 10 (PT1001:1010).
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Random assignment</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Patients are randomly assigned
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The assignment is systematic using rep() with each = 5, not random.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: The Five Core Verbs -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-tools" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        The Five Core Verbs 🔍
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3><strong>1. SELECT: Choose Variables</strong> 🎯</h3>
+                    <div class="code-block-container" data-block-name="select-example">
+                        <div class="code-block"># Select specific columns
+bp_data <- select(clinical_trial, patient_id, age, baseline_bp, final_bp)
+
+# Exclude columns with minus
+no_diabetes <- select(clinical_trial, -diabetes)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    <p>💡 Helpers: <code>starts_with()</code>, <code>ends_with()</code>, <code>contains()</code></p>
+                    
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which select() helper function would you use to select all columns that contain "bp" in their name?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">starts_with("bp")</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Selects columns starting with "bp"
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would only select columns that START with "bp", missing "baseline_bp" and "final_bp".
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">ends_with("bp")</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Selects columns ending with "bp"
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would select "baseline_bp" and "final_bp" but miss any columns with "bp" in the middle.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">contains("bp")</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Selects columns containing "bp" anywhere
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! contains("bp") will select all columns with "bp" anywhere in their name.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">matches("bp")</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Uses regex pattern matching
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While matches() could work with the right pattern, contains() is simpler for this use case.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3><strong>2. FILTER: Find Patients</strong> 🔍</h3>
+                    <div class="code-block-container" data-block-name="filter-example">
+                        <div class="code-block"># Diabetic patients over 50
+diabetic_seniors <- filter(clinical_trial, diabetes == TRUE, age > 50)
+
+# Multiple conditions with OR
+high_risk <- filter(clinical_trial, baseline_bp > 150 | age > 55)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 4 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                How many rows would the diabetic_seniors dataset contain based on the clinical_trial data?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">2 rows</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Two patients meet the criteria
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Count again - look for patients with diabetes=TRUE AND age>50.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">3 rows</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Three patients meet the criteria
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Patients at positions 2 (age 52), 4 (age 61), and 8 (age 58) have diabetes and are over 50.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">4 rows</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Four patients meet the criteria
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Remember both conditions must be true: diabetes=TRUE AND age>50.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">5 rows</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Five patients meet the criteria
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not all diabetic patients are over 50 years old.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3><strong>3. MUTATE: Calculate Metrics</strong> 🧮</h3>
+                    <div class="code-block-container" data-block-name="mutate-example">
+                        <div class="code-block"># Add BP reduction calculations
+trial_results <- mutate(clinical_trial, 
+  bp_reduction = baseline_bp - final_bp,
+  percent_reduction = (bp_reduction / baseline_bp) * 100,
+  response = ifelse(percent_reduction > 10, "Good", "Poor")
+)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 5 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                If a patient has baseline_bp = 150 and final_bp = 135, what would their response category be?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">"Good"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Patient shows good response
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! BP reduction = 15, percent = 10%. Since 10% > 10 is FALSE, but the reduction is exactly 10%, the response is "Good".
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">"Poor"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Patient shows poor response
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Calculate the percent reduction: (150-135)/150 * 100 = 10%. This meets the threshold for "Good".
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">"Moderate"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Patient shows moderate response
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> "Moderate" is not one of the response categories defined in the ifelse() statement.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">NA</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Missing value
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The calculation produces a valid result, not a missing value.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3><strong>4. GROUP_BY + SUMMARIZE: Compare Groups</strong> 💪</h3>
+                    <div class="code-block-container" data-block-name="groupby-example">
+                        <div class="code-block"># Treatment comparison
+treatment_summary <- clinical_trial %>%
+  mutate(bp_reduction = baseline_bp - final_bp) %>%
+  group_by(treatment) %>%
+  summarize(
+    n = n(),
+    avg_reduction = mean(bp_reduction),
+    sd_reduction = sd(bp_reduction)
+  )</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does the n() function return in the summarize() statement?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The total number of rows in the dataset</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Counts all rows in clinical_trial
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> n() counts within groups when used after group_by(), not the total dataset.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The number of rows in each group</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Counts rows per treatment group
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! n() returns the count of observations in each group created by group_by().
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The number of unique values</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Counts distinct values
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be n_distinct(), not n().
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The row number</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Returns row indices
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Row numbers would be generated by row_number(), not n().
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3><strong>5. ARRANGE: Sort Data</strong> 📋</h3>
+                    <div class="code-block-container" data-block-name="arrange-example">
+                        <div class="code-block"># Find best responders
+best_responders <- clinical_trial %>%
+  mutate(bp_reduction = baseline_bp - final_bp) %>%
+  arrange(desc(bp_reduction))</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 7 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does desc() do in the arrange() function?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Describes the data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Provides data description
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> desc() is not a descriptive function - it modifies sorting behavior.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Sorts in descending order</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Changes sort from ascending to descending
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! desc() reverses the sort order to descending (largest to smallest).
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Removes duplicates</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Filters out duplicate values
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be distinct(), not desc().
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Calculates descriptive statistics</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Computes summary statistics
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> desc() is only for sorting, not calculating statistics.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 4: Lab Exercise -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-flask" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Lab Exercise: Diabetes Drug Analysis 🧪
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <div class="code-block-container" data-block-name="diabetes-trial">
+                        <div class="code-block"># Diabetes medication trial data
+diabetes_trial <- data.frame(
+  patient_id = paste0("DM", 2001:2020),
+  medication = rep(c("Metformin", "New_Drug"), each = 10),
+  initial_a1c = c(8.2, 7.9, 9.1, 8.5, 7.8, 8.9, 9.3, 8.1, 7.7, 8.8,
+                  8.4, 8.0, 9.2, 8.7, 7.9, 9.0, 9.5, 8.3, 7.6, 8.6),
+  final_a1c = c(6.8, 6.9, 7.5, 7.1, 6.7, 7.3, 7.8, 6.9, 6.8, 7.2,
+                6.5, 6.3, 6.9, 6.6, 6.2, 6.8, 7.1, 6.4, 6.1, 6.7)
+)
+
+# Analysis pipeline
+medication_comparison <- diabetes_trial %>%
+  mutate(a1c_reduction = initial_a1c - final_a1c) %>%
+  group_by(medication) %>%
+  summarize(
+    n = n(),
+    mean_reduction = mean(a1c_reduction),
+    pct_achieving_target = mean(final_a1c < 7) * 100
+  )</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 8 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the medication_comparison result, what does mean(final_a1c < 7) calculate?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The average final A1C value</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Calculates mean A1C level
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be mean(final_a1c), not mean(final_a1c < 7).
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The proportion of patients with final A1C below 7</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Calculates proportion achieving target
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! mean() of a logical vector gives the proportion of TRUE values.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The number of patients with final A1C below 7</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Counts patients at target
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be sum(final_a1c < 7), not mean().
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The difference between initial and final A1C</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Calculates A1C reduction
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The expression final_a1c < 7 is a logical comparison, not a difference.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 5: Advanced Techniques -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-5">
+                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Advanced Techniques 🚀
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3><strong>case_when() for Clinical Categories:</strong></h3>
+                    <div class="code-block-container" data-block-name="case-when-example">
+                        <div class="code-block">response_categories <- clinical_trial %>%
+  mutate(
+    bp_reduction = baseline_bp - final_bp,
+    response_category = case_when(
+      bp_reduction >= 20 ~ "Excellent",
+      bp_reduction >= 10 ~ "Good",
+      bp_reduction >= 5 ~ "Moderate",
+      TRUE ~ "Poor"
+    )
+  )</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 9 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does TRUE ~ "Poor" mean in the case_when() statement?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It assigns "Poor" to TRUE values</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Maps TRUE to "Poor"
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> TRUE in case_when() acts as a catch-all condition, not a value to match.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It's the default case for all other conditions</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Catches all remaining cases
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! TRUE ~ "Poor" is the else/default case that catches all values not matching previous conditions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It checks if the value is TRUE</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Tests for TRUE values
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> TRUE here is a constant that always evaluates to TRUE, serving as a default.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It creates a logical column named "Poor"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Makes a new logical variable
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> case_when() creates a character column with the value "Poor", not a logical column.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3><strong>Multiple Grouping Variables:</strong></h3>
+                    <div class="code-block-container" data-block-name="multiple-grouping">
+                        <div class="code-block">detailed_analysis <- clinical_trial %>%
+  mutate(bp_reduction = baseline_bp - final_bp) %>%
+  group_by(treatment, diabetes) %>%
+  summarize(
+    mean_reduction = mean(bp_reduction),
+    .groups = 'drop'
+  )</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 10 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does .groups = 'drop' do in the summarize() function?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Removes rows with missing values</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Drops NA values
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> .groups controls grouping structure, not missing values.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Drops the grouping structure after summarizing</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Returns ungrouped data
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! .groups = 'drop' removes the grouping structure, returning a regular tibble/data.frame.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Excludes certain groups from analysis</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Filters out groups
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> All groups are included; this only affects the output structure.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Deletes the original data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Removes source data
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The original data remains unchanged; this only affects the summarized output.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 6: Key Takeaways -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-6">
+                        <i class="fas fa-lightbulb" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Key Takeaways 💡
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <ul>
+                        <li><strong>Readable Code = Better Science</strong>: Verb-based approach for transparency</li>
+                        <li><strong>The Pipe (%>%)</strong>: Chain operations like clinical thinking</li>
+                        <li><strong>Start Simple</strong>: Master individual verbs before combining</li>
+                        <li><strong>Real-World Ready</strong>: Same tools used in pharmaceutical research</li>
+                    </ul>
+                    
+                    <!-- MCQ 11 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Final Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does the pipe operator (%>%) do in dplyr?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Performs mathematical division</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Divides values
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The pipe is not a mathematical operator; it's for chaining functions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Creates a new variable</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Makes new columns
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Creating variables is done with mutate(), not the pipe itself.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Passes the result of one function to the next</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Chains operations together
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The pipe takes the output of one function and makes it the first argument of the next function.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Filters out missing values</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Removes NA values
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Filtering is done with filter() or na.omit(), not the pipe operator.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Real-World Connection:</strong> The dplyr package is used by major pharmaceutical companies like Roche, Novartis, and GSK for clinical trial data analysis. The FDA often receives dplyr-based analysis code as part of drug approval submissions!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out Python code examples as you learn. Since this lesson focuses on R's dplyr package, you might want to explore Python's pandas library which offers similar data manipulation capabilities.</p>
+            
+            <textarea id="python-code"># Type your python codes here
+
+               
+</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Python session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
