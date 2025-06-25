@@ -6,11 +6,31 @@
     <title>Advanced R Data Types for Medical Technology - NUS</title>
     <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- webR script removed -->
+    <!-- WebR Integration -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/r/r.min.js"></script>
+    <script src="https://webr.r-wasm.org/v0.4.2/webr.js"></script>
     <!-- Load custom scripts -->
     <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
     <!-- Load confetti animation -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        /* CodeMirror customization for R editor */
+        .CodeMirror {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .CodeMirror-gutters {
+            background-color: #f5f5f5;
+            border-right: 1px solid #ddd;
+        }
+        #r-code-editor {
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -239,112 +259,82 @@ if (white_mag > gray_mag) {
                     (function() {
                         'use strict';
                         
-                        function setupMRIExercise() {
-                            const validationMessage = document.getElementById('mri-validation-message');
-                            const checkButton = document.getElementById('mri-check-button');
-                            const resetButton = document.getElementById('mri-reset-button');
-                            const successFeedback = document.getElementById('mri-success-feedback');
-                            
-                            const answers = {
-                                'mri-white-real': ['8'],
-                                'mri-white-imag': ['4'],
-                                'mri-gray-real': ['6'],
-                                'mri-gray-imag': ['7'],
-                                'mri-mod-white': ['white_signal'],
-                                'mri-mod-gray': ['gray_signal']
-                            };
-                            
-                            if (checkButton) {
-                                checkButton.addEventListener('click', function() {
-                                    const fields = document.querySelectorAll('#mri-white-real, #mri-white-imag, #mri-gray-real, #mri-gray-imag, #mri-mod-white, #mri-mod-gray');
-                                    let allFilled = true;
-                                    let allCorrect = true;
-                                    
-                                    fields.forEach(field => {
-                                        if (!field.value.trim()) {
-                                            allFilled = false;
-                                        }
-                                    });
-                                    
-                                    if (!allFilled) {
-                                        validationMessage.style.display = 'block';
-                                        return;
-                                    }
-                                    
-                                    validationMessage.style.display = 'none';
-                                    
-                                    fields.forEach(field => {
-                                        const fieldId = field.id;
-                                        const userAnswer = field.value.trim();
-                                        const correctAnswers = answers[fieldId];
-                                        const isCorrect = correctAnswers.includes(userAnswer);
-                                        
-                                        const item = document.getElementById(fieldId.replace(field.id.split('-').pop(), 'item-' + (Array.from(fields).indexOf(field) + 1)));
-                                        const feedback = document.getElementById(fieldId.replace(field.id.split('-').pop(), 'feedback-' + (Array.from(fields).indexOf(field) + 1)));
-                                        
-                                        if (isCorrect) {
-                                            item.classList.add('correct');
-                                            item.classList.remove('incorrect');
-                                            feedback.innerHTML = '<span style="color: #4caf50;"><i class="fas fa-check-circle"></i> Correct!</span>';
-                                        } else {
-                                            item.classList.add('incorrect');
-                                            item.classList.remove('correct');
-                                            feedback.innerHTML = '<span style="color: #f44336;"><i class="fas fa-times-circle"></i> Try again</span>';
-                                            allCorrect = false;
-                                        }
-                                        feedback.style.display = 'block';
-                                    });
-                                    
-                                    if (allCorrect) {
-                                        successFeedback.style.display = 'block';
-                                        checkButton.style.display = 'none';
-                                        resetButton.style.display = 'inline-flex';
-                                        
-                                        if (window.initAudio && window.playCorrectSound) {
-                                            window.initAudio()
-                                                .then(() => window.playCorrectSound())
-                                                .catch(err => console.error("Audio error:", err));
-                                        }
-                                        
-                                        // Show confetti
-                                        if (window.confetti) {
-                                            confetti({
-                                                particleCount: 100,
-                                                spread: 70,
-                                                origin: { y: 0.6 },
-                                                colors: ['#003D7C', '#EF7C00', '#4D7CAE']
-                                            });
-                                        }
-                                    }
-                                });
-                            }
-                            
-                            if (resetButton) {
-                                resetButton.addEventListener('click', function() {
-                                    const fields = document.querySelectorAll('#mri-white-real, #mri-white-imag, #mri-gray-real, #mri-gray-imag, #mri-mod-white, #mri-mod-gray');
-                                    fields.forEach((field, index) => {
-                                        field.value = '';
-                                        const item = document.getElementById('mri-item-' + (index + 1));
-                                        const feedback = document.getElementById('mri-feedback-' + (index + 1));
-                                        item.classList.remove('correct', 'incorrect');
-                                        feedback.style.display = 'none';
-                                    });
-                                    
-                                    validationMessage.style.display = 'none';
-                                    successFeedback.style.display = 'none';
-                                    checkButton.style.display = 'inline-flex';
-                                    resetButton.style.display = 'none';
-                                });
-                            }
-                        }
                         
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', setupMRIExercise);
-                        } else {
-                            setupMRIExercise();
+        // Override any template functions that might interfere
+        if (window.initializePython) {
+            window.initializePython = function() {
+                console.log('R interpreter - Python initialization overridden');
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.textContent = 'Note: R code execution requires WebR or similar R-in-browser solution. For now, practice in your local R environment.';
+                }
+                const runButton = document.getElementById('run-button');
+                if (runButton) {
+                    runButton.disabled = false;
+                    runButton.addEventListener('click', function() {
+                        const codeArea = document.getElementById('python-code');
+                        const outputArea = document.getElementById('output-area');
+                        if (outputArea && codeArea) {
+                            const code = codeArea.value.trim();
+                            if (code) {
+                                outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).\n\nYour code:\n' + code;
+                            } else {
+                                outputArea.textContent = 'Please enter some R code to run.';
+                            }
                         }
-                        window.addEventListener('load', setupMRIExercise);
-                    })();
+                    });
+                }
+                return Promise.resolve();
+            };
+        }
+        
+        // Initialize user tracking
+        function initializeUserTracking() {
+            const username = document.getElementById('username');
+            const accessTime = document.getElementById('access-time');
+            const currentUrl = document.getElementById('current-url');
+            
+            if (username && accessTime && currentUrl) {
+                // Get username from localStorage
+                try {
+                    const accountsData = localStorage.getItem('accounts');
+                    if (accountsData) {
+                        const accounts = JSON.parse(accountsData);
+                        if (accounts && accounts.length > 0 && accounts[0].username) {
+                            username.textContent = accounts[0].username;
+                        } else {
+                            username.textContent = 'Guest';
+                        }
+                    } else {
+                        username.textContent = 'Guest';
+                    }
+                } catch (error) {
+                    console.error('Error retrieving username:', error);
+                    username.textContent = 'Guest';
+                }
+                
+                // Set access time
+                accessTime.textContent = new Date().toLocaleString();
+                
+                // Set current URL
+                currentUrl.textContent = window.location.href;
+            }
+        }
+        
+        // Initialize on DOM load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeUserTracking);
+        } else {
+            initializeUserTracking();
+        }
+        
+        // Ensure Prism highlighting works for R
+        setTimeout(function() {
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        }, 100);
+    })();
                     </script>
                 </div>
             </div>
@@ -561,112 +551,82 @@ if (completed_tests == 0) {
                     (function() {
                         'use strict';
                         
-                        function setupCOVIDExercise() {
-                            const validationMessage = document.getElementById('covid-validation-message');
-                            const checkButton = document.getElementById('covid-check-button');
-                            const resetButton = document.getElementById('covid-reset-button');
-                            const successFeedback = document.getElementById('covid-success-feedback');
-                            
-                            const answers = {
-                                'covid-isna': ['monday'],
-                                'covid-sum-var': ['monday'],
-                                'covid-narm': ['TRUE'],
-                                'covid-numerator': ['positive_tests'],
-                                'covid-denominator': ['completed_tests'],
-                                'covid-edge': ['NA']
-                            };
-                            
-                            if (checkButton) {
-                                checkButton.addEventListener('click', function() {
-                                    const fields = document.querySelectorAll('#covid-isna, #covid-sum-var, #covid-narm, #covid-numerator, #covid-denominator, #covid-edge');
-                                    let allFilled = true;
-                                    let allCorrect = true;
-                                    
-                                    fields.forEach(field => {
-                                        if (!field.value.trim()) {
-                                            allFilled = false;
-                                        }
-                                    });
-                                    
-                                    if (!allFilled) {
-                                        validationMessage.style.display = 'block';
-                                        return;
-                                    }
-                                    
-                                    validationMessage.style.display = 'none';
-                                    
-                                    fields.forEach(field => {
-                                        const fieldId = field.id;
-                                        const userAnswer = field.value.trim();
-                                        const correctAnswers = answers[fieldId];
-                                        const isCorrect = correctAnswers.includes(userAnswer);
-                                        
-                                        const item = document.getElementById(fieldId.replace(field.id.split('-').pop(), 'item-' + (Array.from(fields).indexOf(field) + 1)));
-                                        const feedback = document.getElementById(fieldId.replace(field.id.split('-').pop(), 'feedback-' + (Array.from(fields).indexOf(field) + 1)));
-                                        
-                                        if (isCorrect) {
-                                            item.classList.add('correct');
-                                            item.classList.remove('incorrect');
-                                            feedback.innerHTML = '<span style="color: #4caf50;"><i class="fas fa-check-circle"></i> Correct!</span>';
-                                        } else {
-                                            item.classList.add('incorrect');
-                                            item.classList.remove('correct');
-                                            feedback.innerHTML = '<span style="color: #f44336;"><i class="fas fa-times-circle"></i> Try again</span>';
-                                            allCorrect = false;
-                                        }
-                                        feedback.style.display = 'block';
-                                    });
-                                    
-                                    if (allCorrect) {
-                                        successFeedback.style.display = 'block';
-                                        checkButton.style.display = 'none';
-                                        resetButton.style.display = 'inline-flex';
-                                        
-                                        if (window.initAudio && window.playCorrectSound) {
-                                            window.initAudio()
-                                                .then(() => window.playCorrectSound())
-                                                .catch(err => console.error("Audio error:", err));
-                                        }
-                                        
-                                        // Show confetti
-                                        if (window.confetti) {
-                                            confetti({
-                                                particleCount: 100,
-                                                spread: 70,
-                                                origin: { y: 0.6 },
-                                                colors: ['#003D7C', '#EF7C00', '#4D7CAE']
-                                            });
-                                        }
-                                    }
-                                });
-                            }
-                            
-                            if (resetButton) {
-                                resetButton.addEventListener('click', function() {
-                                    const fields = document.querySelectorAll('#covid-isna, #covid-sum-var, #covid-narm, #covid-numerator, #covid-denominator, #covid-edge');
-                                    fields.forEach((field, index) => {
-                                        field.value = '';
-                                        const item = document.getElementById('covid-item-' + (index + 1));
-                                        const feedback = document.getElementById('covid-feedback-' + (index + 1));
-                                        item.classList.remove('correct', 'incorrect');
-                                        feedback.style.display = 'none';
-                                    });
-                                    
-                                    validationMessage.style.display = 'none';
-                                    successFeedback.style.display = 'none';
-                                    checkButton.style.display = 'inline-flex';
-                                    resetButton.style.display = 'none';
-                                });
-                            }
-                        }
                         
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', setupCOVIDExercise);
-                        } else {
-                            setupCOVIDExercise();
+        // Override any template functions that might interfere
+        if (window.initializePython) {
+            window.initializePython = function() {
+                console.log('R interpreter - Python initialization overridden');
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.textContent = 'Note: R code execution requires WebR or similar R-in-browser solution. For now, practice in your local R environment.';
+                }
+                const runButton = document.getElementById('run-button');
+                if (runButton) {
+                    runButton.disabled = false;
+                    runButton.addEventListener('click', function() {
+                        const codeArea = document.getElementById('python-code');
+                        const outputArea = document.getElementById('output-area');
+                        if (outputArea && codeArea) {
+                            const code = codeArea.value.trim();
+                            if (code) {
+                                outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).\n\nYour code:\n' + code;
+                            } else {
+                                outputArea.textContent = 'Please enter some R code to run.';
+                            }
                         }
-                        window.addEventListener('load', setupCOVIDExercise);
-                    })();
+                    });
+                }
+                return Promise.resolve();
+            };
+        }
+        
+        // Initialize user tracking
+        function initializeUserTracking() {
+            const username = document.getElementById('username');
+            const accessTime = document.getElementById('access-time');
+            const currentUrl = document.getElementById('current-url');
+            
+            if (username && accessTime && currentUrl) {
+                // Get username from localStorage
+                try {
+                    const accountsData = localStorage.getItem('accounts');
+                    if (accountsData) {
+                        const accounts = JSON.parse(accountsData);
+                        if (accounts && accounts.length > 0 && accounts[0].username) {
+                            username.textContent = accounts[0].username;
+                        } else {
+                            username.textContent = 'Guest';
+                        }
+                    } else {
+                        username.textContent = 'Guest';
+                    }
+                } catch (error) {
+                    console.error('Error retrieving username:', error);
+                    username.textContent = 'Guest';
+                }
+                
+                // Set access time
+                accessTime.textContent = new Date().toLocaleString();
+                
+                // Set current URL
+                currentUrl.textContent = window.location.href;
+            }
+        }
+        
+        // Initialize on DOM load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeUserTracking);
+        } else {
+            initializeUserTracking();
+        }
+        
+        // Ensure Prism highlighting works for R
+        setTimeout(function() {
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        }, 100);
+    })();
                     </script>
                 </div>
             </div>
@@ -714,17 +674,17 @@ if (completed_tests == 0) {
             <h2 id="interpreter-heading">R Interpreter</h2>
             <p>Try out R code examples as you learn. You can practice with basic commands or experiment with more complex examples from the lesson.</p>
             
-            <textarea id="r-code"># Type your R code here
+            <div id="r-code-editor" style="border: 1px solid #ddd; height: 300px;"># Type your R code here
 
                
-</textarea>
+</div>
             
             <div class="button-group">
                 <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
                 <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
             </div>
             
-            <div id="status">Note: R code execution requires WebR package integration. For now, practice in your local R environment.</div>
+            <div id="status">Loading R runtime... Please wait.</div>
             
             <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
             <pre id="output-area"></pre>
@@ -786,69 +746,39 @@ if (completed_tests == 0) {
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
-
-    <!-- Custom JavaScript for R-specific functionality -->
+    
+    <!-- Initialize webR -->
     <script>
-    // Prevent Pyodide from loading if template tries to call it directly
-    window.loadPyodide = async function() {
-        console.warn("loadPyodide call intercepted and blocked for R page.");
-        const runButton = document.getElementById('run-button');
-        if (runButton) {
-            // runButton.disabled = true;
-        }
-        const statusElement = document.getElementById('status');
-        if (statusElement) {
-            statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
-        }
-        return undefined; // Simulate that loading failed or did nothing
-    };
-
     (function() {
         'use strict';
         
+        
         // Override any template functions that might interfere
-        // This is a fallback or secondary measure if the template uses initializePython
         if (window.initializePython) {
             window.initializePython = function() {
-                console.log('R interpreter - Python initialization overridden by initializePython shim.');
+                console.log('R interpreter - Python initialization overridden');
                 const statusElement = document.getElementById('status');
                 if (statusElement) {
-                    statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+                    statusElement.textContent = 'Note: R code execution requires WebR or similar R-in-browser solution. For now, practice in your local R environment.';
                 }
                 const runButton = document.getElementById('run-button');
                 if (runButton) {
                     runButton.disabled = false;
                     runButton.addEventListener('click', function() {
+                        const codeArea = document.getElementById('python-code');
                         const outputArea = document.getElementById('output-area');
-                        if (outputArea) {
-                            outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).';
+                        if (outputArea && codeArea) {
+                            const code = codeArea.value.trim();
+                            if (code) {
+                                outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).\n\nYour code:\n' + code;
+                            } else {
+                                outputArea.textContent = 'Please enter some R code to run.';
+                            }
                         }
                     });
                 }
-                // Ensure Prism highlighting works for R, might be needed if template script interferes
-                setTimeout(function() {
-                    if (window.Prism) {
-                        Prism.highlightAll();
-                    }
-                }, 100);
                 return Promise.resolve();
             };
-        } else {
-             // If initializePython doesn't exist, but we still want to set up the R placeholder for run button
-            const runButton = document.getElementById('run-button');
-            const statusElement = document.getElementById('status');
-            if (statusElement) { // Ensure status is R-related
-                 statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
-            }
-            if (runButton) {
-                runButton.disabled = false;
-                runButton.addEventListener('click', function() {
-                    const outputArea = document.getElementById('output-area');
-                    if (outputArea) {
-                        outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).';
-                    }
-                });
-            }
         }
         
         // Initialize user tracking
@@ -856,7 +786,250 @@ if (completed_tests == 0) {
             const username = document.getElementById('username');
             const accessTime = document.getElementById('access-time');
             const currentUrl = document.getElementById('current-url');
-
+            
+            if (username && accessTime && currentUrl) {
+                // Get username from localStorage
+                try {
+                    const accountsData = localStorage.getItem('accounts');
+                    if (accountsData) {
+                        const accounts = JSON.parse(accountsData);
+                        if (accounts && accounts.length > 0 && accounts[0].username) {
+                            username.textContent = accounts[0].username;
+                        } else {
+                            username.textContent = 'Guest';
+                        }
+                    } else {
+                        username.textContent = 'Guest';
+                    }
+                } catch (error) {
+                    console.error('Error retrieving username:', error);
+                    username.textContent = 'Guest';
+                }
+                
+                // Set access time
+                accessTime.textContent = new Date().toLocaleString();
+                
+                // Set current URL
+                currentUrl.textContent = window.location.href;
+            }
+        }
+        
+        // Initialize on DOM load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeUserTracking);
+        } else {
+            initializeUserTracking();
+        }
+        
+        // Ensure Prism highlighting works for R
+        setTimeout(function() {
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        }, 100);
+    })();
+    </script>
+    <!-- Custom JavaScript for R-specific functionality -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // WebR instance and CodeMirror editor
+        let webR;
+        let editor;
+        let isWebRReady = false;
+        
+        // Initialize CodeMirror editor
+        function initializeEditor() {
+            const editorElement = document.getElementById('r-code-editor');
+            if (editorElement && !editor) {
+                // Clear the element first
+                editorElement.innerHTML = '';
+                editor = CodeMirror(editorElement, {
+                    mode: 'r',
+                    theme: 'default',
+                    lineNumbers: true,
+                    lineWrapping: true,
+                    value: '# Type your R code here
+',
+                    extraKeys: {
+                        'Ctrl-Enter': function() { runRCode(); },
+                        'Cmd-Enter': function() { runRCode(); }
+                    }
+                });
+                editor.setSize(null, '300px');
+            }
+        }
+        
+        // Initialize WebR
+        async function initializeWebR() {
+            const statusElement = document.getElementById('status');
+            const runButton = document.getElementById('run-button');
+            
+            try {
+                statusElement.textContent = 'Loading WebR... Please wait.';
+                
+                // Initialize WebR with CDN configuration
+                webR = new WebR({
+                    baseUrl: 'https://webr.r-wasm.org/v0.4.2/',
+                    serviceWorkerUrl: 'https://webr.r-wasm.org/v0.4.2/webr-serviceworker.js'
+                });
+                
+                await webR.init();
+                
+                // Install commonly used packages for medical data analysis
+                statusElement.textContent = 'WebR loaded! Installing packages...';
+                
+                try {
+                    await webR.evalR(`
+                        # Set CRAN repository
+                        options(repos = c(CRAN = "https://repo.r-wasm.org"))
+                    `);
+                } catch (e) {
+                    console.log('Package installation skipped:', e);
+                }
+                
+                statusElement.textContent = 'WebR is ready! You can now run R code.';
+                statusElement.style.color = '#4caf50';
+                
+                if (runButton) {
+                    runButton.disabled = false;
+                    runButton.onclick = runRCode;
+                }
+                
+                isWebRReady = true;
+                
+            } catch (error) {
+                console.error('WebR initialization error:', error);
+                statusElement.textContent = 'Error loading WebR. Please refresh the page.';
+                statusElement.style.color = '#f44336';
+                
+                if (runButton) {
+                    runButton.disabled = false;
+                    runButton.onclick = function() {
+                        const outputArea = document.getElementById('output-area');
+                        if (outputArea) {
+                            outputArea.textContent = 'WebR failed to load. Please refresh the page or use your local R environment.';
+                        }
+                    };
+                }
+            }
+        }
+        
+        // Run R code using WebR
+        async function runRCode() {
+            if (!isWebRReady) {
+                alert('WebR is still loading. Please wait...');
+                return;
+            }
+            
+            const outputArea = document.getElementById('output-area');
+            const runButton = document.getElementById('run-button');
+            
+            if (!editor || !outputArea) return;
+            
+            const code = editor.getValue().trim();
+            if (!code) {
+                outputArea.textContent = 'Please enter some R code to run.';
+                return;
+            }
+            
+            // Disable run button during execution
+            runButton.disabled = true;
+            runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+            
+            try {
+                outputArea.textContent = 'Running R code...
+';
+                
+                // Create a shelter to capture output
+                const shelter = await webR.shelter();
+                
+                // Capture output
+                let output = '';
+                
+                // Split code by lines to handle each command
+                const lines = code.split('
+');
+                
+                for (const line of lines) {
+                    if (line.trim() && !line.trim().startsWith('#')) {
+                        try {
+                            // Evaluate the R code
+                            const result = await shelter.evalR(line, {
+                                withAutoprint: true,
+                                captureStreams: true,
+                                captureConditions: false
+                            });
+                            
+                            // Get the output
+                            const resultOutput = await result.output();
+                            
+                            if (resultOutput) {
+                                // Check for different output types
+                                for (const out of resultOutput) {
+                                    if (out.type === 'stdout' && out.data) {
+                                        output += out.data;
+                                    } else if (out.type === 'stderr' && out.data) {
+                                        output += `Error: ${out.data}`;
+                                    }
+                                }
+                            }
+                            
+                            // If no output captured, try to get the value
+                            if (!output && result) {
+                                try {
+                                    const value = await result.toString();
+                                    if (value && value !== 'undefined') {
+                                        output += value + '
+';
+                                    }
+                                } catch (e) {
+                                    // Some results can't be converted to string
+                                }
+                            }
+                        } catch (lineError) {
+                            output += `Error in line "${line}": ${lineError.message}
+`;
+                        }
+                    }
+                }
+                
+                // Clean up the shelter
+                await shelter.destroy();
+                
+                // Display output
+                outputArea.textContent = output || 'Code executed successfully (no output).';
+                
+            } catch (error) {
+                outputArea.textContent = `Error: ${error.message}`;
+                console.error('R execution error:', error);
+            } finally {
+                // Re-enable run button
+                runButton.disabled = false;
+                runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
+            }
+        }
+        
+        // Clear output
+        function clearOutput() {
+            const outputArea = document.getElementById('output-area');
+            if (outputArea) {
+                outputArea.textContent = '';
+            }
+            if (editor) {
+                editor.setValue('# Type your R code here
+');
+                editor.focus();
+            }
+        }
+        
+        // Initialize user tracking (keep existing functionality)
+        function initializeUserTracking() {
+            const username = document.getElementById('username');
+            const accessTime = document.getElementById('access-time');
+            const currentUrl = document.getElementById('current-url');
+            
             if (username && accessTime && currentUrl) {
                 try {
                     const accountsData = localStorage.getItem('accounts');
@@ -874,25 +1047,53 @@ if (completed_tests == 0) {
                     console.error('Error retrieving username:', error);
                     username.textContent = 'Guest';
                 }
+                
                 accessTime.textContent = new Date().toLocaleString();
                 currentUrl.textContent = window.location.href;
             }
         }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeUserTracking);
-        } else {
-            initializeUserTracking();
+        
+        // Override template Python initialization if exists
+        if (window.initializePython) {
+            window.initializePython = function() {
+                console.log('R interpreter - Python initialization overridden');
+                return Promise.resolve();
+            };
         }
-
-        // Ensure Prism highlighting for R if not already done by template
+        
+        // Initialize everything when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeEditor();
+                initializeWebR();
+                initializeUserTracking();
+                
+                // Set up clear button
+                const clearButton = document.getElementById('clear-button');
+                if (clearButton) {
+                    clearButton.onclick = clearOutput;
+                }
+            });
+        } else {
+            initializeEditor();
+            initializeWebR();
+            initializeUserTracking();
+            
+            const clearButton = document.getElementById('clear-button');
+            if (clearButton) {
+                clearButton.onclick = clearOutput;
+            }
+        }
+        
+        // Ensure Prism highlighting works for R
         setTimeout(function() {
             if (window.Prism) {
                 Prism.highlightAll();
             }
         }, 100);
-
+    
     })();
     </script>
+    
 </body>
 </html>
