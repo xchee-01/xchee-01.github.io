@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pandas Series Slicing - Interactive Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 60px;
+      max-width: 900px;
+      width: 100%;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      color: #2d3748;
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #718096;
+      font-size: 1.1rem;
+      margin-bottom: 40px;
+    }
+
+    .progress-container {
+      background: #e2e8f0;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 50px;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+      );
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .series-container {
+      margin: 50px auto;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 180px;
+    }
+
+    .fruit-row {
+      display: flex;
+      gap: 15px;
+      position: relative;
+    }
+
+    .fruit-card {
+      width: 120px;
+      height: 150px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .fruit-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .fruit-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .fruit-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .fruit-emoji {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      transition: transform 0.3s ease;
+    }
+
+    .fruit-card:hover .fruit-emoji {
+      transform: scale(1.1) rotate(5deg);
+    }
+
+    .fruit-name {
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 1rem;
+    }
+
+    .index-label {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #e2e8f0;
+      color: #4a5568;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .to-remove {
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .to-remove::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(239, 68, 68, 0.1);
+      border: 2px solid #ef4444;
+      border-radius: 16px;
+      animation: pulse 1s ease infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
+
+    .fade-out {
+      transform: scale(0) rotate(180deg);
+      opacity: 0;
+    }
+
+    .code-display {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 20px 30px;
+      border-radius: 12px;
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 1.2rem;
+      margin: 30px auto;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease;
+    }
+
+    .code-display.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .code-display::before {
+      content: '>>>';
+      color: #68d391;
+      margin-right: 10px;
+    }
+
+    .explanation {
+      text-align: center;
+      font-size: 1.1rem;
+      color: #4a5568;
+      margin-top: 20px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.5s ease 0.2s;
+      font-weight: 500;
+    }
+
+    .explanation.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 40px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .step-indicator {
+      text-align: center;
+      color: #718096;
+      font-size: 0.9rem;
+      margin-top: 15px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 30px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .fruit-card {
+        width: 90px;
+        height: 120px;
+      }
+
+      .fruit-emoji {
+        font-size: 2.5rem;
+      }
+
+      .fruit-name {
+        font-size: 0.875rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Pandas Series Slicing</h1>
+  <p class="subtitle">Interactive visualization of array slicing operations</p>
+
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="series-container">
+    <div class="fruit-row" id="fruitRow">
+      <div class="fruit-card" data-index="0">
+        <span class="index-label">[0]</span>
+        <span class="fruit-emoji">🍎</span>
+        <span class="fruit-name">Apple</span>
+      </div>
+      <div class="fruit-card" data-index="1">
+        <span class="index-label">[1]</span>
+        <span class="fruit-emoji">🍌</span>
+        <span class="fruit-name">Banana</span>
+      </div>
+      <div class="fruit-card" data-index="2">
+        <span class="index-label">[2]</span>
+        <span class="fruit-emoji">🍇</span>
+        <span class="fruit-name">Grapes</span>
+      </div>
+      <div class="fruit-card" data-index="3">
+        <span class="index-label">[3]</span>
+        <span class="fruit-emoji">🍊</span>
+        <span class="fruit-name">Orange</span>
+      </div>
+      <div class="fruit-card" data-index="4">
+        <span class="index-label">[4]</span>
+        <span class="fruit-emoji">🍉</span>
+        <span class="fruit-name">Melon</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-display" id="codeDisplay"></div>
+  <div class="explanation" id="explanation"></div>
+
+  <div class="controls">
+    <button id="prevBtn" onclick="previousStep()">Previous</button>
+    <button id="playPauseBtn" onclick="togglePlayPause()">Pause</button>
+    <button id="nextBtn" onclick="nextStep()">Next</button>
+  </div>
+  
+  <div class="step-indicator" id="stepIndicator"></div>
+</div>
+
+<script>
+  const slices = [
+    {
+      start: 0,
+      end: 5,
+      code: "series[:]",
+      explanation: "Select all elements → Every fruit stays in the series"
+    },
+    {
+      start: 1,
+      end: 4,
+      code: "series[1:4]",
+      explanation: "Select from index 1 to 3 → Banana, Grapes, Orange"
+    },
+    {
+      start: 2,
+      end: 5,
+      code: "series[2:]",
+      explanation: "Select from index 2 to end → Grapes, Orange, Melon"
+    },
+    {
+      start: 0,
+      end: 3,
+      code: "series[:3]",
+      explanation: "Select from start to index 2 → Apple, Banana, Grapes"
+    },
+    {
+      start: 1,
+      end: 2,
+      code: "series[1:2]",
+      explanation: "Select only index 1 → Just Banana"
+    }
+  ];
+
+  let currentStep = 0;
+  let isPlaying = true;
+  let animationTimeout;
+
+  function updateStepIndicator() {
+    document.getElementById('stepIndicator').textContent = 
+      `Step ${currentStep + 1} of ${slices.length}`;
+  }
+
+  function typeText(element, text, callback) {
+    element.textContent = '';
+    element.classList.add('show');
+    let i = 0;
+    const typing = setInterval(() => {
+      element.textContent += text[i];
+      i++;
+      if (i >= text.length) {
+        clearInterval(typing);
+        if (callback) callback();
+      }
+    }, 50);
+  }
+
+  function animateSlice(slice) {
+    const fruits = document.querySelectorAll('.fruit-card');
+    const codeDisplay = document.getElementById('codeDisplay');
+    const explanation = document.getElementById('explanation');
+    
+    // Reset
+    fruits.forEach(fruit => {
+      fruit.classList.remove('to-remove', 'fade-out');
+    });
+    codeDisplay.classList.remove('show');
+    explanation.classList.remove('show');
+    explanation.textContent = '';
+
+    setTimeout(() => {
+      // Highlight what will be removed
+      fruits.forEach((fruit, i) => {
+        if (i < slice.start || i >= slice.end) {
+          fruit.classList.add('to-remove');
+        }
+      });
+
+      // Show code
+      typeText(codeDisplay, slice.code, () => {
+        explanation.textContent = slice.explanation;
+        explanation.classList.add('show');
+      });
+
+      animationTimeout = setTimeout(() => {
+        // Remove highlighted items
+        fruits.forEach((fruit, i) => {
+          if (i < slice.start || i >= slice.end) {
+            fruit.classList.add('fade-out');
+          }
+        });
+
+        animationTimeout = setTimeout(() => {
+          if (isPlaying) {
+            currentStep = (currentStep + 1) % slices.length;
+            updateProgress();
+            animateSlice(slices[currentStep]);
+          }
+        }, 2000);
+      }, 2500);
+    }, 500);
+  }
+
+  function updateProgress() {
+    const progress = ((currentStep + 1) / slices.length) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+    updateStepIndicator();
+  }
+
+  function nextStep() {
+    clearTimeout(animationTimeout);
+    currentStep = (currentStep + 1) % slices.length;
+    updateProgress();
+    animateSlice(slices[currentStep]);
+  }
+
+  function previousStep() {
+    clearTimeout(animationTimeout);
+    currentStep = (currentStep - 1 + slices.length) % slices.length;
+    updateProgress();
+    animateSlice(slices[currentStep]);
+  }
+
+  function togglePlayPause() {
+    isPlaying = !isPlaying;
+    const btn = document.getElementById('playPauseBtn');
+    btn.textContent = isPlaying ? 'Pause' : 'Play';
+    
+    if (isPlaying) {
+      animateSlice(slices[currentStep]);
+    } else {
+      clearTimeout(animationTimeout);
+    }
+  }
+
+  // Initialize
+  window.onload = () => {
+    updateProgress();
+    animateSlice(slices[currentStep]);
+  };
+</script>
+
+</body>
+</html>
