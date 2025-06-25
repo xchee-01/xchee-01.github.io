@@ -7,33 +7,93 @@
     <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- WebR Integration -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/r/r.min.js"></script>
-    <script src="https://webr.r-wasm.org/v0.4.2/webr.js"></script>
+    
     <!-- Load Prism JS for syntax highlighting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-r.min.js"></script>
-    <!-- Load custom scripts -->
+    
+    <!-- Load WebR for R interpreter -->
+    <link rel="stylesheet" href="https://webr.r-wasm.org/v0.2.2/webr.css">
+    <script src="https://webr.r-wasm.org/v0.2.2/webr.js"></script>
+    
+    <!-- Load custom scripts (but will override Python functionality) -->
     <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
     <!-- Load confetti animation -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    
     <style>
-        /* CodeMirror customization for R editor */
-        .CodeMirror {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        /* Additional styles for R interpreter */
+        #r-code {
+            width: 100%;
+            min-height: 200px;
+            font-family: 'Courier New', monospace;
             font-size: 14px;
+            padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            background-color: #f8f8f8;
+            resize: vertical;
         }
-        .CodeMirror-gutters {
-            background-color: #f5f5f5;
-            border-right: 1px solid #ddd;
+        
+        #r-output {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 100px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin-top: 10px;
         }
-        #r-code-editor {
-            margin-bottom: 10px;
+        
+        .interpreter-status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
         }
+        
+        .interpreter-status.loading {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .interpreter-status.ready {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .interpreter-status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .interpreter-controls {
+            margin-top: 15px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Override template styles that might interfere */
+        #python-code { display: none; }
+        #output-area { display: none; }
+        #status { display: none; }
     </style>
 </head>
 <body>
@@ -1186,22 +1246,59 @@ print(paste(mg_dL, "mg/dL =", round(mmol_L, 1), "mmol/L"))</div>
             </div>
         </section>
         
+        <!-- Updated R Interpreter Section -->
         <section id="interpreter-container">
-            <h2 id="interpreter-heading">R Interpreter</h2>
-            <p>Try out R code examples as you learn. Practice with basic commands or experiment with medical calculations from the lesson.</p>
+            <h2 id="interpreter-heading">
+                <i class="fas fa-terminal" style="margin-right: 10px;"></i>
+                Live R Interpreter
+            </h2>
+            <p>Practice R code directly in your browser! Type or paste code examples from the lessons and see the results instantly.</p>
             
-            <div id="r-code-editor" style="border: 1px solid #ddd; height: 300px;"># Type your R code here
-</div>
-            
-            <div class="button-group">
-                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
-                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            <div id="interpreter-status" class="interpreter-status loading">
+                <span class="spinner"></span> Loading R interpreter...
             </div>
             
-            <div id="status">Loading WebR... Please wait.</div>
+            <textarea id="r-code" placeholder="# Enter your R code here
+# Example:
+patient_age <- 65
+glucose_level <- 126
+print(paste('Patient age:', patient_age))
+print(paste('Glucose level:', glucose_level, 'mg/dL'))
+
+# Try the examples from the lessons above!"># Welcome to the R interpreter!
+# Try some examples from the lesson:
+
+# Basic variable assignment
+patient_age <- 65
+print(paste("Patient age:", patient_age))
+
+# Medical calculations
+weight_kg <- 75
+height_m <- 1.75
+bmi <- weight_kg / (height_m ^ 2)
+print(paste("BMI:", round(bmi, 2)))</textarea>
             
-            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
-            <pre id="output-area"></pre>
+            <div class="interpreter-controls button-group">
+                <button id="run-r-button" disabled>
+                    <i class="fas fa-play"></i> Run Code
+                </button>
+                <button id="clear-output-button">
+                    <i class="fas fa-eraser"></i> Clear Output
+                </button>
+                <button id="clear-code-button">
+                    <i class="fas fa-times"></i> Clear Code
+                </button>
+            </div>
+            
+            <label for="r-output" class="output-label">
+                <i class="fas fa-terminal"></i> Output:
+            </label>
+            <pre id="r-output"></pre>
+            
+            <!-- Hidden elements from template -->
+            <textarea id="python-code" style="display: none;"></textarea>
+            <div id="status" style="display: none;"></div>
+            <pre id="output-area" style="display: none;"></pre>
         </section>
     </main>
     
@@ -1261,177 +1358,108 @@ print(paste(mg_dL, "mg/dL =", round(mmol_L, 1), "mmol/L"))</div>
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
     
-    <!-- Custom JavaScript for R-specific functionality -->
+    <!-- WebR Integration Script -->
     <script>
     (function() {
         'use strict';
         
-        
-        // WebR instance and CodeMirror editor
         let webR;
-        let editor;
         let isWebRReady = false;
-        
-        // Initialize CodeMirror editor
-        function initializeEditor() {
-            const editorElement = document.getElementById('r-code-editor');
-            if (editorElement && !editor) {
-                editor = CodeMirror(editorElement, {
-                    mode: 'r',
-                    theme: 'default',
-                    lineNumbers: true,
-                    lineWrapping: true,
-                    value: '# Type your R code here\n',
-                    extraKeys: {
-                        'Ctrl-Enter': function() { runRCode(); },
-                        'Cmd-Enter': function() { runRCode(); }
-                    }
-                });
-                editor.setSize(null, '300px');
-            }
-        }
         
         // Initialize WebR
         async function initializeWebR() {
-            const statusElement = document.getElementById('status');
-            const runButton = document.getElementById('run-button');
+            const statusElement = document.getElementById('interpreter-status');
+            const runButton = document.getElementById('run-r-button');
+            const outputElement = document.getElementById('r-output');
             
             try {
-                statusElement.textContent = 'Loading WebR... Please wait.';
+                statusElement.innerHTML = '<span class="spinner"></span> Initializing R interpreter...';
+                statusElement.className = 'interpreter-status loading';
                 
-                // Initialize WebR with CDN configuration
+                // Initialize WebR with configuration
                 webR = new WebR({
-                    baseUrl: 'https://webr.r-wasm.org/v0.4.2/',
-                    serviceWorkerUrl: 'https://webr.r-wasm.org/v0.4.2/webr-serviceworker.js'
+                    baseUrl: 'https://webr.r-wasm.org/v0.2.2/',
+                    serviceWorkerUrl: 'https://webr.r-wasm.org/v0.2.2/webr-serviceworker.js'
                 });
                 
+                // Wait for WebR to initialize
                 await webR.init();
                 
-                // Install commonly used packages for medical data analysis
-                statusElement.textContent = 'WebR loaded! Installing packages...';
-                
-                try {
-                    await webR.evalR(`
-                        # Set CRAN repository
-                        options(repos = c(CRAN = "https://repo.r-wasm.org"))
-                    `);
-                } catch (e) {
-                    console.log('Package installation skipped:', e);
-                }
-                
-                statusElement.textContent = 'WebR is ready! You can now run R code.';
-                statusElement.style.color = '#4caf50';
-                
-                if (runButton) {
-                    runButton.disabled = false;
-                    runButton.addEventListener('click', runRCode);
-                }
+                // Configure output capture
+                await webR.evalRVoid(`
+                    # Set up output capture
+                    options(width = 80)
+                    # Ensure proper printing
+                    print <- function(x, ...) {
+                        base::print(x, ...)
+                    }
+                `);
                 
                 isWebRReady = true;
+                statusElement.innerHTML = '<i class="fas fa-check-circle"></i> R interpreter ready!';
+                statusElement.className = 'interpreter-status ready';
+                runButton.disabled = false;
+                
+                // Add some helpful initial output
+                const version = await getVersion();
+                outputElement.textContent = 'R interpreter initialized successfully!\n' + version + '\n\nTry running some code from the lessons above!';
                 
             } catch (error) {
-                console.error('WebR initialization error:', error);
-                statusElement.textContent = 'Error loading WebR. Please refresh the page.';
-                statusElement.style.color = '#f44336';
-                
-                if (runButton) {
-                    runButton.disabled = false;
-                    runButton.addEventListener('click', function() {
-                        const outputArea = document.getElementById('output-area');
-                        if (outputArea) {
-                            outputArea.textContent = 'WebR failed to load. Please refresh the page or use your local R environment.';
-                        }
-                    });
-                }
+                console.error('Failed to initialize WebR:', error);
+                statusElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed to load R interpreter. Please refresh the page.';
+                statusElement.className = 'interpreter-status error';
+                outputElement.textContent = 'Error: Could not initialize R interpreter.\nPlease check your internet connection and refresh the page.';
             }
         }
         
-        // Run R code using WebR
+        // Get R version
+        async function getVersion() {
+            try {
+                const result = await webR.evalRString('R.version.string');
+                return result;
+            } catch (error) {
+                return 'R version: Unknown';
+            }
+        }
+        
+        // Run R code
         async function runRCode() {
             if (!isWebRReady) {
-                alert('WebR is still loading. Please wait...');
+                alert('R interpreter is not ready yet. Please wait...');
                 return;
             }
             
-            const outputArea = document.getElementById('output-area');
-            const runButton = document.getElementById('run-button');
+            const codeElement = document.getElementById('r-code');
+            const outputElement = document.getElementById('r-output');
+            const runButton = document.getElementById('run-r-button');
             
-            if (!editor || !outputArea) return;
+            const code = codeElement.value.trim();
             
-            const code = editor.getValue().trim();
             if (!code) {
-                outputArea.textContent = 'Please enter some R code to run.';
+                outputElement.textContent = 'Please enter some R code to run.';
                 return;
             }
             
-            // Disable run button during execution
             runButton.disabled = true;
-            runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+            runButton.innerHTML = '<span class="spinner"></span> Running...';
+            outputElement.textContent = 'Running code...\n';
             
             try {
-                outputArea.textContent = 'Running R code...\n';
+                // Capture output by redirecting stdout
+                const wrappedCode = `
+                    output_capture <- capture.output({
+                        ${code}
+                    })
+                    paste(output_capture, collapse = "\n")
+                `;
                 
-                // Create a shelter to capture output
-                const shelter = await webR.shelter();
-                
-                // Capture output
-                let output = '';
-                
-                // Split code by lines to handle each command
-                const lines = code.split('\n');
-                
-                for (const line of lines) {
-                    if (line.trim() && !line.trim().startsWith('#')) {
-                        try {
-                            // Evaluate the R code
-                            const result = await shelter.evalR(line, {
-                                withAutoprint: true,
-                                captureStreams: true,
-                                captureConditions: false
-                            });
-                            
-                            // Get the output
-                            const resultOutput = await result.output();
-                            
-                            if (resultOutput) {
-                                // Check for different output types
-                                for (const out of resultOutput) {
-                                    if (out.type === 'stdout' && out.data) {
-                                        output += out.data;
-                                    } else if (out.type === 'stderr' && out.data) {
-                                        output += `Error: ${out.data}`;
-                                    }
-                                }
-                            }
-                            
-                            // If no output captured, try to get the value
-                            if (!output && result) {
-                                try {
-                                    const value = await result.toString();
-                                    if (value && value !== 'undefined') {
-                                        output += value + '\n';
-                                    }
-                                } catch (e) {
-                                    // Some results can't be converted to string
-                                }
-                            }
-                        } catch (lineError) {
-                            output += `Error in line "${line}": ${lineError.message}\n`;
-                        }
-                    }
-                }
-                
-                // Clean up the shelter
-                await shelter.destroy();
-                
-                // Display output
-                outputArea.textContent = output || 'Code executed successfully (no output).';
+                const result = await webR.evalRString(wrappedCode);
+                outputElement.textContent = result || '(No output produced)';
                 
             } catch (error) {
-                outputArea.textContent = `Error: ${error.message}`;
+                outputElement.textContent = 'Error: ' + error.message;
                 console.error('R execution error:', error);
             } finally {
-                // Re-enable run button
                 runButton.disabled = false;
                 runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
             }
@@ -1439,23 +1467,30 @@ print(paste(mg_dL, "mg/dL =", round(mmol_L, 1), "mmol/L"))</div>
         
         // Clear output
         function clearOutput() {
-            const outputArea = document.getElementById('output-area');
-            if (outputArea) {
-                outputArea.textContent = '';
-            }
-            if (editor) {
-                editor.setValue('# Type your R code here\n');
-                editor.focus();
-            }
+            document.getElementById('r-output').textContent = '';
         }
         
-        // Initialize user tracking (keep existing functionality)
+        // Clear code
+        function clearCode() {
+            document.getElementById('r-code').value = '';
+        }
+        
+        // Override template Python initialization
+        if (window.initializePython) {
+            window.initializePython = function() {
+                console.log('Python initialization overridden for R page');
+                return Promise.resolve();
+            };
+        }
+        
+        // Initialize user tracking
         function initializeUserTracking() {
             const username = document.getElementById('username');
             const accessTime = document.getElementById('access-time');
             const currentUrl = document.getElementById('current-url');
             
             if (username && accessTime && currentUrl) {
+                // Get username from localStorage
                 try {
                     const accountsData = localStorage.getItem('accounts');
                     if (accountsData) {
@@ -1473,49 +1508,76 @@ print(paste(mg_dL, "mg/dL =", round(mmol_L, 1), "mmol/L"))</div>
                     username.textContent = 'Guest';
                 }
                 
+                // Set access time
                 accessTime.textContent = new Date().toLocaleString();
+                
+                // Set current URL
                 currentUrl.textContent = window.location.href;
             }
         }
         
-        // Override template Python initialization if exists
-        if (window.initializePython) {
-            window.initializePython = function() {
-                console.log('R interpreter - Python initialization overridden');
-                return Promise.resolve();
-            };
+        // Set up event listeners
+        function setupEventListeners() {
+            const runButton = document.getElementById('run-r-button');
+            const clearOutputButton = document.getElementById('clear-output-button');
+            const clearCodeButton = document.getElementById('clear-code-button');
+            const codeElement = document.getElementById('r-code');
+            
+            if (runButton) {
+                runButton.addEventListener('click', runRCode);
+            }
+            
+            if (clearOutputButton) {
+                clearOutputButton.addEventListener('click', clearOutput);
+            }
+            
+            if (clearCodeButton) {
+                clearCodeButton.addEventListener('click', clearCode);
+            }
+            
+            // Allow Ctrl+Enter to run code
+            if (codeElement) {
+                codeElement.addEventListener('keydown', function(e) {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                        e.preventDefault();
+                        runRCode();
+                    }
+                });
+            }
+            
+            // Override template run button if it exists
+            const templateRunButton = document.getElementById('run-button');
+            if (templateRunButton) {
+                templateRunButton.style.display = 'none';
+            }
+            
+            const templateClearButton = document.getElementById('clear-button');
+            if (templateClearButton) {
+                templateClearButton.style.display = 'none';
+            }
         }
         
-        // Initialize everything when DOM is ready
+        // Initialize everything on DOM load
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
-                initializeEditor();
-                initializeWebR();
                 initializeUserTracking();
+                setupEventListeners();
+                initializeWebR();
                 
-                // Set up clear button
-                const clearButton = document.getElementById('clear-button');
-                if (clearButton) {
-                    clearButton.addEventListener('click', clearOutput);
+                // Ensure Prism highlighting works for R
+                if (window.Prism) {
+                    Prism.highlightAll();
                 }
             });
         } else {
-            initializeEditor();
-            initializeWebR();
             initializeUserTracking();
+            setupEventListeners();
+            initializeWebR();
             
-            const clearButton = document.getElementById('clear-button');
-            if (clearButton) {
-                clearButton.addEventListener('click', clearOutput);
-            }
-        }
-        
-        // Ensure Prism highlighting works for R
-        setTimeout(function() {
             if (window.Prism) {
                 Prism.highlightAll();
             }
-        }, 100);
+        }
     })();
     </script>
 </body>
