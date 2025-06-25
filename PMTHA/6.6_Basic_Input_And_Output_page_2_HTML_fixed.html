@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Operations and Data Integration in Medical R - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Precision Medical Toolkit for Health Analytics</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>File Operations and Data Integration in Medical R</h1>
+            
+            <p>Welcome to the Data Highway! Medical data comes from various sources:</p>
+            <ul>
+                <li>CSV from laboratory systems</li>
+                <li>Excel from clinical coordinators</li>
+                <li>Text from genomic sequencers</li>
+            </ul>
+            
+            <!-- Section 1: Essential File Operations -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-file-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Essential File Operations
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Reading CSV Files</h3>
+                    
+                    <div class="code-block-container" data-block-name="read-csv-example">
+                        <div class="code-block language-r"># Read patient lab results
+lab_data <- read.csv("lab_results.csv", header = TRUE)
+head(lab_data, 3)  # Peek at first 3 rows
+
+# Check data
+dim(lab_data)  # [rows, columns]
+str(lab_data)  # Data types</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does the <code>header = TRUE</code> parameter do in <code>read.csv()</code>?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It creates a header row in the output</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This would add a new header to the data.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. The parameter doesn't create new headers but tells R how to interpret the existing file structure.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It treats the first row as column names</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        R will use the first row for column naming.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The <code>header = TRUE</code> parameter tells R to use the first row of the CSV file as column names for the data frame.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It removes the header from the file</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This would strip header information.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The parameter doesn't remove anything; it tells R how to interpret the first row.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It adds line numbers to the data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This would number each row.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. Row numbers are controlled by other parameters, not the header parameter.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Writing Analysis Results</h3>
+                    
+                    <div class="code-block-container" data-block-name="write-csv-example">
+                        <div class="code-block language-r"># Create diabetes risk report
+patient_summary <- data.frame(
+  patient_id = c("P001", "P002", "P003"),
+  avg_glucose = c(98, 126, 145),
+  hba1c = c(5.4, 6.5, 7.8),
+  risk_level = c("Normal", "Pre-diabetic", "Diabetic")
+)
+
+write.csv(patient_summary, 
+          file = "diabetes_risk_assessment.csv", 
+          row.names = FALSE)
+cat("✓ Results saved\n")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why do we use <code>row.names = FALSE</code> when writing CSV files for medical data?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To make the file smaller</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This reduces file size by removing row names.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While it might save a tiny bit of space, this isn't the main reason for using this parameter with medical data.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To prevent R from adding row numbers as the first column</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This stops automatic row numbering.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Setting <code>row.names = FALSE</code> prevents R from adding automatic row numbers (1, 2, 3...) as the first column, which could be confused with patient IDs.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To remove patient names for privacy</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This protects patient information.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Row names are different from patient data columns. This parameter only affects automatic row numbering.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To speed up the writing process</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This makes file writing faster.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The performance difference is negligible. The main reason is to avoid confusion with data columns.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Advanced File Reading</h3>
+                    
+                    <div class="code-block-container" data-block-name="advanced-reading">
+                        <div class="code-block language-r"># Tab-delimited files
+genetic_data <- read.table("snp_data.txt", 
+                          sep = "\t",
+                          header = TRUE)
+
+# Handle missing values
+clinical_data <- read.csv("patient_records.csv", 
+                         na.strings = c("NA", "Not tested", ""))
+
+# Read specific columns only
+vital_signs <- read.csv("icu_monitoring.csv",
+                       colClasses = c("character", "numeric", 
+                                    "numeric", "NULL", "NULL"))</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does the <code>na.strings</code> parameter do in the clinical data reading example?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It removes all NA values from the dataset</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This eliminates missing data entirely.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The parameter doesn't remove values, it just tells R how to recognize them as missing.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It converts specified strings to NA values in R</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This identifies which text represents missing data.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The <code>na.strings</code> parameter tells R which text values in the file should be interpreted as NA (missing data), such as "Not tested" or empty strings.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It replaces NA values with empty strings</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This converts missing data to blanks.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not right. It works in the opposite direction - converting strings to NA, not NA to strings.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It counts the number of missing values</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This provides a missing data summary.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This parameter only identifies what should be considered missing, not count them.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 3: Clinical Trial Analysis</h3>
+                        <p>Process blood pressure trial data and identify responders:</p>
+                        
+                        <div class="code-block-container" data-block-name="lab3-trial-analysis">
+                            <div class="code-block language-r"># Create sample data
+set.seed(42)
+trial_data <- data.frame(
+  patient_id = paste0("PT", 1001:1050),
+  baseline_bp = round(rnorm(50, mean = 152, sd = 10)),
+  final_bp = round(rnorm(50, mean = 135, sd = 8))
+)
+
+# Calculate effectiveness
+baseline_avg <- mean(trial_data$baseline_bp)
+final_avg <- mean(trial_data$final_bp)
+avg_reduction <- _____ - _____
+
+# Create summary
+summary_report <- data.frame(
+  metric = c("Number of Patients", "Average Reduction"),
+  value = c(nrow(_____), round(_____, 1))
+)
+
+# Export results
+write.csv(_____, "trial_summary.csv", row.names = _____)
+
+# Find high responders (>20 mmHg reduction)
+responders <- trial_data[trial_data$baseline_bp - trial_data$final_bp > 20, ]
+write.csv(_____, "high_responders.csv", row.names = FALSE)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <!-- MCQ 4 -->
+                        <div class="mcq-container">
+                            <div class="mcq-header">
+                                <div class="mcq-header-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="mcq-header-text">Learning Checkpoint</div>
+                            </div>
+                            
+                            <div class="mcq-content">
+                                <div class="mcq-question">
+                                    To calculate the average blood pressure reduction, which values should fill the blanks in <code>avg_reduction <- _____ - _____</code>?
+                                </div>
+                                
+                                <div class="mcq-options">
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">final_avg - baseline_avg</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Subtract baseline from final averages.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would give a negative number since final BP is lower. We want a positive reduction value.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="true">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">baseline_avg - final_avg</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Subtract final from baseline averages.
+                                        </div>
+                                        <div class="mcq-feedback correct">
+                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The reduction is calculated as baseline_avg - final_avg to get a positive number representing how much the blood pressure decreased.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">mean(baseline_bp) - mean(final_bp)</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Calculate means of the columns directly.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> These variables don't exist in the scope. We need to use the already calculated baseline_avg and final_avg.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">trial_data$baseline_bp - trial_data$final_bp</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Subtract entire columns element-wise.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would give individual reductions for each patient, not the average reduction we need.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="reset-button">
+                                    <i class="fas fa-redo"></i> Try Again
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- MCQ 5 -->
+                        <div class="mcq-container">
+                            <div class="mcq-header">
+                                <div class="mcq-header-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="mcq-header-text">Learning Checkpoint</div>
+                            </div>
+                            
+                            <div class="mcq-content">
+                                <div class="mcq-question">
+                                    What should fill the blank in <code>write.csv(_____, "trial_summary.csv", ...)</code>?
+                                </div>
+                                
+                                <div class="mcq-options">
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">trial_data</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Export the raw trial data.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would export all patient data, not the summary statistics we created.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="true">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">summary_report</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Export the summary statistics.
+                                        </div>
+                                        <div class="mcq-feedback correct">
+                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The summary_report data frame contains the summarized metrics that should be exported to the trial_summary.csv file.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">responders</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Export high responders data.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The responders data is exported separately to "high_responders.csv", not the summary file.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">avg_reduction</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Export just the reduction value.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This is just a single number, not the complete summary data frame we need to export.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="reset-button">
+                                    <i class="fas fa-redo"></i> Try Again
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab3-solution">
+                                <div class="code-block language-r"># Create sample data
+set.seed(42)
+trial_data <- data.frame(
+  patient_id = paste0("PT", 1001:1050),
+  baseline_bp = round(rnorm(50, mean = 152, sd = 10)),
+  final_bp = round(rnorm(50, mean = 135, sd = 8))
+)
+
+# Calculate effectiveness
+baseline_avg <- mean(trial_data$baseline_bp)
+final_avg <- mean(trial_data$final_bp)
+avg_reduction <- baseline_avg - final_avg
+
+# Create summary
+summary_report <- data.frame(
+  metric = c("Number of Patients", "Average Reduction"),
+  value = c(nrow(trial_data), round(avg_reduction, 1))
+)
+
+# Export results
+write.csv(summary_report, "trial_summary.csv", row.names = FALSE)
+
+# Find high responders (>20 mmHg reduction)
+responders <- trial_data[trial_data$baseline_bp - trial_data$final_bp > 20, ]
+write.csv(responders, "high_responders.csv", row.names = FALSE)</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Excellent work! You've successfully analyzed clinical trial data and identified treatment responders. This type of analysis is crucial for understanding medication effectiveness and personalizing patient care." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 2: Working with Different File Formats -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-file-excel" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Working with Different File Formats
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Excel Files</h3>
+                    
+                    <div class="code-block-container" data-block-name="excel-operations">
+                        <div class="code-block language-r">library(readxl)
+
+# Read specific sheets
+demographics <- read_excel("clinical_study.xlsx", 
+                          sheet = "Demographics")
+lab_results <- read_excel("clinical_study.xlsx", 
+                         sheet = "Lab_Results")
+
+# List all sheets
+excel_sheets("clinical_study.xlsx")
+
+# Read specific range
+summary_stats <- read_excel("study_report.xlsx", 
+                           range = "A1:D10")</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which function lists all available sheets in an Excel file?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">list_sheets()</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This function would list sheet names.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This isn't a real function in the readxl package. The actual function has a different name.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">excel_sheets()</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This returns all sheet names in the file.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The excel_sheets() function from the readxl package returns a character vector of all sheet names in an Excel file.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">get_sheets()</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This retrieves sheet information.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. This function doesn't exist in readxl. The correct function is excel_sheets().
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">sheet_names()</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This gets the names of all sheets.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While this name would make sense, the actual function in readxl is excel_sheets().
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>RData Files - Time Capsules</h3>
+                    
+                    <div class="code-block-container" data-block-name="rdata-files">
+                        <div class="code-block language-r"># Save complete analysis
+clinical_package <- list(
+  raw_data = trial_data,
+  model = lm(bp_reduction ~ age + baseline_bp, data = trial_data),
+  analysis_date = Sys.Date()
+)
+
+save(clinical_package, file = "clinical_analysis.RData")
+
+# Load in new session
+load("clinical_analysis.RData")
+summary(clinical_package$model)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 7 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What is the main advantage of using RData files for clinical analysis?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">They are smaller than CSV files</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        RData files use compression.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While RData files can be compressed, size isn't their main advantage for clinical analysis.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">They preserve R objects exactly, including models and data types</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Complete R objects are saved with all attributes.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! RData files preserve the complete R objects including their structure, attributes, and data types, making them perfect for saving complex analyses.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">They can be opened in Excel</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        RData files are Excel-compatible.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. RData files are R-specific and cannot be opened in Excel or other spreadsheet software.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">They are encrypted for security</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        RData files provide built-in encryption.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not true. RData files don't provide encryption by default. Separate security measures would be needed.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 4: Hospital Data Integration</h3>
+                        <p>Integrate data from multiple hospital systems:</p>
+                        
+                        <div class="code-block-container" data-block-name="lab4-integration">
+                            <div class="code-block language-r">library(readxl)
+
+# 1. Read admissions from Excel
+admissions <- read_excel("hospital_admissions.xlsx", sheet = _____)
+
+# 2. Read lab results from CSV
+lab_results <- read.csv("lab_values.csv", header = _____)
+
+# 3. Read medications from pipe-delimited text
+medications <- read.table("medications.txt", 
+                         sep = "|",
+                         header = _____)
+
+# 4. Integrate all data
+integrated_data <- merge(admissions, lab_results, by = "patient_id")
+integrated_data <- merge(_____, medications, by = "patient_id")
+
+# 5. Save complete dataset
+write.csv(integrated_data, "integrated_patient_data.csv", row.names = _____)
+save(integrated_data, file = "patient_database.RData")</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <!-- MCQ 8 -->
+                        <div class="mcq-container">
+                            <div class="mcq-header">
+                                <div class="mcq-header-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="mcq-header-text">Learning Checkpoint</div>
+                            </div>
+                            
+                            <div class="mcq-content">
+                                <div class="mcq-question">
+                                    What should fill the blank in step 4: <code>merge(_____, medications, by = "patient_id")</code>?
+                                </div>
+                                
+                                <div class="mcq-options">
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">admissions</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Merge admissions with medications.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would miss the lab_results data that was already merged in the previous step.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">lab_results</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Merge lab results with medications.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would miss the admissions data that was already merged in the previous step.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="true">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">integrated_data</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Merge the already integrated data with medications.
+                                        </div>
+                                        <div class="mcq-feedback correct">
+                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Since integrated_data already contains the merged admissions and lab_results, we need to merge this combined dataset with medications.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">clinical_data</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Use a different variable name.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This variable doesn't exist in our code. We need to use integrated_data.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="reset-button">
+                                    <i class="fas fa-redo"></i> Try Again
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- MCQ 9 -->
+                        <div class="mcq-container">
+                            <div class="mcq-header">
+                                <div class="mcq-header-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="mcq-header-text">Learning Checkpoint</div>
+                            </div>
+                            
+                            <div class="mcq-content">
+                                <div class="mcq-question">
+                                    For reading lab results CSV with column headers, what value should fill: <code>header = _____</code>?
+                                </div>
+                                
+                                <div class="mcq-options">
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">FALSE</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Don't use first row as headers.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would treat the header row as data, causing problems with column naming.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="true">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">TRUE</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Use first row as column names.
+                                        </div>
+                                        <div class="mcq-feedback correct">
+                                            <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Setting header = TRUE tells R that the first row contains column names, which is standard for CSV files with headers.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">"yes"</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Use text to indicate yes.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> R expects a logical value (TRUE/FALSE), not a text string for this parameter.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mcq-option" data-correct="false">
+                                        <div class="mcq-option-header">
+                                            <div class="mcq-option-title">1</div>
+                                        </div>
+                                        <div class="mcq-option-content">
+                                            Use numeric 1 for true.
+                                        </div>
+                                        <div class="mcq-feedback incorrect">
+                                            <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While 1 can sometimes represent TRUE, it's better to use the logical value TRUE explicitly.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="reset-button">
+                                    <i class="fas fa-redo"></i> Try Again
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab4-solution">
+                                <div class="code-block language-r">library(readxl)
+
+# 1. Read admissions from Excel
+admissions <- read_excel("hospital_admissions.xlsx", sheet = 1)  # or sheet name
+
+# 2. Read lab results from CSV
+lab_results <- read.csv("lab_values.csv", header = TRUE)
+
+# 3. Read medications from pipe-delimited text
+medications <- read.table("medications.txt", 
+                         sep = "|",
+                         header = TRUE)
+
+# 4. Integrate all data
+integrated_data <- merge(admissions, lab_results, by = "patient_id")
+integrated_data <- merge(integrated_data, medications, by = "patient_id")
+
+# 5. Save complete dataset
+write.csv(integrated_data, "integrated_patient_data.csv", row.names = FALSE)
+save(integrated_data, file = "patient_database.RData")</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Outstanding! You've successfully integrated data from multiple hospital systems. This skill is essential for creating comprehensive patient databases that support precision medicine initiatives." data-animation="sides"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-graduation-cap" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Summary: Your I/O Superpowers
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>You've mastered essential R I/O operations for medical data:</p>
+                    
+                    <ul style="list-style: none; padding-left: 0;">
+                        <li>✅ <strong>Display results</strong> with print(), cat(), paste()</li>
+                        <li>✅ <strong>Gather input</strong> with readline() for interactive tools</li>
+                        <li>✅ <strong>Read files</strong> in CSV, Excel, text formats</li>
+                        <li>✅ <strong>Write results</strong> for clinical and regulatory use</li>
+                        <li>✅ <strong>Integrate data</strong> from multiple sources</li>
+                    </ul>
+                    
+                    <h3>Key Takeaways</h3>
+                    <ol>
+                        <li>Use cat() for clean clinical reports</li>
+                        <li>Always convert readline() to numeric</li>
+                        <li>Master multiple file formats</li>
+                        <li>Save RData files for reproducibility</li>
+                        <li>Integration creates powerful databases</li>
+                    </ol>
+                    
+                    <h3>What's Next?</h3>
+                    <p>Your next adventure: <strong>Data Frames</strong> - R's powerful structure for managing complex medical datasets. Work with patient records and clinical trials like a precision health professional!</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Remember</strong>: Every medical discovery starts with reading data and writing understandable results. You're now part of that tradition!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out Python code examples as you learn. You can practice with basic commands or experiment with more complex examples from the lesson.</p>
+            
+            <textarea id="python-code"># Type your python codes here
+               
+</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Python session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
