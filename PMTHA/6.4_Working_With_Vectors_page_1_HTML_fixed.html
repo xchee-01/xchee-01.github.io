@@ -1013,7 +1013,7 @@ cat("Non-compliant with high glucose:", paste(non_compliant_high, collapse=", ")
             <h2 id="interpreter-heading">R Interpreter</h2>
             <p>Try out R code examples as you learn. You can practice with basic commands or experiment with vector operations from the lesson.</p>
             
-            <textarea id="python-code"># Type your R code here</textarea>
+            <textarea id="r-code"># Type your R code here</textarea>
             
             <div class="button-group">
                 <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
@@ -1082,5 +1082,117 @@ cat("Non-compliant with high glucose:", paste(non_compliant_high, collapse=", ")
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
+
+    <!-- Custom JavaScript for R-specific functionality -->
+    <script>
+    // Prevent Pyodide from loading if template tries to call it directly
+    window.loadPyodide = async function() {
+        console.warn("loadPyodide call intercepted and blocked for R page.");
+        const runButton = document.getElementById('run-button');
+        if (runButton) {
+            // runButton.disabled = true;
+        }
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+        }
+        return undefined; // Simulate that loading failed or did nothing
+    };
+
+    (function() {
+        'use strict';
+
+        // Override any template functions that might interfere
+        // This is a fallback or secondary measure if the template uses initializePython
+        if (window.initializePython) {
+            window.initializePython = function() {
+                console.log('R interpreter - Python initialization overridden by initializePython shim.');
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+                }
+                const runButton = document.getElementById('run-button');
+                if (runButton) {
+                    runButton.disabled = false;
+                    runButton.addEventListener('click', function() {
+                        const outputArea = document.getElementById('output-area');
+                        if (outputArea) {
+                            outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).';
+                        }
+                    });
+                }
+                // Ensure Prism highlighting works for R, might be needed if template script interferes
+                setTimeout(function() {
+                    if (window.Prism) {
+                        Prism.highlightAll();
+                    }
+                }, 100);
+                return Promise.resolve();
+            };
+        } else {
+             // If initializePython doesn't exist, but we still want to set up the R placeholder for run button
+            const runButton = document.getElementById('run-button');
+            const statusElement = document.getElementById('status');
+            if (statusElement) { // Ensure status is R-related
+                 statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+            }
+            if (runButton) {
+                runButton.disabled = false;
+                runButton.addEventListener('click', function() {
+                    const outputArea = document.getElementById('output-area');
+                    if (outputArea) {
+                        outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).';
+                    }
+                });
+            }
+        }
+
+        // Initialize user tracking
+        function initializeUserTracking() {
+            const username = document.getElementById('username');
+            const accessTime = document.getElementById('access-time');
+            const currentUrl = document.getElementById('current-url');
+
+            if (username && accessTime && currentUrl) {
+                try {
+                    const accountsData = localStorage.getItem('accounts');
+                    if (accountsData) {
+                        const accounts = JSON.parse(accountsData);
+                        if (accounts && accounts.length > 0 && accounts[0].username) {
+                            username.textContent = accounts[0].username;
+                        } else {
+                            username.textContent = 'Guest';
+                        }
+                    } else {
+                        username.textContent = 'Guest';
+                    }
+                } catch (error) {
+                    console.error('Error retrieving username:', error);
+                    username.textContent = 'Guest';
+                }
+                accessTime.textContent = new Date().toLocaleString();
+                currentUrl.textContent = window.location.href;
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeUserTracking);
+        } else {
+            initializeUserTracking();
+        }
+
+        // Ensure Prism highlighting for R if not already done by template
+        // Adding PrismJS links if they are missing might also be a good idea, but outside current scope.
+        // Note: This page was missing Prism R component. The script will try to highlight,
+        // but actual R syntax highlighting would require adding:
+        // <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-r.min.js"></script> in the <head>
+        setTimeout(function() {
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        }, 100);
+
+    })();
+    </script>
 </body>
 </html>

@@ -6,8 +6,7 @@
     <title>Advanced R Data Types for Medical Technology - NUS</title>
     <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Load webR for R runtime -->
-    <script src="https://webr.r-wasm.org/v0.2.2/webr.js"></script>
+    <!-- webR script removed -->
     <!-- Load custom scripts -->
     <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
     <!-- Load confetti animation -->
@@ -715,7 +714,7 @@ if (completed_tests == 0) {
             <h2 id="interpreter-heading">R Interpreter</h2>
             <p>Try out R code examples as you learn. You can practice with basic commands or experiment with more complex examples from the lesson.</p>
             
-            <textarea id="python-code"># Type your python codes here
+            <textarea id="r-code"># Type your R code here
 
                
 </textarea>
@@ -725,7 +724,7 @@ if (completed_tests == 0) {
                 <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
             </div>
             
-            <div id="status">Loading R runtime... Please wait.</div>
+            <div id="status">Note: R code execution requires WebR package integration. For now, practice in your local R environment.</div>
             
             <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
             <pre id="output-area"></pre>
@@ -787,78 +786,112 @@ if (completed_tests == 0) {
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
-    
-    <!-- Initialize webR -->
+
+    <!-- Custom JavaScript for R-specific functionality -->
     <script>
+    // Prevent Pyodide from loading if template tries to call it directly
+    window.loadPyodide = async function() {
+        console.warn("loadPyodide call intercepted and blocked for R page.");
+        const runButton = document.getElementById('run-button');
+        if (runButton) {
+            // runButton.disabled = true;
+        }
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+        }
+        return undefined; // Simulate that loading failed or did nothing
+    };
+
     (function() {
         'use strict';
         
-        async function initializeR() {
-            try {
-                const runButton = document.getElementById('run-button');
-                const clearButton = document.getElementById('clear-button');
+        // Override any template functions that might interfere
+        // This is a fallback or secondary measure if the template uses initializePython
+        if (window.initializePython) {
+            window.initializePython = function() {
+                console.log('R interpreter - Python initialization overridden by initializePython shim.');
                 const statusElement = document.getElementById('status');
-                const outputArea = document.getElementById('output-area');
-                const codeInput = document.getElementById('python-code');
-                
-                statusElement.textContent = 'Loading R runtime...';
-                
-                // Initialize webR
-                const webR = new WebR();
-                await webR.init();
-                
-                statusElement.textContent = 'R is ready!';
+                if (statusElement) {
+                    statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+                }
+                const runButton = document.getElementById('run-button');
+                if (runButton) {
+                    runButton.disabled = false;
+                    runButton.addEventListener('click', function() {
+                        const outputArea = document.getElementById('output-area');
+                        if (outputArea) {
+                            outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).';
+                        }
+                    });
+                }
+                // Ensure Prism highlighting works for R, might be needed if template script interferes
+                setTimeout(function() {
+                    if (window.Prism) {
+                        Prism.highlightAll();
+                    }
+                }, 100);
+                return Promise.resolve();
+            };
+        } else {
+             // If initializePython doesn't exist, but we still want to set up the R placeholder for run button
+            const runButton = document.getElementById('run-button');
+            const statusElement = document.getElementById('status');
+            if (statusElement) { // Ensure status is R-related
+                 statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+            }
+            if (runButton) {
                 runButton.disabled = false;
-                
-                // Run button
-                runButton.addEventListener('click', async () => {
-                    outputArea.textContent = '';
-                    statusElement.textContent = 'Running code...';
-                    runButton.disabled = true;
-                    clearButton.disabled = true;
-                    
-                    try {
-                        const code = codeInput.value;
-                        
-                        // Capture R output
-                        const result = await webR.evalR(`
-                            capture.output({
-                                ${code}
-                            })
-                        `);
-                        
-                        // Convert result to JavaScript and display
-                        const output = await result.toJs();
-                        outputArea.textContent = output.join('\n');
-                        
-                        statusElement.textContent = 'Execution complete.';
-                    } catch (error) {
-                        outputArea.textContent = `Error: ${error.message}`;
-                        statusElement.textContent = 'Error during execution.';
-                    } finally {
-                        runButton.disabled = false;
-                        clearButton.disabled = false;
+                runButton.addEventListener('click', function() {
+                    const outputArea = document.getElementById('output-area');
+                    if (outputArea) {
+                        outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).';
                     }
                 });
-                
-                // Clear button
-                clearButton.addEventListener('click', () => {
-                    outputArea.textContent = '';
-                    statusElement.textContent = 'Output cleared. R is ready.';
-                });
-                
-            } catch (error) {
-                document.getElementById('status').textContent = `Error loading R: ${error.message}`;
-                console.error('R loading error:', error);
             }
         }
         
-        // Initialize R when page loads
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeR);
-        } else {
-            initializeR();
+        // Initialize user tracking
+        function initializeUserTracking() {
+            const username = document.getElementById('username');
+            const accessTime = document.getElementById('access-time');
+            const currentUrl = document.getElementById('current-url');
+
+            if (username && accessTime && currentUrl) {
+                try {
+                    const accountsData = localStorage.getItem('accounts');
+                    if (accountsData) {
+                        const accounts = JSON.parse(accountsData);
+                        if (accounts && accounts.length > 0 && accounts[0].username) {
+                            username.textContent = accounts[0].username;
+                        } else {
+                            username.textContent = 'Guest';
+                        }
+                    } else {
+                        username.textContent = 'Guest';
+                    }
+                } catch (error) {
+                    console.error('Error retrieving username:', error);
+                    username.textContent = 'Guest';
+                }
+                accessTime.textContent = new Date().toLocaleString();
+                currentUrl.textContent = window.location.href;
+            }
         }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeUserTracking);
+        } else {
+            initializeUserTracking();
+        }
+
+        // Ensure Prism highlighting for R if not already done by template
+        setTimeout(function() {
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        }, 100);
+
     })();
     </script>
 </body>

@@ -6,8 +6,7 @@
     <title>Advanced Medical Functions and Data Quality - R for Precision Health - NUS</title>
     <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Load Pyodide -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Pyodide script removed -->
     <!-- Load custom scripts -->
     <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
     <!-- Load confetti animation -->
@@ -984,16 +983,11 @@ check_medication_safety <- function(drug_name, dose_mg, patient_age, other_drugs
         </section>
         
         <section id="interpreter-container">
-            <h2 id="interpreter-heading">Python Interpreter</h2>
-            <p>Try out the R code examples here. Note: This is a Python interpreter, so R code will need to be translated to Python syntax to run.</p>
+            <h2 id="interpreter-heading">R Interpreter</h2>
+            <p>Try out R code examples as you learn. Practice with basic commands or experiment with medical calculations from the lesson.</p>
             
-            <textarea id="python-code"># Type your python codes here
+            <textarea id="r-code"># Type your R code here
 
-# Note: This page contains R code examples. 
-# To run them, you'll need to translate to Python syntax.
-# For example:
-# R: patient_age <- 45
-# Python: patient_age = 45
 </textarea>
             
             <div class="button-group">
@@ -1001,7 +995,7 @@ check_medication_safety <- function(drug_name, dose_mg, patient_age, other_drugs
                 <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
             </div>
             
-            <div id="status">Loading Python runtime... Please wait.</div>
+            <div id="status">Note: R code execution requires WebR package integration. For now, practice in your local R environment.</div>
             
             <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
             <pre id="output-area"></pre>
@@ -1063,5 +1057,114 @@ check_medication_safety <- function(drug_name, dose_mg, patient_age, other_drugs
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
+
+    <!-- Custom JavaScript for R-specific functionality -->
+    <script>
+    // Prevent Pyodide from loading if template tries to call it directly
+    window.loadPyodide = async function() {
+        console.warn("loadPyodide call intercepted and blocked for R page.");
+        const runButton = document.getElementById('run-button');
+        if (runButton) {
+            // runButton.disabled = true;
+        }
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+        }
+        return undefined; // Simulate that loading failed or did nothing
+    };
+
+    (function() {
+        'use strict';
+
+        // Override any template functions that might interfere
+        // This is a fallback or secondary measure if the template uses initializePython
+        if (window.initializePython) {
+            window.initializePython = function() {
+                console.log('R interpreter - Python initialization overridden by initializePython shim.');
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+                }
+                const runButton = document.getElementById('run-button');
+                if (runButton) {
+                    runButton.disabled = false;
+                    runButton.addEventListener('click', function() {
+                        const outputArea = document.getElementById('output-area');
+                        if (outputArea) {
+                            outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).';
+                        }
+                    });
+                }
+                // Ensure Prism highlighting works for R, might be needed if template script interferes
+                setTimeout(function() {
+                    if (window.Prism) {
+                        Prism.highlightAll();
+                    }
+                }, 100);
+                return Promise.resolve();
+            };
+        } else {
+             // If initializePython doesn't exist, but we still want to set up the R placeholder for run button
+            const runButton = document.getElementById('run-button');
+            const statusElement = document.getElementById('status');
+            if (statusElement) { // Ensure status is R-related
+                 statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+            }
+            if (runButton) {
+                runButton.disabled = false;
+                runButton.addEventListener('click', function() {
+                    const outputArea = document.getElementById('output-area');
+                    if (outputArea) {
+                        outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).';
+                    }
+                });
+            }
+        }
+
+        // Initialize user tracking
+        function initializeUserTracking() {
+            const username = document.getElementById('username');
+            const accessTime = document.getElementById('access-time');
+            const currentUrl = document.getElementById('current-url');
+
+            if (username && accessTime && currentUrl) {
+                try {
+                    const accountsData = localStorage.getItem('accounts');
+                    if (accountsData) {
+                        const accounts = JSON.parse(accountsData);
+                        if (accounts && accounts.length > 0 && accounts[0].username) {
+                            username.textContent = accounts[0].username;
+                        } else {
+                            username.textContent = 'Guest';
+                        }
+                    } else {
+                        username.textContent = 'Guest';
+                    }
+                } catch (error) {
+                    console.error('Error retrieving username:', error);
+                    username.textContent = 'Guest';
+                }
+                accessTime.textContent = new Date().toLocaleString();
+                currentUrl.textContent = window.location.href;
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeUserTracking);
+        } else {
+            initializeUserTracking();
+        }
+
+        // Ensure Prism highlighting for R if not already done by template
+        // Adding PrismJS links if they are missing might also be a good idea, but outside current scope.
+        setTimeout(function() {
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        }, 100);
+
+    })();
+    </script>
 </body>
 </html>

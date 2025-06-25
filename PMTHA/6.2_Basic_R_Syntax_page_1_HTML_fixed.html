@@ -1170,7 +1170,7 @@ print(paste(mg_dL, "mg/dL =", round(mmol_L, 1), "mmol/L"))</div>
             <h2 id="interpreter-heading">R Interpreter</h2>
             <p>Try out R code examples as you learn. Practice with basic commands or experiment with medical calculations from the lesson.</p>
             
-            <textarea id="python-code"># Type your python codes here
+            <textarea id="r-code"># Type your R code here
 
                
 </textarea>
@@ -1242,16 +1242,31 @@ print(paste(mg_dL, "mg/dL =", round(mmol_L, 1), "mmol/L"))</div>
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
-    
+
     <!-- Custom JavaScript for R-specific functionality -->
     <script>
+    // Prevent Pyodide from loading if template tries to call it directly
+    window.loadPyodide = async function() {
+        console.warn("loadPyodide call intercepted and blocked for R page.");
+        const runButton = document.getElementById('run-button');
+        if (runButton) {
+            // runButton.disabled = true;
+        }
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+        }
+        return undefined; // Simulate that loading failed or did nothing
+    };
+
     (function() {
         'use strict';
         
         // Override any template functions that might interfere
+        // This is a fallback or secondary measure if the template uses initializePython
         if (window.initializePython) {
             window.initializePython = function() {
-                console.log('R interpreter - Python initialization overridden');
+                console.log('R interpreter - Python initialization overridden by initializePython shim.');
                 const statusElement = document.getElementById('status');
                 if (statusElement) {
                     statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
@@ -1266,8 +1281,30 @@ print(paste(mg_dL, "mg/dL =", round(mmol_L, 1), "mmol/L"))</div>
                         }
                     });
                 }
+                // Ensure Prism highlighting works for R, might be needed if template script interferes
+                setTimeout(function() {
+                    if (window.Prism) {
+                        Prism.highlightAll();
+                    }
+                }, 100);
                 return Promise.resolve();
             };
+        } else {
+             // If initializePython doesn't exist, but we still want to set up the R placeholder for run button
+            const runButton = document.getElementById('run-button');
+            const statusElement = document.getElementById('status');
+            if (statusElement) { // Ensure status is R-related
+                 statusElement.textContent = 'Note: R code execution requires WebR package integration. For now, practice in your local R environment.';
+            }
+            if (runButton) {
+                runButton.disabled = false;
+                runButton.addEventListener('click', function() {
+                    const outputArea = document.getElementById('output-area');
+                    if (outputArea) {
+                        outputArea.textContent = 'R code execution is not available in this demo.\nPlease copy the code and run it in your local R environment (RStudio recommended).';
+                    }
+                });
+            }
         }
         
         // Initialize user tracking
@@ -1277,7 +1314,6 @@ print(paste(mg_dL, "mg/dL =", round(mmol_L, 1), "mmol/L"))</div>
             const currentUrl = document.getElementById('current-url');
             
             if (username && accessTime && currentUrl) {
-                // Get username from localStorage
                 try {
                     const accountsData = localStorage.getItem('accounts');
                     if (accountsData) {
@@ -1294,28 +1330,24 @@ print(paste(mg_dL, "mg/dL =", round(mmol_L, 1), "mmol/L"))</div>
                     console.error('Error retrieving username:', error);
                     username.textContent = 'Guest';
                 }
-                
-                // Set access time
                 accessTime.textContent = new Date().toLocaleString();
-                
-                // Set current URL
                 currentUrl.textContent = window.location.href;
             }
         }
         
-        // Initialize on DOM load
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeUserTracking);
         } else {
             initializeUserTracking();
         }
         
-        // Ensure Prism highlighting works for R
+        // Ensure Prism highlighting for R if not already done by template
         setTimeout(function() {
             if (window.Prism) {
                 Prism.highlightAll();
             }
         }, 100);
+
     })();
     </script>
 </body>

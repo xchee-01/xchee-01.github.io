@@ -6,10 +6,92 @@
     <title>Advanced Medical Visualization Techniques - NUS</title>
     <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Load Pyodide -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
     <!-- Load custom scripts -->
     <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Pyodide is not used on this page, but the template_JS_learning_page_v24.js expects it. -->
+    <!-- Define a dummy loadPyodide function to prevent errors. -->
+    <script>
+        window.loadPyodide = async () => {
+            console.log("Pyodide load requested by template, but this is an R page. Shim provided.");
+            return {
+                runPythonAsync: async (code) => {
+                    console.log("R page: runPythonAsync called, returning placeholder message.");
+                    return "R code would be executed here if this were a Python page.";
+                },
+                // Add any other Pyodide methods that are called by the template script
+                // and provide minimal mock implementations.
+            };
+        };
+
+        // Override Python-specific initialization if template_JS_learning_page_v24.js attempts it
+        window.initializePython = () => {
+            console.log("R page: initializePython called, overriding with R setup.");
+            const statusElement = document.getElementById('status');
+            const runButton = document.getElementById('run-button');
+            const clearButton = document.getElementById('clear-button');
+            const codeArea = document.getElementById('r-code'); // Ensure this ID is used for R pages
+            const outputArea = document.getElementById('output-area');
+            const interpreterHeading = document.getElementById('interpreter-heading');
+
+            if (interpreterHeading) {
+                interpreterHeading.textContent = 'R Code Editor';
+            }
+            if (statusElement) {
+                statusElement.textContent = 'R interpreter: Use an external R environment (e.g., RStudio) to run code.';
+            }
+            if (codeArea) {
+                codeArea.placeholder = '# Type your R code here\n# Example:\n# print("Hello from R")';
+            }
+            if (runButton) {
+                runButton.disabled = false;
+                runButton.innerHTML = '<i class="fas fa-copy"></i> Copy R Code';
+                runButton.onclick = () => {
+                    if (codeArea && outputArea && statusElement) {
+                        navigator.clipboard.writeText(codeArea.value).then(() => {
+                            outputArea.textContent = 'R code copied to clipboard. Please paste it into your R environment to execute.';
+                            statusElement.textContent = 'R Code Copied!';
+                            setTimeout(() => {
+                                statusElement.textContent = 'R interpreter: Use an external R environment.';
+                            }, 3000);
+                        }).catch(err => {
+                            outputArea.textContent = 'Failed to copy R code: ' + err;
+                            statusElement.textContent = 'Error copying!';
+                        });
+                    }
+                };
+            }
+            if (clearButton) {
+                clearButton.onclick = () => {
+                    if (outputArea && statusElement) {
+                        outputArea.textContent = '';
+                        statusElement.textContent = 'Output cleared. Ready for new R code.';
+                    }
+                };
+            }
+            // Initialize Prism for R if code blocks are present
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        };
+
+        // Ensure R-specific setup runs after DOM content is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if python-code textarea exists and change its ID to r-code
+            const pythonTextarea = document.getElementById('python-code');
+            if (pythonTextarea) {
+                pythonTextarea.id = 'r-code';
+                console.log("Changed textarea ID from python-code to r-code.");
+            }
+            // Call the R override if initializePython hasn't been called by the template yet
+            if (typeof window.initializePython === 'function' && !document.body.dataset.pythonInitialized) {
+                 window.initializePython();
+                 document.body.dataset.rSetupDone = 'true'; // Mark that R setup has run
+            }
+
+            // User tracking and other initializations from template_JS_learning_page_v24.js might be here
+            // Ensure they are compatible or also overridden if necessary.
+        });
+    </script>
     <!-- Load confetti animation -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
@@ -877,20 +959,22 @@ text(5, 0.3, paste0("Overall Response Rate: ", response_rate, "%"),
         </section>
         
         <section id="interpreter-container">
-            <h2 id="interpreter-heading">Python Interpreter</h2>
-            <p>Try out the examples here. You can practice with visualization commands or experiment with data analysis examples from the lesson.</p>
+            <h2 id="interpreter-heading">R Code Editor</h2>
+            <p>Try out R code examples as you learn. Copy the code to your R environment (RStudio, R Console, etc.) to see the results.</p>
             
-            <textarea id="python-code"># Type your python codes here</textarea>
+            <textarea id="r-code"># Type your R code here
+# Example:
+# print("Hello from R")</textarea>
             
             <div class="button-group">
-                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="run-button" disabled><i class="fas fa-copy"></i> Copy R Code</button>
                 <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
             </div>
             
-            <div id="status">Loading Python runtime... Please wait.</div>
+            <div id="status">R interpreter: Use an external R environment (e.g., RStudio) to run code.</div>
             
             <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
-            <pre id="output-area"></pre>
+            <pre id="output-area">R code copied to clipboard. Please paste it into your R environment to execute.</pre>
         </section>
     </main>
     
