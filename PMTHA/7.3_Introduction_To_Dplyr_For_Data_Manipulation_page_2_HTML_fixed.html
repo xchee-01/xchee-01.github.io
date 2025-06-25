@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joining Medical Datasets & Advanced Analysis - R for Precision Health - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Precision Medical Toolkit for Health Analytics</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>MODULE 2: Joining Medical Datasets & Advanced Analysis</h1>
+            
+            <p>Real medical data lives in multiple tables - demographics, labs, medications. dplyr's join functions reunite this information like Electronic Health Records.</p>
+            
+            <!-- Section 1: The Join Family -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-link" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        The Join Family 🔗
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which join function would you use to keep all patient records and add available lab data, even if some patients don't have lab results?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">left_join()</div>
+                                        <div class="mcq-option-badge">Keep all patients, add available data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This is the most common join in medical data analysis!
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! left_join() keeps all records from the first table (patients) and adds matching data from the second table (labs). Missing labs will show as NA values.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">inner_join()</div>
+                                        <div class="mcq-option-badge">Only complete records</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Returns only patients who have lab results.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. inner_join() would exclude patients without lab results. We want to keep all patients, even those missing labs.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">anti_join()</div>
+                                        <div class="mcq-option-badge">Find missing data</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Used for quality control to find gaps.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. anti_join() would only return patients WITHOUT lab results. We want all patients with their lab data added where available.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">full_join()</div>
+                                        <div class="mcq-option-badge">All records, matched or not</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Keeps all records from both tables.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Close, but full_join() would also include lab results without matching patients. left_join() is more appropriate when you want to preserve all records from the primary table only.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 2: Multi-Table Medical Data -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-table" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Multi-Table Medical Data 📊
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Let's work with a realistic medical data scenario involving multiple related tables:</p>
+                    
+                    <div class="code-block-container" data-block-name="medical-data-tables">
+                        <div class="code-block"># Patient demographics
+patients <- data.frame(
+  patient_id = paste0("PT", 1001:1006),
+  age = c(45, 52, 38, 61, 55, 49),
+  gender = c("M", "F", "F", "M", "F", "M")
+)
+
+# Lab results (PT1006 missing)
+lab_results <- data.frame(
+  patient_id = paste0("PT", 1001:1005),
+  glucose = c(95, 110, 88, 125, 102),
+  creatinine = c(0.9, 1.1, 0.8, 1.3, 1.0)
+)
+
+# Medications
+medications <- data.frame(
+  patient_id = paste0("PT", 1001:1005),
+  medication = c("Metformin", "Insulin", "None", "Metformin", "Glipizide"),
+  dose_mg = c(500, 20, 0, 1000, 5)
+)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Real-World Connection:</strong> Electronic Health Records (EHRs) typically store data across dozens of interconnected tables. Mastering joins is essential for creating comprehensive patient views for clinical decision-making.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Join Operations in Action -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-sync-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Join Operations in Action 🔄
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Left Join - Most Common:</h3>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="mcq-header-text">Code Understanding Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                After running this left_join code, what will happen to patient PT1006 who doesn't have lab results?
+                            </div>
+                            
+                            <div class="code-block"># Add labs to all patients
+patients_with_labs <- patients %>%
+  left_join(lab_results, by = "patient_id")
+
+# Find missing labs
+missing_labs <- patients_with_labs %>%
+  filter(is.na(glucose))</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">PT1006 will be included with NA values</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The patient record is preserved, but glucose and creatinine will be NA.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Exactly right! left_join() keeps all patients from the first table. PT1006 will have their demographic data (age, gender) but NA values for glucose and creatinine.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">PT1006 will be excluded</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only patients with lab results will be kept.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. That would be the behavior of inner_join(). left_join() keeps ALL records from the left table (patients).
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">An error will occur</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The join will fail due to missing data.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Joins handle missing matches gracefully by inserting NA values. No error will occur.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Inner Join - Complete Records Only:</h3>
+                    
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-filter"></i>
+                            </div>
+                            <div class="mcq-header-text">Join Strategy Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                How many patient records will remain after these inner joins?
+                            </div>
+                            
+                            <div class="code-block">complete_records <- patients %>%
+  inner_join(lab_results, by = "patient_id") %>%
+  inner_join(medications, by = "patient_id")</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">5 patients</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only PT1001-PT1005 have both labs and medications.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! PT1006 lacks lab results, so they're excluded by the first inner_join. Only PT1001-PT1005 have complete records across all three tables.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">6 patients</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        All original patients will be included.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. inner_join() only keeps records that exist in BOTH tables. PT1006 has no lab results, so they're excluded.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">0 patients</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        No patients have all data available.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Too pessimistic! Patients PT1001-PT1005 have records in all three tables and will be included.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Anti-Join - Quality Control:</h3>
+                    
+                    <!-- MCQ 4 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="mcq-header-text">Quality Control Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What will the anti_join() operation return in this code?
+                            </div>
+                            
+                            <div class="code-block"># Who needs lab work?
+needs_labs <- patients %>%
+  anti_join(lab_results, by = "patient_id")</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only PT1006</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The one patient without lab results.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Excellent! anti_join() returns records from the first table that DON'T have matches in the second table. Perfect for finding gaps in data collection.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">PT1001-PT1005</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Patients who have lab results.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Backwards! anti_join() returns patients WITHOUT matches in lab_results. These patients already have labs.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">All patients</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Every patient needs new lab work.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. Only patients without existing lab results (PT1006) will be returned by anti_join().
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 4: Emergency Department Integration -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-ambulance" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Emergency Department Integration 🚨
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <!-- MCQ 5 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-hospital"></i>
+                            </div>
+                            <div class="mcq-header-text">ED Data Analysis</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In this ED analysis, what does the waiting_patients dataframe identify?
+                            </div>
+                            
+                            <div class="code-block"># ED triage data
+ed_triage <- data.frame(
+  patient_id = paste0("ED", 5001:5010),
+  arrival_time = seq(as.POSIXct("2024-01-15 08:00"), 
+                     by = "30 min", length.out = 10),
+  chief_complaint = sample(c("Chest pain", "Shortness of breath", 
+                            "Abdominal pain"), 10, replace = TRUE),
+  triage_level = sample(1:5, 10, replace = TRUE)
+)
+
+# ED vitals (some waiting)
+ed_vitals <- data.frame(
+  patient_id = paste0("ED", 5001:5008),
+  heart_rate = sample(60:120, 8),
+  blood_pressure = sample(110:160, 8)
+)
+
+# Complete ED analysis
+ed_analysis <- ed_triage %>%
+  left_join(ed_vitals, by = "patient_id") %>%
+  mutate(
+    waiting_for_vitals = is.na(heart_rate),
+    vitals_concern = heart_rate > 100 | blood_pressure > 140
+  )
+
+# Patients needing attention
+waiting_patients <- ed_triage %>%
+  anti_join(ed_vitals, by = "patient_id") %>%
+  arrange(triage_level)</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">ED5009 and ED5010, sorted by priority</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Patients who haven't had vitals taken yet, ordered by triage urgency.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! The anti_join identifies patients in triage without vitals (ED5009-5010), and arrange() sorts them by triage_level so the most urgent cases appear first.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">All ED patients</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Every patient currently in the emergency department.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not right. anti_join() specifically finds patients WITHOUT vital signs recorded. Most patients (ED5001-5008) already have vitals.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Patients with abnormal vitals</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Those with concerning heart rate or blood pressure.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's what vitals_concern identifies in ed_analysis. waiting_patients finds those who haven't had vitals taken at all.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Clinical Impact:</strong> Real-time ED dashboards using these techniques help nurses identify patients awaiting assessment, reducing wait times and improving patient safety.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 5: Cardiovascular Risk Assessment -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-5">
+                        <i class="fas fa-heartbeat" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Cardiovascular Risk Assessment 💔
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="mcq-header-text">Risk Stratification Analysis</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does the pct_high_risk calculation tell us in this cardiovascular analysis?
+                            </div>
+                            
+                            <div class="code-block"># Multi-factor risk analysis
+set.seed(123)
+cardio_study <- data.frame(
+  patient_id = paste0("CV", 3001:3030),
+  age = sample(45:75, 30, replace = TRUE),
+  gender = sample(c("Male", "Female"), 30, replace = TRUE),
+  smoker = sample(c(TRUE, FALSE), 30, replace = TRUE, prob = c(0.3, 0.7)),
+  cholesterol = round(rnorm(30, mean = 200, sd = 30)),
+  systolic_bp = round(rnorm(30, mean = 130, sd = 15))
+)
+
+# Risk stratification
+risk_analysis <- cardio_study %>%
+  mutate(
+    risk_score = case_when(
+      cholesterol > 240 & systolic_bp > 140 ~ "High",
+      cholesterol > 200 | systolic_bp > 130 ~ "Moderate",
+      TRUE ~ "Low"
+    )
+  ) %>%
+  group_by(gender, smoker) %>%
+  summarize(
+    n = n(),
+    avg_cholesterol = mean(cholesterol),
+    pct_high_risk = mean(risk_score == "High") * 100,
+    .groups = 'drop'
+  )</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Percentage of high-risk patients by gender and smoking status</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Shows risk distribution across demographic subgroups.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Exactly! The code calculates what percentage of patients in each gender-smoking combination have "High" cardiovascular risk, helping identify vulnerable populations.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Individual patient risk percentages</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Each patient's personal risk score as a percentage.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. This is a grouped summary. It shows the percentage of patients classified as "High" risk within each group, not individual risk scores.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Average of all risk factors</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Combined average of cholesterol and blood pressure.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. pct_high_risk specifically counts the percentage of patients with risk_score == "High" in each group, not an average of values.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Challenge: Cardiovascular Risk Analysis</h3>
+                        <p>Try modifying the risk stratification criteria to identify patients who might benefit from immediate intervention. Consider adding age as a risk factor!</p>
+                        
+                        <div class="code-block-container" data-block-name="cardio-challenge">
+                            <div class="code-block"># Hint: Modify the case_when() conditions
+# Consider: age > 65 as an additional risk factor
+# Try: cholesterol > 240 & systolic_bp > 140 & age > 65 ~ "Critical"</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <button class="celebrate-button" data-message="Excellent work! You've mastered cardiovascular risk stratification using dplyr. This type of analysis helps identify high-risk patients who need immediate clinical attention." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 6: Clinical Dashboard Metrics -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-6">
+                        <i class="fas fa-chart-bar" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Clinical Dashboard Metrics 📊
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <!-- MCQ 7 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <div class="mcq-header-text">Dashboard Metrics Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What type of R object is ed_dashboard, and how would you access the number of critical patients?
+                            </div>
+                            
+                            <div class="code-block"># ED performance metrics
+ed_dashboard <- list(
+  total_patients = nrow(ed_triage),
+  critical_patients = sum(ed_triage$triage_level <= 2),
+  awaiting_vitals = sum(is.na(ed_vitals$heart_rate)),
+  avg_wait_time = mean(difftime(Sys.time(), ed_triage$arrival_time))
+)</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A list; access with ed_dashboard$critical_patients</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Lists store mixed data types with named elements.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! Lists are ideal for dashboard metrics because they can store different data types (numbers, times) with meaningful names. Access elements using the $ operator.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A data frame; access with ed_dashboard[,"critical_patients"]</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Data frames store tabular data.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The code creates a list() not data.frame(). Lists are better for storing summary metrics of different types.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A vector; access with ed_dashboard[2]</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Vectors store single data types.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Vectors can only store one data type, but this dashboard has numbers and time differences. It's a list with named elements.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 7: Your New Superpowers -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-7">
+                        <i class="fas fa-trophy" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Your New Superpowers 🏆
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <!-- MCQ 8 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-magic"></i>
+                            </div>
+                            <div class="mcq-header-text">dplyr Function Mastery</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Match each dplyr function with its medical data analysis purpose:
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">filter() → Find diabetic patients with HbA1c > 7</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Extract specific patient populations based on clinical criteria.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! filter() is perfect for identifying patient subgroups based on clinical thresholds and diagnostic criteria.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">select() → Find diabetic patients with HbA1c > 7</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Choose which columns to include in analysis.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. select() chooses columns (variables), not rows (patients). Use filter() to find specific patients.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">arrange() → Find diabetic patients with HbA1c > 7</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Sort patients by clinical priority or values.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. arrange() sorts data but doesn't filter it. You need filter() to identify specific patient groups.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>You've mastered:</strong></p>
+                        <ul>
+                            <li><strong>Select</strong> variables with precision 🎯</li>
+                            <li><strong>Filter</strong> complex patient populations 🔍</li>
+                            <li><strong>Mutate</strong> to calculate clinical metrics 🧮</li>
+                            <li><strong>Group & summarize</strong> treatment outcomes 📊</li>
+                            <li><strong>Arrange</strong> by clinical priority 📋</li>
+                            <li><strong>Join</strong> multiple data sources 🔗</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 8: What's Next -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-8">
+                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        What's Next? 🚀
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Master data visualization with ggplot2! Create:</p>
+                    <ul>
+                        <li>Publication-quality graphs</li>
+                        <li>Clinical dashboards</li>
+                        <li>Treatment effect visualizations</li>
+                        <li>Compelling medical data stories</li>
+                    </ul>
+                    
+                    <p>The combination of dplyr + ggplot2 forms the foundation of modern medical data science in R! 🧬✨</p>
+                    
+                    <div class="challenge">
+                        <h3>Final Challenge: Complete ED Dashboard</h3>
+                        <p>Create a comprehensive emergency department analysis combining all the techniques you've learned!</p>
+                        
+                        <div class="code-block-container" data-block-name="final-challenge">
+                            <div class="code-block"># Your challenge: Create an ED summary report
+# 1. Join all ED tables
+# 2. Calculate waiting times by triage level
+# 3. Identify high-risk patients (triage 1-2 without vitals)
+# 4. Create summary statistics by chief complaint
+
+# Start here:
+ed_complete <- ed_triage %>%
+  left_join(ed_vitals, by = "patient_id") %>%
+  # Add your analysis...</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <button class="celebrate-button" data-message="Congratulations! You've mastered joining medical datasets and advanced dplyr analysis. You're now equipped to handle complex, real-world medical data challenges. Keep practicing and exploring - the best is yet to come!" data-animation="fireworks"><i class="fas fa-star"></i> I've completed Module 2!</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="interpreter-container">
+            <h2 id="interpreter-heading">Python Interpreter</h2>
+            <p>Try out Python code examples as you learn. You can practice with basic commands or experiment with more complex examples from the lesson.</p>
+            
+            <textarea id="python-code"># Type your python codes here
+# Note: This page teaches R programming, but you can experiment with Python equivalents</textarea>
+            
+            <div class="button-group">
+                <button id="run-button" disabled><i class="fas fa-play"></i> Run Code</button>
+                <button id="clear-button"><i class="fas fa-eraser"></i> Clear Output</button>
+            </div>
+            
+            <div id="status">Loading Python runtime... Please wait.</div>
+            
+            <label for="output-area" class="output-label"><i class="fas fa-terminal"></i> Output:</label>
+            <pre id="output-area"></pre>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your R session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with us?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
