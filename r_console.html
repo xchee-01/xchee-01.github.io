@@ -357,51 +357,35 @@ Examples:
             });
 
             try {
-                // Capture output
-                let capturedOutput = '';
+                // Execute the code and capture output
+                // Using capture.output to get all printed output
+                const capturedCode = `capture.output({${code}})`;
                 
-                // Create a shelter for the execution
-                const shelter = await new webR.Shelter();
+                const result = await webR.evalR(capturedCode);
+                const resultValue = await result.toJs();
                 
-                try {
-                    // Capture printed output
-                    await shelter.evalR(`
-                        .webr_output <- ""
-                        .webr_sink <- function(...) {
-                            .webr_output <<- paste0(.webr_output, paste0(..., collapse = " "), "\\n")
+                if (resultValue && Array.isArray(resultValue) && resultValue.length > 0) {
+                    const outputText = resultValue.join('\n');
+                    output.innerHTML += '<div class="output-line output-result">' + escapeHtml(outputText) + '</div>';
+                } else {
+                    // If no output was captured, try to get the value directly
+                    const directResult = await webR.evalR(code);
+                    const directValue = await directResult.toJs();
+                    
+                    if (directValue !== null && directValue !== undefined) {
+                        let outputText = '';
+                        if (Array.isArray(directValue)) {
+                            outputText = '[1] ' + directValue.join(' ');
+                        } else if (typeof directValue === 'object') {
+                            outputText = JSON.stringify(directValue, null, 2);
+                        } else {
+                            outputText = String(directValue);
                         }
-                        sink(textConnection(".webr_sink", "w", local = TRUE))
-                    `);
-                    
-                    // Execute the user's code
-                    const result = await shelter.evalR(code);
-                    
-                    // Get captured output
-                    await shelter.evalR('sink()');
-                    const printedOutput = await shelter.evalR('.webr_output');
-                    const printedText = await printedOutput.toJs();
-                    
-                    if (printedText && printedText.trim()) {
-                        output.innerHTML += '<div class="output-line output-result">' + escapeHtml(printedText.trim()) + '</div>';
-                    }
-                    
-                    // Get the result value
-                    const resultType = await result.type();
-                    
-                    if (resultType !== 'null') {
-                        // Try to convert result to string representation
-                        const capture = await shelter.evalR(`capture.output(print(${code}))`);
-                        const lines = await capture.toJs();
                         
-                        if (lines && lines.length > 0) {
-                            const resultText = lines.join('\n');
-                            output.innerHTML += '<div class="output-line output-result">' + escapeHtml(resultText) + '</div>';
+                        if (outputText && outputText !== 'null') {
+                            output.innerHTML += '<div class="output-line output-result">' + escapeHtml(outputText) + '</div>';
                         }
                     }
-                    
-                } finally {
-                    // Clean up the shelter
-                    shelter.purge();
                 }
                 
             } catch (error) {
