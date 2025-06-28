@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Substitution and Advanced Techniques - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Linux Systems Programming</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials" style="max-width: 100%; padding: 2rem;">
+            <h1>MODULE 2: Command Substitution and Advanced Techniques</h1>
+            
+            <!-- Section 1: Command Substitution Basics -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-terminal" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Command Substitution Basics
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Capture command output in variables:</p>
+                    
+                    <div class="code-block-container" data-block-name="command-substitution-basics">
+                        <div class="code-block"># Modern way (preferred)
+current_date=$(date)
+file_count=$(ls | wc -l)
+
+# Classic way (avoid)
+current_date=`date`</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which of these correctly creates a variable with a nested command substitution for creating a backup filename?
+                            </div>
+                            
+                            <div class="code-block">
+# Nesting works!
+backup="backup_$(date +%Y%m%d)_$(hostname).tar"</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">backup=`backup_`date +%Y%m%d`_`hostname`.tar`</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using backticks with nesting
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Backticks don't handle nesting well and this syntax would cause errors. The modern $() syntax is much better for nested substitutions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">backup="backup_$(date +%Y%m%d)_$(hostname).tar"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using $() for both substitutions
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The $() syntax handles nesting cleanly and is the modern, preferred way to do command substitution in bash.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">backup="backup_$date +%Y%m%d_$hostname.tar"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Direct variable substitution without command execution
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This would literally insert the text "date +%Y%m%d" instead of executing the date command. You need $() to execute commands.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">backup=(backup_$(date +%Y%m%d)_$(hostname).tar)</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using parentheses around the entire value
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Parentheses around the value would create an array instead of a simple string variable. For a single string, quotes are sufficient.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 2: Real-World Examples -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-globe" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Real-World Examples
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Dynamic Filenames:</h3>
+                    <div class="code-block-container" data-block-name="dynamic-filenames">
+                        <div class="code-block">LOG="/var/log/app_$(date +%Y%m%d_%H%M%S).log"
+BACKUP="/backup/$(hostname)_$(date +%Y-%m-%d).tar"</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which command correctly captures the system's IP address into a variable?
+                            </div>
+                            
+                            <div class="code-block">
+# System Information:
+MEM_USED=$(free -m | grep Mem | awk '{print $3}')
+CPU_LOAD=$(uptime | awk -F'average:' '{print $2}')
+MY_IP=$(hostname -I | awk '{print $1}')</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">MY_IP=hostname -I</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Direct assignment without command substitution
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This would set MY_IP to the literal string "hostname" and try to execute "-I" as a command, causing an error.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">MY_IP=${hostname -I}</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using ${} syntax for command substitution
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The ${} syntax is for variable expansion, not command substitution. You need $() to execute commands.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">MY_IP=$(hostname -I | awk '{print $1}')</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using command substitution with pipe to extract first IP
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! This executes hostname -I to get all IPs, then uses awk to extract just the first one, capturing it in the MY_IP variable.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">MY_IP="$(hostname) -I"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Partial command substitution with -I outside
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This would get the hostname and append the literal string " -I" to it, not execute hostname -I as a single command.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Lab Exercise 3 -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-flask" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Lab Exercise 3: System Reporter
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Complete the System Reporter Script</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Fill in the blanks to complete this system information reporter script:
+                            </div>
+                            
+                            <div class="code-block">
+# Basic info
+HOSTNAME=$(_____)         # Get hostname
+KERNEL=$(uname -___)     # Kernel version
+UPTIME=$(uptime | awk '{print $3}')
+
+# Resource usage
+MEM_PCT=$(free | grep Mem | awk '{print int($3/$2*100)}')
+DISK_PCT=$(df -h / | tail -1 | awk '{print $5}')
+
+# Generate report
+cat > report.txt << EOF
+System: $HOSTNAME
+Kernel: $KERNEL
+Memory: ${MEM_PCT}%
+Disk: $DISK_PCT
+EOF</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">hostname and r</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        hostname for system name, -r for kernel release
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The hostname command gets the system's name, and uname -r displays the kernel release version.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">whoami and v</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        whoami for current user, -v for version
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. whoami shows the current user, not the hostname. uname -v shows kernel version date, not the release number.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">echo $HOSTNAME and a</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Use environment variable, -a for all info
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. While $HOSTNAME might work in some shells, hostname is more portable. uname -a gives all info, but we want just the kernel release.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">host and s</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        host command, -s for system
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The host command is for DNS lookups, not getting the local hostname. uname -s shows the kernel name (e.g., Linux), not the version.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 4: Advanced Techniques -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Advanced Techniques
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <!-- MCQ 4 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Understanding Nested Substitution</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does this nested command substitution do?
+                            </div>
+                            
+                            <div class="code-block">
+# Find busiest user
+BUSY=$(ps aux | awk '{print $1}' | sort | uniq -c | sort -nr | head -1)</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Finds the process using most CPU</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Identifies single process with highest CPU usage
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This command counts processes per user, not CPU usage. It finds the user with the most processes running.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Finds user with most processes</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Identifies which user has the most running processes
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The pipeline extracts usernames, counts occurrences with uniq -c, sorts numerically in reverse order, and takes the top result - showing the user with the most processes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Finds longest-running process</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Identifies process that has been running the longest
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This command counts processes by user, not runtime. It doesn't examine how long processes have been running.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Lists all users sorted by name</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Shows alphabetically sorted list of users
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The sort -nr sorts by count numerically in reverse order (highest first), not alphabetically by username.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Loops with Substitution:</h3>
+                    <div class="code-block-container" data-block-name="loops-substitution">
+                        <div class="code-block"># Backup recent configs
+for config in $(find /etc -name "*.conf" -mtime -1); do
+    cp "$config" "/backup/$(basename "$config").bak"
+done</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 5 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Error Handling Best Practices</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What's the purpose of the error handling in this code?
+                            </div>
+                            
+                            <div class="code-block">
+# Safe with fallback
+IP=$(hostname -I 2>/dev/null)
+if [ -z "$IP" ]; then
+    IP=$(ip addr show | grep "inet " | head -1)
+fi</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Provides fallback if first command fails</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Uses alternative method when hostname -I doesn't work
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! This pattern tries hostname -I first, suppresses errors with 2>/dev/null, and if the result is empty, falls back to parsing ip addr show output.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Validates IP address format</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Checks if the IP address is valid format
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The -z test only checks if the variable is empty, not if it contains a valid IP address format.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Prevents duplicate IP addresses</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Ensures unique IP address assignment
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This code is about retrieving the system's IP address with a fallback method, not preventing duplicates.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Filters out IPv6 addresses</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only captures IPv4 addresses
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. While grep "inet " might filter IPv6 (inet6), that's not the primary purpose. The main goal is providing a fallback method.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 5: Lab Exercise 4 -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-5">
+                        <i class="fas fa-chart-line" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Lab Exercise 4: System Monitor
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Understanding System Monitoring</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does this system monitoring script accomplish?
+                            </div>
+                            
+                            <div class="code-block">
+# Find resource hogs
+CPU_HOG=$(ps aux | sort -k3 -nr | head -1 | awk '{print $11}')
+MEM_HOG=$(ps aux | sort -k4 -nr | head -1 | awk '{print $11}')
+
+# Disk alerts
+for fs in $(df -h | grep -v Filesystem | awk '{print $6}'); do
+    USAGE=$(df -h "$fs" | tail -1 | awk '{print $5}' | tr -d '%')
+    if [ "$USAGE" -gt 80 ]; then
+        echo "Warning: $fs is ${USAGE}% full"
+    fi
+done</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Identifies top CPU/memory processes and checks disk usage</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Finds resource-intensive processes and warns about full disks
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The script finds the processes using the most CPU (sort -k3) and memory (sort -k4), then checks all filesystems and warns if any are over 80% full.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Kills processes using too many resources</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Automatically terminates resource-heavy processes
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The script only identifies and reports resource usage. It doesn't take any action to kill or stop processes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Creates backup of system logs</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Archives system monitoring data
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This script monitors current system state but doesn't create any backups or archives. It only displays warnings.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Optimizes disk space automatically</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Cleans up filesystems approaching capacity
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The script only reports disk usage over 80%. It doesn't perform any cleanup or optimization actions.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 6: Quick Reference -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-6">
+                        <i class="fas fa-book" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Quick Reference
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <!-- MCQ 7 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Special Variables Knowledge Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Match the special variable with its purpose:
+                            </div>
+                            
+                            <div class="code-block">
+# Variables
+name="value"              # Create
+echo $name               # Use
+export name="value"      # Environment
+
+# Special
+$?  # Exit status        $$  # Process ID
+$#  # Arg count         $@  # All args
+
+# Substitution
+result=$(command)        # Modern way
+timestamp=$(date +%Y%m%d)</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">$? stores the process ID of the last command</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Returns PID of previous process
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. $? stores the exit status (0 for success, non-zero for failure) of the last command, not its process ID.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">$# shows the number of arguments passed to the script</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Counts positional parameters
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! $# contains the count of arguments passed to the script or function, useful for validating input.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">$$ returns all arguments as a single string</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Concatenates all parameters
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. $$ returns the current shell's process ID. $@ returns all arguments (properly separated), while $* returns them as a single string.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">$@ counts the number of running processes</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Shows process count
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. $@ expands to all positional parameters passed to the script, properly preserving spaces and special characters.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 7: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-7">
+                        <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Summary
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>You've mastered:</p>
+                    <ul>
+                        <li>✅ Variable creation and usage</li>
+                        <li>✅ Environment vs shell variables</li>
+                        <li>✅ Special variables ($?, $$, etc.)</li>
+                        <li>✅ Command substitution with $()</li>
+                        <li>✅ Real-world automation patterns</li>
+                    </ul>
+                    
+                    <p><strong>Next</strong>: Chapter 2.5 - Wildcards and Pattern Matching!</p>
+                    
+                    <div class="challenge">
+                        <h3>Congratulations on Completing Module 2!</h3>
+                        <p>You've successfully learned command substitution and advanced shell scripting techniques. These skills are essential for system administration and automation.</p>
+                        <button class="celebrate-button" data-message="Outstanding work! You've mastered command substitution and are ready to tackle more advanced shell scripting challenges. Your automation skills are growing stronger!" data-animation="fireworks"><i class="fas fa-star"></i> I've completed Module 2!</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-terminal"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your shell scripting session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your shell scripting session has been inactive. Ready to continue mastering command substitution?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
