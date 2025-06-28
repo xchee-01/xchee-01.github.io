@@ -6,31 +6,10 @@
     <title>Joining Medical Datasets & Advanced Analysis - R for Precision Health - NUS</title>
     <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- WebR Integration -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/r/r.min.js"></script>
-    <script src="https://webr.r-wasm.org/v0.4.2/webr.js"></script>
     <!-- Load custom scripts -->
     <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
     <!-- Load confetti animation -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <style>
-        /* CodeMirror customization for R editor */
-        .CodeMirror {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 14px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .CodeMirror-gutters {
-            background-color: #f5f5f5;
-            border-right: 1px solid #ddd;
-        }
-        #r-code-editor {
-            margin-bottom: 10px;
-        }
-    </style>
 </head>
 <body>
     <header>
@@ -46,18 +25,30 @@
         <section id="learning-materials">
             <h1>MODULE 2: Joining Medical Datasets & Advanced Analysis</h1>
             
-            <p>Real medical data lives in multiple tables - demographics, labs, medications. dplyr's join functions reunite this information like Electronic Health Records.</p>
+            <p>Welcome to Module 2! In real healthcare settings, patient information is rarely stored in a single table. Just like Electronic Health Records (EHRs) combine data from multiple sources - demographics, laboratory results, medications, and clinical notes - you'll learn to reunite scattered medical data using dplyr's powerful join functions. This skill is essential for creating comprehensive patient profiles and conducting meaningful clinical analyses.</p>
             
-            <!-- Section 1: The Join Family -->
+            <!-- Section 1: Introduction to Joining Medical Datasets -->
             <div class="section-dropdown">
                 <div class="section-header">
                     <h2 id="section-1">
                         <i class="fas fa-link" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        The Join Family 🔗
+                        Introduction to Joining Medical Datasets
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
+                    <p>In medical data analysis, information about a single patient often resides in multiple tables. Think of it like a patient's medical file - demographics in one section, lab results in another, medications in a third. The dplyr package provides a family of join functions that act like digital paperclips, connecting these separate pieces into a unified view.</p>
+                    
+                    <h3>The Join Family - Your Data Integration Toolkit</h3>
+                    <p>Each join function serves a specific purpose in medical data integration:</p>
+                    
+                    <ul>
+                        <li><strong>left_join()</strong>: Keeps all patients from your primary table and adds available information from other tables. This is your go-to function for most medical analyses.</li>
+                        <li><strong>inner_join()</strong>: Returns only patients with complete records across all joined tables. Useful when you need patients with all required data points.</li>
+                        <li><strong>anti_join()</strong>: Identifies patients missing from the second table. Perfect for quality control and finding data gaps.</li>
+                        <li><strong>full_join()</strong>: Keeps all records from both tables, whether matched or not. Less common but useful for comprehensive audits.</li>
+                    </ul>
+                    
                     <!-- MCQ 1 -->
                     <div class="mcq-container">
                         <div class="mcq-header">
@@ -131,20 +122,27 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Real-World Connection:</strong> Electronic Health Records (EHRs) typically store data across dozens of interconnected tables. A single patient encounter might involve joining tables for demographics, vitals, diagnoses, procedures, medications, and billing. Mastering joins is essential for creating comprehensive patient views for clinical decision-making.</p>
+                    </div>
                 </div>
             </div>
             
-            <!-- Section 2: Multi-Table Medical Data -->
+            <!-- Section 2: Mastering Join Operations with Clinical Data -->
             <div class="section-dropdown">
                 <div class="section-header">
                     <h2 id="section-2">
-                        <i class="fas fa-table" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Multi-Table Medical Data 📊
+                        <i class="fas fa-sync-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mastering Join Operations with Clinical Data
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
-                    <p>Let's work with a realistic medical data scenario involving multiple related tables:</p>
+                    <p>Let's dive into practical join operations using a realistic medical scenario. We'll work with three interconnected tables that mirror real healthcare data structures.</p>
+                    
+                    <h3>Setting Up Our Medical Data Tables</h3>
+                    <p>First, let's create our sample medical dataset representing a small clinical study:</p>
                     
                     <div class="code-block-container" data-block-name="medical-data-tables">
                         <div class="code-block"># Patient demographics
@@ -154,7 +152,7 @@ patients <- data.frame(
   gender = c("M", "F", "F", "M", "F", "M")
 )
 
-# Lab results (PT1006 missing)
+# Lab results (Notice: PT1006 is missing - common in real data!)
 lab_results <- data.frame(
   patient_id = paste0("PT", 1001:1005),
   glucose = c(95, 110, 88, 125, 102),
@@ -171,23 +169,10 @@ medications <- data.frame(
                         <div class="copy-feedback">Copied!</div>
                     </div>
                     
-                    <div class="fun-fact">
-                        <p><strong>Real-World Connection:</strong> Electronic Health Records (EHRs) typically store data across dozens of interconnected tables. Mastering joins is essential for creating comprehensive patient views for clinical decision-making.</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 3: Join Operations in Action -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-3">
-                        <i class="fas fa-sync-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Join Operations in Action 🔄
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <h3>Left Join - Most Common:</h3>
+                    <p>Notice how patient PT1006 appears in the demographics table but not in labs or medications. This reflects real-world scenarios where data collection is often incomplete.</p>
+                    
+                    <h3>Left Join - The Clinical Analyst's Best Friend</h3>
+                    <p>The left_join() function is the workhorse of medical data analysis. It ensures you never lose a patient from your primary cohort while enriching their records with available additional data.</p>
                     
                     <!-- MCQ 2 -->
                     <div class="mcq-container">
@@ -255,7 +240,8 @@ missing_labs <- patients_with_labs %>%
                         </div>
                     </div>
                     
-                    <h3>Inner Join - Complete Records Only:</h3>
+                    <h3>Inner Join - When You Need Complete Records</h3>
+                    <p>Sometimes your analysis requires only patients with complete data across all sources. Inner joins are perfect for creating cohorts where all necessary data points are available.</p>
                     
                     <!-- MCQ 3 -->
                     <div class="mcq-container">
@@ -319,7 +305,8 @@ missing_labs <- patients_with_labs %>%
                         </div>
                     </div>
                     
-                    <h3>Anti-Join - Quality Control:</h3>
+                    <h3>Anti-Join - Your Data Quality Detective</h3>
+                    <p>Anti-joins are invaluable for quality control. They help identify missing data patterns, patients who need follow-up tests, or records that failed to merge properly.</p>
                     
                     <!-- MCQ 4 -->
                     <div class="mcq-container">
@@ -382,24 +369,94 @@ needs_labs <- patients %>%
                             </button>
                         </div>
                     </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 1: Complete Patient Profile Integration</h3>
+                        <p>As a clinical data analyst, you need to create a comprehensive patient report that combines demographics, labs, and medications. Complete the code to create a full patient profile.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab1-patient-profile">
+                            <div class="code-block"># Lab scenario: Create a complete patient profile
+# Replace the ... with appropriate join functions and column selections
+
+# Step 1: Start with all patients and add their lab results
+patient_profile <- patients %>%
+  ...(lab_results, by = "patient_id") %>%
+  ...(medications, by = "patient_id")
+
+# Step 2: Calculate diabetes risk based on glucose levels
+diabetes_analysis <- patient_profile %>%
+  mutate(
+    diabetes_risk = case_when(
+      glucose >= 126 ~ "...",
+      glucose >= 100 ~ "Pre-diabetic",
+      glucose < 100 ~ "...",
+      is.na(glucose) ~ "No lab data"
+    )
+  ) %>%
+  select(patient_id, age, gender, glucose, medication, ...)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected output structure:</p>
+                        <div class="expected-output">  patient_id age gender glucose medication diabetes_risk
+1      PT1001  45      M      95  Metformin       Normal
+2      PT1002  52      F     110    Insulin Pre-diabetic
+3      PT1003  38      F      88       None       Normal
+4      PT1004  61      M     125  Metformin Pre-diabetic
+5      PT1005  55      F     102  Glipizide Pre-diabetic
+6      PT1006  49      M      NA       <NA>  No lab data</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab1-patient-profile-solution">
+                                <div class="code-block"># Complete solution
+# Step 1: Start with all patients and add their lab results
+patient_profile <- patients %>%
+  left_join(lab_results, by = "patient_id") %>%
+  left_join(medications, by = "patient_id")
+
+# Step 2: Calculate diabetes risk based on glucose levels
+diabetes_analysis <- patient_profile %>%
+  mutate(
+    diabetes_risk = case_when(
+      glucose >= 126 ~ "Diabetic",
+      glucose >= 100 ~ "Pre-diabetic",
+      glucose < 100 ~ "Normal",
+      is.na(glucose) ~ "No lab data"
+    )
+  ) %>%
+  select(patient_id, age, gender, glucose, medication, diabetes_risk)</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Great job! You've successfully integrated multiple medical data sources to create a comprehensive patient profile. Notice how left_join() preserved all patients, even PT1006 who lacks lab data - this is crucial for complete clinical reporting." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
                 </div>
             </div>
             
-            <!-- Section 4: Emergency Department Integration -->
+            <!-- Section 3: Real-World Medical Applications -->
             <div class="section-dropdown">
                 <div class="section-header">
-                    <h2 id="section-4">
-                        <i class="fas fa-ambulance" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Emergency Department Integration 🚨
+                    <h2 id="section-3">
+                        <i class="fas fa-hospital" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Real-World Medical Applications
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
+                    <p>Now let's apply our join skills to real healthcare scenarios. We'll explore emergency department operations, cardiovascular risk assessment, and clinical dashboard creation - three critical areas where data integration saves lives.</p>
+                    
+                    <h3>Emergency Department Integration</h3>
+                    <p>Emergency departments generate vast amounts of data across multiple systems. Triage information, vital signs, lab results, and treatment orders all need to be connected for effective patient care. Let's see how joins help create a real-time ED dashboard.</p>
+                    
                     <!-- MCQ 5 -->
                     <div class="mcq-container">
                         <div class="mcq-header">
                             <div class="mcq-header-icon">
-                                <i class="fas fa-hospital"></i>
+                                <i class="fas fa-ambulance"></i>
                             </div>
                             <div class="mcq-header-text">ED Data Analysis</div>
                         </div>
@@ -484,26 +541,17 @@ waiting_patients <- ed_triage %>%
                     </div>
                     
                     <div class="fun-fact">
-                        <p><strong>Clinical Impact:</strong> Real-time ED dashboards using these techniques help nurses identify patients awaiting assessment, reducing wait times and improving patient safety.</p>
+                        <p><strong>Clinical Impact:</strong> Real-time ED dashboards using these techniques help nurses identify patients awaiting assessment, reducing wait times and improving patient safety. Studies show that integrated ED data systems can reduce average wait times by 15-20% and improve patient satisfaction scores.</p>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Section 5: Cardiovascular Risk Assessment -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-5">
-                        <i class="fas fa-heartbeat" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Cardiovascular Risk Assessment 💔
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
+                    
+                    <h3>Cardiovascular Risk Assessment</h3>
+                    <p>Cardiovascular disease remains the leading cause of death globally. By combining multiple risk factors - demographics, lab values, lifestyle factors, and medications - we can stratify patients and guide preventive interventions.</p>
+                    
                     <!-- MCQ 6 -->
                     <div class="mcq-container">
                         <div class="mcq-header">
                             <div class="mcq-header-icon">
-                                <i class="fas fa-chart-line"></i>
+                                <i class="fas fa-heartbeat"></i>
                             </div>
                             <div class="mcq-header-text">Risk Stratification Analysis</div>
                         </div>
@@ -586,32 +634,79 @@ risk_analysis <- cardio_study %>%
                     </div>
                     
                     <div class="challenge">
-                        <h3>Challenge: Cardiovascular Risk Analysis</h3>
-                        <p>Try modifying the risk stratification criteria to identify patients who might benefit from immediate intervention. Consider adding age as a risk factor!</p>
+                        <h3>Lab Exercise 2: Enhanced Cardiovascular Risk Analysis</h3>
+                        <p>Your cardiology department wants to identify patients who need immediate intervention. Modify the risk stratification to include age as a factor and create a "Critical" category for the highest-risk patients.</p>
                         
-                        <div class="code-block-container" data-block-name="cardio-challenge">
-                            <div class="code-block"># Hint: Modify the case_when() conditions
-# Consider: age > 65 as an additional risk factor
-# Try: cholesterol > 240 & systolic_bp > 140 & age > 65 ~ "Critical"</div>
+                        <div class="code-block-container" data-block-name="lab2-cardio-risk">
+                            <div class="code-block"># Lab scenario: Create enhanced cardiovascular risk categories
+# Replace the ... with appropriate conditions
+
+# Enhanced risk stratification
+enhanced_risk <- cardio_study %>%
+  mutate(
+    risk_category = case_when(
+      cholesterol > 240 & systolic_bp > 140 & ... ~ "Critical",
+      cholesterol > 240 & systolic_bp > 140 ~ "...",
+      cholesterol > 200 | systolic_bp > 130 | age > 60 ~ "...",
+      TRUE ~ "Low"
+    ),
+    needs_intervention = risk_category %in% c("...", "...")
+  ) %>%
+  # Count patients needing intervention by demographic groups
+  group_by(..., ...) %>%
+  summarize(
+    total_patients = n(),
+    intervention_needed = sum(needs_intervention),
+    pct_intervention = ... * 100,
+    .groups = 'drop'
+  )</div>
                             <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                             <div class="copy-feedback">Copied!</div>
                         </div>
                         
-                        <button class="celebrate-button" data-message="Excellent work! You've mastered cardiovascular risk stratification using dplyr. This type of analysis helps identify high-risk patients who need immediate clinical attention." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
+                        <p>Expected output structure:</p>
+                        <div class="expected-output"># A tibble: 4 × 5
+  gender smoker total_patients intervention_needed pct_intervention
+  <chr>  <lgl>           <int>               <int>            <dbl>
+1 Female FALSE               9                   3             33.3
+2 Female TRUE                4                   2             50.0
+3 Male   FALSE              11                   4             36.4
+4 Male   TRUE                6                   3             50.0</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab2-cardio-risk-solution">
+                                <div class="code-block"># Complete solution
+# Enhanced risk stratification
+enhanced_risk <- cardio_study %>%
+  mutate(
+    risk_category = case_when(
+      cholesterol > 240 & systolic_bp > 140 & age > 65 ~ "Critical",
+      cholesterol > 240 & systolic_bp > 140 ~ "High",
+      cholesterol > 200 | systolic_bp > 130 | age > 60 ~ "Moderate",
+      TRUE ~ "Low"
+    ),
+    needs_intervention = risk_category %in% c("Critical", "High")
+  ) %>%
+  # Count patients needing intervention by demographic groups
+  group_by(gender, smoker) %>%
+  summarize(
+    total_patients = n(),
+    intervention_needed = sum(needs_intervention),
+    pct_intervention = (intervention_needed / total_patients) * 100,
+    .groups = 'drop'
+  )</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Excellent work! You've created a sophisticated cardiovascular risk stratification system that considers multiple factors including age. This type of analysis helps cardiologists prioritize high-risk patients for immediate intervention, potentially preventing heart attacks and strokes." data-animation="sides"><i class="fas fa-star"></i> I've done it!</button>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Section 6: Clinical Dashboard Metrics -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-6">
-                        <i class="fas fa-chart-bar" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Clinical Dashboard Metrics 📊
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
+                    
+                    <h3>Clinical Dashboard Metrics</h3>
+                    <p>Healthcare administrators and clinicians rely on dashboards to monitor key performance indicators. R's list structure is perfect for storing diverse metrics that power these dashboards.</p>
+                    
                     <!-- MCQ 7 -->
                     <div class="mcq-container">
                         <div class="mcq-header">
@@ -677,19 +772,113 @@ ed_dashboard <- list(
                             </button>
                         </div>
                     </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 3: Complete Emergency Department Dashboard</h3>
+                        <p>Create a comprehensive ED analysis that the charge nurse can use to allocate resources effectively. Combine triage data with vitals to identify patients needing immediate attention.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab3-ed-dashboard">
+                            <div class="code-block"># Lab scenario: Create comprehensive ED dashboard
+# Replace the ... with appropriate code
+
+# Step 1: Join all ED data and calculate metrics
+ed_complete <- ed_triage %>%
+  ...(ed_vitals, by = "patient_id") %>%
+  mutate(
+    wait_time_min = as.numeric(difftime(..., arrival_time, units = "mins")),
+    urgency_score = case_when(
+      triage_level == 1 & is.na(heart_rate) ~ "...",
+      triage_level <= 2 & (heart_rate > 120 | blood_pressure > 160) ~ "Critical",
+      triage_level <= 3 & is.na(heart_rate) ~ "...",
+      TRUE ~ "Stable"
+    )
+  )
+
+# Step 2: Create summary dashboard
+ed_summary <- list(
+  total_patients = nrow(ed_complete),
+  critical_count = sum(ed_complete$urgency_score == "..."),
+  avg_wait_critical = mean(ed_complete$wait_time_min[ed_complete$triage_level <= 2], 
+                          na.rm = TRUE),
+  patients_without_vitals = ...(ed_complete$heart_rate)
+)
+
+# Step 3: Priority list for nursing staff
+priority_list <- ed_complete %>%
+  filter(urgency_score %in% c("...", "...")) %>%
+  arrange(..., wait_time_min) %>%
+  select(patient_id, chief_complaint, triage_level, wait_time_min, urgency_score)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected dashboard output:</p>
+                        <div class="expected-output">$total_patients
+[1] 10
+
+$critical_count
+[1] 3
+
+$avg_wait_critical
+[1] 165
+
+$patients_without_vitals
+[1] 2</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab3-ed-dashboard-solution">
+                                <div class="code-block"># Complete solution
+# Step 1: Join all ED data and calculate metrics
+ed_complete <- ed_triage %>%
+  left_join(ed_vitals, by = "patient_id") %>%
+  mutate(
+    wait_time_min = as.numeric(difftime(Sys.time(), arrival_time, units = "mins")),
+    urgency_score = case_when(
+      triage_level == 1 & is.na(heart_rate) ~ "Immediate",
+      triage_level <= 2 & (heart_rate > 120 | blood_pressure > 160) ~ "Critical",
+      triage_level <= 3 & is.na(heart_rate) ~ "Urgent",
+      TRUE ~ "Stable"
+    )
+  )
+
+# Step 2: Create summary dashboard
+ed_summary <- list(
+  total_patients = nrow(ed_complete),
+  critical_count = sum(ed_complete$urgency_score == "Critical"),
+  avg_wait_critical = mean(ed_complete$wait_time_min[ed_complete$triage_level <= 2], 
+                          na.rm = TRUE),
+  patients_without_vitals = sum(is.na(ed_complete$heart_rate))
+)
+
+# Step 3: Priority list for nursing staff
+priority_list <- ed_complete %>%
+  filter(urgency_score %in% c("Immediate", "Critical")) %>%
+  arrange(triage_level, wait_time_min) %>%
+  select(patient_id, chief_complaint, triage_level, wait_time_min, urgency_score)</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Outstanding! You've created a real-time ED dashboard that helps healthcare teams prioritize patient care. This type of integrated analysis can literally save lives by ensuring the most critical patients receive immediate attention." data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
                 </div>
             </div>
             
-            <!-- Section 7: Your New Superpowers -->
+            <!-- Section 4: Your Journey Forward -->
             <div class="section-dropdown">
                 <div class="section-header">
-                    <h2 id="section-7">
+                    <h2 id="section-4">
                         <i class="fas fa-trophy" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Your New Superpowers 🏆
+                        Your Journey Forward
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
+                    <h3>Your New Superpowers 🏆</h3>
+                    <p>Congratulations! You've mastered essential skills for medical data integration. Let's review what you can now accomplish:</p>
+                    
                     <!-- MCQ 8 -->
                     <div class="mcq-container">
                         <div class="mcq-header">
@@ -749,59 +938,56 @@ ed_dashboard <- list(
                     </div>
                     
                     <div class="fun-fact">
-                        <p><strong>You've mastered:</strong></p>
+                        <p><strong>Skills You've Mastered:</strong></p>
                         <ul>
-                            <li><strong>Select</strong> variables with precision 🎯</li>
-                            <li><strong>Filter</strong> complex patient populations 🔍</li>
-                            <li><strong>Mutate</strong> to calculate clinical metrics 🧮</li>
-                            <li><strong>Group & summarize</strong> treatment outcomes 📊</li>
-                            <li><strong>Arrange</strong> by clinical priority 📋</li>
-                            <li><strong>Join</strong> multiple data sources 🔗</li>
+                            <li><strong>Select</strong> variables with precision - Extract only the data columns you need 🎯</li>
+                            <li><strong>Filter</strong> complex patient populations - Identify cohorts based on multiple criteria 🔍</li>
+                            <li><strong>Mutate</strong> to calculate clinical metrics - Create new variables from existing data 🧮</li>
+                            <li><strong>Group & summarize</strong> treatment outcomes - Generate statistics by patient groups 📊</li>
+                            <li><strong>Arrange</strong> by clinical priority - Sort patients by urgency or risk 📋</li>
+                            <li><strong>Join</strong> multiple data sources - Integrate labs, medications, and demographics 🔗</li>
                         </ul>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Section 8: What's Next -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-8">
-                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        What's Next? 🚀
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>Master data visualization with ggplot2! Create:</p>
+                    
+                    <h3>What's Next? 🚀</h3>
+                    <p>Your journey in medical data science continues! In the next module, you'll master data visualization with ggplot2 to create:</p>
+                    
                     <ul>
-                        <li>Publication-quality graphs</li>
-                        <li>Clinical dashboards</li>
-                        <li>Treatment effect visualizations</li>
-                        <li>Compelling medical data stories</li>
+                        <li><strong>Publication-quality graphs</strong> for research papers and presentations</li>
+                        <li><strong>Clinical dashboards</strong> that update in real-time</li>
+                        <li><strong>Treatment effect visualizations</strong> showing patient outcomes over time</li>
+                        <li><strong>Compelling medical data stories</strong> that drive healthcare improvements</li>
                     </ul>
                     
-                    <p>The combination of dplyr + ggplot2 forms the foundation of modern medical data science in R! 🧬✨</p>
+                    <p>The combination of dplyr (data manipulation) + ggplot2 (visualization) forms the foundation of modern medical data science in R. With these tools, you can transform raw healthcare data into actionable insights that improve patient care and save lives.</p>
                     
                     <div class="challenge">
-                        <h3>Final Challenge: Complete ED Dashboard</h3>
-                        <p>Create a comprehensive emergency department analysis combining all the techniques you've learned!</p>
+                        <h3>Final Challenge: Integrated Healthcare Analysis</h3>
+                        <p>Put it all together! Create a comprehensive analysis that combines patient demographics, lab results, and medications to identify high-risk diabetic patients who might benefit from care coordination.</p>
                         
                         <div class="code-block-container" data-block-name="final-challenge">
-                            <div class="code-block"># Your challenge: Create an ED summary report
-# 1. Join all ED tables
-# 2. Calculate waiting times by triage level
-# 3. Identify high-risk patients (triage 1-2 without vitals)
-# 4. Create summary statistics by chief complaint
+                            <div class="code-block"># Final challenge: Comprehensive diabetes care analysis
+# Your task: 
+# 1. Join all three tables (patients, lab_results, medications)
+# 2. Identify high-risk diabetics (glucose > 125 OR on diabetes meds)
+# 3. Flag patients missing critical data
+# 4. Create a care coordination priority list
 
 # Start here:
-ed_complete <- ed_triage %>%
-  left_join(ed_vitals, by = "patient_id") %>%
-  # Add your analysis...</div>
+diabetes_analysis <- patients %>%
+  # Add your comprehensive analysis...
+  
+# Hint: Consider using multiple joins, case_when for risk categories,
+# and group_by/summarize for population statistics</div>
                             <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                             <div class="copy-feedback">Copied!</div>
                         </div>
                         
-                        <button class="celebrate-button" data-message="Congratulations! You've mastered joining medical datasets and advanced dplyr analysis. You're now equipped to handle complex, real-world medical data challenges. Keep practicing and exploring - the best is yet to come!" data-animation="fireworks"><i class="fas fa-star"></i> I've completed Module 2!</button>
+                        <button class="celebrate-button" data-message="Congratulations! You've completed Module 2 and mastered joining medical datasets with dplyr. You now have the skills to integrate complex healthcare data from multiple sources - a critical capability for modern precision medicine. Keep practicing these techniques, and remember: every analysis you perform has the potential to improve patient outcomes. Onward to data visualization!" data-animation="fireworks"><i class="fas fa-star"></i> I've completed Module 2!</button>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Remember:</strong> The skills you've learned in this module are used daily by medical data scientists, clinical researchers, and healthcare analysts worldwide. Whether you're investigating treatment effectiveness, monitoring population health, or optimizing hospital operations, data integration is the foundation of evidence-based healthcare. Keep practicing, stay curious, and continue your journey toward becoming a skilled medical data scientist! 🧬✨</p>
                     </div>
                 </div>
             </div>
@@ -849,7 +1035,7 @@ ed_complete <- ed_triage %>%
                     <i class="fas fa-flask"></i>
                 </div>
                 <h3 class="modal-header">Time for a break?</h3>
-                <p class="modal-subheader">Your R session is waiting</p>
+                <p class="modal-subheader">Your Python session is waiting</p>
             </div>
             
             <div class="modal-body">
@@ -863,271 +1049,5 @@ ed_complete <- ed_triage %>%
     
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
-    <!-- Custom JavaScript for R-specific functionality -->
-    <script>
-    (function() {
-        'use strict';
-        
-        // WebR instance and CodeMirror editor
-        let webR;
-        let editor;
-        let isWebRReady = false;
-        
-        // Initialize CodeMirror editor
-        function initializeEditor() {
-            const editorElement = document.getElementById('r-code-editor');
-            if (editorElement && !editor) {
-                // Clear the element first
-                editorElement.innerHTML = '';
-                editor = CodeMirror(editorElement, {
-                    mode: 'r',
-                    theme: 'default',
-                    lineNumbers: true,
-                    lineWrapping: true,
-                    value: '# Type your R code here
-',
-                    extraKeys: {
-                        'Ctrl-Enter': function() { runRCode(); },
-                        'Cmd-Enter': function() { runRCode(); }
-                    }
-                });
-                editor.setSize(null, '300px');
-            }
-        }
-        
-        // Initialize WebR
-        async function initializeWebR() {
-            const statusElement = document.getElementById('status');
-            const runButton = document.getElementById('run-button');
-            
-            try {
-                statusElement.textContent = 'Loading WebR... Please wait.';
-                
-                // Initialize WebR with CDN configuration
-                webR = new WebR({
-                    baseUrl: 'https://webr.r-wasm.org/v0.4.2/',
-                    serviceWorkerUrl: 'https://webr.r-wasm.org/v0.4.2/webr-serviceworker.js'
-                });
-                
-                await webR.init();
-                
-                // Install commonly used packages for medical data analysis
-                statusElement.textContent = 'WebR loaded! Installing packages...';
-                
-                try {
-                    await webR.evalR(`
-                        # Set CRAN repository
-                        options(repos = c(CRAN = "https://repo.r-wasm.org"))
-                    `);
-                } catch (e) {
-                    console.log('Package installation skipped:', e);
-                }
-                
-                statusElement.textContent = 'WebR is ready! You can now run R code.';
-                statusElement.style.color = '#4caf50';
-                
-                if (runButton) {
-                    runButton.disabled = false;
-                    runButton.onclick = runRCode;
-                }
-                
-                isWebRReady = true;
-                
-            } catch (error) {
-                console.error('WebR initialization error:', error);
-                statusElement.textContent = 'Error loading WebR. Please refresh the page.';
-                statusElement.style.color = '#f44336';
-                
-                if (runButton) {
-                    runButton.disabled = false;
-                    runButton.onclick = function() {
-                        const outputArea = document.getElementById('output-area');
-                        if (outputArea) {
-                            outputArea.textContent = 'WebR failed to load. Please refresh the page or use your local R environment.';
-                        }
-                    };
-                }
-            }
-        }
-        
-        // Run R code using WebR
-        async function runRCode() {
-            if (!isWebRReady) {
-                alert('WebR is still loading. Please wait...');
-                return;
-            }
-            
-            const outputArea = document.getElementById('output-area');
-            const runButton = document.getElementById('run-button');
-            
-            if (!editor || !outputArea) return;
-            
-            const code = editor.getValue().trim();
-            if (!code) {
-                outputArea.textContent = 'Please enter some R code to run.';
-                return;
-            }
-            
-            // Disable run button during execution
-            runButton.disabled = true;
-            runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
-            
-            try {
-                outputArea.textContent = 'Running R code...
-';
-                
-                // Create a shelter to capture output
-                const shelter = await webR.shelter();
-                
-                // Capture output
-                let output = '';
-                
-                // Split code by lines to handle each command
-                const lines = code.split('
-');
-                
-                for (const line of lines) {
-                    if (line.trim() && !line.trim().startsWith('#')) {
-                        try {
-                            // Evaluate the R code
-                            const result = await shelter.evalR(line, {
-                                withAutoprint: true,
-                                captureStreams: true,
-                                captureConditions: false
-                            });
-                            
-                            // Get the output
-                            const resultOutput = await result.output();
-                            
-                            if (resultOutput) {
-                                // Check for different output types
-                                for (const out of resultOutput) {
-                                    if (out.type === 'stdout' && out.data) {
-                                        output += out.data;
-                                    } else if (out.type === 'stderr' && out.data) {
-                                        output += `Error: ${out.data}`;
-                                    }
-                                }
-                            }
-                            
-                            // If no output captured, try to get the value
-                            if (!output && result) {
-                                try {
-                                    const value = await result.toString();
-                                    if (value && value !== 'undefined') {
-                                        output += value + '
-';
-                                    }
-                                } catch (e) {
-                                    // Some results can't be converted to string
-                                }
-                            }
-                        } catch (lineError) {
-                            output += `Error in line "${line}": ${lineError.message}
-`;
-                        }
-                    }
-                }
-                
-                // Clean up the shelter
-                await shelter.destroy();
-                
-                // Display output
-                outputArea.textContent = output || 'Code executed successfully (no output).';
-                
-            } catch (error) {
-                outputArea.textContent = `Error: ${error.message}`;
-                console.error('R execution error:', error);
-            } finally {
-                // Re-enable run button
-                runButton.disabled = false;
-                runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
-            }
-        }
-        
-        // Clear output
-        function clearOutput() {
-            const outputArea = document.getElementById('output-area');
-            if (outputArea) {
-                outputArea.textContent = '';
-            }
-            if (editor) {
-                editor.setValue('# Type your R code here
-');
-                editor.focus();
-            }
-        }
-        
-        // Initialize user tracking (keep existing functionality)
-        function initializeUserTracking() {
-            const username = document.getElementById('username');
-            const accessTime = document.getElementById('access-time');
-            const currentUrl = document.getElementById('current-url');
-            
-            if (username && accessTime && currentUrl) {
-                try {
-                    const accountsData = localStorage.getItem('accounts');
-                    if (accountsData) {
-                        const accounts = JSON.parse(accountsData);
-                        if (accounts && accounts.length > 0 && accounts[0].username) {
-                            username.textContent = accounts[0].username;
-                        } else {
-                            username.textContent = 'Guest';
-                        }
-                    } else {
-                        username.textContent = 'Guest';
-                    }
-                } catch (error) {
-                    console.error('Error retrieving username:', error);
-                    username.textContent = 'Guest';
-                }
-                
-                accessTime.textContent = new Date().toLocaleString();
-                currentUrl.textContent = window.location.href;
-            }
-        }
-        
-        // Override template Python initialization if exists
-        if (window.initializePython) {
-            window.initializePython = function() {
-                console.log('R interpreter - Python initialization overridden');
-                return Promise.resolve();
-            };
-        }
-        
-        // Initialize everything when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                initializeEditor();
-                initializeWebR();
-                initializeUserTracking();
-                
-                // Set up clear button
-                const clearButton = document.getElementById('clear-button');
-                if (clearButton) {
-                    clearButton.onclick = clearOutput;
-                }
-            });
-        } else {
-            initializeEditor();
-            initializeWebR();
-            initializeUserTracking();
-            
-            const clearButton = document.getElementById('clear-button');
-            if (clearButton) {
-                clearButton.onclick = clearOutput;
-            }
-        }
-        
-        // Ensure Prism highlighting works for R
-        setTimeout(function() {
-            if (window.Prism) {
-                Prism.highlightAll();
-            }
-        }, 100);
-    
-    })();
-    </script>
-    
 </body>
 </html>
