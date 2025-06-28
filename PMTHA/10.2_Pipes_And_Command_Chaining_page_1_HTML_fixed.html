@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Pipes and Command Chaining - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Linux Systems Programming</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>Linux Pipes and Command Chaining</h1>
+            
+            <p>Welcome to the magical world of Linux command orchestration! 🎭 Think of yourself as a conductor leading an orchestra of commands, where each instrument (command) plays its part perfectly, passing its melody (output) to the next player.</p>
+            
+            <div class="fun-fact">
+                <p><strong>Fun Fact:</strong> The pipe operator was invented by Douglas McIlroy at Bell Labs in 1973. He described it as making Unix commands "talk to each other"!</p>
+            </div>
+            
+            <!-- Learning Checkpoint Section -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-check-circle" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        📚 Learning Checkpoint
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Before we dive in, let's check what you already know:</p>
+                    
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Quick Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Can you name any Linux commands? (like ls, cd, or cat)
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Yes, I know some!</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Commands like ls, cd, cat, pwd, etc.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Excellent! You're ready to learn how to combine these commands with pipes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Not yet</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        I'm new to Linux commands
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> No worries! We'll introduce commands as we go. You'll learn them naturally through pipes.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Symbol Recognition</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Have you ever seen the | symbol in a command?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Yes, I've seen it</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        I've noticed the vertical bar in commands
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Great! That's the pipe operator. Today you'll master its power.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Never noticed it</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        This is new to me
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Perfect timing to learn! The | symbol is your gateway to powerful command combinations.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Conceptual Understanding</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What do you think happens when commands "talk" to each other?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Output becomes input</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        One command's output feeds into another's input
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Exactly! You've grasped the core concept of pipes. Commands pass data like a relay race.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">They run simultaneously</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Commands execute at the same time
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. While they can run concurrently, the key is that output flows from one to the next.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">They share variables</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Commands exchange variables
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not exactly. They share text output/input, not variables. Think of it as passing notes.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- The Pipe Operator Section -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-terminal" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🖥️ The Pipe (|) Operator - Your Command Connector
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>What Is a Pipe?</h3>
+                    <p>Imagine you're at a sushi conveyor belt restaurant 🍣. Each chef (command) prepares their specialty and places it on the belt (pipe) for the next chef to work with.</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Definition Box 📦</strong><br>
+                        The pipe operator (|) takes the output from one command and feeds it as input to the next command.</p>
+                    </div>
+                    
+                    <h3>🔍 Your First Pipe Adventure</h3>
+                    <p>Let's count files in your directory:</p>
+                    
+                    <div class="code-block-container" data-block-name="first-pipe-example">
+                        <div class="code-block"># List all files
+$ ls
+file1.txt  file2.txt  file3.txt  document.pdf  script.sh
+
+# Count them with a pipe!
+$ ls | wc -l
+5</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p><strong>What just happened?</strong> 🤔</p>
+                    <ul>
+                        <li><code>ls</code> listed all files</li>
+                        <li>The pipe <code>|</code> grabbed that output</li>
+                        <li><code>wc -l</code> counted the lines</li>
+                        <li>Result: 5 files!</li>
+                    </ul>
+                    
+                    <h3>Quick Practice</h3>
+                    
+                    <!-- MCQ 4 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div class="mcq-header-text">Try This Command</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Try this command:
+                                <div class="code-block">echo "Hello Linux World" | wc -w</div>
+                                What will be the output?<br>
+                                <em>Hint: wc -w counts words</em>
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">3</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Three words: "Hello", "Linux", "World"
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! You correctly counted the three words. The pipe passed the echo output to wc -w.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">1</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        One line of text
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be wc -l (lines). The -w flag counts words, not lines.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">17</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Number of characters
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be wc -c (characters). The -w flag counts words.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>🌟 Real-World Magic</h3>
+                    <ul>
+                        <li><strong>Log Detective</strong>: <code>cat /var/log/syslog | grep ERROR</code></li>
+                        <li><strong>Process Hunter</strong>: <code>ps aux | grep firefox</code></li>
+                        <li><strong>Space Explorer</strong>: <code>du -h | sort -h</code></li>
+                    </ul>
+                    
+                    <h3>🔧 Lab Exercise 1: Your First Pipeline Mission</h3>
+                    
+                    <!-- MCQ 5 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="mcq-header-text">Mission Brief</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Check how many users are logged into the system.
+                                <div class="code-block"># See who's logged in
+$ who
+alice    tty1         2024-01-15 09:00
+bob      pts/0        2024-01-15 09:30
+alice    pts/1        2024-01-15 10:00
+
+# Count unique users
+$ who | cut -d' ' -f1 | sort | uniq | wc -l</div>
+                                What's the result?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">2</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Two unique users: alice and bob
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> 🎉 Achievement Unlocked: Pipeline Apprentice! You correctly identified the unique users.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">3</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Three login sessions
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's the total sessions. The pipeline finds unique users by removing duplicates.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">1</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only one user
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Look again - alice and bob are two different users.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Multi-Stage Pipelines Section -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-link" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🖥️ Multi-Stage Pipelines - Command Relay Race
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🏃‍♂️ Building Command Chains</h3>
+                    <div class="code-block-container" data-block-name="command-chain-diagram">
+                        <div class="code-block">command1 | command2 | command3 | command4
+   ↓          ↓          ↓          ↓
+produce → filter → transform → display</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Finding Memory Hogs</h3>
+                    <div class="code-block-container" data-block-name="memory-hog-example">
+                        <div class="code-block"># Find top 5 memory-consuming processes
+$ ps aux | sort -k4 -rn | head -5</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>Breaking it down:</p>
+                    <ol>
+                        <li><code>ps aux</code> - Shows all processes</li>
+                        <li><code>sort -k4 -rn</code> - Sort by %MEM column</li>
+                        <li><code>head -5</code> - Show only top 5</li>
+                    </ol>
+                    
+                    <h3>🔧 Lab Exercise 2: System Resource Detective</h3>
+                    
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="mcq-header-text">Mission 🕵️</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Find top 5 CPU-consuming processes. Which command pipeline would you use?
+                                <div class="code-block"># Complete this pipeline
+ps aux | sort -k? -rn | head -5</div>
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">sort -k3 -rn</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Column 3 contains %CPU
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Excellent detective work! Column 3 in ps aux output shows CPU percentage.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">sort -k4 -rn</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Column 4 for CPU
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's for memory (%MEM). CPU percentage is in column 3.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">sort -k1 -rn</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Column 1 for processes
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Column 1 shows the username. CPU percentage is in column 3.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- grep Section -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-search" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        🖥️ grep - Your Text Search Superhero
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>🦸‍♂️ Meet grep</h3>
+                    <p><code>grep</code> finds patterns in text like having super-vision!</p>
+                    
+                    <div class="code-block-container" data-block-name="grep-examples">
+                        <div class="code-block"># Find errors
+$ cat system.log | grep ERROR
+
+# Case-insensitive search
+$ journalctl | grep -i error
+
+# Show Python processes
+$ ps aux | grep python | grep -v grep</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>🔍 grep Options</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
+                        <thead>
+                            <tr style="background-color: var(--nus-light-gray);">
+                                <th style="padding: 0.5rem; text-align: left; border: 1px solid #ddd;">Option</th>
+                                <th style="padding: 0.5rem; text-align: left; border: 1px solid #ddd;">What it Does</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 0.5rem; border: 1px solid #ddd;"><code>-i</code></td>
+                                <td style="padding: 0.5rem; border: 1px solid #ddd;">Ignore case</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 0.5rem; border: 1px solid #ddd;"><code>-v</code></td>
+                                <td style="padding: 0.5rem; border: 1px solid #ddd;">Exclude matches</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 0.5rem; border: 1px solid #ddd;"><code>-n</code></td>
+                                <td style="padding: 0.5rem; border: 1px solid #ddd;">Show line numbers</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 0.5rem; border: 1px solid #ddd;"><code>-c</code></td>
+                                <td style="padding: 0.5rem; border: 1px solid #ddd;">Count matches</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Note:</strong> The Linux commands shown in this lesson should be run in a Linux terminal, not in a Python interpreter. You can try them on your own Linux system or using a tool like WSL (Windows Subsystem for Linux) on Windows.</p>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Practice Challenge</h3>
+                        <p>Try these grep exercises in your terminal:</p>
+                        <ol>
+                            <li>Find all lines containing "error" in any system log</li>
+                            <li>Count how many times "warning" appears in a file</li>
+                            <li>Find your username in the /etc/passwd file</li>
+                        </ol>
+                        <button class="celebrate-button" data-message="Great job mastering grep! You're becoming a true command line wizard!" data-animation="fireworks"><i class="fas fa-star"></i> I've completed the grep exercises!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Section -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-5">
+                        <i class="fas fa-graduation-cap" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Summary & Next Steps
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Congratulations! You've mastered the foundations of Linux pipes and command chaining. You've learned:</p>
+                    
+                    <ul>
+                        <li>✅ How to use the pipe (|) operator to connect commands</li>
+                        <li>✅ Building multi-stage pipelines for complex tasks</li>
+                        <li>✅ Using grep to search and filter text</li>
+                        <li>✅ Combining commands to solve real-world problems</li>
+                    </ul>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Power User Tip:</strong> The real magic happens when you combine what you've learned today with shell scripting. You can save your favorite pipelines in scripts and reuse them!</p>
+                    </div>
+                    
+                    <p>Keep practicing, and remember: every Linux expert started exactly where you are now. The command line is your canvas - go create something amazing!</p>
+                    
+                    <button class="celebrate-button" data-message="Congratulations on completing the Linux Pipes module! You're well on your way to becoming a command line master!" data-animation="school"><i class="fas fa-trophy"></i> I've completed this module!</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-terminal"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Linux session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your command line training session has been inactive. Ready to continue mastering pipes and commands?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
