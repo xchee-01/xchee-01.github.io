@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastering chmod and Advanced Permissions - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Linux Systems Programming</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>MODULE 2: Mastering chmod and Advanced Permissions</h1>
+            
+            <!-- Section 1: chmod - Your Permission Swiss Army Knife -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-tools" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mission: chmod - Your Permission Swiss Army Knife
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Now comes the fun part—actually CHANGING permissions! The <code>chmod</code> command (think "change mode") is your Swiss Army knife for permission management. You have two powerful ways to use it:</p>
+                    
+                    <h3>Method 1: Symbolic Mode (Human-Friendly)</h3>
+                    
+                    <p>This method uses letters and symbols—perfect when you're making specific changes:</p>
+                    
+                    <div class="code-block-container" data-block-name="chmod-symbolic-mode">
+                        <div class="code-block"># The formula: WHO + WHAT + WHICH
+# WHO: u (user/owner), g (group), o (others), a (all)
+# WHAT: + (add), - (remove), = (set exactly)
+# WHICH: r (read), w (write), x (execute)
+
+# Add execute permission for owner
+user@hostname:~$ chmod u+x script.sh
+
+# Remove write permission from others (security fix!)
+user@hostname:~$ chmod o-w sensitive_file.txt
+
+# Set exact permissions: owner can do everything, others read-only
+user@hostname:~$ chmod u=rwx,go=r important_doc.txt</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p><strong>Pro Tip</strong>: You can combine multiple changes with commas: <code>chmod u+x,g+w,o-r file.txt</code></p>
+                    
+                    <h3>🔧 Fix-It Lab: Make That Script Run!</h3>
+                    
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Remember our broken script? Let's fix it. After running <code>chmod u+x mystery_script.sh</code>, what will the permissions look like?
+                            </div>
+                            
+                            <div class="code-block">
+# Check current permissions
+user@hostname:~/permission_lab$ ls -la mystery_script.sh
+-rw-rw-r-- 1 username username 42 Oct 25 14:30 mystery_script.sh
+
+# Your mission: Make it executable for the owner
+user@hostname:~/permission_lab$ chmod u+x mystery_script.sh
+
+# Verify your fix
+user@hostname:~/permission_lab$ ls -la mystery_script.sh
+-rwxrw-r-- 1 username username 42 Oct 25 14:30 mystery_script.sh
+# ↑ Look! The x appeared!
+
+# Test your success
+user@hostname:~/permission_lab$ ./mystery_script.sh
+🎉 Script is running!</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">-rw-rw-rw-</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Adds write permission for others
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The command u+x adds execute permission for the user/owner, not write permission for others.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">-rwxrw-r--</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Adds execute permission for the owner
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The u+x adds execute (x) permission for the user/owner, changing the first permission group from rw- to rwx.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">-rwxrwxrwx</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Adds execute permission for everyone
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The 'u' in u+x specifically targets only the user/owner, not the group or others.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">-r-xrw-r--</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Removes write permission and adds execute
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The + operator adds permissions without removing existing ones. The command preserves the existing rw- and adds x.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p>🎊 <strong>Achievement Unlocked</strong>: Script Surgeon! You've successfully performed permission surgery!</p>
+                </div>
+            </div>
+            
+            <!-- Section 2: Numeric Mode -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-calculator" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Method 2: Numeric Mode (The Pro Method)
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Once you go numeric, you never go back! This method uses octal numbers and sets ALL permissions at once:</p>
+                    
+                    <div class="code-block-container" data-block-name="numeric-permissions">
+                        <div class="code-block">Permission Values:
+r (read)    = 4
+w (write)   = 2  
+x (execute) = 1
+
+Add them up for each group:
+rwx = 4+2+1 = 7 (full access)
+rw- = 4+2+0 = 6 (read & write)
+r-x = 4+0+1 = 5 (read & execute)
+r-- = 4+0+0 = 4 (read only)
+--- = 0+0+0 = 0 (no access)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>🧮 Permission Calculator Exercise</h3>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Let's practice calculating permissions. What numeric value would you use to set these permissions?<br>
+                                Owner: read, write, execute (rwx)<br>
+                                Group: read, execute (r-x)<br>
+                                Others: read only (r--)
+                            </div>
+                            
+                            <div class="code-block"># What number would give these permissions?
+# Owner: read, write, execute (rwx) = ?
+# Group: read, execute (r-x) = ?
+# Others: read only (r--) = ?
+
+# Try it yourself first, then check:
+user@hostname:~$ chmod 754 myfile.txt
+user@hostname:~$ ls -la myfile.txt</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">644</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        rw-r--r--
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. 644 gives rw-r--r--, which doesn't include execute permissions for owner or group.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">754</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        rwxr-xr--
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! 754 because rwx=7 (4+2+1), r-x=5 (4+0+1), r--=4 (4+0+0)
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">755</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        rwxr-xr-x
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Close, but not quite. 755 would give execute permission to others (r-x), but we only want read (r--).
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">777</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        rwxrwxrwx
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Way too permissive! 777 gives full access to everyone, which is rarely what you want.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Common Permission Patterns -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-trophy" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Common Permission Patterns (The "Greatest Hits")
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Here are the permission patterns you'll use 90% of the time:</p>
+                    
+                    <div class="code-block-container" data-block-name="common-permissions">
+                        <div class="code-block"># 755 - Standard for executables and directories
+# Owner: everything, Others: read & traverse
+user@hostname:~$ chmod 755 my_program.sh
+user@hostname:~$ chmod 755 public_directory/
+
+# 644 - Standard for regular files
+# Owner: read/write, Others: read-only
+user@hostname:~$ chmod 644 readme.txt
+
+# 600 - Private files (SSH keys, passwords)
+# Owner: read/write, Others: no access
+user@hostname:~$ chmod 600 ~/.ssh/id_rsa
+
+# 777 - DANGER! Full access for everyone
+# Only use for temporary directories
+user@hostname:~$ chmod 777 /tmp/shared_workspace/</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>⚠️ <strong>Security Alert</strong>: Never use 777 on sensitive files! It's like leaving your house keys under the doormat with a big sign saying "KEY HERE"!</p>
+                    
+                    <h3>🌟 Real-World Scenario: Web Server Setup</h3>
+                    
+                    <p>Let's practice with a realistic web server setup:</p>
+                    
+                    <div class="code-block-container" data-block-name="webserver-setup">
+                        <div class="code-block"># Create a mini web project
+user@hostname:~$ mkdir my_website && cd my_website
+user@hostname:~/my_website$ mkdir images css js
+user@hostname:~/my_website$ touch index.html style.css script.js
+user@hostname:~/my_website$ touch .htaccess config.php
+
+# Set appropriate permissions
+user@hostname:~/my_website$ chmod 755 . images/ css/ js/  # Directories
+user@hostname:~/my_website$ chmod 644 index.html style.css  # Public files
+user@hostname:~/my_website$ chmod 600 config.php  # Contains passwords!
+user@hostname:~/my_website$ chmod 644 .htaccess  # Apache needs to read this
+
+# Verify your security setup
+user@hostname:~/my_website$ ls -la</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p>🔍 <strong>Self-Check Questions</strong>:</p>
+                    
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why do directories need execute permission?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To run scripts inside them</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Execute permission allows running programs in the directory
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Execute permission on a directory doesn't affect running scripts inside it - that depends on the script's own permissions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To traverse/enter the directory</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Execute permission allows accessing files inside the directory
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! For directories, execute permission means "traverse" - the ability to cd into it or access files inside it.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To delete the directory</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Execute permission controls directory deletion
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Deleting a directory depends on write permissions in its parent directory, not execute permission on the directory itself.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">They don't need it</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Execute permission is only for files
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Wrong. Directories absolutely need execute permission for users to access their contents. Without it, you can't cd into the directory or access any files inside.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 4 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What would happen if config.php was world-readable (644 instead of 600)?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Nothing - it's fine</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        World-readable is normal for web files
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Dangerous thinking! Config files often contain database passwords and API keys that should never be world-readable.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Security risk - exposes passwords</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Anyone on the system could read database credentials
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Config files typically contain sensitive information like database passwords. World-readable permissions would expose these credentials to any user on the system.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The website would break</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        PHP requires config files to be private
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not true. PHP will still read world-readable files. The issue is security, not functionality.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Better performance</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        More open permissions improve speed
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Completely wrong! Permission levels have no impact on performance, and looser permissions are never better for security.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 5 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why might a 777 permission cause Apache to ignore .htaccess?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">777 corrupts the file</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Full permissions damage file integrity
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> No, permissions don't change file contents. The issue is with Apache's security checks.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Security feature - prevents tampering</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Apache ignores world-writable config files for safety
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Apache has a security feature that ignores .htaccess files if they're world-writable (777) to prevent malicious users from modifying server configuration.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Apache can't read 777 files</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Full permissions block Apache access
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Wrong. Apache can read 777 files just fine. It chooses to ignore them as a security precaution.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It's a myth - 777 works fine</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        There's no issue with 777 permissions
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Definitely not a myth! This is a real Apache security feature that protects against configuration tampering.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 4: Advanced Permission Tricks -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Advanced Permission Tricks
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Special Permissions Preview</h3>
+                    
+                    <p>Linux has some special permission bits that add superpowers:</p>
+                    
+                    <div class="code-block-container" data-block-name="special-permissions">
+                        <div class="code-block"># Make a directory where anyone can create files, but only delete their own
+user@hostname:~$ mkdir shared_workspace
+user@hostname:~$ chmod 1777 shared_workspace  # The '1' is the sticky bit!
+
+# See the sticky bit in action
+user@hostname:~$ ls -ld shared_workspace
+drwxrwxrwt 2 username username 4096 Oct 25 15:00 shared_workspace
+# ↑ 't' indicates sticky bit</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>🔧 Troubleshooting Lab: Fix Common Permission Errors</h3>
+                    
+                    <p>Practice fixing these common permission problems:</p>
+                    
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Problem 1: Script downloaded from internet won't run
+                            </div>
+                            
+                            <div class="code-block"># Problem 1: Script downloaded from internet won't run
+user@hostname:~$ wget https://example.com/useful_script.sh
+user@hostname:~$ ./useful_script.sh
+bash: ./useful_script.sh: Permission denied
+# Your fix: _______________</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">sudo ./useful_script.sh</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Run with administrator privileges
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Dangerous! Never run untrusted scripts with sudo. The issue is missing execute permission, not privileges.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">chmod +x useful_script.sh</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Add execute permission to the script
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Downloaded files typically don't have execute permission for security. Adding it with chmod +x allows the script to run.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">chmod 777 useful_script.sh</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Give full permissions to everyone
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Overkill! While this would work, 777 is unnecessarily permissive. Use chmod +x or chmod 755 instead.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">bash useful_script.sh</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Run through bash interpreter
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This works as a workaround but doesn't fix the permission issue. The script still won't run with ./
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 7 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Problem 2: Can't edit file you created yesterday
+                            </div>
+                            
+                            <div class="code-block"># Problem 2: Can't edit file you created yesterday
+user@hostname:~$ echo "new line" >> myfile.txt
+bash: myfile.txt: Permission denied
+# Investigate and fix: _______________</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">chmod 777 myfile.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Make it fully accessible
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Too permissive! First check with ls -la to see current permissions, then use appropriate chmod like u+w.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">ls -la myfile.txt, then chmod u+w</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Check permissions first, then add write for owner
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect approach! Always investigate first with ls -la to understand the problem, then fix with the minimum necessary permissions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">sudo echo "new line" >> myfile.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Use admin privileges
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Won't work! The >> redirection happens before sudo, so you'll still get permission denied. Plus, using sudo for your own files is wrong.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">rm myfile.txt && touch myfile.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Delete and recreate the file
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would lose all content! Never delete a file just to fix permissions.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 8 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Problem 3: Web server can't read your HTML file
+                            </div>
+                            
+                            <div class="code-block"># Problem 3: Web server can't read your HTML file
+# Apache error log shows: "Permission denied"
+# Your approach: _______________</div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">chmod 777 index.html</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Give everyone full access
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Never use 777 for web files! This creates security vulnerabilities. Use 644 for files and 755 for directories.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">chmod 644 index.html && chmod 755 .</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Set proper web permissions for file and directory
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Excellent! Web files need 644 (owner write, others read) and directories need 755 (with execute for traversal). This gives Apache read access safely.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">chown apache:apache index.html</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Change ownership to Apache user
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While this might work, changing ownership isn't the first solution. Proper permissions (644) should allow Apache to read without ownership change.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Restart Apache service</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Maybe Apache needs a restart
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Won't help if it's a permission issue. Apache doesn't cache file permissions, so restarting won't fix permission denied errors.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 5: Permission Best Practices -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-5">
+                        <i class="fas fa-check-square" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Permission Best Practices Checklist
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Before we wrap up, here's your security checklist:</p>
+                    
+                    <ul>
+                        <li>☐ <strong>Principle of Least Privilege</strong>: Give minimum necessary permissions</li>
+                        <li>☐ <strong>Regular Audits</strong>: Run <code>find . -perm 777</code> to find overly permissive files</li>
+                        <li>☐ <strong>Script Security</strong>: Never leave scripts world-writable</li>
+                        <li>☐ <strong>Sensitive Files</strong>: Always use 600 or 640 for files with passwords</li>
+                        <li>☐ <strong>Directory Traversal</strong>: Directories need 'x' for users to access files inside</li>
+                        <li>☐ <strong>Version Control</strong>: <code>.git</code> directories should never be world-readable on web servers</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Section 6: Mastery Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-6">
+                        <i class="fas fa-graduation-cap" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mastery Summary & Next Steps
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>🎉 <strong>Congratulations, Permission Master!</strong> You've conquered file permissions and can now:</p>
+                    
+                    <p>✅ <strong>Decode</strong> permission strings like <code>-rwxr-xr-x</code> at a glance<br>
+                    ✅ <strong>Investigate</strong> permission problems using <code>ls -la</code><br>
+                    ✅ <strong>Fix</strong> permission errors with both symbolic and numeric chmod<br>
+                    ✅ <strong>Secure</strong> files and directories appropriately for different scenarios<br>
+                    ✅ <strong>Troubleshoot</strong> common permission-related errors in production</p>
+                    
+                    <h3>🤔 Challenge Questions for Deep Understanding:</h3>
+                    
+                    <!-- MCQ 9 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why would a file with 666 permissions be a security risk?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It's the devil's number</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        666 has superstitious implications
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Ha! While it is an unfortunate number, the real issue is technical, not supernatural.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">World-writable - anyone can modify</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Any user on the system can edit the file
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! 666 means rw-rw-rw-, giving write permission to everyone. Any user could modify, corrupt, or inject malicious content into the file.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">No execute permission</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Files can't run without execute bit
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Missing execute permission isn't a security risk - it's actually safer. The problem is world-write access.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It corrupts the file system</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        666 permissions cause system instability
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> No, permissions don't affect system stability. The risk is that anyone can modify the file's contents.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 10 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What happens if you remove execute permission from a directory?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Files inside can't be executed</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Scripts and programs won't run
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Directory execute permission doesn't affect file execution - that depends on the files' own permissions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Can't access files inside</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Directory becomes non-traversable
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Without execute permission on a directory, you can't cd into it or access any files inside, even if you know their names and have permission on the files themselves.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Directory gets deleted</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        System removes non-executable directories
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Absolutely not! Changing permissions never deletes files or directories.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Nothing - directories don't use execute</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Execute is only for files
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Wrong! Execute permission is crucial for directories - it controls whether you can traverse into them.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 11 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                How would you set up a directory where multiple users can collaborate but not delete each other's files?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">chmod 755 shared_dir</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Standard directory permissions
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This only allows the owner to write. Other users can't create files at all.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">chmod 1777 shared_dir</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Sticky bit with full access
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Perfect! The sticky bit (1) combined with 777 allows everyone to create files but only delete their own. This is how /tmp works.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">chmod 777 shared_dir</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Full permissions for everyone
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Close! This allows collaboration but users can delete each other's files. You need the sticky bit (1777) to prevent that.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Use ACLs instead</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Standard permissions can't do this
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> While ACLs could work, the sticky bit (chmod 1777) is the standard solution for this exact scenario.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>What's Next?</h3>
+                    
+                    <p>Your permission journey continues! Next, you'll learn about:</p>
+                    <ul>
+                        <li><strong>File Ownership</strong> with <code>chown</code> and <code>chgrp</code> - because permissions are only half the story!</li>
+                        <li><strong>Advanced Permissions</strong> like setuid, setgid, and sticky bits</li>
+                        <li><strong>Access Control Lists (ACLs)</strong> for fine-grained permission control</li>
+                        <li><strong>SELinux contexts</strong> for additional security layers</li>
+                    </ul>
+                    
+                    <p>Remember: With great power comes great responsibility. You now hold the keys to Linux security—use them wisely! 🗝️</p>
+                    
+                    <p><strong>Final Fun Fact</strong>: The chmod command's numeric notation is actually octal (base-8) because early UNIX systems used 9-bit bytes. Today we use 8-bit bytes, but the octal tradition lives on! That's why you'll never see an 8 or 9 in permission numbers. 🤓</p>
+                    
+                    <p>Keep practicing, stay curious, and happy Linux-ing!✨</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Linux learning session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your system administration session has been inactive. Ready to continue mastering Linux permissions?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
