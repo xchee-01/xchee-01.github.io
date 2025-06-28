@@ -221,6 +221,26 @@
             background: #444;
         }
 
+        .info-box {
+            background: #16213e;
+            border-left: 4px solid #276DC3;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h4 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #60a5fa;
+        }
+
+        .info-box p {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #a0a0a0;
+        }
+
         @media (min-width: 768px) {
             .container {
                 flex-direction: row;
@@ -248,10 +268,10 @@ Examples:
 - Basic math: 2 + 2
 - Create vector: x <- c(1, 2, 3, 4, 5)
 - Statistics: mean(x)
-- Plot: plot(1:10, (1:10)^2)"></textarea>
+- Print: print('Hello, R!')"></textarea>
             
             <div class="controls">
-                <button id="run-btn" onclick="runCode()">
+                <button id="run-btn" onclick="runCode()" disabled>
                     ▶ Run Code
                 </button>
                 <button id="clear-btn" onclick="clearOutput()">
@@ -265,6 +285,13 @@ Examples:
                 <button class="example-btn" onclick="loadExample('vector')">Vectors</button>
                 <button class="example-btn" onclick="loadExample('stats')">Statistics</button>
                 <button class="example-btn" onclick="loadExample('dataframe')">Data Frame</button>
+            </div>
+
+            <div class="info-box">
+                <h4>💡 Tips:</h4>
+                <p>• Press Ctrl+Enter to run code quickly<br>
+                • Use print() to display values<br>
+                • Variables persist between runs</p>
             </div>
         </div>
 
@@ -281,89 +308,142 @@ Examples:
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/webr@0.2.2/dist/webr.js"></script>
-    <script>
+    <script type="module">
+        import { WebR } from 'https://webr.r-wasm.org/latest/webr.mjs';
+
         let webR;
         let isReady = false;
 
         // Initialize WebR
         async function initializeR() {
             try {
-                webR = new WebR.WebR({
-                    baseUrl: 'https://cdn.jsdelivr.net/npm/webr@0.2.2/dist/',
-                    serviceWorkerUrl: 'https://cdn.jsdelivr.net/npm/webr@0.2.2/dist/webr-serviceworker.js'
+                const output = document.getElementById('output');
+                output.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Initializing WebR environment...</p></div>';
+                
+                webR = new WebR({
+                    SW_URL: "https://webr.r-wasm.org/latest/"
                 });
                 
                 await webR.init();
                 
-                // Set up output capture
-                await webR.objs.globalEnv.bind('webr_output', '');
-                
                 isReady = true;
-                document.getElementById('output').innerHTML = '<div class="output-line">R interpreter ready! Enter your code and click "Run Code".</div>';
+                output.innerHTML = '<div class="output-line">R interpreter ready! Enter your code and click "Run Code".</div>';
                 document.getElementById('run-btn').disabled = false;
+                
+                // Set up the global environment
+                await webR.evalR('options(width=80)');
+                
             } catch (error) {
                 document.getElementById('output').innerHTML = '<div class="output-error">Error initializing R: ' + error.message + '</div>';
+                console.error('Initialization error:', error);
             }
         }
 
-        async function runCode() {
+        // Make functions available globally
+        window.runCode = async function() {
             if (!isReady) return;
 
             const code = document.getElementById('code-editor').value;
             if (!code.trim()) return;
 
             const output = document.getElementById('output');
-            output.innerHTML += '<div class="output-line output-input">> ' + code + '</div>';
+            
+            // Show input
+            const codeLines = code.split('\n');
+            codeLines.forEach(line => {
+                if (line.trim()) {
+                    output.innerHTML += '<div class="output-line output-input">> ' + escapeHtml(line) + '</div>';
+                }
+            });
 
             try {
-                // Run the R code
-                const result = await webR.evalR(code);
+                // Capture output
+                let capturedOutput = '';
                 
-                // Get the output
-                const outputText = await result.toJs();
+                // Create a shelter for the execution
+                const shelter = await new webR.Shelter();
                 
-                if (outputText !== null && outputText !== undefined) {
-                    // Format the output
-                    let formattedOutput = '';
-                    if (Array.isArray(outputText)) {
-                        formattedOutput = '[1] ' + outputText.join(' ');
-                    } else if (typeof outputText === 'object') {
-                        formattedOutput = JSON.stringify(outputText, null, 2);
-                    } else {
-                        formattedOutput = String(outputText);
+                try {
+                    // Capture printed output
+                    await shelter.evalR(`
+                        .webr_output <- ""
+                        .webr_sink <- function(...) {
+                            .webr_output <<- paste0(.webr_output, paste0(..., collapse = " "), "\\n")
+                        }
+                        sink(textConnection(".webr_sink", "w", local = TRUE))
+                    `);
+                    
+                    // Execute the user's code
+                    const result = await shelter.evalR(code);
+                    
+                    // Get captured output
+                    await shelter.evalR('sink()');
+                    const printedOutput = await shelter.evalR('.webr_output');
+                    const printedText = await printedOutput.toJs();
+                    
+                    if (printedText && printedText.trim()) {
+                        output.innerHTML += '<div class="output-line output-result">' + escapeHtml(printedText.trim()) + '</div>';
                     }
                     
-                    output.innerHTML += '<div class="output-line output-result">' + formattedOutput + '</div>';
+                    // Get the result value
+                    const resultType = await result.type();
+                    
+                    if (resultType !== 'null') {
+                        // Try to convert result to string representation
+                        const capture = await shelter.evalR(`capture.output(print(${code}))`);
+                        const lines = await capture.toJs();
+                        
+                        if (lines && lines.length > 0) {
+                            const resultText = lines.join('\n');
+                            output.innerHTML += '<div class="output-line output-result">' + escapeHtml(resultText) + '</div>';
+                        }
+                    }
+                    
+                } finally {
+                    // Clean up the shelter
+                    shelter.purge();
                 }
+                
             } catch (error) {
-                output.innerHTML += '<div class="output-line output-error">Error: ' + error.message + '</div>';
+                output.innerHTML += '<div class="output-line output-error">Error: ' + escapeHtml(error.message) + '</div>';
             }
 
             // Scroll to bottom
             output.scrollTop = output.scrollHeight;
-        }
+        };
 
-        function clearOutput() {
+        window.clearOutput = function() {
             document.getElementById('output').innerHTML = '<div class="output-line">Output cleared.</div>';
-        }
+        };
 
-        function loadExample(type) {
+        window.loadExample = function(type) {
             const examples = {
-                basic: '# Basic arithmetic\n2 + 2\n10 * 5\nsqrt(16)',
-                vector: '# Working with vectors\nx <- c(1, 2, 3, 4, 5)\ny <- c(6, 7, 8, 9, 10)\nx + y\nx * 2',
-                stats: '# Statistical functions\ndata <- c(23, 45, 67, 89, 12, 34, 56, 78, 90)\nmean(data)\nmedian(data)\nsd(data)\nsummary(data)',
-                dataframe: '# Create a data frame\ndf <- data.frame(\n  name = c("Alice", "Bob", "Charlie"),\n  age = c(25, 30, 35),\n  score = c(85, 92, 78)\n)\ndf\nmean(df$score)'
+                basic: '# Basic arithmetic\n2 + 2\n10 * 5\nsqrt(16)\nexp(1)',
+                vector: '# Working with vectors\nx <- c(1, 2, 3, 4, 5)\ny <- c(6, 7, 8, 9, 10)\nprint(x)\nprint(y)\nx + y\nx * 2',
+                stats: '# Statistical functions\ndata <- c(23, 45, 67, 89, 12, 34, 56, 78, 90)\nprint(paste("Mean:", mean(data)))\nprint(paste("Median:", median(data)))\nprint(paste("Std Dev:", round(sd(data), 2)))\nsummary(data)',
+                dataframe: '# Create a data frame\ndf <- data.frame(\n  name = c("Alice", "Bob", "Charlie"),\n  age = c(25, 30, 35),\n  score = c(85, 92, 78)\n)\nprint(df)\nprint(paste("Average score:", mean(df$score)))'
             };
 
             document.getElementById('code-editor').value = examples[type] || '';
+        };
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
         }
 
         // Handle Enter key in textarea (Ctrl+Enter to run)
         document.getElementById('code-editor').addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'Enter') {
                 e.preventDefault();
-                runCode();
+                window.runCode();
             }
         });
 
