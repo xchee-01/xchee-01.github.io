@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R Interpreter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0f0f23;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1::before {
+            content: "R";
+            background: #276DC3;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .editor-section, .output-section {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .editor-section {
+            flex: 1;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #code-editor {
+            width: 100%;
+            min-height: 200px;
+            background: #0f0f23;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            color: #e0e0e0;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        #code-editor:focus {
+            outline: none;
+            border-color: #276DC3;
+            box-shadow: 0 0 0 2px rgba(39, 109, 195, 0.2);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            background: #276DC3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button:hover {
+            background: #1e5499;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #output {
+            background: #0f0f23;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .output-line {
+            margin: 2px 0;
+        }
+
+        .output-result {
+            color: #4ade80;
+        }
+
+        .output-error {
+            color: #f87171;
+        }
+
+        .output-warning {
+            color: #fbbf24;
+        }
+
+        .output-input {
+            color: #60a5fa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #333;
+            border-top-color: #276DC3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .examples {
+            margin-top: 20px;
+            padding: 15px;
+            background: #16213e;
+            border-radius: 4px;
+        }
+
+        .examples h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #a0a0a0;
+        }
+
+        .example-btn {
+            background: #333;
+            font-size: 12px;
+            padding: 6px 12px;
+            margin: 4px;
+        }
+
+        .example-btn:hover {
+            background: #444;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+            
+            .editor-section, .output-section {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Interactive R Interpreter</h1>
+    </div>
+
+    <div class="container">
+        <div class="editor-section">
+            <div class="section-header">
+                <span class="section-title">Code Editor</span>
+            </div>
+            <textarea id="code-editor" placeholder="Enter your R code here...
+
+Examples:
+- Basic math: 2 + 2
+- Create vector: x <- c(1, 2, 3, 4, 5)
+- Statistics: mean(x)
+- Plot: plot(1:10, (1:10)^2)"></textarea>
+            
+            <div class="controls">
+                <button id="run-btn" onclick="runCode()">
+                    ▶ Run Code
+                </button>
+                <button id="clear-btn" onclick="clearOutput()">
+                    Clear Output
+                </button>
+            </div>
+
+            <div class="examples">
+                <h3>Quick Examples:</h3>
+                <button class="example-btn" onclick="loadExample('basic')">Basic Math</button>
+                <button class="example-btn" onclick="loadExample('vector')">Vectors</button>
+                <button class="example-btn" onclick="loadExample('stats')">Statistics</button>
+                <button class="example-btn" onclick="loadExample('dataframe')">Data Frame</button>
+            </div>
+        </div>
+
+        <div class="output-section">
+            <div class="section-header">
+                <span class="section-title">Output</span>
+            </div>
+            <div id="output">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading R interpreter...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/webr@0.2.2/dist/webr.js"></script>
+    <script>
+        let webR;
+        let isReady = false;
+
+        // Initialize WebR
+        async function initializeR() {
+            try {
+                webR = new WebR.WebR({
+                    baseUrl: 'https://cdn.jsdelivr.net/npm/webr@0.2.2/dist/',
+                    serviceWorkerUrl: 'https://cdn.jsdelivr.net/npm/webr@0.2.2/dist/webr-serviceworker.js'
+                });
+                
+                await webR.init();
+                
+                // Set up output capture
+                await webR.objs.globalEnv.bind('webr_output', '');
+                
+                isReady = true;
+                document.getElementById('output').innerHTML = '<div class="output-line">R interpreter ready! Enter your code and click "Run Code".</div>';
+                document.getElementById('run-btn').disabled = false;
+            } catch (error) {
+                document.getElementById('output').innerHTML = '<div class="output-error">Error initializing R: ' + error.message + '</div>';
+            }
+        }
+
+        async function runCode() {
+            if (!isReady) return;
+
+            const code = document.getElementById('code-editor').value;
+            if (!code.trim()) return;
+
+            const output = document.getElementById('output');
+            output.innerHTML += '<div class="output-line output-input">> ' + code + '</div>';
+
+            try {
+                // Run the R code
+                const result = await webR.evalR(code);
+                
+                // Get the output
+                const outputText = await result.toJs();
+                
+                if (outputText !== null && outputText !== undefined) {
+                    // Format the output
+                    let formattedOutput = '';
+                    if (Array.isArray(outputText)) {
+                        formattedOutput = '[1] ' + outputText.join(' ');
+                    } else if (typeof outputText === 'object') {
+                        formattedOutput = JSON.stringify(outputText, null, 2);
+                    } else {
+                        formattedOutput = String(outputText);
+                    }
+                    
+                    output.innerHTML += '<div class="output-line output-result">' + formattedOutput + '</div>';
+                }
+            } catch (error) {
+                output.innerHTML += '<div class="output-line output-error">Error: ' + error.message + '</div>';
+            }
+
+            // Scroll to bottom
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '<div class="output-line">Output cleared.</div>';
+        }
+
+        function loadExample(type) {
+            const examples = {
+                basic: '# Basic arithmetic\n2 + 2\n10 * 5\nsqrt(16)',
+                vector: '# Working with vectors\nx <- c(1, 2, 3, 4, 5)\ny <- c(6, 7, 8, 9, 10)\nx + y\nx * 2',
+                stats: '# Statistical functions\ndata <- c(23, 45, 67, 89, 12, 34, 56, 78, 90)\nmean(data)\nmedian(data)\nsd(data)\nsummary(data)',
+                dataframe: '# Create a data frame\ndf <- data.frame(\n  name = c("Alice", "Bob", "Charlie"),\n  age = c(25, 30, 35),\n  score = c(85, 92, 78)\n)\ndf\nmean(df$score)'
+            };
+
+            document.getElementById('code-editor').value = examples[type] || '';
+        }
+
+        // Handle Enter key in textarea (Ctrl+Enter to run)
+        document.getElementById('code-editor').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                runCode();
+            }
+        });
+
+        // Initialize when page loads
+        initializeR();
+    </script>
+</body>
+</html>
