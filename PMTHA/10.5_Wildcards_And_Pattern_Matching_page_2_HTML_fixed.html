@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Wildcards and Pattern Matching - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Linux Systems Programming</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>MODULE 2: Advanced Pattern Matching and Practical Applications</h1>
+            
+            <!-- Section 1: Character Sets with Square Brackets -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-filter" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Character Sets with Square Brackets [] - Your Custom Filter
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Square brackets let you create your own custom character matcher. It's like having a bouncer at a club who only lets in specific characters!</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Power User Box</strong></p>
+                        <div class="code-block-container" data-block-name="character-sets-reference">
+                            <div class="code-block">[abc]    = matches a, b, or c
+[a-z]    = matches any lowercase letter
+[0-9]    = matches any digit
+[a-zA-Z] = matches any letter (upper or lower)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Quick Check</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which pattern would match files named 'file1.txt', 'file5.txt', and 'file9.txt'?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">file*.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using asterisk wildcard
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This would match more files than intended, including file10.txt, file123.txt, etc.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">file?.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using question mark wildcard
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The ? matches exactly one character, so this would match all file[single-character].txt files.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">file[159].txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using character set with specific digits
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! This matches exactly file1.txt, file5.txt, and file9.txt.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">file[0-9].txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using character range
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Also correct! This is more general and would match any single digit, but would include the three files mentioned.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Building Your Character Set Skills</h3>
+                    <p>Start simple, then combine for power:</p>
+                    
+                    <div class="code-block-container" data-block-name="character-set-examples">
+                        <div class="code-block"># Match files starting with vowels
+user@hostname:~$ ls [aeiou]*
+
+# Match numbered reports from days 1-5
+user@hostname:~$ ls report-2024-01-0[1-5].log
+
+# Combine with other wildcards for ultimate power!
+user@hostname:~$ ls [A-Z]*-v[0-9].conf
+# Matches: Apache-v1.conf, Nginx-v5.conf, BUT NOT apache-v1.conf (lowercase!)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-puzzle-piece"></i>
+                            </div>
+                            <div class="mcq-header-text">Pattern Matching</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why doesn't [A-Z]*-v[0-9].conf match apache-v1.conf?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The pattern is incorrect</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        There's a syntax error in the pattern
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The pattern syntax is correct. The issue is with case sensitivity.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[A-Z] only matches uppercase letters</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Character ranges are case-sensitive
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! [A-Z] matches only uppercase letters, while 'apache' starts with a lowercase 'a'.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The v should be uppercase</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Pattern requires uppercase V
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The 'v' in the pattern is outside the brackets and matches literally.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The pattern needs quotes</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Missing quotation marks
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This pattern doesn't require quotes unless it contains spaces or special shell characters.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>The Time-Saving Trick: Ranges</h3>
+                    <p>Instead of typing [0123456789], just use [0-9]. Your fingers will thank you!</p>
+                    
+                    <div class="code-block-container" data-block-name="range-examples">
+                        <div class="code-block"># The hard way:
+ls file[0123456789].txt
+
+# The smart way:
+ls file[0-9].txt
+
+# They do the same thing!</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Range Knowledge</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which range pattern would match all lowercase letters from 'a' to 'f'?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[a-f]</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Range notation
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! This is the standard range notation for consecutive characters.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[A-F]</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Uppercase range
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This matches uppercase letters A-F, not lowercase a-f.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[abcdef]</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Explicit listing
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Also correct! This explicitly lists each character, which works but is more typing.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Both A and C</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Multiple correct answers
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Both [a-f] and [abcdef] will match the same lowercase letters.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Real-World Scenario: Security Audit Emergency!</h3>
+                    <p>The security team needs all authentication logs from June through August, FAST!</p>
+                    
+                    <div class="code-block-container" data-block-name="security-audit-example">
+                        <div class="code-block"># Old painful way (don't do this!):
+user@hostname:~$ ls auth.log.2024-06-*
+user@hostname:~$ ls auth.log.2024-07-*
+user@hostname:~$ ls auth.log.2024-08-*
+
+# Ninja way with brackets:
+user@hostname:~$ ls auth.log.2024-0[6-8]-*
+
+# Even better - archive them all at once:
+user@hostname:~$ tar -czf summer-auth-logs.tar.gz auth.log.2024-0[6-8]-*</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 4 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="mcq-header-text">Time-Saver</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which pattern would match logs from April through June (months 04-06)?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">auth.log.2024-[4-6]-*</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Simple range without leading zero
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This misses the leading zero in months 04-06.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">auth.log.2024-0[4-6]-*</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Range with leading zero
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! This matches 04, 05, and 06 with the proper formatting.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">auth.log.2024-[04-06]-*</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Range with full month numbers
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Character ranges work on single characters, not multi-digit numbers.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">auth.log.2024-{04..06}-*</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Brace expansion syntax
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This is brace expansion syntax, not character set syntax. Different concept!
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Hands-On Lab: Date Range Master</h3>
+                        <p>You're investigating an issue that happened in the first week of various months:</p>
+                        
+                        <div class="code-block-container" data-block-name="date-range-lab">
+                            <div class="code-block"># Create your test data
+user@hostname:~$ mkdir -p ~/dated_files && cd ~/dated_files
+user@hostname:~/dated_files$ touch report-{2024-01-01,2024-01-03,2024-01-07}.txt
+user@hostname:~/dated_files$ touch report-{2024-01-15,2024-02-02,2024-02-05}.txt
+user@hostname:~/dated_files$ touch report-{2024-03-04,2024-03-25}.txt
+
+# Mission: Find ALL reports from days 1-5 of ANY month
+# Try this step by step:
+
+# Step 1: Think about the pattern
+# report-2024-??-0[?????].txt
+
+# Step 2: Test your solution
+user@hostname:~/dated_files$ ls report-2024-*-0[1-5].txt
+
+# Expected output:
+# report-2024-01-01.txt  report-2024-01-03.txt  
+# report-2024-02-02.txt  report-2024-02-05.txt  
+# report-2024-03-04.txt</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p><strong>Pattern Recognition Challenge</strong>: Can you explain why report-2024-01-07.txt wasn't included?</p>
+                    </div>
+                    
+                    <!-- MCQ 5 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-microscope"></i>
+                            </div>
+                            <div class="mcq-header-text">Pattern Analysis</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why wasn't report-2024-01-07.txt included in the pattern report-2024-*-0[1-5].txt?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The asterisk (*) doesn't match the month</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Pattern matching issue
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The asterisk correctly matches the month portion.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The pattern has a syntax error</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Invalid pattern syntax
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The pattern syntax is correct and works as intended.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[1-5] only matches digits 1,2,3,4,5 and 07 ends with 7</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Character range limitation
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The pattern 0[1-5] matches 01, 02, 03, 04, 05 but not 07.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The file doesn't exist</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Missing file
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The file was created in the setup commands.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 2: Negation with [!] -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-ban" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Negation with [!] - The "Everything EXCEPT" Operator
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Sometimes knowing what you DON'T want is just as important as knowing what you do want. Enter the negation operator!</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Mind-Bender Box</strong></p>
+                        <div class="code-block-container" data-block-name="negation-reference">
+                            <div class="code-block">[!a]   = any character EXCEPT 'a'
+[!0-9] = any character EXCEPT digits
+[!.]   = any character EXCEPT a dot (great for skipping hidden files!)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Negation Basics</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which pattern matches any file that does NOT start with a digit?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[0-9]*</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Character range for digits
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This matches files that DO start with a digit, not those that don't.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[!0-9]*</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Negated character range
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The ! inside brackets negates the range, matching any character except 0-9.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">![0-9]*</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Exclamation outside brackets
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The ! must be inside the brackets for negation to work.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[^0-9]*</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Caret notation
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This is regex syntax, not shell wildcard syntax. Use ! in shell patterns.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>The Art of Exclusion</h3>
+                    <p>Watch how negation flips the script:</p>
+                    
+                    <div class="code-block-container" data-block-name="exclusion-examples">
+                        <div class="code-block"># Show all files (including hidden)
+user@hostname:~$ ls -la
+
+# Show only NON-hidden files
+user@hostname:~$ ls [!.]*
+
+# List all log files EXCEPT the ones ending in 7, 8, or 9
+user@hostname:~$ ls *[!789].log
+# Matches: file1.log, file2.log, BUT NOT file7.log</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 7 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-filter"></i>
+                            </div>
+                            <div class="mcq-header-text">Exclusion Logic</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                To list all .conf files except those starting with 'test' or 'temp', which pattern works?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[!test]*.conf</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Negating the word 'test'
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Brackets match single characters, not words. This would exclude t, e, s individually.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[!t]*.conf</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Exclude files starting with 't'
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This only excludes files starting with 't', missing 'temp' files.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">[!test|temp]*.conf</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Using pipe for alternatives
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Pipe doesn't work inside brackets. This excludes t, e, s, |, m, p individually.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Neither A nor C will work correctly</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Wildcards can't exclude word patterns
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Shell wildcards work on single characters. To exclude word patterns, you'd need tools like grep -v or find with -not.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Real-World Lifesaver: The Migration Mishap Prevention</h3>
+                    <p>You're migrating configs but need to skip all test and backup files:</p>
+                    
+                    <div class="code-block-container" data-block-name="migration-example">
+                        <div class="code-block"># See what we're dealing with
+user@hostname:~$ ls /etc/*.conf
+# apache2.conf  mysql.conf  nginx.conf  test-nginx.conf  nginx.conf.bak
+
+# Copy only the REAL config files
+user@hostname:~$ cp /etc/[!t]*.conf ~/migration/
+# Skips: test-nginx.conf
+
+# But wait, we still have .bak files! Let's be more clever:
+user@hostname:~$ ls /etc/*[!k].conf
+# Now we skip anything ending in 'k' (like .bak renamed to .conf)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Brace Expansion -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-clone" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Brace Expansion {} - The Multiplication Machine
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Brace expansion is like a copy machine for your commands. Type once, create many!</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Time-Saver Supreme Box</strong></p>
+                        <div class="code-block-container" data-block-name="brace-reference">
+                            <div class="code-block">{dev,test,prod} = expands to: dev test prod
+{1..5}          = expands to: 1 2 3 4 5
+{a..e}          = expands to: a b c d e</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 8 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Expansion Basics</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does mkdir dir{A,B,C} create?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A single directory named 'dir{A,B,C}'</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Literal interpretation
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Braces are expanded by the shell, not taken literally.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Three directories: dirA, dirB, dirC</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Brace expansion result
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The shell expands dir{A,B,C} to dirA dirB dirC.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">An error message</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Invalid syntax
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This is valid brace expansion syntax.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A directory named 'dirABC'</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Concatenated result
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Brace expansion creates separate items, not concatenations.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>The Power of Parallel Creation</h3>
+                    <p>Watch how one command becomes many:</p>
+                    
+                    <div class="code-block-container" data-block-name="parallel-creation">
+                        <div class="code-block"># Create a full project structure in ONE command!
+user@hostname:~$ mkdir -p myproject/{src,docs,tests,config}/{python,java,scripts}
+
+# This creates:
+# myproject/src/python, myproject/src/java, myproject/src/scripts
+# myproject/docs/python, myproject/docs/java, myproject/docs/scripts
+# ... and so on!</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 9 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-folder-tree"></i>
+                            </div>
+                            <div class="mcq-header-text">Nested Expansion</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                How many directories does mkdir -p app/{frontend,backend}/{src,test} create?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">2</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Just frontend and backend
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The nested braces create subdirectories too.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">4</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        All combinations
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! frontend/src, frontend/test, backend/src, backend/test = 4 directories.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">6</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Including parent directories
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Parent directories are created automatically, not counted separately.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">8</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Double counting
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> There are only 4 leaf directories created.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Numbered Sequences - Because Typing is Overrated</h3>
+                    
+                    <div class="code-block-container" data-block-name="number-sequences">
+                        <div class="code-block"># Create 10 numbered directories the hard way:
+mkdir dir1 dir2 dir3 dir4 dir5 dir6 dir7 dir8 dir9 dir10
+
+# Create 10 numbered directories the smart way:
+mkdir dir{1..10}
+
+# Create a test environment with multiple file types:
+touch test.{txt,log,conf,json,xml,yaml}
+# Creates: test.txt test.log test.conf test.json test.xml test.yaml</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 10 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-list-ol"></i>
+                            </div>
+                            <div class="mcq-header-text">Sequence Skills</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which command creates files: log01.txt, log02.txt, log03.txt?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">touch log{1..3}.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Simple sequence
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This creates log1.txt, log2.txt, log3.txt without leading zeros.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">touch log{01..03}.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Zero-padded sequence
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Bash preserves the zero-padding in sequences.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">touch log0{1..3}.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Manual zero prefix
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This works for single digits but is less flexible than {01..03}.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">touch log[01-03].txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Character range
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Brackets are for matching existing files, not creating new ones.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Real-World Magic: Multi-Environment Deployment</h3>
+                    <p>DevOps engineers love this trick:</p>
+                    
+                    <div class="code-block-container" data-block-name="deployment-example">
+                        <div class="code-block"># Set up complete environment structure
+user@hostname:~$ mkdir -p /opt/myapp/{development,staging,production}/{config,logs,data,backups}
+
+# Deploy configs to all environments at once
+user@hostname:~$ cp base.conf /opt/myapp/{development,staging,production}/config/
+
+# Create environment-specific configs
+user@hostname:~$ touch /opt/myapp/{dev,stage,prod}-database.conf</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 4: Combining Powers -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-magic" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Combining Powers - Advanced Wildcard Wizardry
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Now for the ultimate level - combining different wildcards for maximum power!</p>
+                    
+                    <h3>The Compound Pattern Technique</h3>
+                    
+                    <div class="code-block-container" data-block-name="compound-patterns">
+                        <div class="code-block"># Find Python files that aren't tests
+user@hostname:~$ ls [!test]*.py
+# main.py  utils.py  config.py  # but NOT test_main.py
+
+# Multi-format log files from summer months
+user@hostname:~$ ls /var/log/app-202[3-4]-0[6-8]-*.{log,txt,gz}
+
+# Version 1-5 configs in multiple formats
+user@hostname:~$ ls *-v[1-5].{conf,cfg,config}</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 11 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="mcq-header-text">Pattern Mastery</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which files would app-v[2-4].{py,js} match?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">app-v2.py, app-v3.py, app-v4.py only</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only Python files
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The brace expansion includes both .py and .js extensions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">app-v2.js, app-v3.js, app-v4.js only</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Only JavaScript files
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The brace expansion includes both .py and .js extensions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">All six files: app-v2.py, app-v2.js, app-v3.py, app-v3.js, app-v4.py, app-v4.js</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        All combinations
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! [2-4] matches 2, 3, 4 and {py,js} expands to both extensions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only app-v2.py and app-v4.js</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Random subset
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The pattern matches all combinations systematically.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>The Safety Pattern: Test Before You Destroy!</h3>
+                    <p><strong>Golden Rule</strong>: Always test with <code>ls</code> before using <code>rm</code> or <code>mv</code>!</p>
+                    
+                    <div class="code-block-container" data-block-name="safety-pattern">
+                        <div class="code-block"># ALWAYS do this first:
+user@hostname:~$ ls old-backup-202[0-2]-*.{tar,zip,gz}
+
+# ONLY after verifying the list, do this:
+user@hostname:~$ rm old-backup-202[0-2]-*.{tar,zip,gz}</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 12 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="mcq-header-text">Safety First</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why should you always test patterns with ls before using rm?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">ls is faster than rm</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Performance consideration
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Speed isn't the issue - safety is!
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">To verify which files the pattern matches before deletion</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Prevention of accidental data loss
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Always verify what your pattern matches to avoid accidentally deleting the wrong files.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">rm requires root permissions</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Permission requirement
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> rm doesn't always require root permissions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">ls creates a backup first</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Backup creation
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> ls only lists files, it doesn't create backups.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Final Boss Challenge: The Master Pattern</h3>
+                        <p>Your mission: Clean up a messy project directory that has accumulated various temporary and backup files:</p>
+                        
+                        <div class="code-block-container" data-block-name="final-challenge">
+                            <div class="code-block"># First, create a realistic mess
+user@hostname:~$ mkdir messy_project && cd messy_project
+user@hostname:~/messy_project$ touch app.{py,js,conf} app.py.bak app.js.backup
+user@hostname:~/messy_project$ touch test_{1..5}.py debug_{a..c}.log
+user@hostname:~/messy_project$ touch .hidden_{config,data} temp_file_{01..10}.tmp
+
+# Challenge 1: List all Python files except tests and backups
+user@hostname:~/messy_project$ ls [!test]*.py
+
+# Challenge 2: Remove all temp files from 01-05
+user@hostname:~/messy_project$ rm temp_file_0[1-5].tmp
+
+# Challenge 3: Archive all debug logs and test files
+user@hostname:~/messy_project$ tar -czf testing-artifacts.tar.gz debug_*.log test_*.py
+
+# Master Challenge: Create a backup of main app files (py, js, conf) 
+# but exclude any existing backups
+user@hostname:~/messy_project$ cp app.{py,js,conf} backup_{2024-01-26}/</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Solutions</button>
+                        <div class="answer">
+                            <h4>Solutions Explained:</h4>
+                            <div class="code-block-container" data-block-name="final-challenge-solutions">
+                                <div class="code-block"># Challenge 1 Solution:
+ls [!test]*.py
+# Matches: app.py (but NOT test_1.py, test_2.py, etc.)
+
+# Challenge 2 Solution:
+rm temp_file_0[1-5].tmp
+# Removes: temp_file_01.tmp through temp_file_05.tmp
+
+# Challenge 3 Solution:
+tar -czf testing-artifacts.tar.gz debug_*.log test_*.py
+# Archives: debug_a.log, debug_b.log, debug_c.log, test_1.py through test_5.py
+
+# Master Challenge Solution:
+mkdir backup_2024-01-26
+cp app.{py,js,conf} backup_2024-01-26/
+# Copies only the main files, not the .bak or .backup versions</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Outstanding! You've mastered Linux wildcards and pattern matching. You can now handle complex file operations with confidence and efficiency!" data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 5: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-5">
+                        <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Summary: Your Wildcard Mastery Achievement
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Congratulations! You've leveled up your Linux command-line skills with advanced pattern matching techniques!</p>
+                    
+                    <h3>Your New Superpowers:</h3>
+                    <ul>
+                        <li><strong>Character Sets []</strong> - Create custom character filters for precise matching</li>
+                        <li><strong>Negation [!]</strong> - Exclude unwanted patterns with surgical precision</li>
+                        <li><strong>Brace Expansion {}</strong> - Generate multiple items from a single pattern</li>
+                        <li><strong>Compound Patterns</strong> - Combine techniques for ultimate flexibility</li>
+                    </ul>
+                    
+                    <h3>Quick Reference Card</h3>
+                    <div class="code-block-container" data-block-name="quick-reference">
+                        <div class="code-block"># Character Sets
+[abc]      # Match a, b, or c
+[a-z]      # Match any lowercase letter
+[0-9]      # Match any digit
+[a-zA-Z]   # Match any letter
+
+# Negation
+[!0-9]     # Match anything EXCEPT digits
+[!a-z]     # Match anything EXCEPT lowercase letters
+
+# Brace Expansion
+{dev,prod} # Expands to: dev prod
+{1..5}     # Expands to: 1 2 3 4 5
+{a..d}     # Expands to: a b c d
+
+# Combinations
+*[!0-9].{txt,log}     # Non-digit ending files with .txt or .log extension
+backup-[1-5]-{jan,feb,mar}.*  # Numbered backups for Q1</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Pro Tips to Remember:</h3>
+                    <ol>
+                        <li><strong>Always test with ls first</strong> - Never use rm or mv with wildcards without checking</li>
+                        <li><strong>Quote when needed</strong> - Use quotes if your pattern contains spaces or special characters</li>
+                        <li><strong>Think before you type</strong> - Complex patterns can match unexpected files</li>
+                        <li><strong>Combine for power</strong> - Mix different wildcards for maximum efficiency</li>
+                    </ol>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Real-World Impact:</strong> System administrators report saving 2-3 hours per week by mastering wildcards and pattern matching. That's over 100 hours per year of increased productivity!</p>
+                    </div>
+                    
+                    <p>Ready to apply these skills? Try using wildcards in your daily work - file backups, log analysis, batch operations, and more. The more you practice, the more natural it becomes!</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">Great Job!</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-terminal"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Linux session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your command-line learning session has been inactive. Ready to continue mastering Linux wildcards?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
