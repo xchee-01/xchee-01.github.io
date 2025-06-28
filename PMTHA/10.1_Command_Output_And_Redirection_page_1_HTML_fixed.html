@@ -16,7 +16,7 @@
         <div class="header-container">
             <div class="nus-logo">
                 <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
-                NUS <span>Linux Systems Programming</span>
+                NUS <span>Precision Medicine Toolkit for Health Analytics</span>
             </div>
         </div>
     </header>
@@ -27,12 +27,12 @@
             
             <p>Welcome to Linux I/O redirection! One of the most powerful features that makes Linux administrators productive is controlling where command output goes and input comes from. Think of redirection as your traffic control system for data flow.</p>
             
-            <!-- MODULE 1: Introduction to Linux I/O Redirection -->
+            <!-- Section 1: Introduction to Linux I/O Redirection -->
             <div class="section-dropdown">
                 <div class="section-header">
                     <h2 id="section-1">
                         <i class="fas fa-terminal" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Command Output and Redirection (>, >>, <) - Linux Command Line Mastery
+                        Understanding Standard Streams and Output Redirection (>)
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
@@ -210,32 +210,59 @@ ls -la /proc/self/fd/</div>
                         </div>
                     </div>
                     
-                    <h3>Lab Exercise 1: Stream Detective</h3>
-                    
-                    <p><strong>Part A: Observe Normal Output</strong></p>
-                    <div class="code-block-container" data-block-name="observe-output">
-                        <div class="code-block">ls /home</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <p><strong>Part B: Trigger an Error</strong></p>
-                    <div class="code-block-container" data-block-name="trigger-error">
-                        <div class="code-block">ls /this_directory_does_not_exist</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <p><strong>Part C: Prove They're Different</strong></p>
-                    <div class="code-block-container" data-block-name="prove-different">
-                        <div class="code-block"># Redirect stdout only
+                    <div class="challenge">
+                        <h3>Lab Exercise 1: Stream Detective</h3>
+                        <p>As a system administrator, you need to understand how different streams work. Let's explore the difference between standard output and standard error streams.</p>
+                        
+                        <p><strong>Step 1: Observe Normal Output</strong></p>
+                        <div class="code-block-container" data-block-name="lab1-observe-output">
+                            <div class="code-block"># Run this command to see normal output
+ls /home</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p><strong>Step 2: Trigger an Error</strong></p>
+                        <div class="code-block-container" data-block-name="lab1-trigger-error">
+                            <div class="code-block"># Run this command to see error output
+ls /this_directory_does_not_exist</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p><strong>Step 3: Prove They're Different Streams</strong></p>
+                        <div class="code-block-container" data-block-name="lab1-prove-different">
+                            <div class="code-block"># Redirect stdout only (errors still appear on screen)
 ls /home /this_does_not_exist > only_stdout.txt
+
+# Check what was captured
 cat only_stdout.txt</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected result:</p>
+                        <div class="expected-output">Error message appears on screen:
+ls: cannot access '/this_does_not_exist': No such file or directory
+
+File contains only valid output from /home</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <p>The error still appeared on screen because > only redirects stdout (file descriptor 1), not stderr (file descriptor 2). To capture both, you would need:</p>
+                            <div class="code-block-container" data-block-name="lab1-solution">
+                                <div class="code-block"># Redirect both stdout and stderr
+ls /home /this_does_not_exist > output.txt 2>&1
+
+# Or use the modern shorthand
+ls /home /this_does_not_exist &> output.txt</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Great job! You've discovered that stdout and stderr are separate streams. This separation allows you to handle normal output and errors differently - a crucial skill for system administration!" data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
                     </div>
-                    
-                    <p>The error still appeared on screen, but only valid output went to the file!</p>
                     
                     <!-- MCQ 3 -->
                     <div class="mcq-container">
@@ -399,17 +426,66 @@ date > report.txt  # Oops! First line gone!</div>
                         </div>
                     </div>
                     
-                    <h3>Lab Exercise 2: System Report Generator</h3>
-                    
-                    <p><strong>Broken Script</strong>:</p>
-                    <div class="code-block-container" data-block-name="broken-script">
-                        <div class="code-block">echo "System Report - $(date)" > system_report.txt
+                    <div class="challenge">
+                        <h3>Lab Exercise 2: System Report Generator</h3>
+                        <p>You've been asked to create a system report script, but the previous administrator left a broken script. Your task is to fix it so it creates a complete report without losing any information.</p>
+                        
+                        <p><strong>The Broken Script:</strong></p>
+                        <div class="code-block-container" data-block-name="lab2-broken-script">
+                            <div class="code-block"># WARNING: This script has a problem!
+echo "System Report - $(date)" > system_report.txt
 echo "=========================" > system_report.txt
 uname -a > system_report.txt
 df -h > system_report.txt
-free -h > system_report.txt</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
+free -h > system_report.txt
+
+# Check the result
+cat system_report.txt</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected output (what you should see):</p>
+                        <div class="expected-output">System Report - [current date]
+=========================
+
+[System information from uname]
+
+[Disk usage information from df]
+
+[Memory information from free]</div>
+                        
+                        <p>Actual output (what the broken script produces):</p>
+                        <div class="expected-output">[Only memory information from free -h command]</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <p>The problem is that each > overwrites the file. Here's the fixed version:</p>
+                            <div class="code-block-container" data-block-name="lab2-fixed-script">
+                                <div class="code-block"># Fixed script - First line creates with >
+echo "System Report - $(date)" > system_report.txt
+
+# Subsequent lines append with >>
+echo "=========================" >> system_report.txt
+echo "" >> system_report.txt
+echo "SYSTEM INFO:" >> system_report.txt
+uname -a >> system_report.txt
+echo "" >> system_report.txt
+echo "DISK USAGE:" >> system_report.txt
+df -h >> system_report.txt
+echo "" >> system_report.txt
+echo "MEMORY:" >> system_report.txt
+free -h >> system_report.txt
+
+# View complete report
+cat system_report.txt</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                            <p><strong>Key Learning:</strong> Use > for the first line to create a fresh file, then >> for all subsequent lines to append without overwriting.</p>
+                        </div>
+                        <button class="celebrate-button" data-message="Excellent work! You've fixed the report generator by understanding the difference between > and >>. This is a common mistake that even experienced administrators sometimes make!" data-animation="sides"><i class="fas fa-star"></i> I've done it!</button>
                     </div>
                     
                     <!-- MCQ 5 -->
@@ -482,36 +558,25 @@ free -h > system_report.txt</div>
                         </div>
                     </div>
                     
-                    <p><strong>Fixed Script</strong>:</p>
-                    <div class="code-block-container" data-block-name="fixed-script">
-                        <div class="code-block"># First line creates with >
-echo "System Report - $(date)" > system_report.txt
-
-# Subsequent lines append with >>
-echo "=========================" >> system_report.txt
-echo "" >> system_report.txt
-echo "SYSTEM INFO:" >> system_report.txt
-uname -a >> system_report.txt
-echo "" >> system_report.txt
-echo "DISK USAGE:" >> system_report.txt
-df -h >> system_report.txt
-echo "" >> system_report.txt
-echo "MEMORY:" >> system_report.txt
-free -h >> system_report.txt
-
-# View report
-cat system_report.txt</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
                     <p><strong>Golden Rule</strong>: First > creates, then >> appends!</p>
+                </div>
+            </div>
+            
+            <!-- Section 2: Append Redirection -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-plus-circle" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Append Redirection with >> (The Friendly Adder)
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>The >> operator adds content to the end of files without destroying existing content. This is essential for log files, continuous monitoring, and building reports over time.</p>
                     
-                    <h3>Append Redirection with >> (The Friendly Adder)</h3>
+                    <h3>Basic Append Operations</h3>
                     
-                    <p>The >> operator adds content to the end of files without destroying existing content.</p>
-                    
-                    <div class="code-block-container" data-block-name="append-redirection">
+                    <div class="code-block-container" data-block-name="append-basics">
                         <div class="code-block"># Create monitoring log
 echo "=== Daily Checks ===" > daily.log
 echo "Started: $(date)" >> daily.log
@@ -524,7 +589,10 @@ echo "11:00 - Memory:" >> daily.log
 free -h | grep Mem >> daily.log
 
 echo "12:00 - Disk:" >> daily.log
-df -h | grep "/$" >> daily.log</div>
+df -h | grep "/$" >> daily.log
+
+# View the complete log
+cat daily.log</div>
                         <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                         <div class="copy-feedback">Copied!</div>
                     </div>
@@ -599,11 +667,133 @@ df -h | grep "/$" >> daily.log</div>
                         </div>
                     </div>
                     
-                    <h3>Input Redirection with < (The File Reader)</h3>
+                    <h3>Common Use Cases for Append</h3>
                     
-                    <p>The < operator tells commands to read from files instead of keyboard.</p>
+                    <p><strong>1. Building Log Files</strong></p>
+                    <div class="code-block-container" data-block-name="log-files">
+                        <div class="code-block"># Application log
+echo "[$(date)] Application started" >> app.log
+echo "[$(date)] Processing user request" >> app.log
+echo "[$(date)] Request completed successfully" >> app.log</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
                     
-                    <div class="code-block-container" data-block-name="input-redirection">
+                    <p><strong>2. Collecting System Statistics</strong></p>
+                    <div class="code-block-container" data-block-name="system-stats">
+                        <div class="code-block"># Create header once
+echo "Timestamp,CPU_Load,Memory_Used" > system_stats.csv
+
+# Append data every minute (in a real script, this would be in a loop)
+echo "$(date +%s),$(uptime | awk -F'load average:' '{print $2}' | awk -F, '{print $1}'),$(free -m | grep Mem | awk '{print $3}')" >> system_stats.csv</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p><strong>3. Combining Multiple Sources</strong></p>
+                    <div class="code-block-container" data-block-name="combine-sources">
+                        <div class="code-block"># Start error collection
+echo "=== Error Summary ===" > all_errors.log
+
+# Append from different log files
+grep ERROR /var/log/syslog >> all_errors.log
+grep FAIL /var/log/auth.log >> all_errors.log
+grep WARNING /var/log/apache2/error.log >> all_errors.log</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Pro Tip:</strong> When writing scripts that run via cron, always use >> for logs. This ensures each run adds to the history rather than destroying it!</p>
+                    </div>
+                    
+                    <!-- MCQ 9 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                To create a new log file with a header and then add timestamped entries, which pattern is correct?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">echo "Log" >> log.txt; date >> log.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Append both lines
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This works but doesn't guarantee a clean start if log.txt already exists.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">echo "Log" > log.txt; date > log.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Overwrite for both
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The second > overwrites the first line. Only the date would remain.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">echo "Log" > log.txt; date >> log.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Create then append
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Use > to create the file with the header, then >> to append additional entries without overwriting.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">echo "Log" < log.txt; date < log.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Read from file
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The < operator is for input, not output. This would try to read from the file.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Input Redirection -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-sign-in-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Input Redirection with < (The File Reader)
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>The < operator tells commands to read from files instead of keyboard. This is powerful for automation and batch processing.</p>
+                    
+                    <h3>Basic Input Redirection</h3>
+                    
+                    <div class="code-block-container" data-block-name="input-basics">
                         <div class="code-block"># Create a list
 cat > shopping.txt << EOF
 apples
@@ -690,48 +880,111 @@ wc -l < shopping.txt</div>
                         </div>
                     </div>
                     
-                    <h3>Lab Exercise 3: Config File Generator</h3>
+                    <h3>Advanced Input Redirection</h3>
                     
-                    <p><strong>Create Server List</strong>:</p>
-                    <div class="code-block-container" data-block-name="create-server-list">
-                        <div class="code-block">cat > servers.txt << EOF
-web01:192.168.1.10:webserver
-web02:192.168.1.11:webserver
-db01:192.168.1.20:database
+                    <p><strong>Processing Files with Loops</strong></p>
+                    <div class="code-block-container" data-block-name="loop-input">
+                        <div class="code-block"># Read and process each line
+while read line
+do
+    echo "Processing: $line"
+done < shopping.txt</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p><strong>Here Documents (<<)</strong></p>
+                    <div class="code-block-container" data-block-name="here-doc">
+                        <div class="code-block"># Multi-line input without a file
+sort << EOF
+zebra
+apple
+mango
+banana
 EOF</div>
                         <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                         <div class="copy-feedback">Copied!</div>
                     </div>
                     
-                    <p><strong>Process with Input Redirection</strong>:</p>
-                    <div class="code-block-container" data-block-name="process-servers">
-                        <div class="code-block">while IFS=: read -r hostname ip role
+                    <div class="challenge">
+                        <h3>Lab Exercise 3: Config File Generator</h3>
+                        <p>You need to create configuration files for multiple servers based on a server list. This exercise demonstrates the power of input redirection for batch processing.</p>
+                        
+                        <p><strong>Step 1: Create the Server List</strong></p>
+                        <div class="code-block-container" data-block-name="lab3-server-list">
+                            <div class="code-block"># Create a server list file with server details
+cat > servers.txt << EOF
+web01:192.168.1.10:webserver
+web02:192.168.1.11:webserver
+db01:192.168.1.20:database
+EOF
+
+# Verify the list
+cat servers.txt</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p><strong>Step 2: Process the List with Input Redirection</strong></p>
+                        <div class="code-block-container" data-block-name="lab3-process">
+                            <div class="code-block"># Read and process each server entry
+while IFS=: read -r hostname ip role
 do
     config="${hostname}.conf"
     
-    # Create config
-    echo "# Config for $hostname" > "$config"
+    # Create config file
+    echo "# Configuration for $hostname" > "$config"
     echo "hostname = $hostname" >> "$config"
     echo "ip_address = $ip" >> "$config"
     echo "role = $role" >> "$config"
     
-    # Role-specific settings
+    # Add role-specific settings
     case $role in
         webserver)
             echo "port = 80" >> "$config"
+            echo "document_root = /var/www/html" >> "$config"
             ;;
         database)
             echo "port = 3306" >> "$config"
+            echo "data_directory = /var/lib/mysql" >> "$config"
             ;;
     esac
     
     echo "Created: $config"
 done < servers.txt
 
-# Verify
+# List created files
 ls *.conf</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected output:</p>
+                        <div class="expected-output">Created: web01.conf
+Created: web02.conf
+Created: db01.conf
+
+web01.conf  web02.conf  db01.conf</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <p>The script uses input redirection to feed the server list to a while loop. Key points:</p>
+                            <ul>
+                                <li><code>IFS=:</code> sets the field separator to colon</li>
+                                <li><code>read -r hostname ip role</code> splits each line into variables</li>
+                                <li><code>done < servers.txt</code> feeds the file to the loop</li>
+                                <li>Each iteration creates a customized config file</li>
+                            </ul>
+                            <p>To verify the configs were created correctly:</p>
+                            <div class="code-block-container" data-block-name="lab3-verify">
+                                <div class="code-block"># Check one of the generated configs
+cat web01.conf</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Excellent! You've automated config file generation using input redirection. This technique is invaluable for managing multiple servers and automating repetitive tasks!" data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
                     </div>
                     
                     <!-- MCQ 8 -->
@@ -804,117 +1057,64 @@ ls *.conf</div>
                         </div>
                     </div>
                     
-                    <!-- MCQ 9 -->
-                    <div class="mcq-container">
-                        <div class="mcq-header">
-                            <div class="mcq-header-icon">
-                                <i class="fas fa-brain"></i>
-                            </div>
-                            <div class="mcq-header-text">Learning Checkpoint</div>
-                        </div>
-                        
-                        <div class="mcq-content">
-                            <div class="mcq-question">
-                                To create a new log file with a header and then add timestamped entries, which pattern is correct?
-                            </div>
-                            
-                            <div class="mcq-options">
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">echo "Log" >> log.txt; date >> log.txt</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Append both lines
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This works but doesn't guarantee a clean start if log.txt already exists.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">echo "Log" > log.txt; date > log.txt</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Overwrite for both
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The second > overwrites the first line. Only the date would remain.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="true">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">echo "Log" > log.txt; date >> log.txt</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Create then append
-                                    </div>
-                                    <div class="mcq-feedback correct">
-                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Use > to create the file with the header, then >> to append additional entries without overwriting.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">echo "Log" < log.txt; date < log.txt</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Read from file
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The < operator is for input, not output. This would try to read from the file.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="reset-button">
-                                <i class="fas fa-redo"></i> Try Again
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Real-World Connection:</strong> System administrators use I/O redirection daily for log management, automated reporting, and batch processing. Understanding these operators is essential for effective Linux system administration.</p>
-                    </div>
-                    
                     <div class="challenge">
                         <h3>Lab Exercise 4: Complete System Monitor</h3>
-                        <p>Create a comprehensive monitoring script that generates timestamped reports using all three redirection operators.</p>
+                        <p>Create a comprehensive monitoring script that generates timestamped reports using all three redirection operators. This brings together everything you've learned.</p>
                         
-                        <div class="code-block-container" data-block-name="system-monitor-exercise">
-                            <div class="code-block"># Create the monitoring script
+                        <p><strong>Your Task:</strong> Create a monitoring script that:</p>
+                        <ol>
+                            <li>Creates a fresh report file (using >)</li>
+                            <li>Appends system information (using >>)</li>
+                            <li>Reads configuration from a file (using <)</li>
+                        </ol>
+                        
+                        <div class="code-block-container" data-block-name="lab4-monitor">
+                            <div class="code-block"># First, create a config file that lists what to monitor
+cat > monitor.conf << 'EOF'
+SYSTEM_INFO
+DISK_USAGE
+MEMORY_USAGE
+TOP_PROCESSES
+EOF
+
+# Create the monitoring script
 cat > monitor.sh << 'EOF'
 #!/bin/bash
 # System Monitor Script
 
-# Initialize report
+# Initialize report with timestamp
 echo "System Monitor Report - $(date)" > monitor_report.txt
 echo "================================" >> monitor_report.txt
 
-# Add system information
-echo -e "\n[SYSTEM INFO]" >> monitor_report.txt
-uname -a >> monitor_report.txt
+# Read config and generate appropriate sections
+while read section
+do
+    case $section in
+        SYSTEM_INFO)
+            echo -e "\n[SYSTEM INFORMATION]" >> monitor_report.txt
+            uname -a >> monitor_report.txt
+            ;;
+        DISK_USAGE)
+            echo -e "\n[DISK USAGE]" >> monitor_report.txt
+            df -h >> monitor_report.txt
+            ;;
+        MEMORY_USAGE)
+            echo -e "\n[MEMORY USAGE]" >> monitor_report.txt
+            free -h >> monitor_report.txt
+            ;;
+        TOP_PROCESSES)
+            echo -e "\n[TOP 5 CPU PROCESSES]" >> monitor_report.txt
+            ps aux --sort=-%cpu | head -6 >> monitor_report.txt
+            ;;
+    esac
+done < monitor.conf
 
-# Add disk usage
-echo -e "\n[DISK USAGE]" >> monitor_report.txt
-df -h >> monitor_report.txt
-
-# Add memory usage
-echo -e "\n[MEMORY USAGE]" >> monitor_report.txt
-free -h >> monitor_report.txt
-
-# Add current processes
-echo -e "\n[TOP 5 CPU PROCESSES]" >> monitor_report.txt
-ps aux --sort=-%cpu | head -6 >> monitor_report.txt
-
+echo -e "\nReport generated at $(date)" >> monitor_report.txt
 echo "Report saved to monitor_report.txt"
 EOF
 
-# Make it executable
+# Make script executable and run it
 chmod +x monitor.sh
-
-# Run it
 ./monitor.sh
 
 # View the report
@@ -923,33 +1123,123 @@ cat monitor_report.txt</div>
                             <div class="copy-feedback">Copied!</div>
                         </div>
                         
+                        <p>Expected output structure:</p>
+                        <div class="expected-output">System Monitor Report - [current date/time]
+================================
+
+[SYSTEM INFORMATION]
+[system details from uname]
+
+[DISK USAGE]
+[disk usage information]
+
+[MEMORY USAGE]
+[memory statistics]
+
+[TOP 5 CPU PROCESSES]
+[process list]
+
+Report generated at [current date/time]</div>
+                        
                         <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
                         <div class="answer">
                             <h4>Answer:</h4>
-                            <p>The script demonstrates all three redirection operators:</p>
+                            <p>This script demonstrates all three redirection operators working together:</p>
                             <ul>
-                                <li><strong>></strong> creates the initial report file</li>
-                                <li><strong>>></strong> appends each section without overwriting</li>
-                                <li><strong><</strong> is used implicitly in the here document (<<)</li>
+                                <li><strong>></strong> creates the initial report file with a timestamp header</li>
+                                <li><strong>>></strong> appends each monitoring section without overwriting</li>
+                                <li><strong><</strong> reads the configuration file to determine what to monitor</li>
                             </ul>
-                            <p>This pattern is commonly used for system monitoring and automated reporting in production environments.</p>
+                            <p>The beauty of this approach is flexibility - you can change what gets monitored by simply editing monitor.conf!</p>
+                            <p><strong>Bonus Challenge:</strong> Try adding a new section to monitor.conf like "NETWORK_CONNECTIONS" and update the script to handle it.</p>
                         </div>
-                        <button class="celebrate-button" data-message="Excellent work! You've mastered the fundamental I/O redirection operators in Linux. These skills are essential for system administration, scripting, and automation. Keep practicing to build muscle memory!" data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
+                        <button class="celebrate-button" data-message="Outstanding work! You've successfully combined all three I/O redirection operators to create a flexible, automated monitoring solution. This is exactly how real-world Linux administrators build their tools!" data-animation="school"><i class="fas fa-star"></i> I've done it!</button>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Section 4: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Summary: I/O Redirection Mastery
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Congratulations! You've mastered the fundamental I/O redirection operators in Linux. Let's review what you've learned:</p>
                     
-                    <h3>Summary: I/O Redirection Fundamentals</h3>
-                    
-                    <p>You've learned the three essential redirection operators:</p>
+                    <h3>The Three Essential Operators</h3>
                     
                     <ol>
-                        <li><strong>Output Redirection (>)</strong>: Creates or overwrites files with command output</li>
-                        <li><strong>Append Redirection (>>)</strong>: Adds output to existing files without overwriting</li>
-                        <li><strong>Input Redirection (<)</strong>: Feeds file content as input to commands</li>
+                        <li><strong>Output Redirection (>)</strong>
+                            <ul>
+                                <li>Creates or overwrites files with command output</li>
+                                <li>Use for starting fresh logs or reports</li>
+                                <li>Remember: It's destructive - existing content is lost!</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Append Redirection (>>)</strong>
+                            <ul>
+                                <li>Adds output to existing files without overwriting</li>
+                                <li>Perfect for log files and continuous monitoring</li>
+                                <li>Golden rule: First > creates, then >> appends</li>
+                            </ul>
+                        </li>
+                        
+                        <li><strong>Input Redirection (<)</strong>
+                            <ul>
+                                <li>Feeds file content as input to commands</li>
+                                <li>Essential for batch processing and automation</li>
+                                <li>Works perfectly with loops for processing lists</li>
+                            </ul>
+                        </li>
                     </ol>
                     
-                    <p>These operators form the foundation of Linux automation and scripting. Master them, and you'll be able to create powerful scripts that process data, generate reports, and automate system administration tasks.</p>
+                    <h3>Key Concepts to Remember</h3>
                     
-                    <p><strong>Next Steps</strong>: Practice combining these operators with pipes (|) to create complex data processing pipelines!</p>
+                    <p><strong>Standard Streams:</strong></p>
+                    <ul>
+                        <li>stdin (0) - Standard input</li>
+                        <li>stdout (1) - Standard output</li>
+                        <li>stderr (2) - Standard error</li>
+                    </ul>
+                    
+                    <p><strong>Best Practices:</strong></p>
+                    <ul>
+                        <li>Always use > for the first line when creating reports</li>
+                        <li>Use >> for all subsequent additions to preserve content</li>
+                        <li>Combine < with loops for powerful batch processing</li>
+                        <li>Remember that > only redirects stdout, not stderr</li>
+                    </ul>
+                    
+                    <h3>Real-World Applications</h3>
+                    
+                    <p>These operators form the foundation of Linux automation and scripting:</p>
+                    <ul>
+                        <li><strong>System Monitoring:</strong> Automated reports and alerts</li>
+                        <li><strong>Log Management:</strong> Collecting and organizing system logs</li>
+                        <li><strong>Batch Processing:</strong> Processing lists of servers, files, or users</li>
+                        <li><strong>Data Pipeline:</strong> Building complex data processing workflows</li>
+                    </ul>
+                    
+                    <h3>Next Steps</h3>
+                    
+                    <p>Now that you've mastered basic I/O redirection, consider exploring:</p>
+                    <ul>
+                        <li><strong>Pipes (|):</strong> Connecting commands together</li>
+                        <li><strong>Advanced Redirection:</strong> Redirecting stderr (2>), combining streams (2>&1)</li>
+                        <li><strong>Process Substitution:</strong> Using <() and >() for advanced workflows</li>
+                        <li><strong>tee Command:</strong> Sending output to both file and screen</li>
+                    </ul>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Final Thought:</strong> I/O redirection is like plumbing for data. Once you understand how to direct the flow of information, you can build incredibly powerful automation solutions. Every Linux expert uses these operators daily - now you can too!</p>
+                    </div>
+                    
+                    <p><strong>Keep practicing these fundamentals</strong> - they're the building blocks of Linux mastery!</p>
                 </div>
             </div>
         </section>
