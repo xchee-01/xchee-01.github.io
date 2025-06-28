@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loops in Shell Scripts - Advanced Loop Techniques - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Linux Systems Programming</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>3.4 Loops in Shell Scripts - Advanced Loop Techniques</h1>
+            
+            <p>Welcome to Module 2: while Loops and Flow Control! In this module, you'll master advanced loop techniques that will transform you into a shell scripting wizard. From persistent system monitoring to intelligent file processing, these skills are essential for any system administrator or DevOps engineer.</p>
+            
+            <!-- Section 1: while Loops -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-sync-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        while Loops - The Persistent Guardians
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Understanding while Loops</h3>
+                    <p>Think of <code>while</code> loops as that friend who keeps asking "Are we there yet?" Perfect for:</p>
+                    <ul>
+                        <li>Monitoring system health</li>
+                        <li>Reading files line by line</li>
+                        <li>Waiting for conditions</li>
+                        <li>Creating infinite monitors</li>
+                    </ul>
+                    
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which of the following is NOT a typical use case for while loops in shell scripts?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Monitoring system health continuously</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        A common use case for while loops
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Monitoring system health continuously is actually a perfect use case for while loops, as they can run indefinitely checking system status.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Reading files line by line</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Another typical while loop application
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Reading files line by line is one of the most common uses of while loops in shell scripting.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Iterating through a fixed list of items</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Better suited for other loop types
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! When you have a fixed list of items, a <code>for</code> loop is more appropriate. While loops are better for conditions that may change or when the number of iterations is unknown.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Waiting for specific conditions to be met</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Classic while loop scenario
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. Waiting for conditions is exactly what while loops excel at - they continue running until a condition becomes false.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Real-World System Monitor</h3>
+                    <div class="code-block-container" data-block-name="system-health-monitor">
+                        <div class="code-block">#!/bin/bash
+# system_health_monitor.sh
+
+CPU_THRESHOLD=80
+MEM_THRESHOLD=90
+
+while true
+do
+    cpu=$(top -bn1 | grep "Cpu" | awk '{print $2}' | cut -d'%' -f1)
+    mem=$(free | grep Mem | awk '{print int($3/$2 * 100)}')
+    
+    echo "CPU: ${cpu}% | RAM: ${mem}%"
+    
+    if [ "$cpu" -gt "$CPU_THRESHOLD" ]; then
+        echo "HIGH CPU!"
+    fi
+    
+    sleep 5
+done</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the system health monitor script, what will happen if the CPU usage is 85%?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The script will exit immediately</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Check the loop structure
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The script uses <code>while true</code>, which creates an infinite loop. It will continue running regardless of CPU usage.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It will display "HIGH CPU!" and continue monitoring</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The alert triggers when CPU > 80%
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Since 85% is greater than the threshold of 80%, the script will display the alert message and then continue monitoring in the infinite loop.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It will restart the system</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        No restart command in the script
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The script only monitors and alerts - it doesn't take any system restart actions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It will only display the CPU percentage without any alert</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Check the if condition
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The if condition checks if CPU > 80%, and 85% exceeds this threshold, so the alert will be displayed.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>File Processing Line by Line</h3>
+                    <div class="code-block-container" data-block-name="log-analyzer">
+                        <div class="code-block">#!/bin/bash
+# log_analyzer.sh
+
+failed_logins=0
+
+while IFS= read -r line
+do
+    if echo "$line" | grep -q "authentication failure"; then
+        ((failed_logins++))
+    fi
+done < /var/log/auth.log
+
+echo "Failed logins: $failed_logins"</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does 'IFS= read -r line' accomplish in the file processing script?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It reads the file in binary mode</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Not related to binary mode
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The read command always reads text. Binary mode is not a concept in shell's read command.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It preserves leading/trailing whitespace and prevents backslash interpretation</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        IFS= and -r work together for exact reading
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! IFS= prevents trimming of whitespace, and -r prevents backslash from being interpreted as an escape character, ensuring the line is read exactly as it appears in the file.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It converts all text to uppercase</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        No case conversion happening
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The read command doesn't perform any case conversion. The text is read as-is from the file.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It reads the entire file at once</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        read processes one line at a time
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The read command reads one line at a time, which is why it's used in a while loop to process files line by line.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 2: Process Guardian</h3>
+                        <p>Keep critical processes running:</p>
+                        
+                        <div class="code-block-container" data-block-name="process-guardian">
+                            <div class="code-block">#!/bin/bash
+# process_guardian.sh
+
+process_name="nginx"
+
+while true
+do
+    if ! pgrep -x "$process_name" > /dev/null; then
+        echo "$process_name is DOWN!"
+        sudo systemctl start $process_name
+    else
+        echo "✅ $process_name running"
+    fi
+    
+    sleep 10
+done</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 4 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                How often does the process guardian check if nginx is running?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Every second</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Check the sleep command
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. Look at the sleep command at the end of the loop - it specifies the delay between checks.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Every 5 seconds</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Not the correct interval
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The sleep command uses a different value. Check the number after the sleep command.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Every 10 seconds</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        sleep 10 sets the interval
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The <code>sleep 10</code> command at the end of the loop causes the script to wait 10 seconds before the next check.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only when nginx crashes</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        It checks continuously
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The script runs in an infinite loop (<code>while true</code>), checking every 10 seconds regardless of nginx's status.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 2: Loop Control -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-traffic-light" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Loop Control - Master the Flow
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>break and continue</h3>
+                    <ul>
+                        <li><strong>break</strong>: Exit loop completely</li>
+                        <li><strong>continue</strong>: Skip to next iteration</li>
+                    </ul>
+                    
+                    <!-- MCQ 5 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What is the difference between 'break' and 'continue' in shell loops?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">break pauses the loop, continue resumes it</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Not how these commands work
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Neither command pauses or resumes - they control the flow of execution within the loop.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">break exits the loop, continue skips to the next iteration</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Fundamental loop control commands
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! <code>break</code> completely exits the loop and continues with code after the loop, while <code>continue</code> skips the rest of the current iteration and starts the next one.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">break skips one iteration, continue exits the loop</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        These are reversed
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. You have the functions reversed. Break exits, continue skips to the next iteration.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">They both do the same thing</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        They have different functions
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. Break and continue have very different behaviors in controlling loop execution.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>break Example: Smart Scanner</h3>
+                    <div class="code-block-container" data-block-name="virus-scanner">
+                        <div class="code-block">#!/bin/bash
+# virus_scanner.sh
+
+for dir in /tmp /var/tmp /home/*/Downloads
+do
+    for file in "$dir"/*
+    do
+        if grep -q "VIRUS_SIGNATURE" "$file" 2>/dev/null; then
+            echo "THREAT DETECTED: $file"
+            break 2  # Exit both loops
+        fi
+    done
+done</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does 'break 2' do in the virus scanner script?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Breaks the inner loop only</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The '2' has special meaning
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. The number after break specifies how many nested loop levels to exit. break 2 exits more than just the inner loop.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Breaks both the inner and outer loops</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Exits 2 levels of nested loops
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! <code>break 2</code> exits two levels of loops - both the inner file loop and the outer directory loop, completely stopping the scan when a threat is found.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Breaks the script execution entirely</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        break doesn't exit the script
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Break only exits loops, not the entire script. To exit a script, you would use the exit command.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Waits 2 seconds before breaking</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The number isn't a time delay
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The number after break indicates how many loop levels to exit, not a time delay.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>continue Example: Smart Backup</h3>
+                    <div class="code-block-container" data-block-name="selective-backup">
+                        <div class="code-block">#!/bin/bash
+# selective_backup.sh
+
+for user_home in /home/*
+do
+    username=$(basename "$user_home")
+    
+    # Skip system directories
+    if [ "$username" = "lost+found" ]; then
+        continue
+    fi
+    
+    # Skip inactive users
+    if ! lastlog -u "$username" | grep -q "20"; then
+        continue
+    fi
+    
+    echo "Backing up: $username"
+    # Backup code here
+done</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 7 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the selective backup script, which users will be backed up?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">All users in /home directory</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        There are filters applied
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The script has two continue statements that skip certain users based on specific conditions.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only the lost+found directory</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Check the continue logic
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The script specifically skips lost+found with a continue statement, so it won't be backed up.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Active users excluding system directories</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Users with recent activity (containing "20" in lastlog)
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The script backs up only users who: 1) are not system directories like lost+found, and 2) have "20" in their lastlog output (indicating recent activity, likely year 20xx).
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only users whose names contain "20"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The grep checks lastlog output, not username
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The grep command searches for "20" in the lastlog output (which shows login times), not in the username itself.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Nested Loops -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-layer-group" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Nested Loops - Multi-Dimensional Processing
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Network Connectivity Matrix</h3>
+                    <div class="code-block-container" data-block-name="network-matrix">
+                        <div class="code-block">#!/bin/bash
+# network_matrix.sh
+
+servers=("web1:192.168.1.10" "db1:192.168.1.20")
+
+for source in "${servers[@]}"
+do
+    source_name="${source%%:*}"
+    
+    for dest in "${servers[@]}"
+    do
+        dest_ip="${dest##*:}"
+        
+        if ping -c 1 -W 1 "$dest_ip" &>/dev/null; then
+            echo "$source_name → $dest_ip: ✅"
+        else
+            echo "$source_name → $dest_ip: ❌"
+        fi
+    done
+done</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 8 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                How many total ping tests will the network connectivity matrix perform with 2 servers?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">2</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Think about nested loops
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. With nested loops, each source server tests connectivity to each destination server, creating more combinations.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">3</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Calculate all combinations
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. With 2 servers in both the outer and inner loops, the total is 2 × 2 combinations.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">4</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        2 sources × 2 destinations = 4 tests
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Each of the 2 source servers tests each of the 2 destination servers, resulting in 2 × 2 = 4 total ping tests (including servers pinging themselves).
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">8</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Too many tests
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The calculation is 2 servers × 2 servers = 4 tests, not 8.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 3: Compliance Checker</h3>
+                        <p>Build a security validator:</p>
+                        
+                        <div class="code-block-container" data-block-name="compliance-checker">
+                            <div class="code-block">#!/bin/bash
+# compliance_checker.sh
+
+config_files=("/etc/ssh/sshd_config")
+requirements=("PermitRootLogin:no")
+
+for file in "${config_files[@]}"
+do
+    echo "Checking: $file"
+    
+    for req in "${requirements[@]}"
+    do
+        setting="${req%%:*}"
+        expected="${req##*:}"
+        
+        if grep -q "^$setting $expected" "$file"; then
+            echo "✅ $setting compliant"
+        else
+            echo "❌ $setting NOT compliant"
+        fi
+    done
+done</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                    </div>
+                    
+                    <!-- MCQ 9 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the compliance checker, what does "${req%%:*}" extract from "PermitRootLogin:no"?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The entire string "PermitRootLogin:no"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        %% performs extraction
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not correct. The %% operator removes a pattern from the end of the string, not returns the whole string.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only "PermitRootLogin"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Removes :* from the end
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The ${req%%:*} syntax removes the longest match of :* from the end, leaving only "PermitRootLogin" - the part before the colon.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Only "no"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        That would be ##*:
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. To extract "no", you would use ${req##*:} which removes everything up to and including the colon.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The colon character ":"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Pattern matching removes the colon
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The pattern matching removes the colon along with everything after it, not extracts it.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 4: Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-graduation-cap" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Summary - Your Loop Mastery
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Your New Superpowers</h3>
+                    <ul>
+                        <li>Process lists with for loops</li>
+                        <li>Create persistent monitors with while</li>
+                        <li>Control flow with break/continue</li>
+                        <li>Build multi-dimensional processors</li>
+                    </ul>
+                    
+                    <h3>Real-World Impact</h3>
+                    <p>You can now:</p>
+                    <ul>
+                        <li>Monitor services 24/7</li>
+                        <li>Process thousands of files</li>
+                        <li>Validate security compliance</li>
+                        <li>Test network configurations</li>
+                    </ul>
+                    
+                    <!-- MCQ 10 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Final Assessment</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which loop type would be most appropriate for processing an unknown number of log entries until a specific pattern is found?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">for loop with a fixed range</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Unknown number of entries
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not ideal. A for loop with a fixed range doesn't work well when you don't know how many entries to process.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">while loop with a condition check</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Perfect for unknown iterations
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! A while loop is ideal when you need to continue processing until a specific condition is met, especially when the number of iterations is unknown.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">until loop with a counter</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Counter doesn't help find patterns
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not the best choice. An until loop with a counter doesn't directly help with pattern matching in log entries.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">foreach loop with an array</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Shell doesn't have foreach
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Shell scripting doesn't have a foreach loop - you would use a for loop to iterate over arrays.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>What's Next?</h3>
+                    <p>Chapter 3.5 combines everything - variables, conditionals, and loops - to build production-ready scripts!</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Quick Reference</strong></p>
+                        <div class="code-block-container" data-block-name="quick-reference">
+                            <div class="code-block"># for loop
+for item in list; do commands; done
+
+# C-style
+for ((i=1; i<=10; i++)); do commands; done
+
+# while loop
+while [ condition ]; do commands; done
+
+# Read file
+while IFS= read -r line; do commands; done < file
+
+# Control
+break     # exit loop
+continue  # skip iteration</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                    </div>
+                    
+                    <p>Happy automating!</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your shell scripting session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your shell scripting session has been inactive. Ready to continue mastering loops and automation?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
