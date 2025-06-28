@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Redirection and Here Documents - NUS</title>
+    <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <!-- Load custom scripts -->
+    <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
+    <!-- Load confetti animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="nus-logo">
+                <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
+                NUS <span>Linux Systems Programming</span>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section id="learning-materials">
+            <h1>MODULE 2: Advanced Redirection and Here Documents</h1>
+            
+            <p>Master advanced techniques for ultimate control over input and output streams! 🎮</p>
+            
+            <!-- Section 1: Redirection Combos -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-1">
+                        <i class="fas fa-stream" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Redirection Combos
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Separating stdout and stderr</h3>
+                    
+                    <div class="code-block-container" data-block-name="separate-streams">
+                        <div class="code-block"># Run command with mixed output
+ls /etc /fake_directory
+
+# Separate streams into different files
+ls /etc /fake_directory > good.txt 2> errors.txt
+
+# Check results
+echo "=== STDOUT ===" && head -5 good.txt
+echo "=== STDERR ===" && cat errors.txt</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 1 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does the command <code>ls /etc /fake_directory > good.txt 2> errors.txt</code> accomplish?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Writes all output to both good.txt and errors.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Both files receive identical content.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. The command uses different redirection operators for different purposes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Writes standard output to good.txt and error messages to errors.txt</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Separates the two output streams into different files.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The <code>></code> redirects stdout (file descriptor 1) to good.txt, while <code>2></code> redirects stderr (file descriptor 2) to errors.txt, effectively separating the two output streams.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Writes only errors to good.txt and ignores standard output</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Standard output is discarded.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. The command handles both output streams, not just errors.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Creates two identical copies of the output</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Duplicates all output into two files.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The command separates different types of output, not duplicates them.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>Combining Streams with 2>&1</h3>
+                    
+                    <div class="code-block-container" data-block-name="combine-streams">
+                        <div class="code-block"># WRONG - Order matters!
+ls /etc /fake 2>&1 > output.txt
+
+# RIGHT - Redirect stdout first
+ls /etc /fake > output.txt 2>&1
+
+# Modern syntax
+ls /etc /fake &> output.txt</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <p><strong>Memory Trick</strong>: 2>&1 means "stderr goes where stdout is currently going"</p>
+                    
+                    <!-- MCQ 2 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Why does <code>ls /etc /fake 2>&1 > output.txt</code> NOT work as expected?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The syntax is invalid</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        The command will produce a syntax error.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The syntax is valid, but it doesn't do what you might expect.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">stderr is redirected to the terminal, not the file</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Order of operations causes unexpected behavior.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! When <code>2>&1</code> is executed first, stderr is redirected to where stdout is currently going (the terminal). Then <code>> output.txt</code> redirects only stdout to the file, leaving stderr still going to the terminal.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">The command will produce an error</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        It will fail to execute.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> The command executes without error, but doesn't redirect as intended.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It only redirects stdout, ignoring stderr</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        stderr is not redirected at all.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not quite. The command does attempt to redirect stderr, but to the wrong location.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>The Black Hole: /dev/null 🕳️</h3>
+                    
+                    <div class="code-block-container" data-block-name="dev-null">
+                        <div class="code-block"># Discard errors only
+find / -name "*.conf" 2> /dev/null | head -10
+
+# Run silently
+noisy_command &> /dev/null</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 3 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What is the purpose of <code>/dev/null</code> in Linux?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It's a temporary storage location</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Files are stored temporarily before deletion.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> No, /dev/null doesn't store anything at all.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It's a special file that discards all data written to it</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Acts as a data "black hole".
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! /dev/null is a special device file that discards all data written to it, effectively acting as a "black hole" for unwanted output.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It's a backup location for deleted files</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Similar to the Recycle Bin in Windows.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. /dev/null immediately discards data, with no possibility of recovery.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It's a network interface</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Used for network null routing.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not right. /dev/null is a special device file, not a network interface.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 2: Here Documents -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-2">
+                        <i class="fas fa-file-alt" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Here Documents - Multi-line Magic
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Here documents (<<) embed multi-line content directly in scripts.</p>
+                    
+                    <h3>Basic Here Document</h3>
+                    
+                    <div class="code-block-container" data-block-name="basic-heredoc">
+                        <div class="code-block">cat << EOF > welcome.txt
+Welcome to Linux!
+
+Remember:
+- Always make backups
+- Check logs regularly
+- Coffee helps ☕
+
+Have a great day!
+EOF</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 4 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does <code>EOF</code> represent in a here document?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">End Of File command</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        A built-in command to end file operations.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> No, EOF is not a command but a delimiter string.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A delimiter that marks the start and end of the here document</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Can be any string of your choice.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! EOF is a delimiter (it can be any string) that marks where the here document starts and ends. The same delimiter must be used at both the beginning and end.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Error Output File</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Redirects errors to a file.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. EOF is just a delimiter string, not related to error handling.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">A required keyword that cannot be changed</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Must always use EOF.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Not true. You can use any string as the delimiter, not just EOF.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <h3>With Variables</h3>
+                    
+                    <div class="code-block-container" data-block-name="heredoc-variables">
+                        <div class="code-block">USER_NAME="Alice"
+DEPT="Engineering"
+
+cat << EOF > user_welcome.txt
+Hello $USER_NAME!
+
+Welcome to $DEPT department.
+Your home: $HOME
+Today is: $(date +%A)
+EOF</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Literal Here Documents</h3>
+                    
+                    <div class="code-block-container" data-block-name="literal-heredoc">
+                        <div class="code-block"># Quote delimiter to prevent expansion
+cat << 'SCRIPT' > backup.sh
+#!/bin/bash
+
+BACKUP_DIR="/backup/$(date +%Y%m%d)"
+SOURCE_DIR="$1"
+
+mkdir -p "$BACKUP_DIR"
+rsync -av "$SOURCE_DIR" "$BACKUP_DIR/"
+SCRIPT
+
+chmod +x backup.sh</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 5 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What's the difference between <code><< EOF</code> and <code><< 'EOF'</code> in here documents?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">There is no difference</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Both behave exactly the same.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> There is a significant difference in how they handle content.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Single quotes make the delimiter case-sensitive</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        EOF and eof would be different with quotes.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not the purpose of the quotes.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Single quotes prevent variable expansion in the content</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Creates a literal here document.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Quoting the delimiter (like 'EOF') creates a literal here document where variables and command substitutions are NOT expanded, preserving the literal text.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Single quotes allow special characters in the delimiter</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Enables using spaces or symbols in delimiter.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> No, quotes affect content handling, not delimiter syntax.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 3: Lab Exercises -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-3">
+                        <i class="fas fa-flask" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Lab Exercise 4: Log Analysis Pipeline
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Setup Test Data</h3>
+                    
+                    <div class="code-block-container" data-block-name="setup-test-data">
+                        <div class="code-block">cat << 'LOGS' > access.log
+[2024-01-15 10:15:23] INFO: User login
+[2024-01-15 10:16:45] ERROR: Database failed
+[2024-01-15 10:17:02] INFO: Page served
+[2024-01-15 10:18:33] WARNING: High memory
+[2024-01-15 10:19:45] ERROR: File not found
+LOGS</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Build Analysis Pipeline</h3>
+                    
+                    <div class="code-block-container" data-block-name="analysis-pipeline">
+                        <div class="code-block"># Extract severity levels
+grep "ERROR" access.log > errors.log
+grep "WARNING" access.log > warnings.log
+grep "INFO" access.log > info.log
+
+# Create report
+echo "Log Report - $(date)" > report.txt
+echo "==================" >> report.txt
+echo "Errors: $(wc -l < errors.log)" >> report.txt
+echo "Warnings: $(wc -l < warnings.log)" >> report.txt
+echo "Info: $(wc -l < info.log)" >> report.txt
+
+# Add error details
+echo "" >> report.txt
+echo "Error Details:" >> report.txt
+cat errors.log >> report.txt
+
+# Create email summary
+cat << EOF > email.txt
+To: admin@company.com
+Subject: Daily Log Analysis
+
+$(cat report.txt)
+
+Automated report
+EOF
+
+cat email.txt</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 6 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                In the command <code>echo "Errors: $(wc -l < errors.log)" >> report.txt</code>, what does the <code><</code> operator do?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It compares the word count with errors.log</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Performs a comparison operation.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> No, < is not a comparison operator in this context.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It redirects the content of errors.log as input to wc -l</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Provides file content as stdin.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The <code><</code> operator redirects the content of errors.log as standard input to the <code>wc -l</code> command, which then counts the number of lines.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It appends wc output to errors.log</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Adds line count to the file.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The < operator reads from files, it doesn't write to them.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It creates a backup of errors.log</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Preserves original file content.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not what the < operator does.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 4: Advanced Challenge -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-code" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Advanced Challenge: Log Monitor Script
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <div class="code-block-container" data-block-name="log-monitor-script">
+                        <div class="code-block">#!/bin/bash
+
+LOG_FILE="app.log"
+ERROR_FILE="errors.log"
+NORMAL_FILE="normal.log"
+MAX_SIZE=1048576  # 1MB
+
+# Rotate function
+rotate_logs() {
+    for file in "$ERROR_FILE" "$NORMAL_FILE"; do
+        if [ -f "$file" ] && [ $(stat -c%s "$file") -gt $MAX_SIZE ]; then
+            mv "$file" "${file}.$(date +%Y%m%d_%H%M%S)"
+        fi
+    done
+}
+
+# Monitor loop
+tail -f "$LOG_FILE" | while read line
+do
+    rotate_logs
+    
+    if echo "$line" | grep -q "ERROR\|CRITICAL"; then
+        echo "$line" >> "$ERROR_FILE"
+    else
+        echo "$line" >> "$NORMAL_FILE"
+    fi
+done</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 7 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does <code>tail -f "$LOG_FILE"</code> do in the monitoring script?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Displays the last 10 lines of the log file once</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Shows end of file and exits.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That would be just `tail` without the -f flag.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Continuously follows the log file, showing new lines as they're added</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Real-time monitoring mode.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The <code>-f</code> flag makes tail "follow" the file, continuously monitoring it for new content and displaying new lines as they're appended to the file.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Filters the log file for specific patterns</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Searches for matching lines.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> No, tail -f doesn't filter content, it shows all new lines.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">Creates a backup of the log file</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Preserves log content.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. tail -f reads and displays content, it doesn't create backups.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 5: Quick Reference -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-5">
+                        <i class="fas fa-book" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Quick Reference Card
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <div class="code-block-container" data-block-name="quick-reference">
+                        <div class="code-block"># Redirect stdout
+command > file.txt           # Create/overwrite
+command >> file.txt          # Append
+
+# Redirect stderr
+command 2> errors.txt        # Errors only
+command 2>> errors.txt       # Append errors
+
+# Combine streams
+command > output.txt 2>&1    # Both to same file
+command &> output.txt        # Modern syntax
+command > good.txt 2> bad.txt # Separate files
+
+# Input redirection
+command < input.txt          # Read from file
+command << EOF              # Here document
+content
+EOF
+
+# Discard output
+command > /dev/null         # Discard stdout
+command 2> /dev/null        # Discard stderr
+command &> /dev/null        # Discard all</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 8 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                Which command appends both stdout and stderr to a file called output.log?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title"><code>command > output.log 2>&1</code></div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Redirects both streams to file.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Close, but this overwrites the file instead of appending.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title"><code>command >> output.log 2>&1</code></div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Appends both streams to file.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The <code>>></code> appends stdout to output.log, and <code>2>&1</code> redirects stderr to the same place as stdout, resulting in both streams being appended to the file.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title"><code>command &> output.log</code></div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Modern syntax for both streams.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This redirects both streams but overwrites instead of appending.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title"><code>command 2>> output.log</code></div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Appends error output.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This only appends stderr, not both streams.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 6: Real-World Patterns -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-6">
+                        <i class="fas fa-industry" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Real-World Patterns
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <h3>Log Rotation</h3>
+                    <div class="code-block-container" data-block-name="log-rotation">
+                        <div class="code-block">app 2>&1 | rotatelogs /var/log/app_%Y%m%d.log 86400</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Silent Cron Jobs</h3>
+                    <div class="code-block-container" data-block-name="silent-cron">
+                        <div class="code-block">0 2 * * * /backup.sh > /last_run.log 2>&1</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Debug Mode</h3>
+                    <div class="code-block-container" data-block-name="debug-mode">
+                        <div class="code-block">DEBUG=${DEBUG:-false}
+[ "$DEBUG" = "true" ] && exec 2> debug.log || exec 2> /dev/null</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <!-- MCQ 9 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Learning Checkpoint</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                What does <code>${DEBUG:-false}</code> mean in the debug mode pattern?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It sets DEBUG to false if it's currently true</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Inverts the DEBUG value.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> No, this syntax doesn't invert values.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It uses the value of DEBUG if set, otherwise defaults to "false"</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Provides a default value.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The <code>${variable:-default}</code> syntax returns the value of the variable if it's set and non-empty, otherwise it returns the default value specified after the <code>:-</code>.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It compares DEBUG with false</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Tests equality.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> That's not what this syntax does.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title">It exports DEBUG as false</div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Makes DEBUG available to child processes.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This syntax doesn't export variables.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 7: Mastery Summary -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-7">
+                        <i class="fas fa-trophy" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Mastery Summary 🧙‍♂️
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <div class="fun-fact">
+                        <p>✅ <strong>Standard Streams</strong>: Mastered stdin(0), stdout(1), stderr(2)</p>
+                        <p>✅ <strong>Output Redirection</strong>: Create(>), append(>>), combine(2>&1)</p>
+                        <p>✅ <strong>Input Redirection</strong>: Feed files(<), here documents(<<)</p>
+                        <p>✅ <strong>Advanced Techniques</strong>: Stream separation, /dev/null, combos</p>
+                        
+                        <p>🏆 <strong>Achievement Unlocked</strong>: Redirection Master!</p>
+                    </div>
+                    
+                    <p><strong>What's Next</strong>: Pipes (|) - chain commands together to build powerful command pipelines!</p>
+                    
+                    <p><strong>Final Challenge</strong>: Create a script that monitors system resources every minute, logs normal stats to one file, warnings to another, and emails if CPU exceeds 90%. Use all redirection techniques learned!</p>
+                    
+                    <!-- MCQ 10 -->
+                    <div class="mcq-container">
+                        <div class="mcq-header">
+                            <div class="mcq-header-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mcq-header-text">Final Challenge</div>
+                        </div>
+                        
+                        <div class="mcq-content">
+                            <div class="mcq-question">
+                                To create a script that logs stdout to normal.log, stderr to errors.log, and also saves a combined copy to all.log, which approach would work?
+                            </div>
+                            
+                            <div class="mcq-options">
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title"><code>command > normal.log 2> errors.log > all.log</code></div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Multiple redirections in sequence.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This doesn't work - you can't redirect stdout twice like this.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title"><code>command > normal.log 2> errors.log; command &> all.log</code></div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Run command twice.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This runs the command twice, which may produce different results.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="false">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title"><code>command 2>&1 | tee all.log > normal.log 2> errors.log</code></div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Use tee with pipes.
+                                    </div>
+                                    <div class="mcq-feedback incorrect">
+                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> This combines streams before tee, preventing separation.
+                                    </div>
+                                </div>
+                                
+                                <div class="mcq-option" data-correct="true">
+                                    <div class="mcq-option-header">
+                                        <div class="mcq-option-title"><code>command > >(tee normal.log >> all.log) 2> >(tee errors.log >> all.log)</code></div>
+                                    </div>
+                                    <div class="mcq-option-content">
+                                        Process substitution with tee.
+                                    </div>
+                                    <div class="mcq-feedback correct">
+                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! Option D uses process substitution with tee to simultaneously write stdout to normal.log while appending to all.log, and stderr to errors.log while also appending to all.log, achieving all three requirements in one command.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="reset-button">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button class="celebrate-button" data-message="Congratulations! You've mastered advanced redirection and here documents in Linux. These powerful techniques will help you build sophisticated scripts and command pipelines!" data-animation="fireworks"><i class="fas fa-star"></i> I've completed this module!</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <div>© 2025 National University of Singapore. All rights reserved.</div>
+        </div>
+    </footer>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎉 Great Job! 🎉</h3>
+            <p id="celebrationMessage" class="modal-message"></p>
+            <button class="modal-close">Continue Learning</button>
+        </div>
+    </div>
+
+    <!-- Inactivity Modal -->
+    <div id="inactivityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <div class="modal-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3 class="modal-header">Time for a break?</h3>
+                <p class="modal-subheader">Your Linux session is waiting</p>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-message">We noticed your command line session has been inactive. Ready to continue mastering Linux redirection with us?</p>
+                <button class="modal-close">
+                    <i class="fas fa-code"></i> Resume My Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+</body>
+</html>
