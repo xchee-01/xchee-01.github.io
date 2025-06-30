@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>R Command Substitution for Precision Health - NUS</title>
+    <title>Command Substitution and Advanced Techniques - NUS</title>
     <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Load custom scripts -->
     <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
@@ -24,986 +23,609 @@
     
     <main>
         <section id="learning-materials">
-            <h1>R Command Substitution</h1>
+            <h1>MODULE 2: Command Substitution and Advanced Techniques</h1>
             
-            <p>Welcome to the fascinating world of R command substitution! This powerful feature allows you to dynamically construct commands, inject values, and create flexible code that adapts to different inputs. In precision medicine and healthcare analytics, command substitution enables you to build scalable analysis pipelines that can process diverse patient data efficiently.</p>
+            <p>Welcome to Module 2 of our Linux Systems Programming course! In this module, you'll master one of the most powerful features of shell scripting: command substitution. This technique allows you to capture the output of commands and use them dynamically in your scripts, enabling sophisticated automation and system monitoring capabilities essential for managing computational resources in precision medicine research.</p>
             
-            <!-- Section 1: Getting Started -->
+            <!-- Section 1: Command Substitution Fundamentals -->
             <div class="section-dropdown">
                 <div class="section-header">
                     <h2 id="section-1">
-                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        10.4.5. Getting Started with Command Substitution
+                        <i class="fas fa-terminal" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Command Substitution Fundamentals
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
-                    <p>Command substitution in R enables you to construct and execute code dynamically, a crucial skill when dealing with varied clinical datasets or when building automated analysis workflows.</p>
+                    <p>Command substitution is a powerful shell feature that allows you to capture the output of a command and use it as part of another command or assign it to a variable. This is fundamental for creating dynamic scripts that adapt to system conditions and automate complex workflows.</p>
                     
                     <h3>Basic Syntax</h3>
-                    <p>The fundamental tools for command substitution in R are:</p>
-                    <ul>
-                        <li><code>substitute()</code> - Creates an unevaluated expression</li>
-                        <li><code>bquote()</code> - Similar to substitute but more flexible</li>
-                        <li><code>quote()</code> - Creates an unevaluated expression without substitution</li>
-                        <li><code>expression()</code> - Creates a vector of unevaluated expressions</li>
-                    </ul>
+                    <p>There are two ways to perform command substitution in bash:</p>
                     
-                    <div class="code-block-container" data-block-name="basic-substitution">
-                        <div class="code-block"># Basic substitution example
-patient_var <- "systolic_bp"
-threshold <- 140
+                    <div class="code-block-container" data-block-name="command-substitution-syntax">
+                        <div class="code-block"># Modern way (preferred) - using $()
+current_date=$(date)
+file_count=$(ls | wc -l)
 
-# Using substitute to create dynamic expression
-expr <- substitute(data[data$var > value, ], 
-                  list(var = as.name(patient_var), value = threshold))
+# Classic way (avoid) - using backticks
+current_date=`date`
 
-print(expr)  # Shows: data[data$systolic_bp > 140, ]
-
-# Using bquote for cleaner syntax
-expr2 <- bquote(data[data$.(as.name(patient_var)) > .(threshold), ])
-print(expr2)  # Same result</div>
+# Why prefer $()? It handles nesting better:
+backup="backup_$(date +%Y%m%d)_$(hostname).tar"</div>
                         <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                         <div class="copy-feedback">Copied!</div>
                     </div>
                     
                     <div class="fun-fact">
-                        <p><strong>Clinical Insight:</strong> Command substitution is particularly valuable in clinical research where analysis pipelines need to adapt to different biomarkers, patient cohorts, or treatment protocols without rewriting code.</p>
+                        <p><strong>Best Practice:</strong> Always use the modern $() syntax instead of backticks. It's easier to read, handles nesting properly, and is less prone to errors with special characters.</p>
+                    </div>
+                    
+                    <h3>Real-World Applications</h3>
+                    <p>Command substitution is extensively used in system administration and bioinformatics pipelines. Here are practical examples you'll encounter:</p>
+                    
+                    <h4>1. Dynamic Filenames</h4>
+                    <div class="code-block-container" data-block-name="dynamic-filenames">
+                        <div class="code-block"># Create timestamped log files
+LOG="/var/log/app_$(date +%Y%m%d_%H%M%S).log"
+
+# Backup with hostname and date
+BACKUP="/backup/$(hostname)_$(date +%Y-%m-%d).tar"
+
+# Research data with experiment ID
+DATA_FILE="experiment_$(cat /tmp/exp_id)_results.csv"</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h4>2. System Information Gathering</h4>
+                    <div class="code-block-container" data-block-name="system-info">
+                        <div class="code-block"># Capture system metrics
+MEM_USED=$(free -m | grep Mem | awk '{print $3}')
+CPU_LOAD=$(uptime | awk -F'average:' '{print $2}')
+MY_IP=$(hostname -I | awk '{print $1}')
+
+# Check available disk space
+ROOT_SPACE=$(df -h / | tail -1 | awk '{print $4}')</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h4>3. Process Management</h4>
+                    <div class="code-block-container" data-block-name="process-management">
+                        <div class="code-block"># Find the user with most processes
+BUSY_USER=$(ps aux | awk '{print $1}' | sort | uniq -c | sort -nr | head -1)
+
+# Count Java processes
+JAVA_COUNT=$(ps aux | grep -c '[j]ava')
+
+# Get PID of a specific service
+NGINX_PID=$(pgrep nginx)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
                     </div>
                     
                     <div class="challenge">
-                        <h3>Lab Exercise 1: Dynamic Variable Selection</h3>
-                        <p>As a data scientist in a precision medicine lab, you need to create a function that can analyze different biomarkers dynamically. Your task is to complete the code that selects patients based on various clinical thresholds.</p>
+                        <h3>Lab Exercise 1: System Information Reporter</h3>
+                        <p>As a system administrator for a precision medicine research cluster, you need to create a script that generates a comprehensive system report. This report will help monitor resource usage across computational nodes processing genomic data.</p>
                         
-                        <div class="code-block-container" data-block-name="lab1-dynamic-selection-exercise">
-                            <div class="code-block"># Lab scenario: Create dynamic patient selection
-# Complete the missing parts indicated by ...
+                        <p>Complete the following script by filling in the appropriate commands for command substitution:</p>
+                        
+                        <div class="code-block-container" data-block-name="lab1-system-reporter-exercise">
+                            <div class="code-block">#!/bin/bash
+# System Information Reporter Script
+# Used for monitoring computational resources in genomic analysis
 
-# Sample patient data
-patient_data <- data.frame(
-    patient_id = 1:5,
-    glucose = c(95, 126, 108, 145, 89),
-    hba1c = c(5.2, 7.1, 6.3, 8.2, 5.0),
-    ldl = c(110, 165, 130, 180, 95)
-)
+# Basic system information
+HOSTNAME=$(_____)              # Get the system hostname
+KERNEL=$(uname _____)          # Get kernel release version  
+UPTIME=$(uptime | awk '{print $3}' | tr -d ',')
 
-# Function to filter patients by any biomarker
-filter_patients <- function(data, biomarker, threshold) {
-    # Use substitute to create the filtering expression
-    filter_expr <- substitute(data[data$... > ..., ], 
-                            list(... = ..., ... = ...))
-    
-    # Evaluate the expression
-    result <- eval(filter_expr)
-    
-    # Add information about the filter
-    cat("Patients with", biomarker, ">", threshold, ":\n")
-    return(result)
-}
+# Resource usage metrics
+MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
+MEM_USED=$(free -m | grep Mem | awk '{print $3}')
+MEM_PCT=$(_____)               # Calculate memory percentage (hint: use awk)
 
-# Test with different biomarkers
-high_glucose <- filter_patients(patient_data, "glucose", 120)
-print(high_glucose)</div>
+DISK_USAGE=$(df -h / | tail -1 | awk '{print $5}')
+CPU_COUNT=$(_____)             # Get number of CPU cores
+
+# Network information
+IP_ADDRESS=$(_____)            # Get primary IP address
+
+# Generate the report
+REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+cat > system_report.txt << EOF
+=== SYSTEM REPORT ===
+Generated: $REPORT_DATE
+Hostname: $HOSTNAME
+Kernel: $KERNEL
+Uptime: $UPTIME days
+
+=== RESOURCES ===
+Memory: ${MEM_USED}MB / ${MEM_TOTAL}MB (${MEM_PCT}%)
+Disk Usage: $DISK_USAGE
+CPU Cores: $CPU_COUNT
+
+=== NETWORK ===
+IP Address: $IP_ADDRESS
+EOF
+
+echo "Report generated: system_report.txt"</div>
                             <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                             <div class="copy-feedback">Copied!</div>
                         </div>
                         
-                        <p>Expected output:</p>
-                        <div class="expected-output">Patients with glucose > 120 :
-  patient_id glucose hba1c ldl
-2          2     126   7.1 165
-4          4     145   8.2 180</div>
+                        <p>Expected output format:</p>
+                        <div class="expected-output">=== SYSTEM REPORT ===
+Generated: 2025-01-30 14:23:45
+Hostname: research-node-01
+Kernel: 5.15.0-94-generic
+Uptime: 42 days
+
+=== RESOURCES ===
+Memory: 12846MB / 32768MB (39%)
+Disk Usage: 68%
+CPU Cores: 16
+
+=== NETWORK ===
+IP Address: 192.168.1.100</div>
                         
                         <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
                         <div class="answer">
                             <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab1-dynamic-selection-solution">
-                                <div class="code-block"># Complete solution
-patient_data <- data.frame(
-    patient_id = 1:5,
-    glucose = c(95, 126, 108, 145, 89),
-    hba1c = c(5.2, 7.1, 6.3, 8.2, 5.0),
-    ldl = c(110, 165, 130, 180, 95)
-)
+                            <div class="code-block-container" data-block-name="lab1-system-reporter-solution">
+                                <div class="code-block">#!/bin/bash
+# System Information Reporter Script - Complete Solution
 
-filter_patients <- function(data, biomarker, threshold) {
-    # Use substitute to create the filtering expression
-    filter_expr <- substitute(data[data$marker > value, ], 
-                            list(marker = as.name(biomarker), value = threshold))
-    
-    # Evaluate the expression
-    result <- eval(filter_expr)
-    
-    # Add information about the filter
-    cat("Patients with", biomarker, ">", threshold, ":\n")
-    return(result)
-}
+# Basic system information
+HOSTNAME=$(hostname)           # Get the system hostname
+KERNEL=$(uname -r)            # Get kernel release version  
+UPTIME=$(uptime | awk '{print $3}' | tr -d ',')
 
-# Test with different biomarkers
-high_glucose <- filter_patients(patient_data, "glucose", 120)
-print(high_glucose)</div>
+# Resource usage metrics
+MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
+MEM_USED=$(free -m | grep Mem | awk '{print $3}')
+MEM_PCT=$(free | grep Mem | awk '{printf "%d", $3/$2*100}')  # Calculate memory percentage
+
+DISK_USAGE=$(df -h / | tail -1 | awk '{print $5}')
+CPU_COUNT=$(nproc)            # Get number of CPU cores
+
+# Network information
+IP_ADDRESS=$(hostname -I | awk '{print $1}')  # Get primary IP address
+
+# Generate the report
+REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+cat > system_report.txt << EOF
+=== SYSTEM REPORT ===
+Generated: $REPORT_DATE
+Hostname: $HOSTNAME
+Kernel: $KERNEL
+Uptime: $UPTIME days
+
+=== RESOURCES ===
+Memory: ${MEM_USED}MB / ${MEM_TOTAL}MB (${MEM_PCT}%)
+Disk Usage: $DISK_USAGE
+CPU Cores: $CPU_COUNT
+
+=== NETWORK ===
+IP Address: $IP_ADDRESS
+EOF
+
+echo "Report generated: system_report.txt"</div>
                                 <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                                 <div class="copy-feedback">Copied!</div>
                             </div>
+                            
+                            <p><strong>Explanation of solutions:</strong></p>
+                            <ul>
+                                <li><code>hostname</code> - Returns the system's hostname</li>
+                                <li><code>uname -r</code> - The -r flag shows the kernel release version</li>
+                                <li><code>free | grep Mem | awk '{printf "%d", $3/$2*100}'</code> - Calculates memory usage percentage by dividing used by total</li>
+                                <li><code>nproc</code> - Returns the number of processing units (CPU cores)</li>
+                                <li><code>hostname -I | awk '{print $1}'</code> - Gets all IP addresses and selects the first one</li>
+                            </ul>
                         </div>
-                        <button class="celebrate-button" data-message="Excellent work! You've successfully created a dynamic patient filtering function using command substitution. This technique is essential for building flexible clinical analysis tools that can adapt to different biomarkers without code duplication." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
+                        <button class="celebrate-button" data-message="Excellent work! You've created a comprehensive system monitoring script that captures essential metrics. This type of script is crucial for monitoring computational resources in research environments." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
                     </div>
                 </div>
             </div>
             
-            <!-- Section 2: Core Concepts and Practical Applications -->
+            <!-- Section 2: Advanced Techniques and System Monitoring -->
             <div class="section-dropdown">
                 <div class="section-header">
                     <h2 id="section-2">
-                        <i class="fas fa-code" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        10.4.6. Core Concepts and Real-World Medical Applications
+                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Advanced Techniques and System Monitoring
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
-                    <p>Understanding the core concepts of command substitution is crucial for building robust medical data analysis pipelines. Let's explore how these techniques apply to real-world healthcare scenarios.</p>
+                    <p>Now that you understand the basics, let's explore advanced command substitution techniques that enable sophisticated system monitoring and automation. These patterns are essential for managing complex computational environments used in bioinformatics and precision medicine research.</p>
                     
-                    <h3>Command Substitution Fundamentals</h3>
-                    <p>Command substitution allows you to:</p>
-                    <ul>
-                        <li>Dynamically construct column names for patient data analysis</li>
-                        <li>Create flexible formulas for statistical modeling</li>
-                        <li>Build reusable functions for different clinical parameters</li>
-                        <li>Generate automated reports with varying content</li>
-                    </ul>
+                    <h3>Nested Command Substitution</h3>
+                    <p>Complex operations often require multiple levels of command substitution:</p>
                     
-                    <div class="code-block-container" data-block-name="medical-applications">
-                        <div class="code-block"># Real-world example: Dynamic clinical report generation
-generate_biomarker_report <- function(patient_df, biomarker_name, normal_range) {
-    # Create dynamic summary using bquote
-    summary_expr <- bquote({
-        biomarker_data <- patient_df[[.(biomarker_name)]]
-        
-        cat("=== Biomarker Analysis Report ===\n")
-        cat("Biomarker:", .(biomarker_name), "\n")
-        cat("Normal Range:", .(normal_range[1]), "-", .(normal_range[2]), "\n\n")
-        
-        # Calculate statistics
-        mean_val <- mean(biomarker_data, na.rm = TRUE)
-        sd_val <- sd(biomarker_data, na.rm = TRUE)
-        
-        # Count patients outside normal range
-        below_normal <- sum(biomarker_data < .(normal_range[1]), na.rm = TRUE)
-        above_normal <- sum(biomarker_data > .(normal_range[2]), na.rm = TRUE)
-        
-        cat("Statistics:\n")
-        cat("- Mean:", round(mean_val, 2), "\n")
-        cat("- SD:", round(sd_val, 2), "\n")
-        cat("- Below normal:", below_normal, "patients\n")
-        cat("- Above normal:", above_normal, "patients\n")
-    })
-    
-    eval(summary_expr)
-}
+                    <div class="code-block-container" data-block-name="nested-substitution">
+                        <div class="code-block"># Find and backup recently modified config files
+RECENT_CONFIGS=$(find /etc -name "*.conf" -mtime -1)
+for config in $RECENT_CONFIGS; do
+    BACKUP_NAME="/backup/$(basename "$config")_$(date +%Y%m%d).bak"
+    cp "$config" "$BACKUP_NAME"
+done
 
-# Example usage with different biomarkers
-patient_data <- data.frame(
-    glucose = c(95, 126, 108, 145, 89, 112, 98),
-    hba1c = c(5.2, 7.1, 6.3, 8.2, 5.0, 6.8, 5.5),
-    ldl = c(110, 165, 130, 180, 95, 150, 120)
-)
-
-# Generate reports for different biomarkers
-generate_biomarker_report(patient_data, "glucose", c(70, 110))
-generate_biomarker_report(patient_data, "hba1c", c(4.0, 6.5))</div>
+# Process files based on their content
+for file in $(grep -l "ERROR" $(find /var/log -name "*.log")); do
+    echo "Processing error log: $file"
+    ERROR_COUNT=$(grep -c "ERROR" "$file")
+    echo "  Found $ERROR_COUNT errors"
+done</div>
                         <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                         <div class="copy-feedback">Copied!</div>
                     </div>
                     
-                    <h3>Advanced Pattern: Dynamic Formula Construction</h3>
-                    <p>In clinical research, you often need to build statistical models with varying predictors based on the available data or research hypotheses.</p>
+                    <h3>Error Handling with Command Substitution</h3>
+                    <p>Robust scripts must handle cases where commands might fail:</p>
                     
-                    <div class="code-block-container" data-block-name="dynamic-formulas">
-                        <div class="code-block"># Dynamic formula construction for clinical models
-create_clinical_model <- function(outcome, predictors, interactions = NULL) {
-    # Base formula
-    formula_parts <- c(outcome, "~", paste(predictors, collapse = " + "))
-    
-    # Add interactions if specified
-    if (!is.null(interactions)) {
-        interaction_terms <- apply(interactions, 1, function(x) paste(x, collapse = ":"))
-        formula_parts <- c(formula_parts, "+", paste(interaction_terms, collapse = " + "))
-    }
-    
-    # Create formula object
-    formula_str <- paste(formula_parts, collapse = " ")
-    as.formula(formula_str)
-}
+                    <div class="code-block-container" data-block-name="error-handling">
+                        <div class="code-block"># Safe command substitution with fallback
+IP=$(hostname -I 2>/dev/null)
+if [ -z "$IP" ]; then
+    # Fallback method if hostname -I fails
+    IP=$(ip addr show | grep "inet " | grep -v "127.0.0.1" | head -1 | awk '{print $2}' | cut -d/ -f1)
+fi
 
-# Example: Building models for diabetes risk
-# Simple model
-model1 <- create_clinical_model("diabetes_risk", c("bmi", "age", "glucose"))
-print(model1)  # diabetes_risk ~ bmi + age + glucose
+# Check if command succeeded before using result
+if DOCKER_VERSION=$(docker --version 2>/dev/null); then
+    echo "Docker installed: $DOCKER_VERSION"
+else
+    echo "Docker not found - installing..."
+fi</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Performance Monitoring Patterns</h3>
+                    <p>Advanced system monitoring requires combining multiple commands:</p>
+                    
+                    <div class="code-block-container" data-block-name="performance-monitoring">
+                        <div class="code-block"># Find resource-intensive processes
+CPU_HOG=$(ps aux | sort -k3 -nr | head -1 | awk '{print $11}')
+MEM_HOG=$(ps aux | sort -k4 -nr | head -1 | awk '{print $11}')
 
-# Model with interactions
-interactions <- matrix(c("bmi", "age", "glucose", "family_history"), ncol = 2, byrow = TRUE)
-model2 <- create_clinical_model("diabetes_risk", 
-                               c("bmi", "age", "glucose", "family_history"),
-                               interactions)
-print(model2)  # diabetes_risk ~ bmi + age + glucose + family_history + bmi:age + glucose:family_history</div>
+echo "Top CPU consumer: $CPU_HOG"
+echo "Top memory consumer: $MEM_HOG"
+
+# Monitor disk I/O by process
+IO_STATS=$(iotop -b -n 1 2>/dev/null | grep -A 5 "Total DISK")
+
+# Track network connections
+CONNECTIONS=$(ss -tan | grep ESTABLISHED | wc -l)
+echo "Active connections: $CONNECTIONS"</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <h3>Quick Reference: Special Variables</h3>
+                    <p>When working with command substitution, these special variables are invaluable:</p>
+                    
+                    <div class="code-block-container" data-block-name="special-variables">
+                        <div class="code-block"># Exit status of last command
+result=$(some_command)
+if [ $? -eq 0 ]; then
+    echo "Command succeeded"
+fi
+
+# Process ID of current shell
+echo "Script PID: $$"
+
+# Number of arguments
+echo "Arguments passed: $#"
+
+# All arguments as separate words
+echo "All args: $@"
+
+# Last argument of previous command
+echo "Last arg: $_"</div>
                         <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                         <div class="copy-feedback">Copied!</div>
                     </div>
                     
                     <div class="fun-fact">
-                        <p><strong>Clinical Research Tip:</strong> Dynamic formula construction is invaluable in genomic studies where you might need to test thousands of genetic variants as predictors, or in clinical trials where the model needs to adapt based on available patient characteristics.</p>
+                        <p><strong>Pro Tip:</strong> When debugging command substitution, use <code>set -x</code> at the beginning of your script to see each command as it's executed. This shows you exactly what's being substituted.</p>
                     </div>
                     
                     <div class="challenge">
-                        <h3>Lab Exercise 2: Automated Clinical Alert System</h3>
-                        <p>You're tasked with creating an automated alert system that monitors multiple biomarkers and generates alerts when values exceed clinical thresholds. Complete the code to make the system work dynamically.</p>
+                        <h3>Lab Exercise 2: Advanced System Monitor</h3>
+                        <p>Your research team needs a comprehensive monitoring solution for their genomic analysis cluster. Create an advanced monitoring script that tracks resource usage, identifies potential issues, and generates alerts for critical conditions.</p>
                         
-                        <div class="code-block-container" data-block-name="lab2-alert-system-exercise">
-                            <div class="code-block"># Lab scenario: Build a clinical alert system
-# Complete the missing parts indicated by ...
+                        <p>Complete the following advanced monitoring script:</p>
+                        
+                        <div class="code-block-container" data-block-name="lab2-system-monitor-exercise">
+                            <div class="code-block">#!/bin/bash
+# Advanced System Monitor for Research Cluster
+# Monitors resources and alerts on critical conditions
 
-# Clinical thresholds database
-thresholds <- list(
-    glucose = list(min = 70, max = 110, unit = "mg/dL"),
-    systolic_bp = list(min = 90, max = 140, unit = "mmHg"),
-    heart_rate = list(min = 60, max = 100, unit = "bpm")
-)
+# Configuration
+ALERT_THRESHOLD_CPU=80
+ALERT_THRESHOLD_MEM=90
+ALERT_THRESHOLD_DISK=85
+LOG_DIR="/var/log/monitor"
 
-# Patient monitoring data
-patients <- data.frame(
-    patient_id = c("P001", "P002", "P003"),
-    glucose = c(145, 95, 68),
-    systolic_bp = c(165, 125, 88),
-    heart_rate = c(105, 72, 58)
-)
+# Ensure log directory exists
+mkdir -p "$LOG_DIR"
 
-# Function to check alerts for any biomarker
-check_biomarker_alerts <- function(data, biomarker, thresholds) {
-    # Get threshold values
-    limits <- thresholds[[biomarker]]
+# Function to check CPU usage
+check_cpu() {
+    # Get average CPU usage over last minute
+    CPU_USAGE=$(_____)  # Hint: use top or mpstat
     
-    # Create expression to identify out-of-range values using bquote
-    alert_expr <- bquote({
-        values <- data[[...(biomarker)]]
-        patient_ids <- data$patient_id
-        
-        # Find patients with values outside normal range
-        low_alert <- patient_ids[values < ...(limits$min)]
-        high_alert <- patient_ids[values > ...(limits$max)]
-        
-        # Generate alert messages
-        if (length(low_alert) > 0) {
-            cat("⚠️  LOW", toupper(...), "ALERT:\n")
-            for (pid in low_alert) {
-                val <- values[patient_ids == pid]
-                cat("   Patient", pid, ":", val, ..., "(Normal: ≥", ..., ")\n")
-            }
-        }
-        
-        if (length(high_alert) > 0) {
-            cat("⚠️  HIGH", toupper(...), "ALERT:\n")
-            for (pid in high_alert) {
-                val <- values[patient_ids == pid]
-                cat("   Patient", pid, ":", val, ..., "(Normal: ≤", ..., ")\n")
-            }
-        }
-    })
-    
-    # Evaluate the expression
-    eval(...)
+    if [ "$CPU_USAGE" -gt "$ALERT_THRESHOLD_CPU" ]; then
+        echo "ALERT: High CPU usage: ${CPU_USAGE}%"
+        # Find top 3 CPU-consuming processes
+        TOP_PROCS=$(_____)  # Hint: use ps with sorting
+        echo "Top CPU processes: $TOP_PROCS"
+    fi
 }
 
-# Check all biomarkers
-for (biomarker in names(thresholds)) {
-    check_biomarker_alerts(patients, biomarker, thresholds)
-    cat("\n")
-}</div>
+# Function to check memory
+check_memory() {
+    # Calculate memory usage percentage
+    MEM_USAGE=$(_____)  # Hint: use free command
+    
+    if [ "$MEM_USAGE" -gt "$ALERT_THRESHOLD_MEM" ]; then
+        echo "ALERT: High memory usage: ${MEM_USAGE}%"
+        # Show memory by process
+        MEM_HOGS=$(_____)  # Hint: ps sorted by memory
+        echo "Memory intensive processes: $MEM_HOGS"
+    fi
+}
+
+# Function to check disk space
+check_disk() {
+    # Check all mounted filesystems
+    while read -r filesystem; do
+        USAGE=$(_____)  # Get usage percentage for this filesystem
+        MOUNT=$(_____)  # Get mount point
+        
+        if [ "$USAGE" -gt "$ALERT_THRESHOLD_DISK" ]; then
+            echo "ALERT: Disk space critical on $MOUNT: ${USAGE}%"
+            # Find large files
+            LARGE_FILES=$(_____)  # Find files larger than 1GB
+            echo "Large files: $LARGE_FILES"
+        fi
+    done < <(df -h | grep -v Filesystem | awk '{print $1}')
+}
+
+# Function to check running jobs
+check_jobs() {
+    # Count running analysis jobs (assuming they contain 'analysis' in name)
+    RUNNING_JOBS=$(_____)  # Count processes with 'analysis' in name
+    echo "Running analysis jobs: $RUNNING_JOBS"
+    
+    # Check for stuck jobs (running > 24 hours)
+    STUCK_JOBS=$(_____)  # Find old processes
+    if [ -n "$STUCK_JOBS" ]; then
+        echo "WARNING: Possible stuck jobs detected"
+        echo "$STUCK_JOBS"
+    fi
+}
+
+# Main monitoring loop
+echo "=== System Monitor Report - $(date) ==="
+check_cpu
+check_memory
+check_disk
+check_jobs
+
+# Log results
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+{
+    echo "Monitor run at: $(date)"
+    check_cpu
+    check_memory
+    check_disk
+    check_jobs
+} > "$LOG_DIR/monitor_${TIMESTAMP}.log"
+
+echo "=== End of Report ==="</div>
                             <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                             <div class="copy-feedback">Copied!</div>
                         </div>
                         
-                        <p>Expected output:</p>
-                        <div class="expected-output">⚠️  LOW GLUCOSE ALERT:
-   Patient P003 : 68 mg/dL (Normal: ≥ 70 )
-⚠️  HIGH GLUCOSE ALERT:
-   Patient P001 : 145 mg/dL (Normal: ≤ 110 )
-
-⚠️  LOW SYSTOLIC_BP ALERT:
-   Patient P003 : 88 mmHg (Normal: ≥ 90 )
-⚠️  HIGH SYSTOLIC_BP ALERT:
-   Patient P001 : 165 mmHg (Normal: ≤ 140 )
-
-⚠️  LOW HEART_RATE ALERT:
-   Patient P003 : 58 bpm (Normal: ≥ 60 )
-⚠️  HIGH HEART_RATE ALERT:
-   Patient P001 : 105 bpm (Normal: ≤ 100 )</div>
+                        <p>Expected output when system has issues:</p>
+                        <div class="expected-output">=== System Monitor Report - Thu Jan 30 15:45:23 SGT 2025 ===
+ALERT: High CPU usage: 85%
+Top CPU processes: python3 blast_analysis.py (45%), java GenomeAssembler (28%), R process_variants.R (12%)
+ALERT: High memory usage: 92%
+Memory intensive processes: java GenomeAssembler (8.2GB), python3 ml_trainer.py (6.5GB), mongod (4.1GB)
+ALERT: Disk space critical on /data: 87%
+Large files: /data/sequences/human_genome_v38.fa (3.2GB), /data/results/variant_calls_batch42.vcf (2.8GB)
+Running analysis jobs: 7
+WARNING: Possible stuck jobs detected
+user1    12345  2.3  4.5  32h14m  python3 long_running_analysis.py
+=== End of Report ===</div>
                         
                         <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
                         <div class="answer">
                             <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab2-alert-system-solution">
-                                <div class="code-block"># Complete solution
-thresholds <- list(
-    glucose = list(min = 70, max = 110, unit = "mg/dL"),
-    systolic_bp = list(min = 90, max = 140, unit = "mmHg"),
-    heart_rate = list(min = 60, max = 100, unit = "bpm")
-)
+                            <div class="code-block-container" data-block-name="lab2-system-monitor-solution">
+                                <div class="code-block">#!/bin/bash
+# Advanced System Monitor for Research Cluster - Complete Solution
 
-patients <- data.frame(
-    patient_id = c("P001", "P002", "P003"),
-    glucose = c(145, 95, 68),
-    systolic_bp = c(165, 125, 88),
-    heart_rate = c(105, 72, 58)
-)
+# Configuration
+ALERT_THRESHOLD_CPU=80
+ALERT_THRESHOLD_MEM=90
+ALERT_THRESHOLD_DISK=85
+LOG_DIR="/var/log/monitor"
 
-check_biomarker_alerts <- function(data, biomarker, thresholds) {
-    limits <- thresholds[[biomarker]]
+# Ensure log directory exists
+mkdir -p "$LOG_DIR"
+
+# Function to check CPU usage
+check_cpu() {
+    # Get average CPU usage over last minute
+    CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print int($2)}')
     
-    alert_expr <- bquote({
-        values <- data[[.(biomarker)]]
-        patient_ids <- data$patient_id
-        
-        low_alert <- patient_ids[values < .(limits$min)]
-        high_alert <- patient_ids[values > .(limits$max)]
-        
-        if (length(low_alert) > 0) {
-            cat("⚠️  LOW", toupper(.(biomarker)), "ALERT:\n")
-            for (pid in low_alert) {
-                val <- values[patient_ids == pid]
-                cat("   Patient", pid, ":", val, .(limits$unit), 
-                    "(Normal: ≥", .(limits$min), ")\n")
-            }
-        }
-        
-        if (length(high_alert) > 0) {
-            cat("⚠️  HIGH", toupper(.(biomarker)), "ALERT:\n")
-            for (pid in high_alert) {
-                val <- values[patient_ids == pid]
-                cat("   Patient", pid, ":", val, .(limits$unit), 
-                    "(Normal: ≤", .(limits$max), ")\n")
-            }
-        }
-    })
-    
-    eval(alert_expr)
+    if [ "$CPU_USAGE" -gt "$ALERT_THRESHOLD_CPU" ]; then
+        echo "ALERT: High CPU usage: ${CPU_USAGE}%"
+        # Find top 3 CPU-consuming processes
+        TOP_PROCS=$(ps aux | sort -k3 -nr | head -3 | awk '{printf "%s %s (%.1f%%), ", $11, $2, $3}')
+        echo "Top CPU processes: $TOP_PROCS"
+    fi
 }
 
-for (biomarker in names(thresholds)) {
-    check_biomarker_alerts(patients, biomarker, thresholds)
-    cat("\n")
-}</div>
+# Function to check memory
+check_memory() {
+    # Calculate memory usage percentage
+    MEM_USAGE=$(free | grep Mem | awk '{printf "%d", $3/$2*100}')
+    
+    if [ "$MEM_USAGE" -gt "$ALERT_THRESHOLD_MEM" ]; then
+        echo "ALERT: High memory usage: ${MEM_USAGE}%"
+        # Show memory by process
+        MEM_HOGS=$(ps aux | sort -k4 -nr | head -3 | awk '{printf "%s %s (%.1fGB), ", $11, $2, $6/1024/1024}')
+        echo "Memory intensive processes: $MEM_HOGS"
+    fi
+}
+
+# Function to check disk space
+check_disk() {
+    # Check all mounted filesystems
+    while read -r filesystem; do
+        USAGE=$(df -h "$filesystem" | tail -1 | awk '{print int($5)}')
+        MOUNT=$(df -h "$filesystem" | tail -1 | awk '{print $6}')
+        
+        if [ "$USAGE" -gt "$ALERT_THRESHOLD_DISK" ]; then
+            echo "ALERT: Disk space critical on $MOUNT: ${USAGE}%"
+            # Find large files
+            LARGE_FILES=$(find "$MOUNT" -type f -size +1G 2>/dev/null | head -3 | xargs -I {} du -h {} | sort -hr)
+            echo "Large files: $LARGE_FILES"
+        fi
+    done < <(df -h | grep -v Filesystem | awk '{print $1}')
+}
+
+# Function to check running jobs
+check_jobs() {
+    # Count running analysis jobs (assuming they contain 'analysis' in name)
+    RUNNING_JOBS=$(ps aux | grep -c '[a]nalysis')
+    echo "Running analysis jobs: $RUNNING_JOBS"
+    
+    # Check for stuck jobs (running > 24 hours)
+    STUCK_JOBS=$(ps aux | awk '$10 ~ /[0-9]+-[0-9]+:[0-9]+:[0-9]+/ || $10 ~ /[0-9]+:[0-9]+:[0-9]+/ && $10 !~ /^0:/ {print $1, $2, $3, $4, $10, $11}')
+    if [ -n "$STUCK_JOBS" ]; then
+        echo "WARNING: Possible stuck jobs detected"
+        echo "$STUCK_JOBS"
+    fi
+}
+
+# Main monitoring loop
+echo "=== System Monitor Report - $(date) ==="
+check_cpu
+check_memory
+check_disk
+check_jobs
+
+# Log results
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+{
+    echo "Monitor run at: $(date)"
+    check_cpu
+    check_memory
+    check_disk
+    check_jobs
+} > "$LOG_DIR/monitor_${TIMESTAMP}.log"
+
+echo "=== End of Report ==="</div>
                                 <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                                 <div class="copy-feedback">Copied!</div>
                             </div>
+                            
+                            <p><strong>Key solutions explained:</strong></p>
+                            <ul>
+                                <li><code>top -bn1 | grep "Cpu(s)" | awk '{print int($2)}'</code> - Extracts CPU usage percentage from top command</li>
+                                <li><code>ps aux | sort -k3 -nr</code> - Sorts processes by CPU usage (column 3) in reverse numeric order</li>
+                                <li><code>free | grep Mem | awk '{printf "%d", $3/$2*100}'</code> - Calculates memory usage as percentage</li>
+                                <li><code>find "$MOUNT" -type f -size +1G</code> - Finds files larger than 1GB in the filesystem</li>
+                                <li><code>ps aux | grep -c '[a]nalysis'</code> - Counts processes with 'analysis' in name (bracket trick prevents grep from matching itself)</li>
+                            </ul>
                         </div>
-                        <button class="celebrate-button" data-message="Outstanding! You've built a sophisticated clinical alert system using command substitution. This type of dynamic monitoring system is crucial in intensive care units and patient monitoring systems where multiple biomarkers need continuous surveillance." data-animation="sides"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 3: Genomic Analysis Pipeline</h3>
-                        <p>In this precision medicine scenario, you need to create a flexible pipeline that can analyze different genetic variants and their associations with clinical outcomes.</p>
-                        
-                        <div class="code-block-container" data-block-name="lab3-genomic-pipeline-exercise">
-                            <div class="code-block"># Lab scenario: Build a genomic variant analysis pipeline
-# Complete the missing parts indicated by ...
-
-# Simulated genomic data
-genomic_data <- data.frame(
-    patient_id = paste0("PT", 1:100),
-    BRCA1 = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.9, 0.1)),
-    TP53 = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.85, 0.15)),
-    EGFR = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.8, 0.2)),
-    outcome = sample(c("Responsive", "Non-responsive"), 100, replace = TRUE)
-)
-
-# Function to analyze gene-outcome associations
-analyze_gene_association <- function(data, gene_name, outcome_var = "outcome") {
-    # Create contingency table expression using substitute
-    table_expr <- substitute(
-        {
-            # Create contingency table
-            cont_table <- table(data$..., data$...)
-            
-            # Perform chi-square test
-            test_result <- chisq.test(cont_table)
-            
-            # Calculate proportions
-            prop_table <- prop.table(cont_table, margin = 1)
-            
-            # Generate report
-            cat("=== Gene-Outcome Association Analysis ===\n")
-            cat("Gene:", ..., "\n")
-            cat("Outcome:", ..., "\n\n")
-            
-            cat("Contingency Table:\n")
-            print(cont_table)
-            cat("\n")
-            
-            cat("Response Rates:\n")
-            cat("- Wild Type:", round(prop_table["WT", "Responsive"] * 100, 1), "%\n")
-            cat("- Mutant:", round(prop_table["MUT", "Responsive"] * 100, 1), "%\n\n")
-            
-            cat("Statistical Test:\n")
-            cat("Chi-square =", round(test_result$statistic, 3), "\n")
-            cat("p-value =", format.pval(test_result$p.value, digits = 3), "\n")
-            
-            # Return results for further processing
-            list(
-                gene = ...,
-                chi_square = test_result$statistic,
-                p_value = test_result$p.value,
-                responsive_wt = prop_table["WT", "Responsive"],
-                responsive_mut = prop_table["MUT", "Responsive"]
-            )
-        },
-        list(... = ..., ... = ..., ... = ..., ... = ...)
-    )
-    
-    # Execute the analysis
-    eval(table_expr)
-}
-
-# Analyze multiple genes
-genes_to_test <- c("BRCA1", "TP53", "EGFR")
-results <- list()
-
-for (gene in genes_to_test) {
-    cat("\n", rep("=", 50), "\n")
-    results[[gene]] <- analyze_gene_association(genomic_data, gene)
-}</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                        
-                        <p>Expected output (sample - actual values will vary due to random data):</p>
-                        <div class="expected-output">
- ==================================================
-=== Gene-Outcome Association Analysis ===
-Gene: BRCA1 
-Outcome: outcome 
-
-Contingency Table:
-      
-       Non-responsive Responsive
-  MUT               5          4
-  WT               45         46
-
-Response Rates:
-- Wild Type: 50.5 %
-- Mutant: 44.4 %
-
-Statistical Test:
-Chi-square = 0.119 
-p-value = 0.731</div>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab3-genomic-pipeline-solution">
-                                <div class="code-block"># Complete solution
-genomic_data <- data.frame(
-    patient_id = paste0("PT", 1:100),
-    BRCA1 = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.9, 0.1)),
-    TP53 = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.85, 0.15)),
-    EGFR = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.8, 0.2)),
-    outcome = sample(c("Responsive", "Non-responsive"), 100, replace = TRUE)
-)
-
-analyze_gene_association <- function(data, gene_name, outcome_var = "outcome") {
-    table_expr <- substitute(
-        {
-            cont_table <- table(data$gene, data$outcome)
-            test_result <- chisq.test(cont_table)
-            prop_table <- prop.table(cont_table, margin = 1)
-            
-            cat("=== Gene-Outcome Association Analysis ===\n")
-            cat("Gene:", gene_str, "\n")
-            cat("Outcome:", outcome_str, "\n\n")
-            
-            cat("Contingency Table:\n")
-            print(cont_table)
-            cat("\n")
-            
-            cat("Response Rates:\n")
-            cat("- Wild Type:", round(prop_table["WT", "Responsive"] * 100, 1), "%\n")
-            cat("- Mutant:", round(prop_table["MUT", "Responsive"] * 100, 1), "%\n\n")
-            
-            cat("Statistical Test:\n")
-            cat("Chi-square =", round(test_result$statistic, 3), "\n")
-            cat("p-value =", format.pval(test_result$p.value, digits = 3), "\n")
-            
-            list(
-                gene = gene_str,
-                chi_square = test_result$statistic,
-                p_value = test_result$p.value,
-                responsive_wt = prop_table["WT", "Responsive"],
-                responsive_mut = prop_table["MUT", "Responsive"]
-            )
-        },
-        list(gene = as.name(gene_name), 
-             outcome = as.name(outcome_var),
-             gene_str = gene_name,
-             outcome_str = outcome_var)
-    )
-    
-    eval(table_expr)
-}
-
-genes_to_test <- c("BRCA1", "TP53", "EGFR")
-results <- list()
-
-for (gene in genes_to_test) {
-    cat("\n", rep("=", 50), "\n")
-    results[[gene]] <- analyze_gene_association(genomic_data, gene)
-}</div>
-                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                                <div class="copy-feedback">Copied!</div>
-                            </div>
-                        </div>
-                        <button class="celebrate-button" data-message="Impressive work! You've created a sophisticated genomic analysis pipeline that can dynamically test associations between any genetic variant and clinical outcomes. This type of flexible analysis is fundamental in precision oncology where researchers need to screen thousands of genetic markers for treatment response patterns." data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
+                        <button class="celebrate-button" data-message="Outstanding work! You've created an advanced system monitoring solution that can identify and alert on critical resource issues. This type of comprehensive monitoring is essential for maintaining stable research computing environments." data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
                     </div>
                 </div>
             </div>
             
-            <!-- Section 3: Advanced Techniques and Best Practices -->
+            <!-- Section 3: Summary -->
             <div class="section-dropdown">
                 <div class="section-header">
                     <h2 id="section-3">
-                        <i class="fas fa-flask" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Advanced Techniques and Clinical Best Practices
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>Master advanced command substitution techniques to build sophisticated medical analysis tools and ensure your code follows clinical informatics best practices.</p>
-                    
-                    <h3>Advanced Patterns in Medical Analytics</h3>
-                    
-                    <div class="code-block-container" data-block-name="advanced-patterns">
-                        <div class="code-block"># Advanced Pattern 1: Nested Substitution for Complex Analyses
-create_stratified_analysis <- function(data, outcome, stratify_by, covariates) {
-    # Build nested expression for stratified analysis
-    analysis_expr <- bquote({
-        # Split data by stratification variable
-        strata <- split(data, data[[.(stratify_by)]])
-        
-        # Analyze each stratum
-        results <- lapply(names(strata), function(stratum_name) {
-            stratum_data <- strata[[stratum_name]]
-            
-            # Build formula dynamically
-            formula_str <- paste(.(outcome), "~", paste(.(covariates), collapse = " + "))
-            model <- glm(as.formula(formula_str), data = stratum_data, family = binomial)
-            
-            # Extract results
-            coef_summary <- summary(model)$coefficients
-            list(
-                stratum = stratum_name,
-                n = nrow(stratum_data),
-                coefficients = coef_summary,
-                aic = AIC(model)
-            )
-        })
-        
-        # Combine results
-        names(results) <- names(strata)
-        results
-    })
-    
-    eval(analysis_expr)
-}
-
-# Advanced Pattern 2: Dynamic Report Generation with Templates
-generate_clinical_report <- function(patient_id, test_results, template_type = "standard") {
-    # Define report templates
-    templates <- list(
-        standard = bquote({
-            cat("CLINICAL LABORATORY REPORT\n")
-            cat(rep("=", 50), "\n")
-            cat("Patient ID:", .(patient_id), "\n")
-            cat("Report Date:", format(Sys.Date(), "%B %d, %Y"), "\n\n")
-            
-            cat("TEST RESULTS:\n")
-            for (test in names(.(test_results))) {
-                result <- .(test_results)[[test]]
-                cat(sprintf("%-20s: %6.2f %s %s\n", 
-                           test, result$value, result$unit,
-                           if(result$abnormal) "⚠️" else "✓"))
-            }
-        }),
-        
-        detailed = bquote({
-            # More comprehensive template with interpretation
-            cat("COMPREHENSIVE CLINICAL REPORT\n")
-            # ... additional detailed reporting code
-        })
-    )
-    
-    eval(templates[[template_type]])
-}
-
-# Usage example
-test_data <- list(
-    Glucose = list(value = 145, unit = "mg/dL", abnormal = TRUE),
-    HbA1c = list(value = 7.2, unit = "%", abnormal = TRUE),
-    Creatinine = list(value = 1.1, unit = "mg/dL", abnormal = FALSE)
-)
-
-generate_clinical_report("PT2024-001", test_data)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <h3>Error Handling and Validation</h3>
-                    <p>In medical applications, robust error handling is crucial to prevent misinterpretation of results:</p>
-                    
-                    <div class="code-block-container" data-block-name="error-handling">
-                        <div class="code-block"># Safe command substitution with validation
-safe_biomarker_analysis <- function(data, biomarker, operation = "mean") {
-    # Validate inputs
-    if (!biomarker %in% names(data)) {
-        stop(paste("Biomarker", biomarker, "not found in dataset"))
-    }
-    
-    # Create safe expression with error handling
-    safe_expr <- bquote({
-        tryCatch({
-            values <- data[[.(biomarker)]]
-            
-            # Check for valid numeric data
-            if (!is.numeric(values)) {
-                stop(paste("Biomarker", .(biomarker), "contains non-numeric data"))
-            }
-            
-            # Check for sufficient data
-            valid_values <- values[!is.na(values)]
-            if (length(valid_values) < 3) {
-                warning("Less than 3 valid measurements available")
-            }
-            
-            # Perform operation
-            result <- switch(.(operation),
-                           "mean" = mean(valid_values),
-                           "median" = median(valid_values),
-                           "sd" = sd(valid_values),
-                           stop("Unknown operation: ", .(operation)))
-            
-            list(
-                biomarker = .(biomarker),
-                operation = .(operation),
-                result = result,
-                n_valid = length(valid_values),
-                n_missing = sum(is.na(values)),
-                status = "success"
-            )
-        }, error = function(e) {
-            list(
-                biomarker = .(biomarker),
-                operation = .(operation),
-                error = e$message,
-                status = "error"
-            )
-        })
-    })
-    
-    eval(safe_expr)
-}</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                    
-                    <div class="fun-fact">
-                        <p><strong>Clinical Safety Note:</strong> When working with patient data, always implement comprehensive error handling and validation. A single unhandled error in a clinical decision support system could lead to incorrect treatment recommendations.</p>
-                    </div>
-                    
-                    <div class="challenge">
-                        <h3>Lab Exercise 4: Multi-Omics Integration Pipeline</h3>
-                        <p>Create an advanced pipeline that integrates multiple types of biological data (genomics, proteomics, clinical) using sophisticated command substitution techniques.</p>
-                        
-                        <div class="code-block-container" data-block-name="lab4-multiomics-exercise">
-                            <div class="code-block"># Lab scenario: Build a multi-omics integration pipeline
-# Complete the missing parts indicated by ...
-
-# Simulated multi-omics data
-clinical_data <- data.frame(
-    patient_id = paste0("P", 1:50),
-    age = round(runif(50, 40, 80)),
-    stage = sample(c("I", "II", "III", "IV"), 50, replace = TRUE)
-)
-
-genomic_data <- data.frame(
-    patient_id = paste0("P", 1:50),
-    BRCA1 = runif(50, 0, 2),  # Expression levels
-    TP53 = runif(50, 0, 2),
-    EGFR = runif(50, 0, 2)
-)
-
-proteomic_data <- data.frame(
-    patient_id = paste0("P", 1:50),
-    HER2 = runif(50, 0, 100),  # Protein levels
-    VEGF = runif(50, 0, 100),
-    PDGFR = runif(50, 0, 100)
-)
-
-# Function to create integrated analysis
-integrate_omics_data <- function(clinical, genomic, proteomic, target_genes, target_proteins) {
-    # Create complex integration expression
-    integration_expr <- bquote({
-        # Merge all datasets
-        merged_data <- merge(merge(clinical, genomic, by = "patient_id"), 
-                           proteomic, by = "patient_id")
-        
-        # Create gene expression matrix
-        gene_matrix <- as.matrix(merged_data[, .(target_genes)])
-        
-        # Create protein expression matrix
-        protein_matrix <- as.matrix(merged_data[, .(target_proteins)])
-        
-        # Calculate correlation between gene and protein expression
-        correlations <- cor(gene_matrix, protein_matrix, use = "complete.obs")
-        
-        # Identify high-expression patients for each marker
-        high_expr_patients <- list()
-        
-        # Check genes (using substitute for dynamic column access)
-        for (gene in ...) {
-            threshold <- quantile(merged_data[[...]], 0.75, na.rm = TRUE)
-            high_expr <- merged_data$patient_id[merged_data[[...]] > threshold]
-            high_expr_patients[[gene]] <- high_expr
-        }
-        
-        # Check proteins
-        for (protein in ...) {
-            threshold <- quantile(merged_data[[...]], 0.75, na.rm = TRUE)
-            high_expr <- merged_data$patient_id[merged_data[[...]] > threshold]
-            high_expr_patients[[protein]] <- high_expr
-        }
-        
-        # Generate integrated report
-        cat("=== MULTI-OMICS INTEGRATION REPORT ===\n")
-        cat("Total patients analyzed:", nrow(merged_data), "\n\n")
-        
-        cat("Gene-Protein Correlations:\n")
-        print(round(correlations, 2))
-        cat("\n")
-        
-        cat("High Expression Summary:\n")
-        for (marker in names(high_expr_patients)) {
-            cat(sprintf("%-10s: %d patients (%.1f%%)\n", 
-                       marker, 
-                       length(high_expr_patients[[marker]]),
-                       100 * length(high_expr_patients[[marker]]) / nrow(merged_data)))
-        }
-        
-        # Return results for further analysis
-        list(
-            merged_data = merged_data,
-            correlations = correlations,
-            high_expr_patients = high_expr_patients
-        )
-    })
-    
-    # Execute integration - fill in the substitution list
-    eval(substitute(integration_expr, list(... = ..., ... = ...)))
-}
-
-# Run the integration
-target_genes <- c("BRCA1", "TP53", "EGFR")
-target_proteins <- c("HER2", "VEGF", "PDGFR")
-
-results <- integrate_omics_data(clinical_data, genomic_data, proteomic_data,
-                               target_genes, target_proteins)</div>
-                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                            <div class="copy-feedback">Copied!</div>
-                        </div>
-                        
-                        <p>Expected output structure:</p>
-                        <div class="expected-output">=== MULTI-OMICS INTEGRATION REPORT ===
-Total patients analyzed: 50 
-
-Gene-Protein Correlations:
-       HER2  VEGF PDGFR
-BRCA1  0.12 -0.08  0.25
-TP53  -0.15  0.22  0.18
-EGFR   0.08  0.14 -0.05
-
-High Expression Summary:
-BRCA1     : 13 patients (26.0%)
-TP53      : 12 patients (24.0%)
-EGFR      : 13 patients (26.0%)
-HER2      : 12 patients (24.0%)
-VEGF      : 13 patients (26.0%)
-PDGFR     : 12 patients (24.0%)</div>
-                        
-                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
-                        <div class="answer">
-                            <h4>Answer:</h4>
-                            <div class="code-block-container" data-block-name="lab4-multiomics-solution">
-                                <div class="code-block"># Complete solution
-integrate_omics_data <- function(clinical, genomic, proteomic, target_genes, target_proteins) {
-    integration_expr <- bquote({
-        merged_data <- merge(merge(clinical, genomic, by = "patient_id"), 
-                           proteomic, by = "patient_id")
-        
-        gene_matrix <- as.matrix(merged_data[, .(target_genes)])
-        protein_matrix <- as.matrix(merged_data[, .(target_proteins)])
-        
-        correlations <- cor(gene_matrix, protein_matrix, use = "complete.obs")
-        
-        high_expr_patients <- list()
-        
-        for (gene in .(target_genes)) {
-            threshold <- quantile(merged_data[[gene]], 0.75, na.rm = TRUE)
-            high_expr <- merged_data$patient_id[merged_data[[gene]] > threshold]
-            high_expr_patients[[gene]] <- high_expr
-        }
-        
-        for (protein in .(target_proteins)) {
-            threshold <- quantile(merged_data[[protein]], 0.75, na.rm = TRUE)
-            high_expr <- merged_data$patient_id[merged_data[[protein]] > threshold]
-            high_expr_patients[[protein]] <- high_expr
-        }
-        
-        cat("=== MULTI-OMICS INTEGRATION REPORT ===\n")
-        cat("Total patients analyzed:", nrow(merged_data), "\n\n")
-        
-        cat("Gene-Protein Correlations:\n")
-        print(round(correlations, 2))
-        cat("\n")
-        
-        cat("High Expression Summary:\n")
-        for (marker in names(high_expr_patients)) {
-            cat(sprintf("%-10s: %d patients (%.1f%%)\n", 
-                       marker, 
-                       length(high_expr_patients[[marker]]),
-                       100 * length(high_expr_patients[[marker]]) / nrow(merged_data)))
-        }
-        
-        list(
-            merged_data = merged_data,
-            correlations = correlations,
-            high_expr_patients = high_expr_patients
-        )
-    })
-    
-    eval(integration_expr)
-}
-
-# Create the data and run
-clinical_data <- data.frame(
-    patient_id = paste0("P", 1:50),
-    age = round(runif(50, 40, 80)),
-    stage = sample(c("I", "II", "III", "IV"), 50, replace = TRUE)
-)
-
-genomic_data <- data.frame(
-    patient_id = paste0("P", 1:50),
-    BRCA1 = runif(50, 0, 2),
-    TP53 = runif(50, 0, 2),
-    EGFR = runif(50, 0, 2)
-)
-
-proteomic_data <- data.frame(
-    patient_id = paste0("P", 1:50),
-    HER2 = runif(50, 0, 100),
-    VEGF = runif(50, 0, 100),
-    PDGFR = runif(50, 0, 100)
-)
-
-target_genes <- c("BRCA1", "TP53", "EGFR")
-target_proteins <- c("HER2", "VEGF", "PDGFR")
-
-results <- integrate_omics_data(clinical_data, genomic_data, proteomic_data,
-                               target_genes, target_proteins)</div>
-                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                                <div class="copy-feedback">Copied!</div>
-                            </div>
-                        </div>
-                        <button class="celebrate-button" data-message="Phenomenal achievement! You've successfully built a sophisticated multi-omics integration pipeline that combines genomic, proteomic, and clinical data. This type of integrative analysis is at the forefront of precision medicine, enabling researchers to understand disease mechanisms across multiple biological layers and identify novel therapeutic targets." data-animation="school"><i class="fas fa-star"></i> I've done it!</button>
-                    </div>
-                    
-                    <h3>Quick Reference Guide</h3>
-                    <div class="code-block-container" data-block-name="quick-reference">
-                        <div class="code-block"># Quick Reference: Command Substitution in R
-
-# 1. Basic substitution
-substitute(expr, list(var = value))
-
-# 2. bquote with .() notation
-bquote(data$.(column_name) > .(threshold))
-
-# 3. Creating formulas dynamically
-as.formula(paste(outcome, "~", paste(predictors, collapse = " + ")))
-
-# 4. Evaluating expressions
-eval(expression)
-
-# 5. Safe evaluation with error handling
-tryCatch(eval(expr), error = function(e) handle_error(e))
-
-# 6. Common patterns for medical data
-# Dynamic column selection
-data[[column_name]]
-
-# Dynamic filtering
-data[data[[biomarker]] > threshold, ]
-
-# Dynamic aggregation
-aggregate(as.formula(paste(value, "~", group)), data, FUN = mean)
-
-# 7. Best practices
-# - Always validate inputs before substitution
-# - Use bquote for cleaner syntax
-# - Implement error handling for clinical applications
-# - Document dynamic behavior clearly
-# - Test with edge cases (missing data, wrong types)</div>
-                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
-                        <div class="copy-feedback">Copied!</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Summary Section -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-4">
                         <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Summary: Mastering R Command Substitution for Precision Medicine
+                        Summary and Next Steps
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
-                    <p>Congratulations on completing this comprehensive module on R command substitution! You've acquired powerful skills that are essential for modern biomedical data analysis:</p>
+                    <p>Congratulations on completing Module 2! You've mastered essential command substitution techniques that form the backbone of advanced shell scripting. Let's review what you've learned:</p>
                     
-                    <ol>
-                        <li><strong>Dynamic Programming Fundamentals</strong>: You learned how to use <code>substitute()</code>, <code>bquote()</code>, and related functions to create flexible, reusable code that adapts to different clinical scenarios.</li>
-                        
-                        <li><strong>Clinical Applications</strong>: You built real-world tools including patient filtering systems, biomarker alert systems, and genomic analysis pipelines - all using dynamic programming techniques.</li>
-                        
-                        <li><strong>Advanced Integration</strong>: You mastered complex patterns for integrating multi-omics data, creating sophisticated analyses that combine genomic, proteomic, and clinical information.</li>
-                        
-                        <li><strong>Best Practices</strong>: You learned critical safety considerations for medical applications, including robust error handling, input validation, and clear documentation practices.</li>
-                    </ol>
-                    
-                    <p>These command substitution techniques form the backbone of scalable clinical analytics systems. As precision medicine continues to evolve, your ability to create dynamic, adaptable analysis pipelines will be invaluable for:</p>
-                    
+                    <h3>Key Concepts Mastered:</h3>
                     <ul>
-                        <li>Processing diverse patient cohorts without code duplication</li>
-                        <li>Building automated clinical decision support systems</li>
-                        <li>Analyzing high-throughput genomic and proteomic data</li>
-                        <li>Creating reproducible research workflows</li>
-                        <li>Developing personalized treatment algorithms</li>
+                        <li>✅ <strong>Command Substitution Syntax:</strong> Using $() to capture command output</li>
+                        <li>✅ <strong>Variable Assignment:</strong> Storing command results for later use</li>
+                        <li>✅ <strong>Nested Substitution:</strong> Combining multiple commands for complex operations</li>
+                        <li>✅ <strong>Error Handling:</strong> Implementing fallback strategies when commands fail</li>
+                        <li>✅ <strong>System Monitoring:</strong> Building comprehensive monitoring solutions</li>
+                        <li>✅ <strong>Special Variables:</strong> Using $?, $$, $#, and $@ effectively</li>
+                        <li>✅ <strong>Real-world Patterns:</strong> Applying techniques to practical scenarios</li>
                     </ul>
                     
-                    <p>Remember, the power of command substitution lies not just in its technical capabilities, but in how it enables you to build tools that can adapt to the ever-changing landscape of precision medicine. Keep practicing these techniques, and you'll be well-equipped to tackle the complex analytical challenges in modern healthcare!</p>
+                    <h3>Skills You Can Now Apply:</h3>
+                    <ol>
+                        <li><strong>Dynamic Script Creation:</strong> Build scripts that adapt to system conditions</li>
+                        <li><strong>Resource Monitoring:</strong> Track CPU, memory, disk, and process metrics</li>
+                        <li><strong>Automated Reporting:</strong> Generate system reports with real-time data</li>
+                        <li><strong>Error Detection:</strong> Identify and alert on system issues</li>
+                        <li><strong>Performance Analysis:</strong> Find resource bottlenecks and problematic processes</li>
+                    </ol>
                     
                     <div class="fun-fact">
-                        <p><strong>Looking Ahead:</strong> The skills you've learned here are foundational for advanced topics like building Shiny applications for clinical dashboards, creating R packages for genomic analysis, and developing machine learning pipelines for precision medicine.</p>
+                        <p><strong>Real-World Impact:</strong> The techniques you've learned are used daily in research computing environments to monitor genomic analysis pipelines, track resource usage during large-scale data processing, and ensure computational resources are used efficiently. Your scripts can help prevent system failures and optimize research workflows.</p>
+                    </div>
+                    
+                    <h3>What's Next?</h3>
+                    <p>In the next module, you'll learn about <strong>Wildcards and Pattern Matching</strong>, which will allow you to:</p>
+                    <ul>
+                        <li>Process multiple files efficiently using glob patterns</li>
+                        <li>Filter and select files based on complex criteria</li>
+                        <li>Implement powerful text processing with regular expressions</li>
+                        <li>Build robust file management solutions for research data</li>
+                    </ul>
+                    
+                    <div class="challenge">
+                        <h3>Module 2 Complete!</h3>
+                        <p>You've successfully mastered command substitution and advanced shell scripting techniques. These skills are fundamental for automating system administration tasks and managing computational resources in research environments. Keep practicing these patterns - they'll become second nature as you build more complex scripts!</p>
+                        <button class="celebrate-button" data-message="Congratulations! You've completed Module 2 and are well on your way to becoming a shell scripting expert. Your ability to capture and manipulate command output will be invaluable in automating complex workflows!" data-animation="school"><i class="fas fa-graduation-cap"></i> I've completed Module 2!</button>
                     </div>
                 </div>
             </div>
         </section>
     </main>
+    
+    <!-- User Information Box -->
+    <div class="user-info-box">
+        <h3>Session Information</h3>
+        <div class="user-info-item">
+            <span class="user-info-label">Username:</span>
+            <span id="username">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Access Time:</span>
+            <span id="access-time">Loading...</span>
+        </div>
+        <div class="user-info-item">
+            <span class="user-info-label">Current URL:</span>
+            <span id="current-url">Loading...</span>
+        </div>
+        <div id="status-message"></div>
+    </div>
     
     <footer>
         <div class="footer-content">
@@ -1025,14 +647,14 @@ aggregate(as.formula(paste(value, "~", group)), data, FUN = mean)
         <div class="modal-content">
             <div class="modal-top">
                 <div class="modal-icon">
-                    <i class="fas fa-flask"></i>
+                    <i class="fas fa-terminal"></i>
                 </div>
                 <h3 class="modal-header">Time for a break?</h3>
-                <p class="modal-subheader">Your R session is waiting</p>
+                <p class="modal-subheader">Your shell scripting session is waiting</p>
             </div>
             
             <div class="modal-body">
-                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with R?</p>
+                <p class="modal-message">We noticed your shell scripting session has been inactive. Ready to continue mastering command substitution?</p>
                 <button class="modal-close">
                     <i class="fas fa-code"></i> Resume My Session
                 </button>
