@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Command Substitution and Advanced Techniques - NUS</title>
+    <title>R Command Substitution for Precision Health - NUS</title>
     <link rel="stylesheet" href="https://xchee-01.github.io/PMTHA/template_CSS_learning_page_v18.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Load custom scripts -->
     <script src="https://xchee-01.github.io/PMTHA/template_JS_learning_page_v24.js" defer></script>
@@ -16,722 +17,993 @@
         <div class="header-container">
             <div class="nus-logo">
                 <i class="fas fa-university fa-lg" style="margin-right: 10px;"></i>
-                NUS <span>Linux Systems Programming</span>
+                NUS <span>Precision Medicine Toolkit for Health Analytics</span>
             </div>
         </div>
     </header>
     
     <main>
-        <section id="learning-materials" style="max-width: 100%; padding: 2rem;">
-            <h1>MODULE 2: Command Substitution and Advanced Techniques</h1>
+        <section id="learning-materials">
+            <h1>R Command Substitution</h1>
             
-            <!-- Section 1: Command Substitution Basics -->
+            <p>Welcome to the fascinating world of R command substitution! This powerful feature allows you to dynamically construct commands, inject values, and create flexible code that adapts to different inputs. In precision medicine and healthcare analytics, command substitution enables you to build scalable analysis pipelines that can process diverse patient data efficiently.</p>
+            
+            <!-- Section 1: Getting Started -->
             <div class="section-dropdown">
                 <div class="section-header">
                     <h2 id="section-1">
-                        <i class="fas fa-terminal" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Command Substitution Basics
+                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        10.4.5. Getting Started with Command Substitution
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
-                    <p>Capture command output in variables:</p>
+                    <p>Command substitution in R enables you to construct and execute code dynamically, a crucial skill when dealing with varied clinical datasets or when building automated analysis workflows.</p>
                     
-                    <div class="code-block-container" data-block-name="command-substitution-basics">
-                        <div class="code-block"># Modern way (preferred)
-current_date=$(date)
-file_count=$(ls | wc -l)
+                    <h3>Basic Syntax</h3>
+                    <p>The fundamental tools for command substitution in R are:</p>
+                    <ul>
+                        <li><code>substitute()</code> - Creates an unevaluated expression</li>
+                        <li><code>bquote()</code> - Similar to substitute but more flexible</li>
+                        <li><code>quote()</code> - Creates an unevaluated expression without substitution</li>
+                        <li><code>expression()</code> - Creates a vector of unevaluated expressions</li>
+                    </ul>
+                    
+                    <div class="code-block-container" data-block-name="basic-substitution">
+                        <div class="code-block"># Basic substitution example
+patient_var <- "systolic_bp"
+threshold <- 140
 
-# Classic way (avoid)
-current_date=`date`</div>
+# Using substitute to create dynamic expression
+expr <- substitute(data[data$var > value, ], 
+                  list(var = as.name(patient_var), value = threshold))
+
+print(expr)  # Shows: data[data$systolic_bp > 140, ]
+
+# Using bquote for cleaner syntax
+expr2 <- bquote(data[data$.(as.name(patient_var)) > .(threshold), ])
+print(expr2)  # Same result</div>
                         <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                         <div class="copy-feedback">Copied!</div>
                     </div>
                     
-                    <!-- MCQ 1 -->
-                    <div class="mcq-container">
-                        <div class="mcq-header">
-                            <div class="mcq-header-icon">
-                                <i class="fas fa-brain"></i>
-                            </div>
-                            <div class="mcq-header-text">Learning Checkpoint</div>
+                    <div class="fun-fact">
+                        <p><strong>Clinical Insight:</strong> Command substitution is particularly valuable in clinical research where analysis pipelines need to adapt to different biomarkers, patient cohorts, or treatment protocols without rewriting code.</p>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 1: Dynamic Variable Selection</h3>
+                        <p>As a data scientist in a precision medicine lab, you need to create a function that can analyze different biomarkers dynamically. Your task is to complete the code that selects patients based on various clinical thresholds.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab1-dynamic-selection-exercise">
+                            <div class="code-block"># Lab scenario: Create dynamic patient selection
+# Complete the missing parts indicated by ...
+
+# Sample patient data
+patient_data <- data.frame(
+    patient_id = 1:5,
+    glucose = c(95, 126, 108, 145, 89),
+    hba1c = c(5.2, 7.1, 6.3, 8.2, 5.0),
+    ldl = c(110, 165, 130, 180, 95)
+)
+
+# Function to filter patients by any biomarker
+filter_patients <- function(data, biomarker, threshold) {
+    # Use substitute to create the filtering expression
+    filter_expr <- substitute(data[data$... > ..., ], 
+                            list(... = ..., ... = ...))
+    
+    # Evaluate the expression
+    result <- eval(filter_expr)
+    
+    # Add information about the filter
+    cat("Patients with", biomarker, ">", threshold, ":\n")
+    return(result)
+}
+
+# Test with different biomarkers
+high_glucose <- filter_patients(patient_data, "glucose", 120)
+print(high_glucose)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
                         </div>
                         
-                        <div class="mcq-content">
-                            <div class="mcq-question">
-                                Which of these correctly creates a variable with a nested command substitution for creating a backup filename?
+                        <p>Expected output:</p>
+                        <div class="expected-output">Patients with glucose > 120 :
+  patient_id glucose hba1c ldl
+2          2     126   7.1 165
+4          4     145   8.2 180</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab1-dynamic-selection-solution">
+                                <div class="code-block"># Complete solution
+patient_data <- data.frame(
+    patient_id = 1:5,
+    glucose = c(95, 126, 108, 145, 89),
+    hba1c = c(5.2, 7.1, 6.3, 8.2, 5.0),
+    ldl = c(110, 165, 130, 180, 95)
+)
+
+filter_patients <- function(data, biomarker, threshold) {
+    # Use substitute to create the filtering expression
+    filter_expr <- substitute(data[data$marker > value, ], 
+                            list(marker = as.name(biomarker), value = threshold))
+    
+    # Evaluate the expression
+    result <- eval(filter_expr)
+    
+    # Add information about the filter
+    cat("Patients with", biomarker, ">", threshold, ":\n")
+    return(result)
+}
+
+# Test with different biomarkers
+high_glucose <- filter_patients(patient_data, "glucose", 120)
+print(high_glucose)</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
                             </div>
-                            
-                            <div class="code-block">
-# Nesting works!
-backup="backup_$(date +%Y%m%d)_$(hostname).tar"</div>
-                            
-                            <div class="mcq-options">
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">backup=`backup_`date +%Y%m%d`_`hostname`.tar`</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Using backticks with nesting
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Backticks don't handle nesting well and this syntax would cause errors. The modern $() syntax is much better for nested substitutions.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="true">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">backup="backup_$(date +%Y%m%d)_$(hostname).tar"</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Using $() for both substitutions
-                                    </div>
-                                    <div class="mcq-feedback correct">
-                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The $() syntax handles nesting cleanly and is the modern, preferred way to do command substitution in bash.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">backup="backup_$date +%Y%m%d_$hostname.tar"</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Direct variable substitution without command execution
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This would literally insert the text "date +%Y%m%d" instead of executing the date command. You need $() to execute commands.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">backup=(backup_$(date +%Y%m%d)_$(hostname).tar)</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Using parentheses around the entire value
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. Parentheses around the value would create an array instead of a simple string variable. For a single string, quotes are sufficient.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="reset-button">
-                                <i class="fas fa-redo"></i> Try Again
-                            </button>
                         </div>
+                        <button class="celebrate-button" data-message="Excellent work! You've successfully created a dynamic patient filtering function using command substitution. This technique is essential for building flexible clinical analysis tools that can adapt to different biomarkers without code duplication." data-animation="center"><i class="fas fa-star"></i> I've done it!</button>
                     </div>
                 </div>
             </div>
             
-            <!-- Section 2: Real-World Examples -->
+            <!-- Section 2: Core Concepts and Practical Applications -->
             <div class="section-dropdown">
                 <div class="section-header">
                     <h2 id="section-2">
-                        <i class="fas fa-globe" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Real-World Examples
+                        <i class="fas fa-code" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        10.4.6. Core Concepts and Real-World Medical Applications
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
-                    <h3>Dynamic Filenames:</h3>
-                    <div class="code-block-container" data-block-name="dynamic-filenames">
-                        <div class="code-block">LOG="/var/log/app_$(date +%Y%m%d_%H%M%S).log"
-BACKUP="/backup/$(hostname)_$(date +%Y-%m-%d).tar"</div>
+                    <p>Understanding the core concepts of command substitution is crucial for building robust medical data analysis pipelines. Let's explore how these techniques apply to real-world healthcare scenarios.</p>
+                    
+                    <h3>Command Substitution Fundamentals</h3>
+                    <p>Command substitution allows you to:</p>
+                    <ul>
+                        <li>Dynamically construct column names for patient data analysis</li>
+                        <li>Create flexible formulas for statistical modeling</li>
+                        <li>Build reusable functions for different clinical parameters</li>
+                        <li>Generate automated reports with varying content</li>
+                    </ul>
+                    
+                    <div class="code-block-container" data-block-name="medical-applications">
+                        <div class="code-block"># Real-world example: Dynamic clinical report generation
+generate_biomarker_report <- function(patient_df, biomarker_name, normal_range) {
+    # Create dynamic summary using bquote
+    summary_expr <- bquote({
+        biomarker_data <- patient_df[[.(biomarker_name)]]
+        
+        cat("=== Biomarker Analysis Report ===\n")
+        cat("Biomarker:", .(biomarker_name), "\n")
+        cat("Normal Range:", .(normal_range[1]), "-", .(normal_range[2]), "\n\n")
+        
+        # Calculate statistics
+        mean_val <- mean(biomarker_data, na.rm = TRUE)
+        sd_val <- sd(biomarker_data, na.rm = TRUE)
+        
+        # Count patients outside normal range
+        below_normal <- sum(biomarker_data < .(normal_range[1]), na.rm = TRUE)
+        above_normal <- sum(biomarker_data > .(normal_range[2]), na.rm = TRUE)
+        
+        cat("Statistics:\n")
+        cat("- Mean:", round(mean_val, 2), "\n")
+        cat("- SD:", round(sd_val, 2), "\n")
+        cat("- Below normal:", below_normal, "patients\n")
+        cat("- Above normal:", above_normal, "patients\n")
+    })
+    
+    eval(summary_expr)
+}
+
+# Example usage with different biomarkers
+patient_data <- data.frame(
+    glucose = c(95, 126, 108, 145, 89, 112, 98),
+    hba1c = c(5.2, 7.1, 6.3, 8.2, 5.0, 6.8, 5.5),
+    ldl = c(110, 165, 130, 180, 95, 150, 120)
+)
+
+# Generate reports for different biomarkers
+generate_biomarker_report(patient_data, "glucose", c(70, 110))
+generate_biomarker_report(patient_data, "hba1c", c(4.0, 6.5))</div>
                         <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                         <div class="copy-feedback">Copied!</div>
                     </div>
                     
-                    <!-- MCQ 2 -->
-                    <div class="mcq-container">
-                        <div class="mcq-header">
-                            <div class="mcq-header-icon">
-                                <i class="fas fa-brain"></i>
-                            </div>
-                            <div class="mcq-header-text">Learning Checkpoint</div>
+                    <h3>Advanced Pattern: Dynamic Formula Construction</h3>
+                    <p>In clinical research, you often need to build statistical models with varying predictors based on the available data or research hypotheses.</p>
+                    
+                    <div class="code-block-container" data-block-name="dynamic-formulas">
+                        <div class="code-block"># Dynamic formula construction for clinical models
+create_clinical_model <- function(outcome, predictors, interactions = NULL) {
+    # Base formula
+    formula_parts <- c(outcome, "~", paste(predictors, collapse = " + "))
+    
+    # Add interactions if specified
+    if (!is.null(interactions)) {
+        interaction_terms <- apply(interactions, 1, function(x) paste(x, collapse = ":"))
+        formula_parts <- c(formula_parts, "+", paste(interaction_terms, collapse = " + "))
+    }
+    
+    # Create formula object
+    formula_str <- paste(formula_parts, collapse = " ")
+    as.formula(formula_str)
+}
+
+# Example: Building models for diabetes risk
+# Simple model
+model1 <- create_clinical_model("diabetes_risk", c("bmi", "age", "glucose"))
+print(model1)  # diabetes_risk ~ bmi + age + glucose
+
+# Model with interactions
+interactions <- matrix(c("bmi", "age", "glucose", "family_history"), ncol = 2, byrow = TRUE)
+model2 <- create_clinical_model("diabetes_risk", 
+                               c("bmi", "age", "glucose", "family_history"),
+                               interactions)
+print(model2)  # diabetes_risk ~ bmi + age + glucose + family_history + bmi:age + glucose:family_history</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Clinical Research Tip:</strong> Dynamic formula construction is invaluable in genomic studies where you might need to test thousands of genetic variants as predictors, or in clinical trials where the model needs to adapt based on available patient characteristics.</p>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 2: Automated Clinical Alert System</h3>
+                        <p>You're tasked with creating an automated alert system that monitors multiple biomarkers and generates alerts when values exceed clinical thresholds. Complete the code to make the system work dynamically.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab2-alert-system-exercise">
+                            <div class="code-block"># Lab scenario: Build a clinical alert system
+# Complete the missing parts indicated by ...
+
+# Clinical thresholds database
+thresholds <- list(
+    glucose = list(min = 70, max = 110, unit = "mg/dL"),
+    systolic_bp = list(min = 90, max = 140, unit = "mmHg"),
+    heart_rate = list(min = 60, max = 100, unit = "bpm")
+)
+
+# Patient monitoring data
+patients <- data.frame(
+    patient_id = c("P001", "P002", "P003"),
+    glucose = c(145, 95, 68),
+    systolic_bp = c(165, 125, 88),
+    heart_rate = c(105, 72, 58)
+)
+
+# Function to check alerts for any biomarker
+check_biomarker_alerts <- function(data, biomarker, thresholds) {
+    # Get threshold values
+    limits <- thresholds[[biomarker]]
+    
+    # Create expression to identify out-of-range values using bquote
+    alert_expr <- bquote({
+        values <- data[[...(biomarker)]]
+        patient_ids <- data$patient_id
+        
+        # Find patients with values outside normal range
+        low_alert <- patient_ids[values < ...(limits$min)]
+        high_alert <- patient_ids[values > ...(limits$max)]
+        
+        # Generate alert messages
+        if (length(low_alert) > 0) {
+            cat("⚠️  LOW", toupper(...), "ALERT:\n")
+            for (pid in low_alert) {
+                val <- values[patient_ids == pid]
+                cat("   Patient", pid, ":", val, ..., "(Normal: ≥", ..., ")\n")
+            }
+        }
+        
+        if (length(high_alert) > 0) {
+            cat("⚠️  HIGH", toupper(...), "ALERT:\n")
+            for (pid in high_alert) {
+                val <- values[patient_ids == pid]
+                cat("   Patient", pid, ":", val, ..., "(Normal: ≤", ..., ")\n")
+            }
+        }
+    })
+    
+    # Evaluate the expression
+    eval(...)
+}
+
+# Check all biomarkers
+for (biomarker in names(thresholds)) {
+    check_biomarker_alerts(patients, biomarker, thresholds)
+    cat("\n")
+}</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
                         </div>
                         
-                        <div class="mcq-content">
-                            <div class="mcq-question">
-                                Which command correctly captures the system's IP address into a variable?
+                        <p>Expected output:</p>
+                        <div class="expected-output">⚠️  LOW GLUCOSE ALERT:
+   Patient P003 : 68 mg/dL (Normal: ≥ 70 )
+⚠️  HIGH GLUCOSE ALERT:
+   Patient P001 : 145 mg/dL (Normal: ≤ 110 )
+
+⚠️  LOW SYSTOLIC_BP ALERT:
+   Patient P003 : 88 mmHg (Normal: ≥ 90 )
+⚠️  HIGH SYSTOLIC_BP ALERT:
+   Patient P001 : 165 mmHg (Normal: ≤ 140 )
+
+⚠️  LOW HEART_RATE ALERT:
+   Patient P003 : 58 bpm (Normal: ≥ 60 )
+⚠️  HIGH HEART_RATE ALERT:
+   Patient P001 : 105 bpm (Normal: ≤ 100 )</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab2-alert-system-solution">
+                                <div class="code-block"># Complete solution
+thresholds <- list(
+    glucose = list(min = 70, max = 110, unit = "mg/dL"),
+    systolic_bp = list(min = 90, max = 140, unit = "mmHg"),
+    heart_rate = list(min = 60, max = 100, unit = "bpm")
+)
+
+patients <- data.frame(
+    patient_id = c("P001", "P002", "P003"),
+    glucose = c(145, 95, 68),
+    systolic_bp = c(165, 125, 88),
+    heart_rate = c(105, 72, 58)
+)
+
+check_biomarker_alerts <- function(data, biomarker, thresholds) {
+    limits <- thresholds[[biomarker]]
+    
+    alert_expr <- bquote({
+        values <- data[[.(biomarker)]]
+        patient_ids <- data$patient_id
+        
+        low_alert <- patient_ids[values < .(limits$min)]
+        high_alert <- patient_ids[values > .(limits$max)]
+        
+        if (length(low_alert) > 0) {
+            cat("⚠️  LOW", toupper(.(biomarker)), "ALERT:\n")
+            for (pid in low_alert) {
+                val <- values[patient_ids == pid]
+                cat("   Patient", pid, ":", val, .(limits$unit), 
+                    "(Normal: ≥", .(limits$min), ")\n")
+            }
+        }
+        
+        if (length(high_alert) > 0) {
+            cat("⚠️  HIGH", toupper(.(biomarker)), "ALERT:\n")
+            for (pid in high_alert) {
+                val <- values[patient_ids == pid]
+                cat("   Patient", pid, ":", val, .(limits$unit), 
+                    "(Normal: ≤", .(limits$max), ")\n")
+            }
+        }
+    })
+    
+    eval(alert_expr)
+}
+
+for (biomarker in names(thresholds)) {
+    check_biomarker_alerts(patients, biomarker, thresholds)
+    cat("\n")
+}</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
                             </div>
-                            
-                            <div class="code-block">
-# System Information:
-MEM_USED=$(free -m | grep Mem | awk '{print $3}')
-CPU_LOAD=$(uptime | awk -F'average:' '{print $2}')
-MY_IP=$(hostname -I | awk '{print $1}')</div>
-                            
-                            <div class="mcq-options">
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">MY_IP=hostname -I</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Direct assignment without command substitution
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This would set MY_IP to the literal string "hostname" and try to execute "-I" as a command, causing an error.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">MY_IP=${hostname -I}</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Using ${} syntax for command substitution
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The ${} syntax is for variable expansion, not command substitution. You need $() to execute commands.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="true">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">MY_IP=$(hostname -I | awk '{print $1}')</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Using command substitution with pipe to extract first IP
-                                    </div>
-                                    <div class="mcq-feedback correct">
-                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! This executes hostname -I to get all IPs, then uses awk to extract just the first one, capturing it in the MY_IP variable.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">MY_IP="$(hostname) -I"</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Partial command substitution with -I outside
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This would get the hostname and append the literal string " -I" to it, not execute hostname -I as a single command.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="reset-button">
-                                <i class="fas fa-redo"></i> Try Again
-                            </button>
                         </div>
+                        <button class="celebrate-button" data-message="Outstanding! You've built a sophisticated clinical alert system using command substitution. This type of dynamic monitoring system is crucial in intensive care units and patient monitoring systems where multiple biomarkers need continuous surveillance." data-animation="sides"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                    
+                    <div class="challenge">
+                        <h3>Lab Exercise 3: Genomic Analysis Pipeline</h3>
+                        <p>In this precision medicine scenario, you need to create a flexible pipeline that can analyze different genetic variants and their associations with clinical outcomes.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab3-genomic-pipeline-exercise">
+                            <div class="code-block"># Lab scenario: Build a genomic variant analysis pipeline
+# Complete the missing parts indicated by ...
+
+# Simulated genomic data
+genomic_data <- data.frame(
+    patient_id = paste0("PT", 1:100),
+    BRCA1 = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.9, 0.1)),
+    TP53 = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.85, 0.15)),
+    EGFR = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.8, 0.2)),
+    outcome = sample(c("Responsive", "Non-responsive"), 100, replace = TRUE)
+)
+
+# Function to analyze gene-outcome associations
+analyze_gene_association <- function(data, gene_name, outcome_var = "outcome") {
+    # Create contingency table expression using substitute
+    table_expr <- substitute(
+        {
+            # Create contingency table
+            cont_table <- table(data$..., data$...)
+            
+            # Perform chi-square test
+            test_result <- chisq.test(cont_table)
+            
+            # Calculate proportions
+            prop_table <- prop.table(cont_table, margin = 1)
+            
+            # Generate report
+            cat("=== Gene-Outcome Association Analysis ===\n")
+            cat("Gene:", ..., "\n")
+            cat("Outcome:", ..., "\n\n")
+            
+            cat("Contingency Table:\n")
+            print(cont_table)
+            cat("\n")
+            
+            cat("Response Rates:\n")
+            cat("- Wild Type:", round(prop_table["WT", "Responsive"] * 100, 1), "%\n")
+            cat("- Mutant:", round(prop_table["MUT", "Responsive"] * 100, 1), "%\n\n")
+            
+            cat("Statistical Test:\n")
+            cat("Chi-square =", round(test_result$statistic, 3), "\n")
+            cat("p-value =", format.pval(test_result$p.value, digits = 3), "\n")
+            
+            # Return results for further processing
+            list(
+                gene = ...,
+                chi_square = test_result$statistic,
+                p_value = test_result$p.value,
+                responsive_wt = prop_table["WT", "Responsive"],
+                responsive_mut = prop_table["MUT", "Responsive"]
+            )
+        },
+        list(... = ..., ... = ..., ... = ..., ... = ...)
+    )
+    
+    # Execute the analysis
+    eval(table_expr)
+}
+
+# Analyze multiple genes
+genes_to_test <- c("BRCA1", "TP53", "EGFR")
+results <- list()
+
+for (gene in genes_to_test) {
+    cat("\n", rep("=", 50), "\n")
+    results[[gene]] <- analyze_gene_association(genomic_data, gene)
+}</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected output (sample - actual values will vary due to random data):</p>
+                        <div class="expected-output">
+ ==================================================
+=== Gene-Outcome Association Analysis ===
+Gene: BRCA1 
+Outcome: outcome 
+
+Contingency Table:
+      
+       Non-responsive Responsive
+  MUT               5          4
+  WT               45         46
+
+Response Rates:
+- Wild Type: 50.5 %
+- Mutant: 44.4 %
+
+Statistical Test:
+Chi-square = 0.119 
+p-value = 0.731</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab3-genomic-pipeline-solution">
+                                <div class="code-block"># Complete solution
+genomic_data <- data.frame(
+    patient_id = paste0("PT", 1:100),
+    BRCA1 = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.9, 0.1)),
+    TP53 = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.85, 0.15)),
+    EGFR = sample(c("WT", "MUT"), 100, replace = TRUE, prob = c(0.8, 0.2)),
+    outcome = sample(c("Responsive", "Non-responsive"), 100, replace = TRUE)
+)
+
+analyze_gene_association <- function(data, gene_name, outcome_var = "outcome") {
+    table_expr <- substitute(
+        {
+            cont_table <- table(data$gene, data$outcome)
+            test_result <- chisq.test(cont_table)
+            prop_table <- prop.table(cont_table, margin = 1)
+            
+            cat("=== Gene-Outcome Association Analysis ===\n")
+            cat("Gene:", gene_str, "\n")
+            cat("Outcome:", outcome_str, "\n\n")
+            
+            cat("Contingency Table:\n")
+            print(cont_table)
+            cat("\n")
+            
+            cat("Response Rates:\n")
+            cat("- Wild Type:", round(prop_table["WT", "Responsive"] * 100, 1), "%\n")
+            cat("- Mutant:", round(prop_table["MUT", "Responsive"] * 100, 1), "%\n\n")
+            
+            cat("Statistical Test:\n")
+            cat("Chi-square =", round(test_result$statistic, 3), "\n")
+            cat("p-value =", format.pval(test_result$p.value, digits = 3), "\n")
+            
+            list(
+                gene = gene_str,
+                chi_square = test_result$statistic,
+                p_value = test_result$p.value,
+                responsive_wt = prop_table["WT", "Responsive"],
+                responsive_mut = prop_table["MUT", "Responsive"]
+            )
+        },
+        list(gene = as.name(gene_name), 
+             outcome = as.name(outcome_var),
+             gene_str = gene_name,
+             outcome_str = outcome_var)
+    )
+    
+    eval(table_expr)
+}
+
+genes_to_test <- c("BRCA1", "TP53", "EGFR")
+results <- list()
+
+for (gene in genes_to_test) {
+    cat("\n", rep("=", 50), "\n")
+    results[[gene]] <- analyze_gene_association(genomic_data, gene)
+}</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Impressive work! You've created a sophisticated genomic analysis pipeline that can dynamically test associations between any genetic variant and clinical outcomes. This type of flexible analysis is fundamental in precision oncology where researchers need to screen thousands of genetic markers for treatment response patterns." data-animation="fireworks"><i class="fas fa-star"></i> I've done it!</button>
                     </div>
                 </div>
             </div>
             
-            <!-- Section 3: Lab Exercise 3 -->
+            <!-- Section 3: Advanced Techniques and Best Practices -->
             <div class="section-dropdown">
                 <div class="section-header">
                     <h2 id="section-3">
                         <i class="fas fa-flask" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Lab Exercise 3: System Reporter
+                        Advanced Techniques and Clinical Best Practices
                     </h2>
                     <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="section-content">
-                    <!-- MCQ 3 -->
-                    <div class="mcq-container">
-                        <div class="mcq-header">
-                            <div class="mcq-header-icon">
-                                <i class="fas fa-brain"></i>
-                            </div>
-                            <div class="mcq-header-text">Complete the System Reporter Script</div>
-                        </div>
-                        
-                        <div class="mcq-content">
-                            <div class="mcq-question">
-                                Fill in the blanks to complete this system information reporter script:
-                            </div>
-                            
-                            <div class="code-block">
-# Basic info
-HOSTNAME=$(_____)         # Get hostname
-KERNEL=$(uname -___)     # Kernel version
-UPTIME=$(uptime | awk '{print $3}')
-
-# Resource usage
-MEM_PCT=$(free | grep Mem | awk '{print int($3/$2*100)}')
-DISK_PCT=$(df -h / | tail -1 | awk '{print $5}')
-
-# Generate report
-cat > report.txt << EOF
-System: $HOSTNAME
-Kernel: $KERNEL
-Memory: ${MEM_PCT}%
-Disk: $DISK_PCT
-EOF</div>
-                            
-                            <div class="mcq-options">
-                                <div class="mcq-option" data-correct="true">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">hostname and r</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        hostname for system name, -r for kernel release
-                                    </div>
-                                    <div class="mcq-feedback correct">
-                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The hostname command gets the system's name, and uname -r displays the kernel release version.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">whoami and v</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        whoami for current user, -v for version
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. whoami shows the current user, not the hostname. uname -v shows kernel version date, not the release number.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">echo $HOSTNAME and a</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Use environment variable, -a for all info
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. While $HOSTNAME might work in some shells, hostname is more portable. uname -a gives all info, but we want just the kernel release.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">host and s</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        host command, -s for system
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The host command is for DNS lookups, not getting the local hostname. uname -s shows the kernel name (e.g., Linux), not the version.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="reset-button">
-                                <i class="fas fa-redo"></i> Try Again
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 4: Advanced Techniques -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-4">
-                        <i class="fas fa-rocket" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Advanced Techniques
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <!-- MCQ 4 -->
-                    <div class="mcq-container">
-                        <div class="mcq-header">
-                            <div class="mcq-header-icon">
-                                <i class="fas fa-brain"></i>
-                            </div>
-                            <div class="mcq-header-text">Understanding Nested Substitution</div>
-                        </div>
-                        
-                        <div class="mcq-content">
-                            <div class="mcq-question">
-                                What does this nested command substitution do?
-                            </div>
-                            
-                            <div class="code-block">
-# Find busiest user
-BUSY=$(ps aux | awk '{print $1}' | sort | uniq -c | sort -nr | head -1)</div>
-                            
-                            <div class="mcq-options">
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Finds the process using most CPU</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Identifies single process with highest CPU usage
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This command counts processes per user, not CPU usage. It finds the user with the most processes running.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="true">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Finds user with most processes</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Identifies which user has the most running processes
-                                    </div>
-                                    <div class="mcq-feedback correct">
-                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The pipeline extracts usernames, counts occurrences with uniq -c, sorts numerically in reverse order, and takes the top result - showing the user with the most processes.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Finds longest-running process</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Identifies process that has been running the longest
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This command counts processes by user, not runtime. It doesn't examine how long processes have been running.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Lists all users sorted by name</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Shows alphabetically sorted list of users
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The sort -nr sorts by count numerically in reverse order (highest first), not alphabetically by username.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="reset-button">
-                                <i class="fas fa-redo"></i> Try Again
-                            </button>
-                        </div>
-                    </div>
+                    <p>Master advanced command substitution techniques to build sophisticated medical analysis tools and ensure your code follows clinical informatics best practices.</p>
                     
-                    <h3>Loops with Substitution:</h3>
-                    <div class="code-block-container" data-block-name="loops-substitution">
-                        <div class="code-block"># Backup recent configs
-for config in $(find /etc -name "*.conf" -mtime -1); do
-    cp "$config" "/backup/$(basename "$config").bak"
-done</div>
+                    <h3>Advanced Patterns in Medical Analytics</h3>
+                    
+                    <div class="code-block-container" data-block-name="advanced-patterns">
+                        <div class="code-block"># Advanced Pattern 1: Nested Substitution for Complex Analyses
+create_stratified_analysis <- function(data, outcome, stratify_by, covariates) {
+    # Build nested expression for stratified analysis
+    analysis_expr <- bquote({
+        # Split data by stratification variable
+        strata <- split(data, data[[.(stratify_by)]])
+        
+        # Analyze each stratum
+        results <- lapply(names(strata), function(stratum_name) {
+            stratum_data <- strata[[stratum_name]]
+            
+            # Build formula dynamically
+            formula_str <- paste(.(outcome), "~", paste(.(covariates), collapse = " + "))
+            model <- glm(as.formula(formula_str), data = stratum_data, family = binomial)
+            
+            # Extract results
+            coef_summary <- summary(model)$coefficients
+            list(
+                stratum = stratum_name,
+                n = nrow(stratum_data),
+                coefficients = coef_summary,
+                aic = AIC(model)
+            )
+        })
+        
+        # Combine results
+        names(results) <- names(strata)
+        results
+    })
+    
+    eval(analysis_expr)
+}
+
+# Advanced Pattern 2: Dynamic Report Generation with Templates
+generate_clinical_report <- function(patient_id, test_results, template_type = "standard") {
+    # Define report templates
+    templates <- list(
+        standard = bquote({
+            cat("CLINICAL LABORATORY REPORT\n")
+            cat(rep("=", 50), "\n")
+            cat("Patient ID:", .(patient_id), "\n")
+            cat("Report Date:", format(Sys.Date(), "%B %d, %Y"), "\n\n")
+            
+            cat("TEST RESULTS:\n")
+            for (test in names(.(test_results))) {
+                result <- .(test_results)[[test]]
+                cat(sprintf("%-20s: %6.2f %s %s\n", 
+                           test, result$value, result$unit,
+                           if(result$abnormal) "⚠️" else "✓"))
+            }
+        }),
+        
+        detailed = bquote({
+            # More comprehensive template with interpretation
+            cat("COMPREHENSIVE CLINICAL REPORT\n")
+            # ... additional detailed reporting code
+        })
+    )
+    
+    eval(templates[[template_type]])
+}
+
+# Usage example
+test_data <- list(
+    Glucose = list(value = 145, unit = "mg/dL", abnormal = TRUE),
+    HbA1c = list(value = 7.2, unit = "%", abnormal = TRUE),
+    Creatinine = list(value = 1.1, unit = "mg/dL", abnormal = FALSE)
+)
+
+generate_clinical_report("PT2024-001", test_data)</div>
                         <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
                         <div class="copy-feedback">Copied!</div>
                     </div>
                     
-                    <!-- MCQ 5 -->
-                    <div class="mcq-container">
-                        <div class="mcq-header">
-                            <div class="mcq-header-icon">
-                                <i class="fas fa-brain"></i>
-                            </div>
-                            <div class="mcq-header-text">Error Handling Best Practices</div>
-                        </div>
-                        
-                        <div class="mcq-content">
-                            <div class="mcq-question">
-                                What's the purpose of the error handling in this code?
-                            </div>
-                            
-                            <div class="code-block">
-# Safe with fallback
-IP=$(hostname -I 2>/dev/null)
-if [ -z "$IP" ]; then
-    IP=$(ip addr show | grep "inet " | head -1)
-fi</div>
-                            
-                            <div class="mcq-options">
-                                <div class="mcq-option" data-correct="true">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Provides fallback if first command fails</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Uses alternative method when hostname -I doesn't work
-                                    </div>
-                                    <div class="mcq-feedback correct">
-                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! This pattern tries hostname -I first, suppresses errors with 2>/dev/null, and if the result is empty, falls back to parsing ip addr show output.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Validates IP address format</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Checks if the IP address is valid format
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The -z test only checks if the variable is empty, not if it contains a valid IP address format.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Prevents duplicate IP addresses</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Ensures unique IP address assignment
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This code is about retrieving the system's IP address with a fallback method, not preventing duplicates.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Filters out IPv6 addresses</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Only captures IPv4 addresses
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. While grep "inet " might filter IPv6 (inet6), that's not the primary purpose. The main goal is providing a fallback method.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="reset-button">
-                                <i class="fas fa-redo"></i> Try Again
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 5: Lab Exercise 4 -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-5">
-                        <i class="fas fa-chart-line" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Lab Exercise 4: System Monitor
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <!-- MCQ 6 -->
-                    <div class="mcq-container">
-                        <div class="mcq-header">
-                            <div class="mcq-header-icon">
-                                <i class="fas fa-brain"></i>
-                            </div>
-                            <div class="mcq-header-text">Understanding System Monitoring</div>
-                        </div>
-                        
-                        <div class="mcq-content">
-                            <div class="mcq-question">
-                                What does this system monitoring script accomplish?
-                            </div>
-                            
-                            <div class="code-block">
-# Find resource hogs
-CPU_HOG=$(ps aux | sort -k3 -nr | head -1 | awk '{print $11}')
-MEM_HOG=$(ps aux | sort -k4 -nr | head -1 | awk '{print $11}')
-
-# Disk alerts
-for fs in $(df -h | grep -v Filesystem | awk '{print $6}'); do
-    USAGE=$(df -h "$fs" | tail -1 | awk '{print $5}' | tr -d '%')
-    if [ "$USAGE" -gt 80 ]; then
-        echo "Warning: $fs is ${USAGE}% full"
-    fi
-done</div>
-                            
-                            <div class="mcq-options">
-                                <div class="mcq-option" data-correct="true">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Identifies top CPU/memory processes and checks disk usage</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Finds resource-intensive processes and warns about full disks
-                                    </div>
-                                    <div class="mcq-feedback correct">
-                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! The script finds the processes using the most CPU (sort -k3) and memory (sort -k4), then checks all filesystems and warns if any are over 80% full.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Kills processes using too many resources</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Automatically terminates resource-heavy processes
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The script only identifies and reports resource usage. It doesn't take any action to kill or stop processes.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Creates backup of system logs</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Archives system monitoring data
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. This script monitors current system state but doesn't create any backups or archives. It only displays warnings.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">Optimizes disk space automatically</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Cleans up filesystems approaching capacity
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. The script only reports disk usage over 80%. It doesn't perform any cleanup or optimization actions.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="reset-button">
-                                <i class="fas fa-redo"></i> Try Again
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 6: Quick Reference -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-6">
-                        <i class="fas fa-book" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Quick Reference
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <!-- MCQ 7 -->
-                    <div class="mcq-container">
-                        <div class="mcq-header">
-                            <div class="mcq-header-icon">
-                                <i class="fas fa-brain"></i>
-                            </div>
-                            <div class="mcq-header-text">Special Variables Knowledge Check</div>
-                        </div>
-                        
-                        <div class="mcq-content">
-                            <div class="mcq-question">
-                                Match the special variable with its purpose:
-                            </div>
-                            
-                            <div class="code-block">
-# Variables
-name="value"              # Create
-echo $name               # Use
-export name="value"      # Environment
-
-# Special
-$?  # Exit status        $$  # Process ID
-$#  # Arg count         $@  # All args
-
-# Substitution
-result=$(command)        # Modern way
-timestamp=$(date +%Y%m%d)</div>
-                            
-                            <div class="mcq-options">
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">$? stores the process ID of the last command</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Returns PID of previous process
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. $? stores the exit status (0 for success, non-zero for failure) of the last command, not its process ID.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="true">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">$# shows the number of arguments passed to the script</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Counts positional parameters
-                                    </div>
-                                    <div class="mcq-feedback correct">
-                                        <span class="feedback-icon"><i class="fas fa-check-circle"></i></span> Correct! $# contains the count of arguments passed to the script or function, useful for validating input.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">$$ returns all arguments as a single string</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Concatenates all parameters
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. $$ returns the current shell's process ID. $@ returns all arguments (properly separated), while $* returns them as a single string.
-                                    </div>
-                                </div>
-                                
-                                <div class="mcq-option" data-correct="false">
-                                    <div class="mcq-option-header">
-                                        <div class="mcq-option-title">$@ counts the number of running processes</div>
-                                    </div>
-                                    <div class="mcq-option-content">
-                                        Shows process count
-                                    </div>
-                                    <div class="mcq-feedback incorrect">
-                                        <span class="feedback-icon"><i class="fas fa-times-circle"></i></span> Incorrect. $@ expands to all positional parameters passed to the script, properly preserving spaces and special characters.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="reset-button">
-                                <i class="fas fa-redo"></i> Try Again
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 7: Summary -->
-            <div class="section-dropdown">
-                <div class="section-header">
-                    <h2 id="section-7">
-                        <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
-                        Summary
-                    </h2>
-                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
-                </div>
-                <div class="section-content">
-                    <p>You've mastered:</p>
-                    <ul>
-                        <li>✅ Variable creation and usage</li>
-                        <li>✅ Environment vs shell variables</li>
-                        <li>✅ Special variables ($?, $$, etc.)</li>
-                        <li>✅ Command substitution with $()</li>
-                        <li>✅ Real-world automation patterns</li>
-                    </ul>
+                    <h3>Error Handling and Validation</h3>
+                    <p>In medical applications, robust error handling is crucial to prevent misinterpretation of results:</p>
                     
-                    <p><strong>Next</strong>: Chapter 2.5 - Wildcards and Pattern Matching!</p>
+                    <div class="code-block-container" data-block-name="error-handling">
+                        <div class="code-block"># Safe command substitution with validation
+safe_biomarker_analysis <- function(data, biomarker, operation = "mean") {
+    # Validate inputs
+    if (!biomarker %in% names(data)) {
+        stop(paste("Biomarker", biomarker, "not found in dataset"))
+    }
+    
+    # Create safe expression with error handling
+    safe_expr <- bquote({
+        tryCatch({
+            values <- data[[.(biomarker)]]
+            
+            # Check for valid numeric data
+            if (!is.numeric(values)) {
+                stop(paste("Biomarker", .(biomarker), "contains non-numeric data"))
+            }
+            
+            # Check for sufficient data
+            valid_values <- values[!is.na(values)]
+            if (length(valid_values) < 3) {
+                warning("Less than 3 valid measurements available")
+            }
+            
+            # Perform operation
+            result <- switch(.(operation),
+                           "mean" = mean(valid_values),
+                           "median" = median(valid_values),
+                           "sd" = sd(valid_values),
+                           stop("Unknown operation: ", .(operation)))
+            
+            list(
+                biomarker = .(biomarker),
+                operation = .(operation),
+                result = result,
+                n_valid = length(valid_values),
+                n_missing = sum(is.na(values)),
+                status = "success"
+            )
+        }, error = function(e) {
+            list(
+                biomarker = .(biomarker),
+                operation = .(operation),
+                error = e$message,
+                status = "error"
+            )
+        })
+    })
+    
+    eval(safe_expr)
+}</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Clinical Safety Note:</strong> When working with patient data, always implement comprehensive error handling and validation. A single unhandled error in a clinical decision support system could lead to incorrect treatment recommendations.</p>
+                    </div>
                     
                     <div class="challenge">
-                        <h3>Congratulations on Completing Module 2!</h3>
-                        <p>You've successfully learned command substitution and advanced shell scripting techniques. These skills are essential for system administration and automation.</p>
-                        <button class="celebrate-button" data-message="Outstanding work! You've mastered command substitution and are ready to tackle more advanced shell scripting challenges. Your automation skills are growing stronger!" data-animation="fireworks"><i class="fas fa-star"></i> I've completed Module 2!</button>
+                        <h3>Lab Exercise 4: Multi-Omics Integration Pipeline</h3>
+                        <p>Create an advanced pipeline that integrates multiple types of biological data (genomics, proteomics, clinical) using sophisticated command substitution techniques.</p>
+                        
+                        <div class="code-block-container" data-block-name="lab4-multiomics-exercise">
+                            <div class="code-block"># Lab scenario: Build a multi-omics integration pipeline
+# Complete the missing parts indicated by ...
+
+# Simulated multi-omics data
+clinical_data <- data.frame(
+    patient_id = paste0("P", 1:50),
+    age = round(runif(50, 40, 80)),
+    stage = sample(c("I", "II", "III", "IV"), 50, replace = TRUE)
+)
+
+genomic_data <- data.frame(
+    patient_id = paste0("P", 1:50),
+    BRCA1 = runif(50, 0, 2),  # Expression levels
+    TP53 = runif(50, 0, 2),
+    EGFR = runif(50, 0, 2)
+)
+
+proteomic_data <- data.frame(
+    patient_id = paste0("P", 1:50),
+    HER2 = runif(50, 0, 100),  # Protein levels
+    VEGF = runif(50, 0, 100),
+    PDGFR = runif(50, 0, 100)
+)
+
+# Function to create integrated analysis
+integrate_omics_data <- function(clinical, genomic, proteomic, target_genes, target_proteins) {
+    # Create complex integration expression
+    integration_expr <- bquote({
+        # Merge all datasets
+        merged_data <- merge(merge(clinical, genomic, by = "patient_id"), 
+                           proteomic, by = "patient_id")
+        
+        # Create gene expression matrix
+        gene_matrix <- as.matrix(merged_data[, .(target_genes)])
+        
+        # Create protein expression matrix
+        protein_matrix <- as.matrix(merged_data[, .(target_proteins)])
+        
+        # Calculate correlation between gene and protein expression
+        correlations <- cor(gene_matrix, protein_matrix, use = "complete.obs")
+        
+        # Identify high-expression patients for each marker
+        high_expr_patients <- list()
+        
+        # Check genes (using substitute for dynamic column access)
+        for (gene in ...) {
+            threshold <- quantile(merged_data[[...]], 0.75, na.rm = TRUE)
+            high_expr <- merged_data$patient_id[merged_data[[...]] > threshold]
+            high_expr_patients[[gene]] <- high_expr
+        }
+        
+        # Check proteins
+        for (protein in ...) {
+            threshold <- quantile(merged_data[[...]], 0.75, na.rm = TRUE)
+            high_expr <- merged_data$patient_id[merged_data[[...]] > threshold]
+            high_expr_patients[[protein]] <- high_expr
+        }
+        
+        # Generate integrated report
+        cat("=== MULTI-OMICS INTEGRATION REPORT ===\n")
+        cat("Total patients analyzed:", nrow(merged_data), "\n\n")
+        
+        cat("Gene-Protein Correlations:\n")
+        print(round(correlations, 2))
+        cat("\n")
+        
+        cat("High Expression Summary:\n")
+        for (marker in names(high_expr_patients)) {
+            cat(sprintf("%-10s: %d patients (%.1f%%)\n", 
+                       marker, 
+                       length(high_expr_patients[[marker]]),
+                       100 * length(high_expr_patients[[marker]]) / nrow(merged_data)))
+        }
+        
+        # Return results for further analysis
+        list(
+            merged_data = merged_data,
+            correlations = correlations,
+            high_expr_patients = high_expr_patients
+        )
+    })
+    
+    # Execute integration - fill in the substitution list
+    eval(substitute(integration_expr, list(... = ..., ... = ...)))
+}
+
+# Run the integration
+target_genes <- c("BRCA1", "TP53", "EGFR")
+target_proteins <- c("HER2", "VEGF", "PDGFR")
+
+results <- integrate_omics_data(clinical_data, genomic_data, proteomic_data,
+                               target_genes, target_proteins)</div>
+                            <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                            <div class="copy-feedback">Copied!</div>
+                        </div>
+                        
+                        <p>Expected output structure:</p>
+                        <div class="expected-output">=== MULTI-OMICS INTEGRATION REPORT ===
+Total patients analyzed: 50 
+
+Gene-Protein Correlations:
+       HER2  VEGF PDGFR
+BRCA1  0.12 -0.08  0.25
+TP53  -0.15  0.22  0.18
+EGFR   0.08  0.14 -0.05
+
+High Expression Summary:
+BRCA1     : 13 patients (26.0%)
+TP53      : 12 patients (24.0%)
+EGFR      : 13 patients (26.0%)
+HER2      : 12 patients (24.0%)
+VEGF      : 13 patients (26.0%)
+PDGFR     : 12 patients (24.0%)</div>
+                        
+                        <button class="toggle-answer"><i class="fas fa-lightbulb"></i> Show Answer</button>
+                        <div class="answer">
+                            <h4>Answer:</h4>
+                            <div class="code-block-container" data-block-name="lab4-multiomics-solution">
+                                <div class="code-block"># Complete solution
+integrate_omics_data <- function(clinical, genomic, proteomic, target_genes, target_proteins) {
+    integration_expr <- bquote({
+        merged_data <- merge(merge(clinical, genomic, by = "patient_id"), 
+                           proteomic, by = "patient_id")
+        
+        gene_matrix <- as.matrix(merged_data[, .(target_genes)])
+        protein_matrix <- as.matrix(merged_data[, .(target_proteins)])
+        
+        correlations <- cor(gene_matrix, protein_matrix, use = "complete.obs")
+        
+        high_expr_patients <- list()
+        
+        for (gene in .(target_genes)) {
+            threshold <- quantile(merged_data[[gene]], 0.75, na.rm = TRUE)
+            high_expr <- merged_data$patient_id[merged_data[[gene]] > threshold]
+            high_expr_patients[[gene]] <- high_expr
+        }
+        
+        for (protein in .(target_proteins)) {
+            threshold <- quantile(merged_data[[protein]], 0.75, na.rm = TRUE)
+            high_expr <- merged_data$patient_id[merged_data[[protein]] > threshold]
+            high_expr_patients[[protein]] <- high_expr
+        }
+        
+        cat("=== MULTI-OMICS INTEGRATION REPORT ===\n")
+        cat("Total patients analyzed:", nrow(merged_data), "\n\n")
+        
+        cat("Gene-Protein Correlations:\n")
+        print(round(correlations, 2))
+        cat("\n")
+        
+        cat("High Expression Summary:\n")
+        for (marker in names(high_expr_patients)) {
+            cat(sprintf("%-10s: %d patients (%.1f%%)\n", 
+                       marker, 
+                       length(high_expr_patients[[marker]]),
+                       100 * length(high_expr_patients[[marker]]) / nrow(merged_data)))
+        }
+        
+        list(
+            merged_data = merged_data,
+            correlations = correlations,
+            high_expr_patients = high_expr_patients
+        )
+    })
+    
+    eval(integration_expr)
+}
+
+# Create the data and run
+clinical_data <- data.frame(
+    patient_id = paste0("P", 1:50),
+    age = round(runif(50, 40, 80)),
+    stage = sample(c("I", "II", "III", "IV"), 50, replace = TRUE)
+)
+
+genomic_data <- data.frame(
+    patient_id = paste0("P", 1:50),
+    BRCA1 = runif(50, 0, 2),
+    TP53 = runif(50, 0, 2),
+    EGFR = runif(50, 0, 2)
+)
+
+proteomic_data <- data.frame(
+    patient_id = paste0("P", 1:50),
+    HER2 = runif(50, 0, 100),
+    VEGF = runif(50, 0, 100),
+    PDGFR = runif(50, 0, 100)
+)
+
+target_genes <- c("BRCA1", "TP53", "EGFR")
+target_proteins <- c("HER2", "VEGF", "PDGFR")
+
+results <- integrate_omics_data(clinical_data, genomic_data, proteomic_data,
+                               target_genes, target_proteins)</div>
+                                <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                                <div class="copy-feedback">Copied!</div>
+                            </div>
+                        </div>
+                        <button class="celebrate-button" data-message="Phenomenal achievement! You've successfully built a sophisticated multi-omics integration pipeline that combines genomic, proteomic, and clinical data. This type of integrative analysis is at the forefront of precision medicine, enabling researchers to understand disease mechanisms across multiple biological layers and identify novel therapeutic targets." data-animation="school"><i class="fas fa-star"></i> I've done it!</button>
+                    </div>
+                    
+                    <h3>Quick Reference Guide</h3>
+                    <div class="code-block-container" data-block-name="quick-reference">
+                        <div class="code-block"># Quick Reference: Command Substitution in R
+
+# 1. Basic substitution
+substitute(expr, list(var = value))
+
+# 2. bquote with .() notation
+bquote(data$.(column_name) > .(threshold))
+
+# 3. Creating formulas dynamically
+as.formula(paste(outcome, "~", paste(predictors, collapse = " + ")))
+
+# 4. Evaluating expressions
+eval(expression)
+
+# 5. Safe evaluation with error handling
+tryCatch(eval(expr), error = function(e) handle_error(e))
+
+# 6. Common patterns for medical data
+# Dynamic column selection
+data[[column_name]]
+
+# Dynamic filtering
+data[data[[biomarker]] > threshold, ]
+
+# Dynamic aggregation
+aggregate(as.formula(paste(value, "~", group)), data, FUN = mean)
+
+# 7. Best practices
+# - Always validate inputs before substitution
+# - Use bquote for cleaner syntax
+# - Implement error handling for clinical applications
+# - Document dynamic behavior clearly
+# - Test with edge cases (missing data, wrong types)</div>
+                        <button class="copy-button"><i class="fas fa-copy"></i> Copy</button>
+                        <div class="copy-feedback">Copied!</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Section -->
+            <div class="section-dropdown">
+                <div class="section-header">
+                    <h2 id="section-4">
+                        <i class="fas fa-clipboard-check" style="margin-right: 10px; color: var(--nus-orange);"></i>
+                        Summary: Mastering R Command Substitution for Precision Medicine
+                    </h2>
+                    <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="section-content">
+                    <p>Congratulations on completing this comprehensive module on R command substitution! You've acquired powerful skills that are essential for modern biomedical data analysis:</p>
+                    
+                    <ol>
+                        <li><strong>Dynamic Programming Fundamentals</strong>: You learned how to use <code>substitute()</code>, <code>bquote()</code>, and related functions to create flexible, reusable code that adapts to different clinical scenarios.</li>
+                        
+                        <li><strong>Clinical Applications</strong>: You built real-world tools including patient filtering systems, biomarker alert systems, and genomic analysis pipelines - all using dynamic programming techniques.</li>
+                        
+                        <li><strong>Advanced Integration</strong>: You mastered complex patterns for integrating multi-omics data, creating sophisticated analyses that combine genomic, proteomic, and clinical information.</li>
+                        
+                        <li><strong>Best Practices</strong>: You learned critical safety considerations for medical applications, including robust error handling, input validation, and clear documentation practices.</li>
+                    </ol>
+                    
+                    <p>These command substitution techniques form the backbone of scalable clinical analytics systems. As precision medicine continues to evolve, your ability to create dynamic, adaptable analysis pipelines will be invaluable for:</p>
+                    
+                    <ul>
+                        <li>Processing diverse patient cohorts without code duplication</li>
+                        <li>Building automated clinical decision support systems</li>
+                        <li>Analyzing high-throughput genomic and proteomic data</li>
+                        <li>Creating reproducible research workflows</li>
+                        <li>Developing personalized treatment algorithms</li>
+                    </ul>
+                    
+                    <p>Remember, the power of command substitution lies not just in its technical capabilities, but in how it enables you to build tools that can adapt to the ever-changing landscape of precision medicine. Keep practicing these techniques, and you'll be well-equipped to tackle the complex analytical challenges in modern healthcare!</p>
+                    
+                    <div class="fun-fact">
+                        <p><strong>Looking Ahead:</strong> The skills you've learned here are foundational for advanced topics like building Shiny applications for clinical dashboards, creating R packages for genomic analysis, and developing machine learning pipelines for precision medicine.</p>
                     </div>
                 </div>
             </div>
         </section>
     </main>
-    
-    <!-- User Information Box -->
-    <div class="user-info-box">
-        <h3>Session Information</h3>
-        <div class="user-info-item">
-            <span class="user-info-label">Username:</span>
-            <span id="username">Loading...</span>
-        </div>
-        <div class="user-info-item">
-            <span class="user-info-label">Access Time:</span>
-            <span id="access-time">Loading...</span>
-        </div>
-        <div class="user-info-item">
-            <span class="user-info-label">Current URL:</span>
-            <span id="current-url">Loading...</span>
-        </div>
-        <div id="status-message"></div>
-    </div>
     
     <footer>
         <div class="footer-content">
@@ -753,14 +1025,14 @@ timestamp=$(date +%Y%m%d)</div>
         <div class="modal-content">
             <div class="modal-top">
                 <div class="modal-icon">
-                    <i class="fas fa-terminal"></i>
+                    <i class="fas fa-flask"></i>
                 </div>
                 <h3 class="modal-header">Time for a break?</h3>
-                <p class="modal-subheader">Your shell scripting session is waiting</p>
+                <p class="modal-subheader">Your R session is waiting</p>
             </div>
             
             <div class="modal-body">
-                <p class="modal-message">We noticed your shell scripting session has been inactive. Ready to continue mastering command substitution?</p>
+                <p class="modal-message">We noticed your precision health coding session has been inactive. Ready to continue analyzing medical data with R?</p>
                 <button class="modal-close">
                     <i class="fas fa-code"></i> Resume My Session
                 </button>
