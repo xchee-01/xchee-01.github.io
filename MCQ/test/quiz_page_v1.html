@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical MCQ Quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-blue: #003D7C;
+      --primary-orange: #EF7C00;
+      --light-blue: #E6EEF5;
+      --light-orange: #FFE5CC;
+      --success-color: #4CAF50;
+      --error-color: #F44336;
+      --success-light: #E8F5E9;
+      --error-light: #FFEBEE;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      background-color: var(--primary-blue);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    
+    .progress-container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .progress-bar {
+      background-color: var(--light-blue);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background-color: var(--primary-orange);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+    
+    .question-card {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .question-id {
+      background-color: var(--light-orange);
+      color: var(--primary-blue);
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+    
+    .question-metadata {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .metadata-badge {
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.85em;
+      font-weight: 500;
+    }
+    
+    .difficulty-badge {
+      background-color: #FFF3E0;
+      color: #EF6C00;
+    }
+    
+    .topic-badge {
+      background-color: var(--light-blue);
+      color: var(--primary-blue);
+    }
+    
+    .clinical-scenario {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-left: 4px solid var(--primary-blue);
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    
+    .clinical-scenario h3 {
+      color: var(--primary-blue);
+      font-size: 1em;
+      margin-bottom: 10px;
+    }
+    
+    .clinical-scenario p {
+      color: #555;
+      margin: 0;
+    }
+    
+    .question-text {
+      font-size: 1.2em;
+      margin-bottom: 25px;
+      font-weight: 500;
+      color: #222;
+    }
+    
+    .options-container {
+      display: grid;
+      gap: 12px;
+    }
+    
+    .option-button {
+      background-color: white;
+      border: 2px solid #e0e0e0;
+      padding: 15px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      font-size: 1em;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .option-letter {
+      background-color: #f5f5f5;
+      color: #666;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    
+    .option-button:hover:not(.disabled) {
+      background-color: var(--light-blue);
+      border-color: var(--primary-blue);
+    }
+    
+    .option-button.selected {
+      background-color: var(--primary-blue);
+      color: white;
+      border-color: var(--primary-blue);
+    }
+    
+    .option-button.selected .option-letter {
+      background-color: white;
+      color: var(--primary-blue);
+    }
+    
+    .option-button.correct {
+      background-color: var(--success-light);
+      border-color: var(--success-color);
+      color: var(--success-color);
+    }
+    
+    .option-button.correct .option-letter {
+      background-color: var(--success-color);
+      color: white;
+    }
+    
+    .option-button.incorrect {
+      background-color: var(--error-light);
+      border-color: var(--error-color);
+      color: var(--error-color);
+    }
+    
+    .option-button.incorrect .option-letter {
+      background-color: var(--error-color);
+      color: white;
+    }
+    
+    .option-button.disabled {
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+    
+    .feedback-container {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .feedback-header {
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .feedback-correct {
+      color: var(--success-color);
+    }
+    
+    .feedback-incorrect {
+      color: var(--error-color);
+    }
+    
+    .navigation-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    
+    .nav-button {
+      background-color: var(--primary-orange);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+    
+    .nav-button:hover:not(:disabled) {
+      background-color: #d76d00;
+    }
+    
+    .nav-button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .results-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    .score-circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      margin: 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5em;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .score-high {
+      background-color: var(--success-color);
+    }
+    
+    .score-medium {
+      background-color: var(--primary-orange);
+    }
+    
+    .score-low {
+      background-color: var(--error-color);
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid var(--primary-orange);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .user-info {
+      background-color: var(--light-blue);
+      padding: 10px 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .user-name {
+      font-weight: 500;
+      color: var(--primary-blue);
+    }
+    
+    .logout-btn {
+      background-color: var(--primary-orange);
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    
+    .logout-btn:hover {
+      background-color: #d76d00;
+    }
+    
+    .timer {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 10px;
+    }
+    
+    .results-details {
+      margin-top: 20px;
+      text-align: left;
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    
+    .results-details h3 {
+      color: var(--primary-blue);
+      margin-bottom: 15px;
+    }
+    
+    .result-item {
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      background-color: white;
+    }
+    
+    .result-item.correct {
+      border-left: 4px solid var(--success-color);
+    }
+    
+    .result-item.incorrect {
+      border-left: 4px solid var(--error-color);
+    }
+    
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px;
+      }
+      
+      .header {
+        padding: 20px 10px;
+      }
+      
+      .header h1 {
+        font-size: 2em;
+      }
+      
+      .question-card {
+        padding: 20px;
+      }
+      
+      .question-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Medical MCQ Quiz</h1>
+      <p>Test your medical knowledge</p>
+    </div>
+    
+    <div id="user-info" class="user-info">
+      <span class="user-name">Welcome, <span id="username-display">User</span></span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    
+    <div id="progress-container" class="progress-container">
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <div id="progress-text" class="progress-text">Question 1 of 0</div>
+      <div id="timer" class="timer">Time: 0:00</div>
+    </div>
+    
+    <div id="quiz-container">
+      <!-- Quiz content will be dynamically loaded here -->
+    </div>
+    
+    <div id="results-container" class="results-container hidden">
+      <!-- Results will be displayed here -->
+    </div>
+  </div>
+  
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+  </div>
+  
+  <script>
+    // Replace this with your Google Apps Script Web App URL
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby26lMOV0qCGNCaj1xcLgnlUXQQUYyhBQjlpBfsRH3XkzKNJNYPbGj9Yo3GvQrRAebE/exec';
+    const SIGN_IN_URL = 'https://xchee-01.github.io/MCQ/mcq_app_signin.html'; // Replace with your sign-in page
+    
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = [];
+    let quizResults = [];
+    let jsonpCallbackCount = 0;
+    let questionAnswered = false;
+    let currentUser = null;
+    let sessionID = '';
+    let questionStartTime = null;
+    let quizStartTime = null;
+    let timerInterval = null;
+    
+    // Generate a unique session ID
+    function generateSessionID() {
+      return `sid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    // Authentication functions
+    function getUsername() {
+      try {
+        const accountsData = localStorage.getItem('accounts');
+        if (accountsData) {
+          const accounts = JSON.parse(accountsData);
+          return (accounts && accounts.length > 0 && accounts[0].username) 
+            ? accounts[0].username 
+            : null;
+        }
+        return null;
+      } catch (error) {
+        console.error('Username retrieval error:', error);
+        return null;
+      }
+    }
+    
+    function checkAuthentication() {
+      const username = getUsername();
+      if (!username) {
+        // For testing, you can comment out this redirect
+        // redirectToSignIn();
+        // return false;
+        
+        // For testing without authentication:
+        currentUser = 'TestUser';
+        document.getElementById('username-display').textContent = currentUser;
+        return true;
+      }
+      currentUser = username;
+      document.getElementById('username-display').textContent = username;
+      return true;
+    }
+    
+    function redirectToSignIn() {
+      localStorage.setItem('lastVisitedUrl', window.location.href);
+      window.location.href = SIGN_IN_URL;
+    }
+    
+    function logout() {
+      try {
+        localStorage.removeItem('accounts');
+        redirectToSignIn();
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    }
+    
+    // Timer functions
+    function startTimer() {
+      quizStartTime = new Date();
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+    
+    function updateTimer() {
+      if (quizStartTime) {
+        const elapsed = Math.floor((new Date() - quizStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        document.getElementById('timer').textContent = `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+    }
+    
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+    
+    // Show loading overlay
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+    
+    // Hide loading overlay
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+    
+    // Load questions from Google Apps Script using JSONP
+    function loadQuestions() {
+      showLoading();
+      
+      // Generate a unique session ID for this quiz attempt
+      sessionID = generateSessionID();
+      console.log('Generated session ID:', sessionID);
+      
+      try {
+        // Create a unique callback function name
+        const callbackName = 'jsonpCallback_' + jsonpCallbackCount++;
+        
+        // Define the callback function
+        window[callbackName] = function(data) {
+          // Clean up
+          delete window[callbackName];
+          const script = document.getElementById('jsonp-' + callbackName);
+          if (script) {
+            script.parentNode.removeChild(script);
+          }
+          
+          handleQuestionsLoad(data);
+        };
+        
+        // Create script element for JSONP
+        const script = document.createElement('script');
+        script.id = 'jsonp-' + callbackName;
+        script.src = `${APPS_SCRIPT_URL}?action=getQuestions&callback=${callbackName}`;
+        
+        // Error handling
+        script.onerror = function() {
+          handleError({ message: 'Failed to load questions. Please check your network connection and the web app URL.' });
+        };
+        
+        document.body.appendChild(script);
+        
+      } catch (error) {
+        handleError(error);
+      }
+    }
+    
+    // Handle questions loaded
+    function handleQuestionsLoad(data) {
+      hideLoading();
+      console.log('Questions loaded response:', data);
+      
+      if (data && data.success) {
+        questions = data.data;
+        console.log('Number of questions loaded:', questions.length);
+        
+        if (questions.length > 0) {
+          userAnswers = new Array(questions.length).fill(null);
+          updateProgressBar();
+          renderQuestion();
+          startTimer();
+        } else {
+          handleError('No questions found in the spreadsheet');
+        }
+      } else {
+        handleError(data && data.error ? data.error : 'Unknown error occurred while loading questions');
+      }
+    }
+    
+    // Handle errors
+    function handleError(error) {
+      hideLoading();
+      const errorMessage = typeof error === 'string' ? error : (error.message || 'Unknown error occurred');
+      alert('Error: ' + errorMessage);
+      console.error('Quiz error:', error);
+    }
+    
+    // Update progress bar
+    function updateProgressBar() {
+      const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+      document.getElementById('progress-fill').style.width = progress + '%';
+      document.getElementById('progress-text').textContent = 
+        `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+    }
+    
+    // Render current question
+    function renderQuestion() {
+      try {
+        questionAnswered = false;
+        questionStartTime = new Date();
+        
+        if (currentQuestionIndex >= questions.length) {
+          showResults();
+          return;
+        }
+        
+        const question = questions[currentQuestionIndex];
+        if (!question) {
+          showResults();
+          return;
+        }
+        
+        console.log('Rendering question:', question);
+        
+        const container = document.getElementById('quiz-container');
+        
+        // Create the question card structure
+        const questionCard = document.createElement('div');
+        questionCard.className = 'question-card';
+        
+        // Question header
+        const questionHeader = document.createElement('div');
+        questionHeader.className = 'question-header';
+        
+        const questionId = document.createElement('span');
+        questionId.className = 'question-id';
+        questionId.textContent = question.questionID || 'Q' + (currentQuestionIndex + 1);
+        
+        const questionMetadata = document.createElement('div');
+        questionMetadata.className = 'question-metadata';
+        
+        if (question.topic) {
+          const topicBadge = document.createElement('span');
+          topicBadge.className = 'metadata-badge topic-badge';
+          topicBadge.textContent = question.topic;
+          questionMetadata.appendChild(topicBadge);
+        }
+        
+        if (question.difficulty) {
+          const difficultyBadge = document.createElement('span');
+          difficultyBadge.className = 'metadata-badge difficulty-badge';
+          difficultyBadge.textContent = `Difficulty: ${question.difficulty}`;
+          questionMetadata.appendChild(difficultyBadge);
+        }
+        
+        questionHeader.appendChild(questionId);
+        questionHeader.appendChild(questionMetadata);
+        
+        questionCard.appendChild(questionHeader);
+        
+        // Clinical scenario (if present)
+        if (question.clinicalScenario && question.clinicalScenario.trim()) {
+          const scenarioDiv = document.createElement('div');
+          scenarioDiv.className = 'clinical-scenario';
+          
+          const scenarioTitle = document.createElement('h3');
+          scenarioTitle.textContent = 'Clinical Scenario';
+          
+          const scenarioText = document.createElement('p');
+          scenarioText.textContent = question.clinicalScenario;
+          
+          scenarioDiv.appendChild(scenarioTitle);
+          scenarioDiv.appendChild(scenarioText);
+          questionCard.appendChild(scenarioDiv);
+        }
+        
+        // Question text
+        const questionText = document.createElement('div');
+        questionText.className = 'question-text';
+        questionText.textContent = question.questionStem || 'No question text available';
+        questionCard.appendChild(questionText);
+        
+        // Options container
+        const optionsContainer = document.createElement('div');
+        optionsContainer.className = 'options-container';
+        
+        if (question.options && question.options.length > 0) {
+          const optionLetters = ['A', 'B', 'C', 'D', 'E'];
+          
+          question.options.forEach((option, index) => {
+            if (option) {
+              const optionButton = document.createElement('button');
+              optionButton.className = 'option-button';
+              
+              const optionLetter = document.createElement('span');
+              optionLetter.className = 'option-letter';
+              optionLetter.textContent = optionLetters[index];
+              
+              const optionText = document.createElement('span');
+              optionText.textContent = option;
+              
+              optionButton.appendChild(optionLetter);
+              optionButton.appendChild(optionText);
+              
+              // Check if this option was previously selected
+              if (userAnswers[currentQuestionIndex] === optionLetters[index]) {
+                optionButton.classList.add('selected');
+              }
+              
+              // Add click handler
+              optionButton.addEventListener('click', () => selectOption(optionLetters[index], index));
+              
+              optionsContainer.appendChild(optionButton);
+            }
+          });
+        }
+        
+        questionCard.appendChild(optionsContainer);
+        
+        // Feedback container
+        const feedbackContainer = document.createElement('div');
+        feedbackContainer.id = 'feedback-container';
+        feedbackContainer.className = 'feedback-container';
+        
+        const feedbackHeader = document.createElement('div');
+        feedbackHeader.id = 'feedback-header';
+        feedbackHeader.className = 'feedback-header';
+        
+        feedbackContainer.appendChild(feedbackHeader);
+        questionCard.appendChild(feedbackContainer);
+        
+        // Navigation buttons
+        const navButtons = document.createElement('div');
+        navButtons.className = 'navigation-buttons';
+        
+        const prevButton = document.createElement('button');
+        prevButton.className = 'nav-button';
+        prevButton.textContent = 'Previous';
+        prevButton.disabled = currentQuestionIndex === 0;
+        prevButton.addEventListener('click', previousQuestion);
+        
+        const nextButton = document.createElement('button');
+        nextButton.id = 'next-button';
+        nextButton.className = 'nav-button';
+        nextButton.textContent = currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next';
+        nextButton.style.display = 'none';
+        nextButton.addEventListener('click', nextQuestion);
+        
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(nextButton);
+        questionCard.appendChild(navButtons);
+        
+        // Clear container and add the question card
+        container.innerHTML = '';
+        container.appendChild(questionCard);
+        
+      } catch (error) {
+        console.error('Error in renderQuestion:', error);
+        handleError(error);
+      }
+    }
+    
+    // Select option
+    function selectOption(optionLetter, index) {
+      if (questionAnswered) return;
+      
+      questionAnswered = true;
+      userAnswers[currentQuestionIndex] = optionLetter;
+      
+      try {
+        // Calculate time taken for this question
+        const timeTaken = Math.round((new Date() - questionStartTime) / 1000);
+        
+        // Disable all option buttons
+        const buttons = document.querySelectorAll('.option-button');
+        buttons.forEach(button => {
+          button.classList.add('disabled');
+          button.style.pointerEvents = 'none';
+        });
+        
+        // Mark selected button
+        buttons[index].classList.add('selected');
+        
+        // Check answer and show feedback
+        const question = questions[currentQuestionIndex];
+        const isCorrect = optionLetter === question.correctAnswer;
+        
+        // Highlight correct and incorrect answers
+        const optionLetters = ['A', 'B', 'C', 'D', 'E'];
+        buttons.forEach((button, idx) => {
+          if (optionLetters[idx] === question.correctAnswer) {
+            button.classList.add('correct');
+          } else if (idx === index && !isCorrect) {
+            button.classList.add('incorrect');
+          }
+        });
+        
+        // Show feedback
+        const feedbackContainer = document.getElementById('feedback-container');
+        const feedbackHeader = document.getElementById('feedback-header');
+        
+        feedbackContainer.style.display = 'block';
+        
+        if (isCorrect) {
+          feedbackHeader.className = 'feedback-header feedback-correct';
+          feedbackHeader.innerHTML = '✓ Correct!';
+        } else {
+          feedbackHeader.className = 'feedback-header feedback-incorrect';
+          feedbackHeader.innerHTML = `✗ Incorrect. The correct answer is ${question.correctAnswer}.`;
+        }
+        
+        // Show next button
+        const nextButton = document.getElementById('next-button');
+        if (nextButton) {
+          nextButton.style.display = 'block';
+        }
+        
+        // Store quiz result
+        const result = {
+          questionID: question.questionID,
+          topic: question.topic,
+          concepts: question.concepts,
+          difficulty: question.difficulty,
+          bloomLevel: question.bloomLevel,
+          clinicalScenario: question.clinicalScenario,
+          questionStem: question.questionStem,
+          userAnswer: optionLetter,
+          correctAnswer: question.correctAnswer,
+          isCorrect: isCorrect,
+          user_ID: currentUser || 'Guest',
+          sessionID: sessionID,
+          timeTaken: timeTaken
+        };
+        
+        quizResults.push(result);
+        
+        // Save result immediately
+        saveResultToSheet(result);
+        
+      } catch (error) {
+        console.error('Error in selectOption:', error);
+      }
+    }
+    
+    // Save individual result to Google Sheets
+    function saveResultToSheet(result) {
+      try {
+        console.log('Saving result:', result);
+        
+        const img = new Image();
+        const data = encodeURIComponent(JSON.stringify({
+          action: 'saveResult',
+          result: result
+        }));
+        
+        img.src = `${APPS_SCRIPT_URL}?data=${data}`;
+        
+        img.onload = function() {
+          console.log('Result saved successfully');
+        };
+        
+        img.onerror = function() {
+          console.error('Failed to save result to server');
+        };
+        
+      } catch (error) {
+        console.error('Error in saveResultToSheet:', error);
+      }
+    }
+    
+    // Navigate to previous question
+    function previousQuestion() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        updateProgressBar();
+        renderQuestion();
+      }
+    }
+    
+    // Navigate to next question or submit
+    function nextQuestion() {
+      try {
+        if (currentQuestionIndex < questions.length - 1) {
+          currentQuestionIndex++;
+          updateProgressBar();
+          renderQuestion();
+        } else {
+          showResults();
+        }
+      } catch (error) {
+        console.error('Error in nextQuestion:', error);
+        showResults();
+      }
+    }
+    
+    // Show results
+    function showResults() {
+      stopTimer();
+      
+      // Calculate score
+      const correctCount = quizResults.filter(result => result.isCorrect).length;
+      const percentage = (correctCount / questions.length) * 100;
+      
+      // Hide quiz container
+      document.getElementById('quiz-container').style.display = 'none';
+      document.getElementById('progress-container').style.display = 'none';
+      
+      // Show results container
+      const resultsContainer = document.getElementById('results-container');
+      resultsContainer.classList.remove('hidden');
+      
+      // Determine score category
+      let scoreClass;
+      if (percentage >= 80) {
+        scoreClass = 'score-high';
+      } else if (percentage >= 60) {
+        scoreClass = 'score-medium';
+      } else {
+        scoreClass = 'score-low';
+      }
+      
+      // Calculate total time
+      const totalTime = Math.round((new Date() - quizStartTime) / 1000);
+      const minutes = Math.floor(totalTime / 60);
+      const seconds = totalTime % 60;
+      
+      // Render results
+      resultsContainer.innerHTML = `
+        <h2>Quiz Completed!</h2>
+        <div class="score-circle ${scoreClass}">
+          ${percentage.toFixed(1)}%
+        </div>
+        <p>You answered ${correctCount} out of ${questions.length} questions correctly.</p>
+        <p>Total time: ${minutes}:${seconds.toString().padStart(2, '0')}</p>
+        <p>Session ID: ${sessionID}</p>
+        
+        <div class="results-details">
+          <h3>Question Review</h3>
+          ${quizResults.map((result, index) => `
+            <div class="result-item ${result.isCorrect ? 'correct' : 'incorrect'}">
+              <strong>Q${index + 1}:</strong> ${questions[index].questionStem.substring(0, 50)}...
+              <br>Your answer: ${result.userAnswer} | Correct answer: ${result.correctAnswer}
+            </div>
+          `).join('')}
+        </div>
+        
+        <button class="nav-button" onclick="location.reload()" style="margin-top: 20px;">Try Again</button>
+      `;
+    }
+    
+    // Initialize quiz
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check authentication first
+      if (checkAuthentication()) {
+        // If authenticated, load questions
+        loadQuestions();
+      }
+    });
+  </script>
+</body>
+</html>
