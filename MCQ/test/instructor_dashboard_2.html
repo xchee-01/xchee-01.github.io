@@ -640,31 +640,19 @@
                 delete chartInstances[chartName];
             }
         }
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        font: { size: 12 }
-                    }
-                }
-            }
-        };
 
         // Render Student Performance View
         function renderStudentView(data) {
             // Summary stats
             const students = Object.values(data.students || {});
             const avgScore = students.length > 0 
-                ? students.reduce((sum, s) => sum + parseFloat(s.overallPercentage), 0) / students.length
+                ? students.reduce((sum, s) => sum + parseFloat(s.overallPercentage || 0), 0) / students.length
                 : 0;
             const highestScore = students.length > 0
-                ? Math.max(...students.map(s => parseFloat(s.overallPercentage)))
+                ? Math.max(...students.map(s => parseFloat(s.overallPercentage || 0)))
                 : 0;
             const completionRate = students.length > 0
-                ? (students.filter(s => s.totalQuestions >= 10).length / students.length) * 100
+                ? (students.filter(s => (s.totalQuestions || 0) >= 10).length / students.length) * 100
                 : 0;
             
             const statsHtml = `
@@ -695,8 +683,8 @@
                     if (!topicData[topic]) {
                         topicData[topic] = { total: 0, correct: 0 };
                     }
-                    topicData[topic].total += data.total;
-                    topicData[topic].correct += data.correct;
+                    topicData[topic].total += data.total || 0;
+                    topicData[topic].correct += data.correct || 0;
                 });
             });
             
@@ -707,7 +695,7 @@
             }).slice(0, 8);
             
             const topicChartEl = document.getElementById('topicPerformanceChart');
-            if (topicChartEl) {
+            if (topicChartEl && topics.length > 0) {
                 destroyChart('topicPerformance');
                 chartInstances.topicPerformance = new Chart(topicChartEl, {
                     type: 'bar',
@@ -717,9 +705,9 @@
                             label: 'Success Rate',
                             data: topics.map(t => {
                                 const rate = topicData[t].total > 0 
-                                    ? ((topicData[t].correct / topicData[t].total) * 100).toFixed(1)
+                                    ? ((topicData[t].correct / topicData[t].total) * 100)
                                     : 0;
-                                return rate;
+                                return parseFloat(rate.toFixed(1));
                             }),
                             backgroundColor: '#EF7C00',
                             borderColor: '#EF7C00',
@@ -757,14 +745,14 @@
             
             const diffChartEl = document.getElementById('difficultyChart');
             if (diffChartEl && difficultyPerf.length > 0) {
-                if (chartInstances.difficulty) chartInstances.difficulty.destroy();
+                destroyChart('difficulty');
                 chartInstances.difficulty = new Chart(diffChartEl, {
                     type: 'line',
                     data: {
                         labels: difficultyPerf.map(d => `Level ${d.level}`),
                         datasets: [{
                             label: 'Success Rate',
-                            data: difficultyPerf.map(d => d.rate.toFixed(1)),
+                            data: difficultyPerf.map(d => parseFloat(d.rate.toFixed(1))),
                             borderColor: '#003D7C',
                             backgroundColor: 'rgba(0, 61, 124, 0.1)',
                             tension: 0.4
@@ -785,7 +773,7 @@
             
             // Top Performers Table
             const topPerformers = students
-                .filter(s => s.totalQuestions >= 10)
+                .filter(s => (s.totalQuestions || 0) >= 10)
                 .sort((a, b) => parseFloat(b.overallPercentage || 0) - parseFloat(a.overallPercentage || 0))
                 .slice(0, 10);
             
@@ -859,7 +847,7 @@
             
             const successChartEl = document.getElementById('successRateChart');
             if (successChartEl) {
-                if (chartInstances.successRate) chartInstances.successRate.destroy();
+                destroyChart('successRate');
                 chartInstances.successRate = new Chart(successChartEl, {
                     type: 'doughnut',
                     data: {
@@ -889,7 +877,7 @@
             
             const discChartEl = document.getElementById('discriminationChart');
             if (discChartEl) {
-                if (chartInstances.discrimination) chartInstances.discrimination.destroy();
+                destroyChart('discrimination');
                 chartInstances.discrimination = new Chart(discChartEl, {
                     type: 'bar',
                     data: {
@@ -939,8 +927,13 @@
             const topics = Object.values(data.topics || {});
             
             // Summary stats
-            const totalAttempts = topics.reduce((sum, t) => sum + t.totalAttempts, 0);
-            const totalCorrect = topics.reduce((sum, t) => sum + t.correctAttempts, 0);
+            const totalAttempts = topics.reduce((sum, t) => sum + (t.totalAttempts || 0), 0);
+            const totalCorrect = topics.reduce((sum, t) => sum + (t.correctAttempts || 0), 0);
+            const overallSuccessRate = totalAttempts > 0 ? ((totalCorrect / totalAttempts) * 100).toFixed(1) : '0.0';
+            
+            const sortedByAttempts = [...topics].sort((a, b) => (b.totalAttempts || 0) - (a.totalAttempts || 0));
+            const mostAttemptedTopic = sortedByAttempts[0];
+            const challengingCount = topics.filter(t => parseFloat(t.successRate || 0) < 50).length;
             
             const statsHtml = `
                 <div class="stat-card">
@@ -949,16 +942,16 @@
                 </div>
                 <div class="stat-card">
                     <h3>Overall Success Rate</h3>
-                    <div class="stat-value">${((totalCorrect / totalAttempts) * 100).toFixed(1)}%</div>
+                    <div class="stat-value">${overallSuccessRate}%</div>
                 </div>
                 <div class="stat-card">
                     <h3>Most Attempted</h3>
-                    <div class="stat-value">${topics.sort((a, b) => b.totalAttempts - a.totalAttempts)[0]?.topic || 'N/A'}</div>
-                    <div class="stat-subtitle">${topics[0]?.totalAttempts || 0} attempts</div>
+                    <div class="stat-value">${mostAttemptedTopic ? (mostAttemptedTopic.topic || 'N/A') : 'N/A'}</div>
+                    <div class="stat-subtitle">${mostAttemptedTopic ? (mostAttemptedTopic.totalAttempts || 0) : 0} attempts</div>
                 </div>
                 <div class="stat-card">
                     <h3>Challenging Topics</h3>
-                    <div class="stat-value">${topics.filter(t => parseFloat(t.successRate) < 50).length}</div>
+                    <div class="stat-value">${challengingCount}</div>
                     <div class="stat-subtitle">Success rate < 50%</div>
                 </div>
             `;
@@ -966,82 +959,87 @@
             
             // Topic Overview Chart
             const topTopics = topics
-                .sort((a, b) => b.totalAttempts - a.totalAttempts)
+                .sort((a, b) => (b.totalAttempts || 0) - (a.totalAttempts || 0))
                 .slice(0, 10);
             
-            if (chartInstances.topicOverview) chartInstances.topicOverview.destroy();
-            chartInstances.topicOverview = new Chart(document.getElementById('topicOverviewChart'), {
-                type: 'bar',
-                data: {
-                    labels: topTopics.map(t => t.topic || Object.keys(data.topics).find(key => data.topics[key] === t)),
-                    datasets: [{
-                        label: 'Success Rate',
-                        data: topTopics.map(t => parseFloat(t.successRate)),
-                        backgroundColor: topTopics.map(t => 
-                            parseFloat(t.successRate) >= 70 ? '#28A745' : 
-                            parseFloat(t.successRate) >= 50 ? '#FFC107' : '#DC3545'
-                        )
-                    }]
-                },
-                options: {
-                    ...chartConfig,
-                    indexAxis: 'y',
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: { callback: value => value + '%' }
+            const topicChartEl = document.getElementById('topicOverviewChart');
+            if (topicChartEl && topTopics.length > 0) {
+                destroyChart('topicOverview');
+                chartInstances.topicOverview = new Chart(topicChartEl, {
+                    type: 'bar',
+                    data: {
+                        labels: topTopics.map(t => t.topic || Object.keys(data.topics).find(key => data.topics[key] === t) || 'Unknown'),
+                        datasets: [{
+                            label: 'Success Rate',
+                            data: topTopics.map(t => parseFloat(t.successRate || 0)),
+                            backgroundColor: topTopics.map(t => 
+                                parseFloat(t.successRate || 0) >= 70 ? '#28A745' : 
+                                parseFloat(t.successRate || 0) >= 50 ? '#FFC107' : '#DC3545'
+                            )
+                        }]
+                    },
+                    options: {
+                        ...chartConfig,
+                        indexAxis: 'y',
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { callback: value => value + '%' }
+                            }
                         }
                     }
-                }
-                }
-            });
+                });
+            }
             
             // Bloom's Level Performance
             const bloomLevels = data.bloomLevels || {};
             const bloomOrder = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'];
             
-            if (chartInstances.bloomLevel) chartInstances.bloomLevel.destroy();
-            chartInstances.bloomLevel = new Chart(document.getElementById('bloomLevelChart'), {
-                type: 'radar',
-                data: {
-                    labels: bloomOrder.map(b => b.charAt(0).toUpperCase() + b.slice(1)),
-                    datasets: [{
-                        label: 'Success Rate',
-                        data: bloomOrder.map(b => bloomLevels[b] ? parseFloat(bloomLevels[b].successRate) : 0),
-                        borderColor: '#EF7C00',
-                        backgroundColor: 'rgba(239, 124, 0, 0.2)'
-                    }]
-                },
-                options: {
-                    ...chartConfig,
-                    scales: {
-                        r: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: { stepSize: 20 }
+            const bloomChartEl = document.getElementById('bloomLevelChart');
+            if (bloomChartEl) {
+                destroyChart('bloomLevel');
+                chartInstances.bloomLevel = new Chart(bloomChartEl, {
+                    type: 'radar',
+                    data: {
+                        labels: bloomOrder.map(b => b.charAt(0).toUpperCase() + b.slice(1)),
+                        datasets: [{
+                            label: 'Success Rate',
+                            data: bloomOrder.map(b => bloomLevels[b] ? parseFloat(bloomLevels[b].successRate || 0) : 0),
+                            borderColor: '#EF7C00',
+                            backgroundColor: 'rgba(239, 124, 0, 0.2)'
+                        }]
+                    },
+                    options: {
+                        ...chartConfig,
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { stepSize: 20 }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
             
             // Topic Details Table
             const tableBody = topics
-                .sort((a, b) => parseFloat(b.successRate) - parseFloat(a.successRate))
+                .sort((a, b) => parseFloat(b.successRate || 0) - parseFloat(a.successRate || 0))
                 .map(t => {
-                    const topicName = t.topic || Object.keys(data.topics).find(key => data.topics[key] === t);
+                    const topicName = t.topic || Object.keys(data.topics).find(key => data.topics[key] === t) || 'Unknown';
                     return `
                         <tr>
                             <td>${topicName}</td>
-                            <td class="${getPerformanceClass(parseFloat(t.successRate))}">${t.successRate}%</td>
-                            <td>${t.totalAttempts}</td>
-                            <td>${t.avgTimeSeconds}</td>
-                            <td>${t.avgDifficulty}</td>
+                            <td class="${getPerformanceClass(parseFloat(t.successRate || 0))}">${t.successRate || 0}%</td>
+                            <td>${t.totalAttempts || 0}</td>
+                            <td>${t.avgTimeSeconds || 0}</td>
+                            <td>${t.avgDifficulty || 0}</td>
                         </tr>
                     `;
                 }).join('');
             
-            document.getElementById('topicDetailsBody').innerHTML = tableBody;
+            document.getElementById('topicDetailsBody').innerHTML = tableBody || '<tr><td colspan="5" style="text-align: center;">No data available</td></tr>';
         }
 
         // Initialize dashboard
