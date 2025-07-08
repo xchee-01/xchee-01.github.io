@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCQ Analytics Dashboard - NUS Medicine</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #0066CC;
+            --nus-gray: #6C757D;
+            --nus-light-gray: #F8F9FA;
+            --success-green: #28A745;
+            --warning-yellow: #FFC107;
+            --danger-red: #DC3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+        }
+
+        .header-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+
+        .last-updated {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        /* Navigation */
+        .nav-container {
+            background-color: white;
+            border-bottom: 3px solid var(--nus-orange);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            padding: 0 2rem;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -3px;
+            font-weight: 500;
+            color: var(--nus-gray);
+        }
+
+        .nav-item:hover {
+            background-color: var(--nus-light-gray);
+            color: var(--nus-blue);
+        }
+
+        .nav-item.active {
+            color: var(--nus-blue);
+            border-bottom-color: var(--nus-orange);
+            background-color: var(--nus-light-gray);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: var(--nus-gray);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--nus-blue);
+            line-height: 1;
+        }
+
+        .stat-subtitle {
+            font-size: 0.85rem;
+            color: var(--nus-gray);
+            margin-top: 0.5rem;
+        }
+
+        /* Charts */
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--nus-blue);
+            margin-bottom: 1rem;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: var(--nus-light-gray);
+            color: var(--nus-blue);
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Performance Indicators */
+        .performance-good { color: var(--success-green); font-weight: 600; }
+        .performance-average { color: var(--warning-yellow); font-weight: 600; }
+        .performance-poor { color: var(--danger-red); font-weight: 600; }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--nus-gray);
+        }
+
+        .spinner {
+            border: 3px solid var(--nus-light-gray);
+            border-top: 3px solid var(--nus-orange);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .last-updated {
+                margin-top: 0.5rem;
+            }
+
+            .nav {
+                flex-direction: column;
+                padding: 0;
+            }
+
+            .nav-item {
+                border-bottom: 1px solid #dee2e6;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Grid layouts for specific views */
+        .two-column-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1100px) {
+            .two-column-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1>MCQ Analytics Dashboard</h1>
+                <div class="header-subtitle">Master of Medicine (Emergency Medicine)</div>
+            </div>
+            <div class="last-updated" id="lastUpdated">Loading...</div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-container">
+        <div class="nav">
+            <div class="nav-item active" onclick="showView('student')">
+                Student Performance
+            </div>
+            <div class="nav-item" onclick="showView('question')">
+                Question Analysis
+            </div>
+            <div class="nav-item" onclick="showView('topic')">
+                Topic Analysis
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Student Performance View -->
+        <div id="studentView" class="view active">
+            <div class="loading" id="studentLoading">
+                <div class="spinner"></div>
+                <p>Loading student performance data...</p>
+            </div>
+            
+            <div id="studentContent" style="display: none;">
+                <!-- Summary Stats -->
+                <div class="stats-grid" id="studentStats"></div>
+                
+                <!-- Charts -->
+                <div class="two-column-grid">
+                    <div class="chart-container">
+                        <h3 class="chart-title">Performance by Topic</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="topicPerformanceChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3 class="chart-title">Performance by Difficulty</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="difficultyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Top Performers Table -->
+                <div class="table-container">
+                    <div class="table-header">Top Performers</div>
+                    <table id="topPerformersTable">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Student ID</th>
+                                <th>Overall %</th>
+                                <th>Questions Attempted</th>
+                                <th>Strongest Topic</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topPerformersBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Analysis View -->
+        <div id="questionView" class="view">
+            <div class="loading" id="questionLoading">
+                <div class="spinner"></div>
+                <p>Loading question analysis data...</p>
+            </div>
+            
+            <div id="questionContent" style="display: none;">
+                <!-- Summary Stats -->
+                <div class="stats-grid" id="questionStats"></div>
+                
+                <!-- Charts -->
+                <div class="two-column-grid">
+                    <div class="chart-container">
+                        <h3 class="chart-title">Success Rate Distribution</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="successRateChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3 class="chart-title">Discrimination Index Distribution</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="discriminationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Problem Questions Table -->
+                <div class="table-container">
+                    <div class="table-header">Questions Requiring Review</div>
+                    <table id="problemQuestionsTable">
+                        <thead>
+                            <tr>
+                                <th>Question ID</th>
+                                <th>Topic</th>
+                                <th>Success Rate</th>
+                                <th>Discrimination Index</th>
+                                <th>Issue</th>
+                            </tr>
+                        </thead>
+                        <tbody id="problemQuestionsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Topic Analysis View -->
+        <div id="topicView" class="view">
+            <div class="loading" id="topicLoading">
+                <div class="spinner"></div>
+                <p>Loading topic analysis data...</p>
+            </div>
+            
+            <div id="topicContent" style="display: none;">
+                <!-- Summary Stats -->
+                <div class="stats-grid" id="topicStats"></div>
+                
+                <!-- Charts -->
+                <div class="two-column-grid">
+                    <div class="chart-container">
+                        <h3 class="chart-title">Topic Performance Overview</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="topicOverviewChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3 class="chart-title">Performance by Bloom's Level</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="bloomLevelChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Topic Details Table -->
+                <div class="table-container">
+                    <div class="table-header">Topic Performance Details</div>
+                    <table id="topicDetailsTable">
+                        <thead>
+                            <tr>
+                                <th>Topic</th>
+                                <th>Success Rate</th>
+                                <th>Total Attempts</th>
+                                <th>Avg Time (sec)</th>
+                                <th>Avg Difficulty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topicDetailsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // API Configuration
+        const API_ENDPOINTS = {
+            student: 'https://script.google.com/macros/s/AKfycbxWuiUJ-C1CAFV6iT8YW5JxCNQu-8FKypdgHUkqHyFXO5q4fZ2oY5UQds9sMLRZxutJnQ/exec',
+            question: 'https://script.google.com/macros/s/AKfycbwgz36nEAPOzRZGj8645EvJSXbg3aS5o36lA1MNiQ9sqh2loIBuNEdUfLgA01jt0Uw/exec',
+            topic: 'https://script.google.com/macros/s/AKfycbwWdBN7BKln9k1FB_mxMjY63CVoLQx8Qb6cMCrxTztkjXnWrRWyBXy6k_9FWGQ7IfXLBA/exec'
+        };
+
+        // Global variables
+        let currentView = 'student';
+        let chartInstances = {};
+
+        // JSONP Request Handler
+        function jsonpRequest(url, callback) {
+            const callbackName = 'jsonpCallback_' + Date.now();
+            const script = document.createElement('script');
+            
+            window[callbackName] = function(data) {
+                delete window[callbackName];
+                document.body.removeChild(script);
+                callback(data);
+            };
+            
+            script.src = `${url}?callback=${callbackName}`;
+            document.body.appendChild(script);
+        }
+
+        // Navigation
+        function showView(view) {
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Hide all views
+            document.querySelectorAll('.view').forEach(v => {
+                v.classList.remove('active');
+            });
+            
+            // Show selected view
+            document.getElementById(`${view}View`).classList.add('active');
+            currentView = view;
+            
+            // Load data if not already loaded
+            loadViewData(view);
+        }
+
+        // Load data for specific view
+        function loadViewData(view) {
+            const endpoint = API_ENDPOINTS[view];
+            const loadingEl = document.getElementById(`${view}Loading`);
+            const contentEl = document.getElementById(`${view}Content`);
+            
+            // Show loading
+            loadingEl.style.display = 'block';
+            contentEl.style.display = 'none';
+            
+            jsonpRequest(endpoint, (data) => {
+                // Hide loading
+                loadingEl.style.display = 'none';
+                contentEl.style.display = 'block';
+                
+                // Update last updated time
+                updateLastUpdated(data.lastUpdated);
+                
+                // Render view specific content
+                switch(view) {
+                    case 'student':
+                        renderStudentView(data);
+                        break;
+                    case 'question':
+                        renderQuestionView(data);
+                        break;
+                    case 'topic':
+                        renderTopicView(data);
+                        break;
+                }
+            });
+        }
+
+        // Update last updated timestamp
+        function updateLastUpdated(timestamp) {
+            const date = new Date(timestamp);
+            const formatted = date.toLocaleString('en-US', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('lastUpdated').textContent = `Last updated: ${formatted}`;
+        }
+
+        // Performance color coding
+        function getPerformanceClass(value, thresholds = {good: 70, average: 50}) {
+            if (value >= thresholds.good) return 'performance-good';
+            if (value >= thresholds.average) return 'performance-average';
+            return 'performance-poor';
+        }
+
+        // Chart configuration
+        const chartConfig = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: { size: 12 }
+                    }
+                }
+            }
+        };
+
+        // Render Student Performance View
+        function renderStudentView(data) {
+            // Summary stats
+            const students = Object.values(data.students || {});
+            const avgScore = students.reduce((sum, s) => sum + parseFloat(s.overallPercentage), 0) / students.length;
+            
+            const statsHtml = `
+                <div class="stat-card">
+                    <h3>Total Students</h3>
+                    <div class="stat-value">${students.length}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Average Score</h3>
+                    <div class="stat-value">${avgScore.toFixed(1)}%</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Highest Score</h3>
+                    <div class="stat-value">${Math.max(...students.map(s => parseFloat(s.overallPercentage))).toFixed(1)}%</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Completion Rate</h3>
+                    <div class="stat-value">${((students.filter(s => s.totalQuestions >= 10).length / students.length) * 100).toFixed(1)}%</div>
+                    <div class="stat-subtitle">Students with ≥10 questions</div>
+                </div>
+            `;
+            document.getElementById('studentStats').innerHTML = statsHtml;
+            
+            // Topic Performance Chart
+            const topicData = {};
+            students.forEach(student => {
+                Object.entries(student.topics).forEach(([topic, data]) => {
+                    if (!topicData[topic]) {
+                        topicData[topic] = { total: 0, correct: 0 };
+                    }
+                    topicData[topic].total += data.total;
+                    topicData[topic].correct += data.correct;
+                });
+            });
+            
+            const topics = Object.keys(topicData).sort((a, b) => 
+                (topicData[b].correct / topicData[b].total) - (topicData[a].correct / topicData[a].total)
+            ).slice(0, 8);
+            
+            if (chartInstances.topicPerformance) chartInstances.topicPerformance.destroy();
+            chartInstances.topicPerformance = new Chart(document.getElementById('topicPerformanceChart'), {
+                type: 'bar',
+                data: {
+                    labels: topics,
+                    datasets: [{
+                        label: 'Success Rate',
+                        data: topics.map(t => ((topicData[t].correct / topicData[t].total) * 100).toFixed(1)),
+                        backgroundColor: '#EF7C00',
+                        borderColor: '#EF7C00',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    ...chartConfig,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { callback: value => value + '%' }
+                        }
+                    }
+                }
+            });
+            
+            // Difficulty Performance Chart
+            const difficultyPerf = [];
+            for (let i = 1; i <= 10; i++) {
+                let total = 0, correct = 0;
+                students.forEach(student => {
+                    const diff = student.difficultyPerformance[`Level_${i}`];
+                    if (diff) {
+                        total += diff.total;
+                        correct += diff.correct;
+                    }
+                });
+                if (total > 0) {
+                    difficultyPerf.push({ level: i, rate: (correct / total * 100) });
+                }
+            }
+            
+            if (chartInstances.difficulty) chartInstances.difficulty.destroy();
+            chartInstances.difficulty = new Chart(document.getElementById('difficultyChart'), {
+                type: 'line',
+                data: {
+                    labels: difficultyPerf.map(d => `Level ${d.level}`),
+                    datasets: [{
+                        label: 'Success Rate',
+                        data: difficultyPerf.map(d => d.rate.toFixed(1)),
+                        borderColor: '#003D7C',
+                        backgroundColor: 'rgba(0, 61, 124, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    ...chartConfig,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { callback: value => value + '%' }
+                        }
+                    }
+                }
+            });
+            
+            // Top Performers Table
+            const topPerformers = students
+                .filter(s => s.totalQuestions >= 10)
+                .sort((a, b) => parseFloat(b.overallPercentage) - parseFloat(a.overallPercentage))
+                .slice(0, 10);
+            
+            const tableBody = topPerformers.map((student, index) => {
+                const strongestTopic = Object.entries(student.topics)
+                    .sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage))[0];
+                
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${student.name}</td>
+                        <td class="${getPerformanceClass(parseFloat(student.overallPercentage))}">${student.overallPercentage}%</td>
+                        <td>${student.totalQuestions}</td>
+                        <td>${strongestTopic ? strongestTopic[0] : 'N/A'}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            document.getElementById('topPerformersBody').innerHTML = tableBody;
+        }
+
+        // Render Question Analysis View
+        function renderQuestionView(data) {
+            const questions = Object.values(data.questions || {});
+            
+            // Summary stats
+            const statsHtml = `
+                <div class="stat-card">
+                    <h3>Total Questions</h3>
+                    <div class="stat-value">${questions.length}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Avg Success Rate</h3>
+                    <div class="stat-value">${data.avgSuccessRate}%</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Avg Discrimination</h3>
+                    <div class="stat-value">${data.avgDiscrimination}</div>
+                    <div class="stat-subtitle">Higher is better</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Questions Need Review</h3>
+                    <div class="stat-value">${questions.filter(q => parseFloat(q.successRate) < 40 || parseFloat(q.discriminationIndex) < 20).length}</div>
+                    <div class="stat-subtitle">Low success or discrimination</div>
+                </div>
+            `;
+            document.getElementById('questionStats').innerHTML = statsHtml;
+            
+            // Success Rate Distribution
+            const successRanges = [
+                { label: '0-20%', min: 0, max: 20, count: 0 },
+                { label: '20-40%', min: 20, max: 40, count: 0 },
+                { label: '40-60%', min: 40, max: 60, count: 0 },
+                { label: '60-80%', min: 60, max: 80, count: 0 },
+                { label: '80-100%', min: 80, max: 100, count: 0 }
+            ];
+            
+            questions.forEach(q => {
+                const rate = parseFloat(q.successRate);
+                const range = successRanges.find(r => rate >= r.min && rate < r.max);
+                if (range) range.count++;
+            });
+            
+            if (chartInstances.successRate) chartInstances.successRate.destroy();
+            chartInstances.successRate = new Chart(document.getElementById('successRateChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: successRanges.map(r => r.label),
+                    datasets: [{
+                        data: successRanges.map(r => r.count),
+                        backgroundColor: ['#DC3545', '#FFC107', '#6C757D', '#0066CC', '#28A745']
+                    }]
+                },
+                options: chartConfig
+            });
+            
+            // Discrimination Index Distribution
+            const discRanges = [
+                { label: 'Poor (<20)', min: -100, max: 20, count: 0 },
+                { label: 'Fair (20-40)', min: 20, max: 40, count: 0 },
+                { label: 'Good (40-60)', min: 40, max: 60, count: 0 },
+                { label: 'Excellent (>60)', min: 60, max: 100, count: 0 }
+            ];
+            
+            questions.forEach(q => {
+                const disc = parseFloat(q.discriminationIndex);
+                const range = discRanges.find(r => disc >= r.min && disc < r.max);
+                if (range) range.count++;
+            });
+            
+            if (chartInstances.discrimination) chartInstances.discrimination.destroy();
+            chartInstances.discrimination = new Chart(document.getElementById('discriminationChart'), {
+                type: 'bar',
+                data: {
+                    labels: discRanges.map(r => r.label),
+                    datasets: [{
+                        label: 'Number of Questions',
+                        data: discRanges.map(r => r.count),
+                        backgroundColor: '#003D7C'
+                    }]
+                },
+                options: {
+                    ...chartConfig,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            
+            // Problem Questions Table
+            const problemQuestions = questions
+                .filter(q => parseFloat(q.successRate) < 40 || parseFloat(q.discriminationIndex) < 20)
+                .sort((a, b) => parseFloat(a.successRate) - parseFloat(b.successRate))
+                .slice(0, 10);
+            
+            const tableBody = problemQuestions.map(q => {
+                let issue = [];
+                if (parseFloat(q.successRate) < 40) issue.push('Low Success');
+                if (parseFloat(q.discriminationIndex) < 20) issue.push('Poor Discrimination');
+                
+                return `
+                    <tr>
+                        <td>${q.questionId}</td>
+                        <td>${q.topic}</td>
+                        <td class="${getPerformanceClass(parseFloat(q.successRate))}">${q.successRate}%</td>
+                        <td class="${parseFloat(q.discriminationIndex) < 20 ? 'performance-poor' : ''}">${q.discriminationIndex}</td>
+                        <td>${issue.join(', ')}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            document.getElementById('problemQuestionsBody').innerHTML = tableBody;
+        }
+
+        // Render Topic Analysis View
+        function renderTopicView(data) {
+            const topics = Object.values(data.topics || {});
+            
+            // Summary stats
+            const totalAttempts = topics.reduce((sum, t) => sum + t.totalAttempts, 0);
+            const totalCorrect = topics.reduce((sum, t) => sum + t.correctAttempts, 0);
+            
+            const statsHtml = `
+                <div class="stat-card">
+                    <h3>Total Topics</h3>
+                    <div class="stat-value">${topics.length}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Overall Success Rate</h3>
+                    <div class="stat-value">${((totalCorrect / totalAttempts) * 100).toFixed(1)}%</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Most Attempted</h3>
+                    <div class="stat-value">${topics.sort((a, b) => b.totalAttempts - a.totalAttempts)[0]?.topic || 'N/A'}</div>
+                    <div class="stat-subtitle">${topics[0]?.totalAttempts || 0} attempts</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Challenging Topics</h3>
+                    <div class="stat-value">${topics.filter(t => parseFloat(t.successRate) < 50).length}</div>
+                    <div class="stat-subtitle">Success rate < 50%</div>
+                </div>
+            `;
+            document.getElementById('topicStats').innerHTML = statsHtml;
+            
+            // Topic Overview Chart
+            const topTopics = topics
+                .sort((a, b) => b.totalAttempts - a.totalAttempts)
+                .slice(0, 10);
+            
+            if (chartInstances.topicOverview) chartInstances.topicOverview.destroy();
+            chartInstances.topicOverview = new Chart(document.getElementById('topicOverviewChart'), {
+                type: 'horizontalBar',
+                data: {
+                    labels: topTopics.map(t => t.topic || Object.keys(data.topics).find(key => data.topics[key] === t)),
+                    datasets: [{
+                        label: 'Success Rate',
+                        data: topTopics.map(t => parseFloat(t.successRate)),
+                        backgroundColor: topTopics.map(t => 
+                            parseFloat(t.successRate) >= 70 ? '#28A745' : 
+                            parseFloat(t.successRate) >= 50 ? '#FFC107' : '#DC3545'
+                        )
+                    }]
+                },
+                options: {
+                    ...chartConfig,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { callback: value => value + '%' }
+                        }
+                    }
+                }
+            });
+            
+            // Bloom's Level Performance
+            const bloomLevels = data.bloomLevels || {};
+            const bloomOrder = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'];
+            
+            if (chartInstances.bloomLevel) chartInstances.bloomLevel.destroy();
+            chartInstances.bloomLevel = new Chart(document.getElementById('bloomLevelChart'), {
+                type: 'radar',
+                data: {
+                    labels: bloomOrder.map(b => b.charAt(0).toUpperCase() + b.slice(1)),
+                    datasets: [{
+                        label: 'Success Rate',
+                        data: bloomOrder.map(b => bloomLevels[b] ? parseFloat(bloomLevels[b].successRate) : 0),
+                        borderColor: '#EF7C00',
+                        backgroundColor: 'rgba(239, 124, 0, 0.2)'
+                    }]
+                },
+                options: {
+                    ...chartConfig,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { stepSize: 20 }
+                        }
+                    }
+                }
+            });
+            
+            // Topic Details Table
+            const tableBody = topics
+                .sort((a, b) => parseFloat(b.successRate) - parseFloat(a.successRate))
+                .map(t => {
+                    const topicName = t.topic || Object.keys(data.topics).find(key => data.topics[key] === t);
+                    return `
+                        <tr>
+                            <td>${topicName}</td>
+                            <td class="${getPerformanceClass(parseFloat(t.successRate))}">${t.successRate}%</td>
+                            <td>${t.totalAttempts}</td>
+                            <td>${t.avgTimeSeconds}</td>
+                            <td>${t.avgDifficulty}</td>
+                        </tr>
+                    `;
+                }).join('');
+            
+            document.getElementById('topicDetailsBody').innerHTML = tableBody;
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            loadViewData('student');
+        });
+    </script>
+</body>
+</html>
