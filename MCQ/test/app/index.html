@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical MCQ Quiz PWA</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#003D7C">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-blue: #003D7C;
+      --primary-orange: #EF7C00;
+      --light-blue: #E6EEF5;
+      --light-orange: #FFE5CC;
+      --success-color: #4CAF50;
+      --error-color: #F44336;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      background-color: var(--primary-blue);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .notification-banner {
+      background-color: var(--light-orange);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    .notification-banner button {
+      background-color: var(--primary-orange);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
+    .quiz-content {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .install-button {
+      background-color: var(--primary-orange);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 20px 0;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Medical MCQ Quiz PWA</h1>
+      <p>Progressive Web App with Push Notifications</p>
+    </div>
+    
+    <div id="notification-banner" class="notification-banner">
+      <h3>Enable Push Notifications</h3>
+      <p>Get notified about new quizzes and study reminders!</p>
+      <button id="enable-notifications">Enable Notifications</button>
+    </div>
+    
+    <button id="install-button" class="install-button">Install App</button>
+    
+    <div class="quiz-content">
+      <h2>Welcome to Medical MCQ Quiz</h2>
+      <p>This is a minimal PWA prototype with push notification support.</p>
+      <p id="notification-status">Checking notification permission...</p>
+      
+      <div id="quiz-demo" style="margin-top: 30px;">
+        <h3>Sample Question</h3>
+        <p>A 54-year-old woman presents with recurrent syncopal episodes due to prolonged QT syndrome. Which phase of the action potential is affected?</p>
+        <div style="margin-top: 15px;">
+          <button style="display: block; margin: 5px 0; padding: 10px; width: 100%; text-align: left;">A. Phase 0</button>
+          <button style="display: block; margin: 5px 0; padding: 10px; width: 100%; text-align: left;">B. Phase 1</button>
+          <button style="display: block; margin: 5px 0; padding: 10px; width: 100%; text-align: left;">C. Phase 2</button>
+          <button style="display: block; margin: 5px 0; padding: 10px; width: 100%; text-align: left;">D. Phase 3</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+  
+  <script>
+    // Firebase configuration - REPLACE WITH YOUR CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyBAcoyOwbFwQVzFUp-FuI3Uh4uLF1MWpf0",
+      authDomain: "mcq-quizz-app.firebaseapp.com",
+      projectId: "mcq-quizz-app",
+      storageBucket: "mcq-quizz-app.firebasestorage.app",
+      messagingSenderId: "256408674329",
+      appId: "1:256408674329:web:fddf7b3b74c489b4ce4a88"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js');
+          console.log('Service Worker registered:', registration);
+          
+          // Use the service worker for FCM
+          messaging.useServiceWorker(registration);
+        } catch (error) {
+          console.error('Service Worker registration failed:', error);
+        }
+      });
+    }
+
+    // Install button functionality
+    let deferredPrompt;
+    const installButton = document.getElementById('install-button');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installButton.style.display = 'block';
+    });
+
+    installButton.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response: ${outcome}`);
+        deferredPrompt = null;
+        installButton.style.display = 'none';
+      }
+    });
+
+    // Notification functionality
+    const notificationBanner = document.getElementById('notification-banner');
+    const enableNotificationsBtn = document.getElementById('enable-notifications');
+    const notificationStatus = document.getElementById('notification-status');
+
+    // Check notification permission on load
+    checkNotificationPermission();
+
+    function checkNotificationPermission() {
+      if (!('Notification' in window)) {
+        notificationStatus.textContent = 'Notifications not supported in this browser.';
+        return;
+      }
+
+      if (Notification.permission === 'default') {
+        notificationBanner.style.display = 'block';
+        notificationStatus.textContent = 'Notifications not enabled yet.';
+      } else if (Notification.permission === 'granted') {
+        notificationStatus.textContent = 'Notifications enabled! ✓';
+        notificationBanner.style.display = 'none';
+        setupFCM();
+      } else {
+        notificationStatus.textContent = 'Notifications blocked.';
+        notificationBanner.style.display = 'none';
+      }
+    }
+
+    enableNotificationsBtn.addEventListener('click', async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          console.log('Notification permission granted');
+          await setupFCM();
+          checkNotificationPermission();
+        }
+      } catch (error) {
+        console.error('Error requesting notification permission:', error);
+      }
+    });
+
+    async function setupFCM() {
+      try {
+        // Get FCM token
+        const token = await messaging.getToken({
+          vapidKey: 'BGvXhDvEJtqeQoXUalEujHPMQpmz4qNLieI3ZdSKrcroSR1Y2IO8HEfTQcKozFNZoRWhkhlIbiAT2MLFqbq9baI' // Replace with your VAPID key
+        });
+        
+        if (token) {
+          console.log('FCM Token:', token);
+          notificationStatus.textContent = 'Notifications enabled! Token received. ✓';
+          
+          // Send token to your server (implement this endpoint)
+          // await sendTokenToServer(token);
+        } else {
+          console.log('No registration token available.');
+        }
+      } catch (error) {
+        console.error('Error getting FCM token:', error);
+      }
+    }
+
+    // Handle foreground messages
+    messaging.onMessage((payload) => {
+      console.log('Message received:', payload);
+      
+      // Show notification manually when app is in foreground
+      if (Notification.permission === 'granted') {
+        new Notification(payload.notification.title, {
+          body: payload.notification.body,
+          icon: '/icon-192x192.png',
+          badge: '/badge-72x72.png'
+        });
+      }
+    });
+
+    // Simulated quiz options
+    document.querySelectorAll('#quiz-demo button').forEach(button => {
+      button.addEventListener('click', () => {
+        alert('This is a demo question. In the full app, this would process your answer.');
+      });
+    });
+  </script>
+</body>
+</html>
