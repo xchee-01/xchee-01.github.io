@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Performance Analysis - NUS Medicine</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #0066CC;
+            --nus-gray: #6C757D;
+            --nus-light-gray: #F8F9FA;
+            --success-green: #28A745;
+            --warning-yellow: #FFC107;
+            --danger-red: #DC3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+        }
+
+        .header-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+
+        .last-updated {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        /* Navigation */
+        .nav-container {
+            background-color: white;
+            border-bottom: 3px solid var(--nus-orange);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            padding: 0 2rem;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -3px;
+            font-weight: 500;
+            color: var(--nus-gray);
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background-color: var(--nus-light-gray);
+            color: var(--nus-blue);
+        }
+
+        .nav-item.active {
+            color: var(--nus-blue);
+            border-bottom-color: var(--nus-orange);
+            background-color: var(--nus-light-gray);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: var(--nus-gray);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--nus-blue);
+            line-height: 1;
+        }
+
+        .stat-subtitle {
+            font-size: 0.85rem;
+            color: var(--nus-gray);
+            margin-top: 0.5rem;
+        }
+
+        /* Charts */
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--nus-blue);
+            margin-bottom: 1rem;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: var(--nus-light-gray);
+            color: var(--nus-blue);
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Performance Indicators */
+        .performance-good { color: var(--success-green); font-weight: 600; }
+        .performance-average { color: var(--warning-yellow); font-weight: 600; }
+        .performance-poor { color: var(--danger-red); font-weight: 600; }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--nus-gray);
+        }
+
+        .spinner {
+            border: 3px solid var(--nus-light-gray);
+            border-top: 3px solid var(--nus-orange);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Grid layouts */
+        .two-column-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .last-updated {
+                margin-top: 0.5rem;
+            }
+
+            .nav {
+                flex-direction: column;
+                padding: 0;
+            }
+
+            .nav-item {
+                border-bottom: 1px solid #dee2e6;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .two-column-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1>Student Performance Analysis</h1>
+                <div class="header-subtitle">Master of Medicine (Emergency Medicine)</div>
+            </div>
+            <div class="last-updated" id="lastUpdated">Loading...</div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-container">
+        <div class="nav">
+            <a href="student-performance.html" class="nav-item active">
+                Student Performance
+            </a>
+            <a href="question-analysis.html" class="nav-item">
+                Question Analysis
+            </a>
+            <a href="topic-analysis.html" class="nav-item">
+                Topic Analysis
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading student performance data...</p>
+        </div>
+        
+        <div id="content" style="display: none;">
+            <!-- Summary Stats -->
+            <div class="stats-grid" id="studentStats"></div>
+            
+            <!-- Charts -->
+            <div class="two-column-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">Performance by Topic</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="topicPerformanceChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3 class="chart-title">Performance by Difficulty</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="difficultyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Performers Table -->
+            <div class="table-container">
+                <div class="table-header">Top Performers</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student ID</th>
+                            <th>Overall %</th>
+                            <th>Questions Attempted</th>
+                            <th>Strongest Topic</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topPerformersBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // API Configuration
+        const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxWuiUJ-C1CAFV6iT8YW5JxCNQu-8FKypdgHUkqHyFXO5q4fZ2oY5UQds9sMLRZxutJnQ/exec';
+        
+        let chartInstances = {};
+
+        // JSONP Request Handler
+        function jsonpRequest(url, callback, errorCallback) {
+            const callbackName = 'jsonpCallback_' + Date.now();
+            const script = document.createElement('script');
+            let timeoutId;
+            
+            timeoutId = setTimeout(() => {
+                delete window[callbackName];
+                document.body.removeChild(script);
+                if (errorCallback) {
+                    errorCallback(new Error('Request timeout'));
+                }
+            }, 10000);
+            
+            window[callbackName] = function(data) {
+                clearTimeout(timeoutId);
+                delete window[callbackName];
+                document.body.removeChild(script);
+                callback(data);
+            };
+            
+            script.onerror = function() {
+                clearTimeout(timeoutId);
+                delete window[callbackName];
+                document.body.removeChild(script);
+                if (errorCallback) {
+                    errorCallback(new Error('Failed to load script'));
+                }
+            };
+            
+            script.src = `${url}?callback=${callbackName}`;
+            document.body.appendChild(script);
+        }
+
+        // Update last updated timestamp
+        function updateLastUpdated(timestamp) {
+            if (!timestamp) {
+                document.getElementById('lastUpdated').textContent = 'Last updated: Unknown';
+                return;
+            }
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) {
+                document.getElementById('lastUpdated').textContent = 'Last updated: Invalid date';
+                return;
+            }
+            const formatted = date.toLocaleString('en-US', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('lastUpdated').textContent = `Last updated: ${formatted}`;
+        }
+
+        // Performance color coding
+        function getPerformanceClass(value, thresholds = {good: 70, average: 50}) {
+            if (value >= thresholds.good) return 'performance-good';
+            if (value >= thresholds.average) return 'performance-average';
+            return 'performance-poor';
+        }
+
+        // Chart configuration
+        const chartConfig = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: { size: 12 }
+                    }
+                }
+            }
+        };
+
+        // Safe chart destruction
+        function destroyChart(chartName) {
+            if (chartInstances[chartName]) {
+                try {
+                    chartInstances[chartName].destroy();
+                } catch (e) {
+                    console.warn(`Failed to destroy chart ${chartName}:`, e);
+                }
+                delete chartInstances[chartName];
+            }
+        }
+
+        // Load and render data
+        function loadData() {
+            const loadingEl = document.getElementById('loading');
+            const contentEl = document.getElementById('content');
+            
+            jsonpRequest(API_ENDPOINT, 
+                (data) => {
+                    loadingEl.style.display = 'none';
+                    contentEl.style.display = 'block';
+                    updateLastUpdated(data.lastUpdated);
+                    renderStudentView(data);
+                },
+                (error) => {
+                    loadingEl.innerHTML = `
+                        <div style="color: var(--danger-red); padding: 2rem;">
+                            <h3>Error Loading Data</h3>
+                            <p>Failed to load student performance data. Please try again later.</p>
+                            <button onclick="loadData()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--nus-blue); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Retry
+                            </button>
+                        </div>
+                    `;
+                }
+            );
+        }
+
+        // Render Student Performance View
+        function renderStudentView(data) {
+            // Summary stats
+            const students = Object.values(data.students || {});
+            const avgScore = students.length > 0 
+                ? students.reduce((sum, s) => sum + parseFloat(s.overallPercentage || 0), 0) / students.length
+                : 0;
+            const highestScore = students.length > 0
+                ? Math.max(...students.map(s => parseFloat(s.overallPercentage || 0)))
+                : 0;
+            const completionRate = students.length > 0
+                ? (students.filter(s => (s.totalQuestions || 0) >= 10).length / students.length) * 100
+                : 0;
+            
+            const statsHtml = `
+                <div class="stat-card">
+                    <h3>Total Students</h3>
+                    <div class="stat-value">${students.length}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Average Score</h3>
+                    <div class="stat-value">${avgScore.toFixed(1)}%</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Highest Score</h3>
+                    <div class="stat-value">${highestScore.toFixed(1)}%</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Completion Rate</h3>
+                    <div class="stat-value">${completionRate.toFixed(1)}%</div>
+                    <div class="stat-subtitle">Students with ≥10 questions</div>
+                </div>
+            `;
+            document.getElementById('studentStats').innerHTML = statsHtml;
+            
+            // Topic Performance Chart
+            const topicData = {};
+            students.forEach(student => {
+                Object.entries(student.topics || {}).forEach(([topic, data]) => {
+                    if (!topicData[topic]) {
+                        topicData[topic] = { total: 0, correct: 0 };
+                    }
+                    topicData[topic].total += data.total || 0;
+                    topicData[topic].correct += data.correct || 0;
+                });
+            });
+            
+            const topics = Object.keys(topicData).sort((a, b) => {
+                const aRate = topicData[a].total > 0 ? (topicData[a].correct / topicData[a].total) : 0;
+                const bRate = topicData[b].total > 0 ? (topicData[b].correct / topicData[b].total) : 0;
+                return bRate - aRate;
+            }).slice(0, 8);
+            
+            const topicChartEl = document.getElementById('topicPerformanceChart');
+            if (topicChartEl && topics.length > 0) {
+                destroyChart('topicPerformance');
+                chartInstances.topicPerformance = new Chart(topicChartEl, {
+                    type: 'bar',
+                    data: {
+                        labels: topics,
+                        datasets: [{
+                            label: 'Success Rate',
+                            data: topics.map(t => {
+                                const rate = topicData[t].total > 0 
+                                    ? ((topicData[t].correct / topicData[t].total) * 100)
+                                    : 0;
+                                return parseFloat(rate.toFixed(1));
+                            }),
+                            backgroundColor: '#EF7C00',
+                            borderColor: '#EF7C00',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        ...chartConfig,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { callback: value => value + '%' }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Difficulty Performance Chart
+            const difficultyPerf = [];
+            for (let i = 1; i <= 10; i++) {
+                let total = 0, correct = 0;
+                students.forEach(student => {
+                    const diff = student.difficultyPerformance?.[`Level_${i}`];
+                    if (diff) {
+                        total += diff.total || 0;
+                        correct += diff.correct || 0;
+                    }
+                });
+                if (total > 0) {
+                    difficultyPerf.push({ level: i, rate: (correct / total * 100) });
+                }
+            }
+            
+            const diffChartEl = document.getElementById('difficultyChart');
+            if (diffChartEl && difficultyPerf.length > 0) {
+                destroyChart('difficulty');
+                chartInstances.difficulty = new Chart(diffChartEl, {
+                    type: 'line',
+                    data: {
+                        labels: difficultyPerf.map(d => `Level ${d.level}`),
+                        datasets: [{
+                            label: 'Success Rate',
+                            data: difficultyPerf.map(d => parseFloat(d.rate.toFixed(1))),
+                            borderColor: '#003D7C',
+                            backgroundColor: 'rgba(0, 61, 124, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        ...chartConfig,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { callback: value => value + '%' }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Top Performers Table
+            const topPerformers = students
+                .filter(s => (s.totalQuestions || 0) >= 10)
+                .sort((a, b) => parseFloat(b.overallPercentage || 0) - parseFloat(a.overallPercentage || 0))
+                .slice(0, 10);
+            
+            const tableBody = topPerformers.map((student, index) => {
+                const topicsArray = Object.entries(student.topics || {});
+                const strongestTopic = topicsArray.length > 0
+                    ? topicsArray.sort((a, b) => parseFloat(b[1].percentage || 0) - parseFloat(a[1].percentage || 0))[0]
+                    : null;
+                
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${student.name || student.userId || 'Unknown'}</td>
+                        <td class="${getPerformanceClass(parseFloat(student.overallPercentage || 0))}">${student.overallPercentage || 0}%</td>
+                        <td>${student.totalQuestions || 0}</td>
+                        <td>${strongestTopic ? strongestTopic[0] : 'N/A'}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            document.getElementById('topPerformersBody').innerHTML = tableBody || '<tr><td colspan="5" style="text-align: center;">No data available</td></tr>';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
+    </script>
+</body>
+</html>
