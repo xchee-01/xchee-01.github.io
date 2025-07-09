@@ -5,12 +5,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 // Initialize Firebase in the service worker
 // REPLACE WITH YOUR CONFIG
 firebase.initializeApp({
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBAcoyOwbFwQVzFUp-FuI3Uh4uLF1MWpf0",
+  authDomain: "mcq-quizz-app.firebaseapp.com",
+  projectId: "mcq-quizz-app",
+  storageBucket: "mcq-quizz-app.firebasestorage.app",
+  messagingSenderId: "256408674329",
+  appId: "1:256408674329:web:fddf7b3b74c489b4ce4a88"
 });
 
 const messaging = firebase.messaging();
