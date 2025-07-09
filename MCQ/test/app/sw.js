@@ -4,7 +4,7 @@ const urlsToCache = [
     '/',
     '/index.html',
     '/manifest.json',
-    'https://cdn.onesignal.com/sdks/OneSignalSDK.js',
+    'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js',
     'https://via.placeholder.com/192x192/667eea/ffffff?text=Q',
     'https://via.placeholder.com/512x512/667eea/ffffff?text=Q'
 ];
