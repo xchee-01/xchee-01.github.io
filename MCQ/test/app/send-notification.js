@@ -34,7 +34,7 @@ async function sendNotification(fcmToken, title, body, data = {}) {
         data: data,
         webpush: {
           fcm_options: {
-            link: '/'
+            link: 'https://xchee-01.github.io/MCQ/test/app/'
           },
           notification: {
             icon: '/icon-192x192.png',
