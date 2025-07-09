@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="https://via.placeholder.com/192x192/667eea/ffffff?text=Q">
     
     <!-- OneSignal SDK -->
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     
     <style>
         * {
@@ -225,19 +225,26 @@
 
     <script>
         // OneSignal Configuration
-        window.OneSignal = window.OneSignal || [];
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
         
-        // IMPORTANT: Replace 'YOUR-ONESIGNAL-APP-ID' with your actual OneSignal App ID
-        const ONE_SIGNAL_APP_ID = 'YOUR-ONESIGNAL-APP-ID';
-        
-        OneSignal.push(function() {
-            OneSignal.init({
-                appId: ONE_SIGNAL_APP_ID,
-                safari_web_id: "web.onesignal.auto.YOUR-SAFARI-WEB-ID", // Replace if using Safari
+        OneSignalDeferred.push(async function(OneSignal) {
+            await OneSignal.init({
+                appId: "b4f3116c-da50-4c0d-8833-00bbff722597",
+                safari_web_id: "web.onesignal.auto.10e68f2c-7ec7-4c79-8552-0b1b9ea0a897",
                 notifyButton: {
                     enable: false,
                 },
-                allowLocalhostAsSecureOrigin: true,
+            });
+            
+            // Check notification permission
+            const permission = await OneSignal.Notifications.permission;
+            if (!permission) {
+                document.getElementById('notificationPrompt').style.display = 'block';
+            }
+            
+            // Handle notification clicks
+            OneSignal.Notifications.addEventListener('click', function(event) {
+                console.log('Notification clicked:', event);
             });
         });
 
@@ -338,32 +345,15 @@
                 .catch(err => console.error('Service Worker registration failed:', err));
         }
 
-        // Check notification permission
-        OneSignal.push(function() {
-            OneSignal.isPushNotificationsEnabled(function(isEnabled) {
-                if (!isEnabled) {
-                    document.getElementById('notificationPrompt').style.display = 'block';
+        async function enableNotifications() {
+            OneSignalDeferred.push(async function(OneSignal) {
+                await OneSignal.Notifications.requestPermission();
+                const permission = await OneSignal.Notifications.permission;
+                if (permission) {
+                    document.getElementById('notificationPrompt').style.display = 'none';
                 }
             });
-        });
-
-        function enableNotifications() {
-            OneSignal.push(function() {
-                OneSignal.registerForPushNotifications();
-                OneSignal.on('subscriptionChange', function(isSubscribed) {
-                    if (isSubscribed) {
-                        document.getElementById('notificationPrompt').style.display = 'none';
-                    }
-                });
-            });
         }
-
-        // Handle notification clicks
-        OneSignal.push(function() {
-            OneSignal.on('notificationClicked', function(data) {
-                console.log('Notification clicked:', data);
-            });
-        });
 
         // Initialize quiz
         renderQuiz();
