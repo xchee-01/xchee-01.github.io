@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA Test</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .success { background-color: #d4edda; color: #155724; }
+    .error { background-color: #f8d7da; color: #721c24; }
+    .info { background-color: #d1ecf1; color: #0c5460; }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>PWA Quick Test</h1>
+  
+  <div id="status-list"></div>
+  
+  <div style="margin-top: 20px;">
+    <button onclick="testNotification()">Test Notification</button>
+    <button onclick="checkRegistration()">Check SW Registration</button>
+    <button onclick="getFCMToken()">Get FCM Token</button>
+  </div>
+  
+  <div style="margin-top: 20px;">
+    <h3>FCM Token:</h3>
+    <textarea id="token-display" rows="4" style="width: 100%;"></textarea>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+  
+  <script>
+    // Replace with your config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+    
+    function addStatus(message, type = 'info') {
+      const statusList = document.getElementById('status-list');
+      const status = document.createElement('div');
+      status.className = `status ${type}`;
+      status.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      statusList.appendChild(status);
+    }
+    
+    // Check if service worker is supported
+    if ('serviceWorker' in navigator) {
+      addStatus('Service Worker supported', 'success');
+      
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => {
+          addStatus('Service Worker registered', 'success');
+          messaging.useServiceWorker(reg);
+        })
+        .catch(err => addStatus('SW registration failed: ' + err.message, 'error'));
+    } else {
+      addStatus('Service Worker not supported', 'error');
+    }
+    
+    // Check notification support
+    if ('Notification' in window) {
+      addStatus(`Notification permission: ${Notification.permission}`, 'info');
+    } else {
+      addStatus('Notifications not supported', 'error');
+    }
+    
+    function testNotification() {
+      if (Notification.permission === 'granted') {
+        new Notification('Test Notification', {
+          body: 'PWA notifications are working!',
+          icon: '/icon-192x192.png'
+        });
+      } else if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            testNotification();
+          }
+        });
+      } else {
+        addStatus('Notifications are blocked', 'error');
+      }
+    }
+    
+    function checkRegistration() {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        addStatus(`Found ${registrations.length} service worker(s)`, 'info');
+        registrations.forEach(reg => {
+          addStatus(`SW Scope: ${reg.scope}`, 'info');
+        });
+      });
+    }
+    
+    async function getFCMToken() {
+      try {
+        const token = await messaging.getToken({
+          vapidKey: 'YOUR_VAPID_KEY' // Replace with your VAPID key
+        });
+        
+        if (token) {
+          document.getElementById('token-display').value = token;
+          addStatus('FCM token retrieved', 'success');
+          console.log('FCM Token:', token);
+        } else {
+          addStatus('No FCM token available', 'error');
+        }
+      } catch (error) {
+        addStatus('Error getting FCM token: ' + error.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
