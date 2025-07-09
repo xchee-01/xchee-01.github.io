@@ -6,7 +6,7 @@ const fetch = require('node-fetch');
 
 // Configuration
 const PROJECT_ID = 'mcq-quizz-app'; // Replace with your Firebase project ID
-const SERVICE_ACCOUNT_PATH = './service-account-key.json'; // Path to your service account JSON file
+const SERVICE_ACCOUNT_PATH = 'https://xchee-01.github.io/MCQ/test/app/service-account-key.json'; // Path to your service account JSON file
 
 // Initialize Google Auth
 const auth = new GoogleAuth({
