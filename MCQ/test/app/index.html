@@ -1,256 +1,372 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medical MCQ Quiz PWA</title>
-  <link rel="manifest" href="https://xchee-01.github.io/MCQ/test/app/manifest.json">
-  <meta name="theme-color" content="#003D7C">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary-blue: #003D7C;
-      --primary-orange: #EF7C00;
-      --light-blue: #E6EEF5;
-      --light-orange: #FFE5CC;
-      --success-color: #4CAF50;
-      --error-color: #F44336;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Quiz</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192x192/667eea/ffffff?text=Q">
     
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <!-- OneSignal SDK -->
+    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
     
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f5f5f5;
-      color: #333;
-      line-height: 1.6;
-    }
-    
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    
-    .header {
-      background-color: var(--primary-blue);
-      color: white;
-      padding: 40px 20px;
-      text-align: center;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    
-    .notification-banner {
-      background-color: var(--light-orange);
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      display: none;
-    }
-    
-    .notification-banner button {
-      background-color: var(--primary-orange);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    
-    .quiz-content {
-      background-color: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .install-button {
-      background-color: var(--primary-orange);
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 5px;
-      cursor: pointer;
-      margin: 20px 0;
-      display: none;
-    }
-  </style>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .question {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: #555;
+            text-align: center;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option {
+            background: #f7f7f7;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .option:hover:not(.disabled) {
+            background: #fff;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .option.correct {
+            background: #48bb78;
+            color: white;
+            border-color: #48bb78;
+        }
+
+        .option.incorrect {
+            background: #f56565;
+            color: white;
+            border-color: #f56565;
+        }
+
+        .option.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 16px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.correct {
+            background: #e6fffa;
+            color: #234e52;
+        }
+
+        .result.incorrect {
+            background: #fff5f5;
+            color: #742a2a;
+        }
+
+        .install-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 20px auto 0;
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .install-button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .notification-prompt {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            color: #4c51bf;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .notification-button {
+            background: #4c51bf;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .question {
+                font-size: 16px;
+            }
+            
+            .option {
+                padding: 16px;
+                font-size: 14px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>Medical MCQ Quiz PWA</h1>
-      <p>Progressive Web App with Push Notifications</p>
-    </div>
-    
-    <div id="notification-banner" class="notification-banner">
-      <h3>Enable Push Notifications</h3>
-      <p>Get notified about new quizzes and study reminders!</p>
-      <button id="enable-notifications">Enable Notifications</button>
-    </div>
-    
-    <button id="install-button" class="install-button">Install App</button>
-    
-    <div class="quiz-content">
-      <h2>Welcome to Medical MCQ Quiz</h2>
-      <p>This is a minimal PWA prototype with push notification support.</p>
-      <p id="notification-status">Checking notification permission...</p>
-      
-      <div id="quiz-demo" style="margin-top: 30px;">
-        <h3>Sample Question</h3>
-        <p>A 54-year-old woman presents with recurrent syncopal episodes due to prolonged QT syndrome. Which phase of the action potential is affected?</p>
-        <div style="margin-top: 15px;">
-          <button style="display: block; margin: 5px 0; padding: 10px; width: 100%; text-align: left;">A. Phase 0</button>
-          <button style="display: block; margin: 5px 0; padding: 10px; width: 100%; text-align: left;">B. Phase 1</button>
-          <button style="display: block; margin: 5px 0; padding: 10px; width: 100%; text-align: left;">C. Phase 2</button>
-          <button style="display: block; margin: 5px 0; padding: 10px; width: 100%; text-align: left;">D. Phase 3</button>
+    <div class="container">
+        <div class="notification-prompt" id="notificationPrompt">
+            📱 Enable notifications to receive new questions daily!
+            <br>
+            <button class="notification-button" onclick="enableNotifications()">Enable Notifications</button>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
-  
-  <script>
-    // Firebase configuration - REPLACE WITH YOUR CONFIG
-    const firebaseConfig = {
-      apiKey: "AIzaSyBAcoyOwbFwQVzFUp-FuI3Uh4uLF1MWpf0",
-      authDomain: "mcq-quizz-app.firebaseapp.com",
-      projectId: "mcq-quizz-app",
-      storageBucket: "mcq-quizz-app.firebasestorage.app",
-      messagingSenderId: "256408674329",
-      appId: "1:256408674329:web:fddf7b3b74c489b4ce4a88"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const messaging = firebase.messaging();
-
-    // Service Worker Registration
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try {
-          const registration = await navigator.serviceWorker.register('https://xchee-01.github.io/MCQ/test/app/sw.js', {
-          scope: 'https://xchee-01.github.io/MCQ/test/app/');
-          console.log('Service Worker registered:', registration);
-          
-          // Use the service worker for FCM
-          messaging.useServiceWorker(registration);
-        } catch (error) {
-          console.error('Service Worker registration failed:', error);
-        }
-      });
-    }
-
-    // Install button functionality
-    let deferredPrompt;
-    const installButton = document.getElementById('install-button');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installButton.style.display = 'block';
-    });
-
-    installButton.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`User response: ${outcome}`);
-        deferredPrompt = null;
-        installButton.style.display = 'none';
-      }
-    });
-
-    // Notification functionality
-    const notificationBanner = document.getElementById('notification-banner');
-    const enableNotificationsBtn = document.getElementById('enable-notifications');
-    const notificationStatus = document.getElementById('notification-status');
-
-    // Check notification permission on load
-    checkNotificationPermission();
-
-    function checkNotificationPermission() {
-      if (!('Notification' in window)) {
-        notificationStatus.textContent = 'Notifications not supported in this browser.';
-        return;
-      }
-
-      if (Notification.permission === 'default') {
-        notificationBanner.style.display = 'block';
-        notificationStatus.textContent = 'Notifications not enabled yet.';
-      } else if (Notification.permission === 'granted') {
-        notificationStatus.textContent = 'Notifications enabled! ✓';
-        notificationBanner.style.display = 'none';
-        setupFCM();
-      } else {
-        notificationStatus.textContent = 'Notifications blocked.';
-        notificationBanner.style.display = 'none';
-      }
-    }
-
-    enableNotificationsBtn.addEventListener('click', async () => {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          console.log('Notification permission granted');
-          await setupFCM();
-          checkNotificationPermission();
-        }
-      } catch (error) {
-        console.error('Error requesting notification permission:', error);
-      }
-    });
-
-    async function setupFCM() {
-      try {
-        // Get FCM token
-        const token = await messaging.getToken({
-          vapidKey: 'BGvXhDvEJtqeQoXUalEujHPMQpmz4qNLieI3ZdSKrcroSR1Y2IO8HEfTQcKozFNZoRWhkhlIbiAT2MLFqbq9baI' // Replace with your VAPID key
-        });
         
-        if (token) {
-          console.log('FCM Token:', token);
-          notificationStatus.textContent = 'Notifications enabled! Token received. ✓';
-          
-          // Send token to your server (implement this endpoint)
-          // await sendTokenToServer(token);
-        } else {
-          console.log('No registration token available.');
-        }
-      } catch (error) {
-        console.error('Error getting FCM token:', error);
-      }
-    }
+        <h1>Daily Quiz</h1>
+        
+        <div id="quizContent">
+            <div class="question" id="question">Loading question...</div>
+            <div class="options" id="options"></div>
+            <div id="result"></div>
+        </div>
+        
+        <button class="install-button" id="installButton">Install App</button>
+    </div>
 
-    // Handle foreground messages
-    messaging.onMessage((payload) => {
-      console.log('Message received:', payload);
-      
-      // Show notification manually when app is in foreground
-      if (Notification.permission === 'granted') {
-        new Notification(payload.notification.title, {
-          body: payload.notification.body,
-          icon: '/icon-192x192.png',
-          badge: '/badge-72x72.png'
+    <script>
+        // OneSignal Configuration
+        window.OneSignal = window.OneSignal || [];
+        
+        // IMPORTANT: Replace 'YOUR-ONESIGNAL-APP-ID' with your actual OneSignal App ID
+        const ONE_SIGNAL_APP_ID = 'YOUR-ONESIGNAL-APP-ID';
+        
+        OneSignal.push(function() {
+            OneSignal.init({
+                appId: ONE_SIGNAL_APP_ID,
+                safari_web_id: "web.onesignal.auto.YOUR-SAFARI-WEB-ID", // Replace if using Safari
+                notifyButton: {
+                    enable: false,
+                },
+                allowLocalhostAsSecureOrigin: true,
+            });
         });
-      }
-    });
 
-    // Simulated quiz options
-    document.querySelectorAll('#quiz-demo button').forEach(button => {
-      button.addEventListener('click', () => {
-        alert('This is a demo question. In the full app, this would process your answer.');
-      });
-    });
-  </script>
+        // Quiz Data - This will be updated via push notifications
+        let currentQuestion = {
+            question: "What is the capital of France?",
+            options: ["London", "Berlin", "Paris", "Madrid"],
+            correct: 2
+        };
+
+        // Check if there's a question from notification
+        const urlParams = new URLSearchParams(window.location.search);
+        const questionData = urlParams.get('question');
+        if (questionData) {
+            try {
+                currentQuestion = JSON.parse(decodeURIComponent(questionData));
+            } catch (e) {
+                console.error('Error parsing question data:', e);
+            }
+        }
+
+        let selectedOption = null;
+        let answered = false;
+
+        function renderQuiz() {
+            const questionEl = document.getElementById('question');
+            const optionsEl = document.getElementById('options');
+            const resultEl = document.getElementById('result');
+            
+            questionEl.textContent = currentQuestion.question;
+            optionsEl.innerHTML = '';
+            resultEl.innerHTML = '';
+            
+            currentQuestion.options.forEach((option, index) => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'option';
+                optionEl.textContent = option;
+                optionEl.onclick = () => selectOption(index);
+                optionsEl.appendChild(optionEl);
+            });
+        }
+
+        function selectOption(index) {
+            if (answered) return;
+            
+            selectedOption = index;
+            answered = true;
+            
+            const options = document.querySelectorAll('.option');
+            options.forEach((option, i) => {
+                option.classList.add('disabled');
+                if (i === index) {
+                    option.classList.add('selected');
+                }
+                if (i === currentQuestion.correct) {
+                    option.classList.add('correct');
+                } else if (i === index) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            showResult();
+        }
+
+        function showResult() {
+            const resultEl = document.getElementById('result');
+            const isCorrect = selectedOption === currentQuestion.correct;
+            
+            resultEl.className = `result ${isCorrect ? 'correct' : 'incorrect'}`;
+            resultEl.textContent = isCorrect 
+                ? '✓ Correct! Well done!' 
+                : `✗ Incorrect. The correct answer was: ${currentQuestion.options[currentQuestion.correct]}`;
+        }
+
+        // PWA Installation
+        let deferredPrompt;
+        const installButton = document.getElementById('installButton');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installButton.style.display = 'block';
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installButton.style.display = 'none';
+            }
+        });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        }
+
+        // Check notification permission
+        OneSignal.push(function() {
+            OneSignal.isPushNotificationsEnabled(function(isEnabled) {
+                if (!isEnabled) {
+                    document.getElementById('notificationPrompt').style.display = 'block';
+                }
+            });
+        });
+
+        function enableNotifications() {
+            OneSignal.push(function() {
+                OneSignal.registerForPushNotifications();
+                OneSignal.on('subscriptionChange', function(isSubscribed) {
+                    if (isSubscribed) {
+                        document.getElementById('notificationPrompt').style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Handle notification clicks
+        OneSignal.push(function() {
+            OneSignal.on('notificationClicked', function(data) {
+                console.log('Notification clicked:', data);
+            });
+        });
+
+        // Initialize quiz
+        renderQuiz();
+    </script>
 </body>
 </html>
