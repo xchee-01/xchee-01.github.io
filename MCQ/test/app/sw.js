@@ -1,9 +1,9 @@
 // Service Worker for Medical MCQ Quiz PWA
 const CACHE_NAME = 'mcq-quiz-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  'https://xchee-01.github.io/MCQ/test/app/',
+  'https://xchee-01.github.io/MCQ/test/app/index.html',
+  'https://xchee-01.github.io/MCQ/test/app/manifest.json',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];
 
@@ -139,12 +139,12 @@ self.addEventListener('notificationclick', (event) => {
     event.waitUntil(
       clients.matchAll({ type: 'window' }).then((clientList) => {
         for (const client of clientList) {
-          if (client.url === '/' && 'focus' in client) {
+          if (client.url === 'https://xchee-01.github.io/MCQ/test/app/' && 'focus' in client) {
             return client.focus();
           }
-        }
-        if (clients.openWindow) {
-          return clients.openWindow('/');
+          if (clients.openWindow) {
+            return clients.openWindow('https://xchee-01.github.io/MCQ/test/app/');
+          }
         }
       })
     );
