@@ -5,7 +5,7 @@ const { GoogleAuth } = require('google-auth-library');
 const fetch = require('node-fetch');
 
 // Configuration
-const PROJECT_ID = 'YOUR_PROJECT_ID'; // Replace with your Firebase project ID
+const PROJECT_ID = 'mcq-quizz-app'; // Replace with your Firebase project ID
 const SERVICE_ACCOUNT_PATH = './service-account-key.json'; // Path to your service account JSON file
 
 // Initialize Google Auth
