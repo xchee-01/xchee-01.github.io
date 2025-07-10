@@ -3,8 +3,8 @@ const DEBUG_MODE = true;
 
 // Configuration
 const CONFIG = {
-    GAS_ENDPOINT: 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE', // You'll get this in Step 3
-    VAPID_PUBLIC_KEY: 'YOUR_VAPID_PUBLIC_KEY_HERE',   // You'll get this in Step 2
+    GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbxwphzm2P-rjDQYsFcWUVHg3G8nNOztJu7Wcb3tIcnl-aeIokeuMAhGoxAhOyPncwe09Q/exec', // You'll get this in Step 3
+    VAPID_PUBLIC_KEY: 'BJ2e3MqkVGtVSij2HHyTCsYlWTP2QyXSLoP7kRCzt843LO1f6iq6dS4DpVMVuHIXSR6RK71Laroq0hSqIJcZ6p0',   // You'll get this in Step 2
     SERVICE_WORKER_PATH: 'https://xchee-01.github.io/MCQ/test/app/sw.js'
 };
 
