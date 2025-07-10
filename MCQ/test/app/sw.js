@@ -1,9 +1,10 @@
 // Service Worker for Quiz PWA
 const CACHE_NAME = 'quiz-pwa-v1';
+const BASE_URL = 'https://xchee-01.github.io/MCQ/test/app';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/manifest.json',
+    `${BASE_URL}/`,
+    `${BASE_URL}/index.html`,
+    `${BASE_URL}/manifest.json`,
     'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js',
     'https://via.placeholder.com/192x192/667eea/ffffff?text=Q',
     'https://via.placeholder.com/512x512/667eea/ffffff?text=Q'
@@ -53,7 +54,7 @@ self.addEventListener('fetch', event => {
             .catch(() => {
                 // Offline fallback
                 if (event.request.destination === 'document') {
-                    return caches.match('/index.html');
+                    return caches.match(`${BASE_URL}/index.html`);
                 }
             })
     );
@@ -86,6 +87,6 @@ self.addEventListener('notificationclick', event => {
     event.notification.close();
     
     event.waitUntil(
-        clients.openWindow(event.notification.data.url || '/')
+        clients.openWindow(event.notification.data.url || `${BASE_URL}/`)
     );
 });
