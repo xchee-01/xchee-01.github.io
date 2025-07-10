@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App with Push Notifications</title>
+    <link rel="manifest" href="https://xchee-01.github.io/MCQ/test/app/manifest.json">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left-color: #17a2b8;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        .debug {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        h3 {
+            color: #333;
+            margin-top: 20px;
+        }
+        .config-warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .config-warning h4 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .config-warning code {
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Quiz App - Push Notifications Setup</h1>
+        
+        <div id="configWarning" class="config-warning" style="display:none;">
+            <h4>⚠️ Configuration Required</h4>
+            <p>Please update the Firebase <code>appId</code> in this file:</p>
+            <ol>
+                <li>Go to <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></li>
+                <li>Select project: <strong>pwaapp-fe16c</strong></li>
+                <li>Go to Project Settings → General</li>
+                <li>Find your web app and copy the <code>appId</code></li>
+                <li>Update the FIREBASE_CONFIG in this file</li>
+            </ol>
+        </div>
+        
+        <div id="status" class="status info">
+            Initializing...
+        </div>
+
+        <h3>Step 1: Enable Notifications</h3>
+        <button id="enableBtn" onclick="subscribeToPush()" disabled>
+            🔔 Enable Push Notifications
+        </button>
+        
+        <h3>Step 2: Test Notification</h3>
+        <button id="testBtn" onclick="sendTestNotification()" disabled>
+            📨 Send Test Notification
+        </button>
+        
+        <h3>Debug Information</h3>
+        <button onclick="showDebugInfo()">🐛 Show Debug Info</button>
+        <button onclick="clearDebugLog()">🗑️ Clear Debug Log</button>
+        
+        <div id="debug" class="debug" style="display:none;"></div>
+        
+        <h3>Quiz Section</h3>
+        <p>Your quiz content will appear here...</p>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+    
+    <!-- Inline JavaScript for testing -->
+    <script>
+        // ============ CONFIGURATION START ============
+        // ⚠️ UPDATE THIS WITH YOUR FIREBASE WEB APP ID ⚠️
+const firebaseConfig = {
+  apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+  authDomain: "pwaapp-fe16c.firebaseapp.com",
+  projectId: "pwaapp-fe16c",
+  storageBucket: "pwaapp-fe16c.firebasestorage.app",
+  messagingSenderId: "138452600697",
+  appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+};
+
+        const CONFIG = {
+            GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbwRUpi2Pai4DTuW-eZOK5RCWkA70c5wTunfqfpRgXDcz-PvEmF8nBDdXmhhWKxmSqptfQ/exec',
+            VAPID_PUBLIC_KEY: 'BJ2e3MqkVGtVSij2HHyTCsYlWTP2QyXSLoP7kRCzt843LO1f6iq6dS4DpVMVuHIXSR6RK71Laroq0hSqIJcZ6p0'
+        };
+        // ============ CONFIGURATION END ============
+
+        // Debug logging
+        const debugLog = {
+            logs: [],
+            add: function(message, data = null) {
+                const timestamp = new Date().toISOString();
+                const logEntry = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}`;
+                this.logs.push(logEntry);
+                console.log(message, data || '');
+                this.updateDisplay();
+            },
+            updateDisplay: function() {
+                const debugElement = document.getElementById('debug');
+                if (debugElement && debugElement.style.display !== 'none') {
+                    debugElement.textContent = this.logs.join('\n\n');
+                    debugElement.scrollTop = debugElement.scrollHeight;
+                }
+            },
+            clear: function() {
+                this.logs = [];
+                this.updateDisplay();
+            }
+        };
+
+        let messaging = null;
+
+        // Initialize on load
+        window.addEventListener('load', async () => {
+            debugLog.add('Page loaded');
+            
+            // Check configuration
+            if (FIREBASE_CONFIG.appId.includes('YOUR_APP_ID')) {
+                document.getElementById('configWarning').style.display = 'block';
+                updateStatus('⚠️ Firebase appId not configured!', 'warning');
+                debugLog.add('WARNING: Firebase appId needs to be updated');
+            }
+            
+            // Check if Firebase loaded
+            if (typeof firebase === 'undefined') {
+                updateStatus('Error: Firebase SDK failed to load', 'error');
+                debugLog.add('ERROR: Firebase is undefined');
+                return;
+            }
+            
+            debugLog.add('Firebase SDK loaded');
+            
+            try {
+                // Initialize Firebase
+                firebase.initializeApp(FIREBASE_CONFIG);
+                debugLog.add('Firebase initialized');
+                
+                // Get messaging
+                messaging = firebase.messaging();
+                debugLog.add('Messaging instance created');
+                
+                // Check browser support
+                if (!('serviceWorker' in navigator)) {
+                    updateStatus('Service Workers not supported!', 'error');
+                    return;
+                }
+                
+                if (!('PushManager' in window)) {
+                    updateStatus('Push notifications not supported!', 'error');
+                    return;
+                }
+                
+                // Register service worker
+                const registration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js');
+                debugLog.add('Service worker registered');
+                
+                messaging.useServiceWorker(registration);
+                
+                // Check existing token
+                try {
+                    const currentToken = await messaging.getToken({ vapidKey: CONFIG.VAPID_PUBLIC_KEY });
+                    if (currentToken) {
+                        debugLog.add('Existing token found: ' + currentToken);
+                        document.getElementById('enableBtn').disabled = true;
+                        document.getElementById('testBtn').disabled = false;
+                        updateStatus('Push notifications already enabled!', 'success');
+                    } else {
+                        document.getElementById('enableBtn').disabled = false;
+                        updateStatus('Ready to enable push notifications', 'info');
+                    }
+                } catch (e) {
+                    debugLog.add('No existing token');
+                    document.getElementById('enableBtn').disabled = false;
+                    updateStatus('Ready to enable push notifications', 'info');
+                }
+                
+                // Handle foreground messages
+                messaging.onMessage((payload) => {
+                    debugLog.add('Message received:', payload);
+                    const { title, body } = payload.notification;
+                    if (Notification.permission === 'granted') {
+                        new Notification(title, { body });
+                    }
+                });
+                
+            } catch (error) {
+                debugLog.add('Initialization error:', error);
+                updateStatus('Initialization failed: ' + error.message, 'error');
+            }
+        });
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            debugLog.add('Status: ' + message);
+        }
+
+        async function subscribeToPush() {
+            debugLog.add('Subscribe clicked');
+            
+            try {
+                // Request permission
+                const permission = await Notification.requestPermission();
+                debugLog.add('Permission: ' + permission);
+                
+                if (permission !== 'granted') {
+                    updateStatus('Permission denied!', 'error');
+                    return;
+                }
+                
+                // Get token
+                const token = await messaging.getToken({ vapidKey: CONFIG.VAPID_PUBLIC_KEY });
+                debugLog.add('Token received: ' + token);
+                
+                if (token) {
+                    // Save to server
+                    await saveTokenToServer(token);
+                    
+                    document.getElementById('enableBtn').disabled = true;
+                    document.getElementById('testBtn').disabled = false;
+                    updateStatus('Push notifications enabled!', 'success');
+                } else {
+                    updateStatus('Failed to get token', 'error');
+                }
+                
+            } catch (error) {
+                debugLog.add('Subscribe error:', error);
+                updateStatus('Failed: ' + error.message, 'error');
+            }
+        }
+
+        async function saveTokenToServer(token) {
+            debugLog.add('Saving token to server...');
+            
+            const data = {
+                action: 'subscribe',
+                subscription: {
+                    endpoint: `https://fcm.googleapis.com/fcm/send/${token}`,
+                    keys: { p256dh: 'not-used', auth: 'not-used' }
+                },
+                fcmToken: token,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(data)
+                });
+                debugLog.add('Token saved to server');
+            } catch (error) {
+                debugLog.add('Save error:', error);
+            }
+        }
+
+        async function sendTestNotification() {
+            debugLog.add('Test notification clicked');
+            
+            try {
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: 'test',
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                updateStatus('Test notification sent!', 'success');
+                debugLog.add('Test request sent');
+            } catch (error) {
+                debugLog.add('Test error:', error);
+                updateStatus('Test failed: ' + error.message, 'error');
+            }
+        }
+
+        function showDebugInfo() {
+            const debug = document.getElementById('debug');
+            debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
+            debugLog.updateDisplay();
+        }
+
+        function clearDebugLog() {
+            debugLog.clear();
+            updateStatus('Debug log cleared', 'info');
+        }
+    </script>
+</body>
+</html>
