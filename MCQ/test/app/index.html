@@ -3,366 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Quiz</title>
-    <link rel="manifest" href="https://xchee-01.github.io/MCQ/test/app/manifest.json">
-    <meta name="theme-color" content="#667eea">
-    <link rel="apple-touch-icon" href="https://via.placeholder.com/192x192/667eea/ffffff?text=Q">
-    
-    <!-- OneSignal SDK -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(async function(OneSignal) {
-            await OneSignal.init({
-                appId: "b4f3116c-da50-4c0d-8833-00bbff722597",
-                safari_web_id: "web.onesignal.auto.10e68f2c-7ec7-4c79-8552-0b1b9ea0a897",
-                notifyButton: {
-                    enable: true,
-                },
-            });
-        });
-    </script>
-    
+    <title>Quiz App</title>
+    <link rel="manifest" href="manifest.json">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
             padding: 20px;
-            color: #333;
-            line-height: 1.6;
         }
-
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        h1 {
-            font-size: 24px;
-            margin-bottom: 30px;
-            text-align: center;
-            color: #333;
-            font-weight: 600;
-        }
-
-        .question {
-            font-size: 18px;
-            margin-bottom: 30px;
-            color: #555;
-            text-align: center;
-        }
-
-        .options {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .option {
-            background: #f7f7f7;
-            border: 2px solid transparent;
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 16px;
-            text-align: center;
-        }
-
-        .option:hover:not(.disabled) {
-            background: #fff;
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-        }
-
-        .option.selected {
-            background: #667eea;
+        button {
+            background: #4CAF50;
             color: white;
-            border-color: #667eea;
-        }
-
-        .option.correct {
-            background: #48bb78;
-            color: white;
-            border-color: #48bb78;
-        }
-
-        .option.incorrect {
-            background: #f56565;
-            color: white;
-            border-color: #f56565;
-        }
-
-        .option.disabled {
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        .result {
-            margin-top: 30px;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 16px;
-            animation: slideUp 0.3s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .result.correct {
-            background: #e6fffa;
-            color: #234e52;
-        }
-
-        .result.incorrect {
-            background: #fff5f5;
-            color: #742a2a;
-        }
-
-        .install-button {
-            background: #667eea;
-            color: white;
+            padding: 10px 20px;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: 5px;
             cursor: pointer;
-            margin: 20px auto 0;
-            display: none;
-            transition: all 0.3s ease;
+            margin: 10px 0;
         }
-
-        .install-button:hover {
-            background: #5a67d8;
-            transform: translateY(-2px);
+        button:disabled {
+            background: #ccc;
         }
-
-        .notification-prompt {
-            background: #f0f4ff;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 14px;
-            color: #4c51bf;
-            margin-bottom: 20px;
-            display: none;
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
         }
-
-        .notification-button {
-            background: #4c51bf;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
-            }
-            
-            h1 {
-                font-size: 20px;
-            }
-            
-            .question {
-                font-size: 16px;
-            }
-            
-            .option {
-                padding: 16px;
-                font-size: 14px;
-            }
-        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="notification-prompt" id="notificationPrompt">
-            📱 Enable notifications to receive new questions daily!
-            <br>
-            <button class="notification-button" onclick="enableNotifications()">Enable Notifications</button>
-        </div>
-        
-        <h1>Daily Quiz</h1>
-        
-        <div id="quizContent">
-            <div class="question" id="question">Loading question...</div>
-            <div class="options" id="options"></div>
-            <div id="result"></div>
-        </div>
-        
-        <button class="install-button" id="installButton">Install App</button>
-    </div>
+    <h1>Quiz App - Push Notifications</h1>
+    
+    <button id="enableBtn" onclick="subscribeToPush()">Enable Push Notifications</button>
+    <button id="testBtn" onclick="sendTestNotification()" disabled>Send Test Notification</button>
+    
+    <div id="status"></div>
+    
+    <h2>Quiz Section</h2>
+    <p>Your quiz content goes here...</p>
 
-    <script>
-        // Check OneSignal permission status and handle notification events
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        
-        OneSignalDeferred.push(async function(OneSignal) {
-            // Check notification permission
-            const permission = await OneSignal.Notifications.permission;
-            if (!permission) {
-                document.getElementById('notificationPrompt').style.display = 'block';
-            }
-            
-            // Handle notification clicks
-            OneSignal.Notifications.addEventListener('click', function(event) {
-                console.log('Notification clicked:', event);
-            });
-        });
-
-        // Quiz Data - This will be updated via push notifications
-        let currentQuestion = {
-            question: "What is the capital of France?",
-            options: ["London", "Berlin", "Paris", "Madrid"],
-            correct: 2
-        };
-
-        // Check if there's a question from notification
-        const urlParams = new URLSearchParams(window.location.search);
-        const questionData = urlParams.get('question');
-        if (questionData) {
-            try {
-                currentQuestion = JSON.parse(decodeURIComponent(questionData));
-            } catch (e) {
-                console.error('Error parsing question data:', e);
-            }
-        }
-
-        let selectedOption = null;
-        let answered = false;
-
-        function renderQuiz() {
-            const questionEl = document.getElementById('question');
-            const optionsEl = document.getElementById('options');
-            const resultEl = document.getElementById('result');
-            
-            questionEl.textContent = currentQuestion.question;
-            optionsEl.innerHTML = '';
-            resultEl.innerHTML = '';
-            
-            currentQuestion.options.forEach((option, index) => {
-                const optionEl = document.createElement('div');
-                optionEl.className = 'option';
-                optionEl.textContent = option;
-                optionEl.onclick = () => selectOption(index);
-                optionsEl.appendChild(optionEl);
-            });
-        }
-
-        function selectOption(index) {
-            if (answered) return;
-            
-            selectedOption = index;
-            answered = true;
-            
-            const options = document.querySelectorAll('.option');
-            options.forEach((option, i) => {
-                option.classList.add('disabled');
-                if (i === index) {
-                    option.classList.add('selected');
-                }
-                if (i === currentQuestion.correct) {
-                    option.classList.add('correct');
-                } else if (i === index) {
-                    option.classList.add('incorrect');
-                }
-            });
-            
-            showResult();
-        }
-
-        function showResult() {
-            const resultEl = document.getElementById('result');
-            const isCorrect = selectedOption === currentQuestion.correct;
-            
-            resultEl.className = `result ${isCorrect ? 'correct' : 'incorrect'}`;
-            resultEl.textContent = isCorrect 
-                ? '✓ Correct! Well done!' 
-                : `✗ Incorrect. The correct answer was: ${currentQuestion.options[currentQuestion.correct]}`;
-        }
-
-        // PWA Installation
-        let deferredPrompt;
-        const installButton = document.getElementById('installButton');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installButton.style.display = 'block';
-        });
-
-        installButton.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                deferredPrompt = null;
-                installButton.style.display = 'none';
-            }
-        });
-
-        // Service Worker Registration with absolute path
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('https://xchee-01.github.io/MCQ/test/app/sw.js', {
-                scope: 'https://xchee-01.github.io/MCQ/test/app/'
-            })
-                .then(reg => console.log('Service Worker registered'))
-                .catch(err => console.error('Service Worker registration failed:', err));
-        }
-
-        async function enableNotifications() {
-            OneSignalDeferred.push(async function(OneSignal) {
-                await OneSignal.Notifications.requestPermission();
-                const permission = await OneSignal.Notifications.permission;
-                if (permission) {
-                    document.getElementById('notificationPrompt').style.display = 'none';
-                }
-            });
-        }
-
-        // Initialize quiz
-        renderQuiz();
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
