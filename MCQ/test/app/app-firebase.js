@@ -59,7 +59,7 @@ window.addEventListener('load', async () => {
         debugLog.add('Firebase Messaging instance created');
         
         // Register service worker with Firebase
-        const registration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js');
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         debugLog.add('Service Worker registered', {
             scope: registration.scope,
             active: registration.active ? 'Yes' : 'No'
