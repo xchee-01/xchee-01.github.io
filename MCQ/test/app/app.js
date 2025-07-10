@@ -148,9 +148,13 @@ async function saveSubscription(subscription) {
     debugLog.add('Saving subscription to server...');
     
     try {
-        const response = await fetch(CONFIG.GAS_ENDPOINT, {
+        // Use no-cors mode for Google Apps Script
+        await fetch(CONFIG.GAS_ENDPOINT, {
             method: 'POST',
-            mode: 'no-cors', // This bypasses CORS but limits response reading
+            mode: 'no-cors', // This bypasses CORS but we can't read the response
+            headers: {
+                'Content-Type': 'text/plain', // GAS prefers text/plain for no-cors
+            },
             body: JSON.stringify({
                 action: 'subscribe',
                 subscription: subscription.toJSON(),
@@ -159,10 +163,8 @@ async function saveSubscription(subscription) {
             })
         });
         
-        // With no-cors mode, we can't read the response
-        // but if no error was thrown, assume success
-        debugLog.add('Subscription saved (no-cors mode)');
-        return { success: true };
+        // With no-cors, we can't read the response, but if fetch succeeds, assume it worked
+        debugLog.add('Subscription sent to server (no-cors mode - cannot read response)');
         
     } catch (error) {
         debugLog.add('Failed to save subscription', error);
@@ -175,20 +177,43 @@ async function sendTestNotification() {
     debugLog.add('Test notification button clicked');
     
     try {
-        // Send request to server
-        debugLog.add('Sending test notification request to server...');
+        // Check if we have a valid endpoint
+        if (!CONFIG.GAS_ENDPOINT || CONFIG.GAS_ENDPOINT === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+            // Local test - show notification directly
+            debugLog.add('No server endpoint - showing local test notification');
+            
+            const registration = await navigator.serviceWorker.ready;
+            await registration.showNotification('Test Quiz Notification', {
+                body: 'This is a local test. Configure server for real push notifications.',
+                icon: 'https://xchee-01.github.io/MCQ/test/app/icon-192.png',
+                badge: 'https://xchee-01.github.io/MCQ/test/app/icon-192.png',
+                vibrate: [200, 100, 200]
+            });
+            
+            updateStatus('✅ Local test notification sent!');
+            return;
+        }
         
+        // Send request to server with no-cors mode
+        debugLog.add('Sending test notification request to server...');
         await fetch(CONFIG.GAS_ENDPOINT, {
             method: 'POST',
-            mode: 'no-cors', // This bypasses CORS
+            mode: 'no-cors', // Bypass CORS
+            headers: {
+                'Content-Type': 'text/plain',
+            },
             body: JSON.stringify({
                 action: 'test',
                 timestamp: new Date().toISOString()
             })
         });
         
-        // With no-cors mode, we assume success if no error
-        updateStatus('✅ Test notification request sent! Check your notifications in a few seconds.');
+        // With no-cors, we can't read the response
+        debugLog.add('Test notification request sent (no-cors mode)');
+        updateStatus('✅ Test notification request sent! Check your device for the notification.');
+        
+        // Note: The actual notification will be sent by the server
+        // We can't confirm delivery due to no-cors limitations
         
     } catch (error) {
         debugLog.add('Test notification error', error);
