@@ -1,92 +1,111 @@
-// Service Worker for Quiz PWA
-const CACHE_NAME = 'quiz-pwa-v1';
-const BASE_URL = 'https://xchee-01.github.io/MCQ/test/app';
-const urlsToCache = [
-    `${BASE_URL}/`,
-    `${BASE_URL}/index.html`,
-    `${BASE_URL}/manifest.json`,
-    'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js',
-    'https://via.placeholder.com/192x192/667eea/ffffff?text=Q',
-    'https://via.placeholder.com/512x512/667eea/ffffff?text=Q'
-];
+// Debug logging
+function debugLog(message, data = null) {
+    const timestamp = new Date().toISOString();
+    console.log(`[SW ${timestamp}] ${message}`, data || '');
+}
 
-// Install event - cache resources
-self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => {
-                console.log('Opened cache');
-                return cache.addAll(urlsToCache);
-            })
-    );
+// Service Worker installation
+self.addEventListener('install', (event) => {
+    debugLog('Service Worker installing...');
+    self.skipWaiting();
 });
 
-// Fetch event - serve from cache when offline
-self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Cache hit - return response
-                if (response) {
-                    return response;
-                }
-                
-                // Clone the request
-                const fetchRequest = event.request.clone();
-                
-                return fetch(fetchRequest).then(response => {
-                    // Check if valid response
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
-                    }
-                    
-                    // Clone the response
-                    const responseToCache = response.clone();
-                    
-                    caches.open(CACHE_NAME)
-                        .then(cache => {
-                            cache.put(event.request, responseToCache);
-                        });
-                    
-                    return response;
-                });
-            })
-            .catch(() => {
-                // Offline fallback
-                if (event.request.destination === 'document') {
-                    return caches.match(`${BASE_URL}/index.html`);
-                }
-            })
-    );
+self.addEventListener('activate', (event) => {
+    debugLog('Service Worker activated');
+    event.waitUntil(clients.claim());
 });
 
-// Activate event - clean up old caches
-self.addEventListener('activate', event => {
-    const cacheWhitelist = [CACHE_NAME];
+// Handle push notifications
+self.addEventListener('push', function(event) {
+    debugLog('Push event received', event);
+    
+    let notificationData = {
+        title: 'Quiz Reminder',
+        body: 'You have a new quiz waiting!',
+        tag: 'quiz-notification'
+    };
+    
+    // Try to parse push data
+    if (event.data) {
+        try {
+            const data = event.data.json();
+            debugLog('Push data parsed:', data);
+            notificationData = Object.assign(notificationData, data);
+        } catch (e) {
+            debugLog('Failed to parse push data, using text:', e);
+            notificationData.body = event.data.text();
+        }
+    }
+    
+    const options = {
+        body: notificationData.body,
+        icon: 'https://xchee-01.github.io/MCQ/test/app/icon-192.png',
+        badge: 'https://xchee-01.github.io/MCQ/test/app/icon-192.png',
+        vibrate: [200, 100, 200],
+        tag: notificationData.tag,
+        requireInteraction: true,
+        data: {
+            dateOfArrival: Date.now(),
+            primaryKey: 1,
+            url: notificationData.url || 'https://xchee-01.github.io/MCQ/test/app/'
+        },
+        actions: [
+            {
+                action: 'open',
+                title: '📝 Take Quiz',
+                icon: 'https://xchee-01.github.io/MCQ/test/app/icon-192.png'
+            },
+            {
+                action: 'later',
+                title: '⏰ Later'
+            }
+        ]
+    };
+    
+    debugLog('Showing notification with options:', options);
     
     event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheWhitelist.indexOf(cacheName) === -1) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
+        self.registration.showNotification(notificationData.title, options)
     );
-});
-
-// Handle push events from OneSignal
-self.addEventListener('push', event => {
-    console.log('Push event received:', event);
 });
 
 // Handle notification clicks
-self.addEventListener('notificationclick', event => {
+self.addEventListener('notificationclick', function(event) {
+    debugLog('Notification clicked:', {
+        action: event.action,
+        notification: event.notification.tag
+    });
+    
     event.notification.close();
     
-    event.waitUntil(
-        clients.openWindow(event.notification.data.url || `${BASE_URL}/`)
-    );
+    if (event.action === 'open' || !event.action) {
+        // Open the app
+        event.waitUntil(
+            clients.matchAll({ type: 'window' }).then(windowClients => {
+                // Check if app is already open
+                for (let client of windowClients) {
+                    if (client.url === event.notification.data.url && 'focus' in client) {
+                        debugLog('Focusing existing window');
+                        return client.focus();
+                    }
+                }
+                // Open new window if not open
+                if (clients.openWindow) {
+                    debugLog('Opening new window');
+                    return clients.openWindow(event.notification.data.url);
+                }
+            })
+        );
+    } else if (event.action === 'later') {
+        debugLog('User chose to take quiz later');
+    }
+});
+
+// Error handling
+self.addEventListener('error', (error) => {
+    debugLog('Service Worker error:', error);
+});
+
+self.addEventListener('unhandledrejection', (event) => {
+    debugLog('Service Worker unhandled rejection:', event.reason);
 });
