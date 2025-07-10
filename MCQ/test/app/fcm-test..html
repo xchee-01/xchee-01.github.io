@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCM Quick Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 FCM Quick Test</h1>
+        
+        <div id="status" class="status info">
+            Click the button to test Firebase Cloud Messaging
+        </div>
+        
+        <button id="testBtn" onclick="testFCM()">
+            Test FCM Configuration
+        </button>
+        
+        <h3>Configuration:</h3>
+        <pre id="config"></pre>
+        
+        <h3>Results:</h3>
+        <pre id="results">No test run yet...</pre>
+        
+        <h3>Troubleshooting Checklist:</h3>
+        <div id="checklist">
+            <p>If you see authentication errors, verify:</p>
+            <ol>
+                <li>✅ Firebase Cloud Messaging API is enabled in <a href="https://console.cloud.google.com/apis/library?project=pwaapp-fe16c" target="_blank">Google Cloud Console</a></li>
+                <li>✅ FCM Registration API is enabled</li>
+                <li>✅ Firebase Installations API is enabled</li>
+                <li>✅ Your API key has no restrictions or correct restrictions</li>
+                <li>✅ Your Firebase project is on the Blaze (pay-as-you-go) plan (if using certain features)</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+    
+    <script>
+        // Configuration
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+            authDomain: "pwaapp-fe16c.firebaseapp.com",
+            projectId: "pwaapp-fe16c",
+            storageBucket: "pwaapp-fe16c.firebasestorage.app",
+            messagingSenderId: "138452600697",
+            appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+        };
+        
+        const VAPID_KEY = 'BJ2e3MqkVGtVSij2HHyTCsYlWTP2QyXSLoP7kRCzt843LO1f6iq6dS4DpVMVuHIXSR6RK71Laroq0hSqIJcZ6p0';
+        
+        // Display configuration
+        document.getElementById('config').textContent = JSON.stringify({
+            ...FIREBASE_CONFIG,
+            vapidKey: VAPID_KEY.substring(0, 20) + '...'
+        }, null, 2);
+        
+        let messaging = null;
+        
+        async function testFCM() {
+            const resultsEl = document.getElementById('results');
+            const statusEl = document.getElementById('status');
+            const btnEl = document.getElementById('testBtn');
+            
+            btnEl.disabled = true;
+            resultsEl.textContent = 'Testing...\n';
+            
+            try {
+                // Step 1: Initialize Firebase
+                updateResults('1. Initializing Firebase...');
+                firebase.initializeApp(FIREBASE_CONFIG);
+                updateResults('✅ Firebase initialized');
+                
+                // Step 2: Register service worker
+                updateResults('\n2. Registering service worker...');
+                const registration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js');
+                updateResults('✅ Service worker registered');
+                
+                // Step 3: Get messaging instance
+                updateResults('\n3. Getting messaging instance...');
+                messaging = firebase.messaging();
+                messaging.useServiceWorker(registration);
+                updateResults('✅ Messaging instance created');
+                
+                // Step 4: Request permission
+                updateResults('\n4. Requesting notification permission...');
+                const permission = await Notification.requestPermission();
+                updateResults(`✅ Permission: ${permission}`);
+                
+                if (permission !== 'granted') {
+                    throw new Error('Notification permission denied');
+                }
+                
+                // Step 5: Get FCM token
+                updateResults('\n5. Getting FCM token...');
+                const token = await messaging.getToken({ 
+                    vapidKey: VAPID_KEY,
+                    serviceWorkerRegistration: registration 
+                });
+                
+                if (token) {
+                    updateResults(`✅ FCM Token received!\n\nToken: ${token}\n\nLength: ${token.length} characters`);
+                    updateStatus('SUCCESS! FCM is working correctly.', 'success');
+                    
+                    // Copy token to clipboard button
+                    const copyBtn = document.createElement('button');
+                    copyBtn.textContent = '📋 Copy Token';
+                    copyBtn.onclick = () => {
+                        navigator.clipboard.writeText(token);
+                        copyBtn.textContent = '✅ Copied!';
+                        setTimeout(() => copyBtn.textContent = '📋 Copy Token', 2000);
+                    };
+                    resultsEl.appendChild(copyBtn);
+                } else {
+                    throw new Error('No FCM token received');
+                }
+                
+            } catch (error) {
+                updateResults(`\n❌ ERROR: ${error.message}\n\nFull error:\n${error.stack}`);
+                updateStatus(`ERROR: ${error.message}`, 'error');
+                
+                // Provide specific guidance based on error
+                if (error.message.includes('authentication credential')) {
+                    updateResults('\n\n⚠️ AUTHENTICATION ERROR DETECTED!\n\nThis means FCM API is not properly configured.\nPlease follow the troubleshooting checklist above.');
+                } else if (error.message.includes('404')) {
+                    updateResults('\n\n⚠️ SERVICE WORKER NOT FOUND!\n\nMake sure firebase-messaging-sw.js is at:\n/MCQ/test/app/firebase-messaging-sw.js');
+                }
+            } finally {
+                btnEl.disabled = false;
+            }
+        }
+        
+        function updateResults(text) {
+            document.getElementById('results').textContent += text + '\n';
+        }
+        
+        function updateStatus(text, type) {
+            const el = document.getElementById('status');
+            el.textContent = text;
+            el.className = 'status ' + type;
+        }
+    </script>
+</body>
+</html>
