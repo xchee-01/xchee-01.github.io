@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCM Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 10px 10px 0;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .debug-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 3px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 FCM Debug Test</h1>
+        
+        <div id="status" class="status info">
+            This page will help debug your FCM IndexedDB issue
+        </div>
+        
+        <div class="debug-info">
+            <strong>Debug Information:</strong>
+            <div id="debugInfo">Checking browser environment...</div>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button id="testBtn" onclick="runFullTest()">
+                Run Full FCM Test
+            </button>
+            <button id="clearBtn" onclick="clearData()" class="danger">
+                Clear All Data & Reset
+            </button>
+            <button id="swBtn" onclick="checkServiceWorker()">
+                Check Service Worker
+            </button>
+        </div>
+        
+        <h3>Test Steps:</h3>
+        <div id="steps"></div>
+        
+        <h3>Configuration:</h3>
+        <pre id="config"></pre>
+        
+        <h3>Results:</h3>
+        <pre id="results">No test run yet...</pre>
+        
+        <h3>Common Solutions:</h3>
+        <div id="solutions">
+            <ol>
+                <li><strong>Clear Browser Data:</strong> Go to browser settings → Privacy → Clear browsing data → Select "Cookies and other site data" and "Cached images and files"</li>
+                <li><strong>Check Incognito Mode:</strong> FCM doesn't work in incognito/private browsing</li>
+                <li><strong>Disable Extensions:</strong> Ad blockers or privacy extensions can block IndexedDB</li>
+                <li><strong>Check Browser Console:</strong> Press F12 and check for additional errors</li>
+                <li><strong>Try Different Browser:</strong> Test in Chrome, Firefox, or Edge</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+    
+    <script>
+        // Configuration
+        const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+  authDomain: "pwaapp-fe16c.firebaseapp.com",
+  projectId: "pwaapp-fe16c",
+  storageBucket: "pwaapp-fe16c.firebasestorage.app",
+  messagingSenderId: "138452600697",
+  appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+        };
+        
+        const VAPID_KEY = 'BEXBjinVivC6jAfhKZov_HMujSaEBZf3PLfYt_01O3pGDzZRh2xzZAnBeiNFQO4vuryTQKUfx6gbPj2fTE4bcGE';
+        
+        let messaging = null;
+        let isFirebaseInitialized = false;
+        
+        // Initialize page
+        window.onload = function() {
+            checkBrowserEnvironment();
+            displayConfig();
+        };
+        
+        function checkBrowserEnvironment() {
+            const debugEl = document.getElementById('debugInfo');
+            let info = [];
+            
+            // Check browser
+            info.push(`Browser: ${navigator.userAgent.substring(0, 50)}...`);
+            
+            // Check if in incognito
+            if (navigator.storage && navigator.storage.estimate) {
+                navigator.storage.estimate().then(estimate => {
+                    const quota = estimate.quota;
+                    if (quota < 120000000) {
+                        info.push('⚠️ Possibly in Incognito/Private mode (limited storage)');
+                    }
+                });
+            }
+            
+            // Check service worker support
+            if ('serviceWorker' in navigator) {
+                info.push('✅ Service Worker supported');
+            } else {
+                info.push('❌ Service Worker NOT supported');
+            }
+            
+            // Check notification support
+            if ('Notification' in window) {
+                info.push(`✅ Notifications supported (Permission: ${Notification.permission})`);
+            } else {
+                info.push('❌ Notifications NOT supported');
+            }
+            
+            // Check IndexedDB
+            if ('indexedDB' in window) {
+                info.push('✅ IndexedDB supported');
+                // Try to open a test database
+                testIndexedDB();
+            } else {
+                info.push('❌ IndexedDB NOT supported');
+            }
+            
+            debugEl.innerHTML = info.join('<br>');
+        }
+        
+        function testIndexedDB() {
+            const debugEl = document.getElementById('debugInfo');
+            try {
+                const testRequest = indexedDB.open('FCMTestDB', 1);
+                testRequest.onsuccess = function() {
+                    debugEl.innerHTML += '<br>✅ IndexedDB test successful';
+                    testRequest.result.close();
+                    indexedDB.deleteDatabase('FCMTestDB');
+                };
+                testRequest.onerror = function(e) {
+                    debugEl.innerHTML += '<br>❌ IndexedDB test failed: ' + e.target.error;
+                };
+            } catch (e) {
+                debugEl.innerHTML += '<br>❌ IndexedDB error: ' + e.message;
+            }
+        }
+        
+        function displayConfig() {
+            document.getElementById('config').textContent = JSON.stringify({
+                ...FIREBASE_CONFIG,
+                vapidKey: VAPID_KEY.substring(0, 20) + '...'
+            }, null, 2);
+        }
+        
+        function addStep(message, type = 'info') {
+            const stepsEl = document.getElementById('steps');
+            const step = document.createElement('div');
+            step.className = 'step';
+            step.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            if (type === 'error') {
+                step.style.borderLeftColor = '#dc3545';
+                step.style.background = '#f8d7da';
+            } else if (type === 'success') {
+                step.style.borderLeftColor = '#28a745';
+                step.style.background = '#d4edda';
+            }
+            stepsEl.appendChild(step);
+        }
+        
+        function updateResults(text) {
+            document.getElementById('results').textContent += text + '\n';
+        }
+        
+        function updateStatus(text, type) {
+            const el = document.getElementById('status');
+            el.textContent = text;
+            el.className = 'status ' + type;
+        }
+        
+        async function clearData() {
+            if (!confirm('This will clear all Firebase data and service workers. Continue?')) {
+                return;
+            }
+            
+            updateStatus('Clearing all data...', 'warning');
+            addStep('Starting cleanup process...');
+            
+            try {
+                // Unregister all service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        addStep(`Unregistered service worker: ${registration.scope}`, 'success');
+                    }
+                }
+                
+                // Clear IndexedDB
+                if ('indexedDB' in window) {
+                    const databases = await indexedDB.databases();
+                    for (let db of databases) {
+                        await indexedDB.deleteDatabase(db.name);
+                        addStep(`Deleted IndexedDB: ${db.name}`, 'success');
+                    }
+                }
+                
+                // Clear caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (let name of cacheNames) {
+                        await caches.delete(name);
+                        addStep(`Deleted cache: ${name}`, 'success');
+                    }
+                }
+                
+                updateStatus('All data cleared! Please refresh the page.', 'success');
+                
+                // Reset Firebase if initialized
+                if (isFirebaseInitialized) {
+                    isFirebaseInitialized = false;
+                    messaging = null;
+                }
+                
+            } catch (error) {
+                addStep(`Cleanup error: ${error.message}`, 'error');
+                updateStatus('Error during cleanup: ' + error.message, 'error');
+            }
+        }
+        
+        async function checkServiceWorker() {
+            updateResults('\nChecking Service Worker status...\n');
+            
+            try {
+                if (!('serviceWorker' in navigator)) {
+                    updateResults('❌ Service Worker not supported in this browser');
+                    return;
+                }
+                
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                updateResults(`Found ${registrations.length} service worker(s):\n`);
+                
+                for (let reg of registrations) {
+                    updateResults(`  Scope: ${reg.scope}`);
+                    updateResults(`  Active: ${reg.active ? 'Yes' : 'No'}`);
+                    updateResults(`  Waiting: ${reg.waiting ? 'Yes' : 'No'}`);
+                    updateResults(`  Installing: ${reg.installing ? 'Yes' : 'No'}\n`);
+                }
+                
+                // Try to fetch the service worker file
+                try {
+                    const response = await fetch('/MCQ/test/app/firebase-messaging-sw.js');
+                    updateResults(`Service worker file status: ${response.status} ${response.statusText}`);
+                } catch (e) {
+                    updateResults(`❌ Cannot fetch service worker file: ${e.message}`);
+                }
+                
+            } catch (error) {
+                updateResults(`❌ Service Worker check error: ${error.message}`);
+            }
+        }
+        
+        async function runFullTest() {
+            const resultsEl = document.getElementById('results');
+            const btnEl = document.getElementById('testBtn');
+            
+            btnEl.disabled = true;
+            resultsEl.textContent = 'Starting comprehensive test...\n';
+            document.getElementById('steps').innerHTML = '';
+            
+            try {
+                // Step 1: Check environment
+                addStep('Checking browser environment...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Step 2: Initialize Firebase (only if not already initialized)
+                if (!isFirebaseInitialized) {
+                    addStep('Initializing Firebase...');
+                    firebase.initializeApp(FIREBASE_CONFIG);
+                    isFirebaseInitialized = true;
+                    addStep('Firebase initialized', 'success');
+                } else {
+                    addStep('Firebase already initialized', 'success');
+                }
+                
+                // Step 3: Register service worker with error handling
+                addStep('Registering service worker...');
+                let registration;
+                
+                try {
+                    // First unregister any existing service worker
+                    const existingRegs = await navigator.serviceWorker.getRegistrations();
+                    for (let reg of existingRegs) {
+                        if (reg.scope.includes('/MCQ/test/app')) {
+                            await reg.unregister();
+                            addStep('Unregistered existing service worker', 'info');
+                        }
+                    }
+                    
+                    // Wait a bit for cleanup
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // Register new service worker
+                    registration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js', {
+                        updateViaCache: 'none'
+                    });
+                    
+                    // Wait for service worker to be ready
+                    await navigator.serviceWorker.ready;
+                    addStep('Service worker registered and ready', 'success');
+                    
+                } catch (swError) {
+                    addStep(`Service worker error: ${swError.message}`, 'error');
+                    throw swError;
+                }
+                
+                // Step 4: Get messaging instance
+                addStep('Getting messaging instance...');
+                messaging = firebase.messaging();
+                addStep('Messaging instance created', 'success');
+                
+                // Step 5: Request permission
+                addStep('Requesting notification permission...');
+                const permission = await Notification.requestPermission();
+                addStep(`Permission: ${permission}`, permission === 'granted' ? 'success' : 'error');
+                
+                if (permission !== 'granted') {
+                    throw new Error('Notification permission denied');
+                }
+                
+                // Step 6: Small delay before getting token
+                addStep('Preparing to get FCM token...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Step 7: Get FCM token with explicit error handling
+                addStep('Getting FCM token...');
+                
+                try {
+                    const token = await messaging.getToken({ 
+                        vapidKey: VAPID_KEY,
+                        serviceWorkerRegistration: registration 
+                    });
+                    
+                    if (token) {
+                        addStep('FCM Token received!', 'success');
+                        updateResults(`\n✅ SUCCESS! FCM Token:\n${token}\n\nLength: ${token.length} characters`);
+                        updateStatus('SUCCESS! FCM is working correctly.', 'success');
+                        
+                        // Add copy button
+                        const copyBtn = document.createElement('button');
+                        copyBtn.textContent = '📋 Copy Token';
+                        copyBtn.onclick = () => {
+                            navigator.clipboard.writeText(token);
+                            copyBtn.textContent = '✅ Copied!';
+                            setTimeout(() => copyBtn.textContent = '📋 Copy Token', 2000);
+                        };
+                        resultsEl.appendChild(copyBtn);
+                    } else {
+                        throw new Error('No FCM token received');
+                    }
+                    
+                } catch (tokenError) {
+                    addStep(`Token error: ${tokenError.message}`, 'error');
+                    
+                    // Specific error handling for IndexedDB issues
+                    if (tokenError.message.includes('database connection is closing')) {
+                        addStep('IndexedDB issue detected. Attempting workaround...', 'warning');
+                        
+                        // Try clearing FCM's IndexedDB
+                        try {
+                            const dbNames = ['fcm_token_details_db', 'firebase-messaging-database'];
+                            for (let dbName of dbNames) {
+                                await indexedDB.deleteDatabase(dbName);
+                                addStep(`Cleared ${dbName}`, 'info');
+                            }
+                            
+                            // Wait and retry
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            
+                            // Retry getting token
+                            const retryToken = await messaging.getToken({ 
+                                vapidKey: VAPID_KEY,
+                                serviceWorkerRegistration: registration 
+                            });
+                            
+                            if (retryToken) {
+                                addStep('Retry successful!', 'success');
+                                updateResults(`\n✅ SUCCESS ON RETRY! FCM Token:\n${retryToken}`);
+                                updateStatus('SUCCESS! FCM is working after retry.', 'success');
+                            }
+                            
+                        } catch (retryError) {
+                            throw retryError;
+                        }
+                    } else {
+                        throw tokenError;
+                    }
+                }
+                
+            } catch (error) {
+                addStep(`Fatal error: ${error.message}`, 'error');
+                updateResults(`\n❌ ERROR: ${error.message}\n\nFull error:\n${error.stack}`);
+                updateStatus(`ERROR: ${error.message}`, 'error');
+                
+                // Provide specific guidance
+                if (error.message.includes('database connection is closing')) {
+                    updateResults('\n\n🔧 SOLUTION: This is an IndexedDB issue. Try:\n');
+                    updateResults('1. Click "Clear All Data & Reset" button above\n');
+                    updateResults('2. Refresh the page\n');
+                    updateResults('3. Run the test again\n');
+                    updateResults('\nIf that doesn\'t work:\n');
+                    updateResults('- Try a different browser\n');
+                    updateResults('- Clear browser cache and cookies\n');
+                    updateResults('- Make sure you\'re not in incognito mode\n');
+                }
+            } finally {
+                btnEl.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
