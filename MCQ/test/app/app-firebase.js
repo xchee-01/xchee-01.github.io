@@ -14,7 +14,7 @@ const firebaseConfig = {
 // Your server configuration
 const CONFIG = {
     GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbwRUpi2Pai4DTuW-eZOK5RCWkA70c5wTunfqfpRgXDcz-PvEmF8nBDdXmhhWKxmSqptfQ/exec',
-    VAPID_PUBLIC_KEY: 'BJ2e3MqkVGtVSij2HHyTCsYlWTP2QyXSLoP7kRCzt843LO1f6iq6dS4DpVMVuHIXSR6RK71Laroq0hSqIJcZ6p0'
+    VAPID_PUBLIC_KEY: 'BEXBjinVivC6jAfhKZov_HMujSaEBZf3PLfYt_01O3pGDzZRh2xzZAnBeiNFQO4vuryTQKUfx6gbPj2fTE4bcGE'
 };
 
 // Debug logging system
