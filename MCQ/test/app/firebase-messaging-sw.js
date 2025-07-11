@@ -4,12 +4,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 
 // Firebase configuration - From your Firebase Console
 const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
-    authDomain: "pwaapp-fe16c.firebaseapp.com",
-    projectId: "pwaapp-fe16c",
-    storageBucket: "pwaapp-fe16c.firebasestorage.app",
-    messagingSenderId: "138452600697",
-    appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+  apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+  authDomain: "pwaapp-fe16c.firebaseapp.com",
+  projectId: "pwaapp-fe16c",
+  storageBucket: "pwaapp-fe16c.firebasestorage.app",
+  messagingSenderId: "138452600697",
+  appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
 };
 
 // Initialize Firebase in the service worker
