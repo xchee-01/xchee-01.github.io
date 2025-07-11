@@ -115,6 +115,7 @@
         <h3>Debug Information</h3>
         <button onclick="showDebugInfo()">🐛 Show Debug Info</button>
         <button onclick="clearDebugLog()">🗑️ Clear Debug Log</button>
+        <button onclick="checkServiceWorkerState()">🔍 Check SW State</button>
         <button onclick="unregisterAll()" style="background: #dc3545;">🗑️ Reset Everything</button>
         
         <div id="debug" class="debug" style="display:none;"></div>
@@ -130,12 +131,12 @@
     <script>
         // ============ CONFIGURATION START ============
         const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
-  authDomain: "pwaapp-fe16c.firebaseapp.com",
-  projectId: "pwaapp-fe16c",
-  storageBucket: "pwaapp-fe16c.firebasestorage.app",
-  messagingSenderId: "138452600697",
-  appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+            apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+            authDomain: "pwaapp-fe16c.firebaseapp.com",
+            projectId: "pwaapp-fe16c",
+            storageBucket: "pwaapp-fe16c.firebasestorage.app",
+            messagingSenderId: "138452600697",
+            appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
         };
 
         const CONFIG = {
@@ -171,6 +172,27 @@
         let swRegistration = null;
         let currentToken = null;
 
+        // Helper function to check service worker state
+        async function ensureServiceWorkerReady() {
+            if (!swRegistration) {
+                throw new Error('No service worker registration');
+            }
+            
+            // Check if service worker is active
+            if (!swRegistration.active) {
+                debugLog.add('Service worker not active, waiting...');
+                await navigator.serviceWorker.ready;
+            }
+            
+            // Verify it's really active
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (!reg || !reg.active) {
+                throw new Error('Service worker still not active');
+            }
+            
+            return reg;
+        }
+
         // Initialize on load
         window.addEventListener('load', async () => {
             debugLog.add('Page loaded');
@@ -202,7 +224,35 @@
                 
                 // Register service worker
                 debugLog.add('Registering service worker...');
-                swRegistration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js');
+                swRegistration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js', {
+                    updateViaCache: 'none'
+                });
+                
+                // Wait for the service worker to be installed and activated
+                if (swRegistration.installing) {
+                    debugLog.add('Service worker is installing...');
+                    await new Promise((resolve) => {
+                        swRegistration.installing.addEventListener('statechange', function(e) {
+                            if (e.target.state === 'activated') {
+                                debugLog.add('Service worker activated');
+                                resolve();
+                            }
+                        });
+                    });
+                } else if (swRegistration.waiting) {
+                    debugLog.add('Service worker is waiting...');
+                    await new Promise((resolve) => {
+                        swRegistration.waiting.addEventListener('statechange', function(e) {
+                            if (e.target.state === 'activated') {
+                                debugLog.add('Service worker activated');
+                                resolve();
+                            }
+                        });
+                    });
+                } else if (swRegistration.active) {
+                    debugLog.add('Service worker already active');
+                }
+                
                 await navigator.serviceWorker.ready;
                 debugLog.add('Service worker registered and ready');
                 
@@ -212,21 +262,28 @@
                 
                 // Check existing token
                 try {
-                    currentToken = await messaging.getToken({ 
-                        vapidKey: CONFIG.VAPID_PUBLIC_KEY,
-                        serviceWorkerRegistration: swRegistration 
-                    });
-                    
-                    if (currentToken) {
-                        debugLog.add('Existing token found:', currentToken);
-                        displayToken(currentToken);
-                        document.getElementById('enableBtn').disabled = true;
-                        document.getElementById('testBtn').disabled = false;
-                        updateStatus('✅ Push notifications already enabled!', 'success');
-                    } else {
-                        debugLog.add('No existing token');
+                    // Make sure we have a valid service worker registration
+                    if (!swRegistration || !swRegistration.active) {
+                        debugLog.add('Service worker not ready for token check');
                         document.getElementById('enableBtn').disabled = false;
                         updateStatus('Ready to enable push notifications', 'info');
+                    } else {
+                        currentToken = await messaging.getToken({ 
+                            vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                            serviceWorkerRegistration: swRegistration 
+                        });
+                        
+                        if (currentToken) {
+                            debugLog.add('Existing token found:', currentToken);
+                            displayToken(currentToken);
+                            document.getElementById('enableBtn').disabled = true;
+                            document.getElementById('testBtn').disabled = false;
+                            updateStatus('✅ Push notifications already enabled!', 'success');
+                        } else {
+                            debugLog.add('No existing token');
+                            document.getElementById('enableBtn').disabled = false;
+                            updateStatus('Ready to enable push notifications', 'info');
+                        }
                     }
                 } catch (e) {
                     debugLog.add('Token check error:', e);
@@ -289,6 +346,11 @@
             debugLog.add('Subscribe button clicked');
             
             try {
+                // Ensure service worker is ready
+                debugLog.add('Ensuring service worker is ready...');
+                const activeReg = await ensureServiceWorkerReady();
+                debugLog.add('Service worker verified active');
+                
                 // Request permission
                 debugLog.add('Requesting notification permission...');
                 const permission = await Notification.requestPermission();
@@ -299,11 +361,13 @@
                     return;
                 }
                 
-                // Get token with service worker registration
+                // Get token with verified service worker registration
                 debugLog.add('Getting FCM token...');
+                debugLog.add('Using service worker registration:', activeReg.scope);
+                
                 const token = await messaging.getToken({ 
                     vapidKey: CONFIG.VAPID_PUBLIC_KEY,
-                    serviceWorkerRegistration: swRegistration 
+                    serviceWorkerRegistration: activeReg 
                 });
                 
                 if (token) {
@@ -324,8 +388,11 @@
                 debugLog.add('Subscribe error:', error);
                 updateStatus('❌ Failed: ' + error.message, 'error');
                 
-                // If IndexedDB error, suggest reset
-                if (error.message.includes('database')) {
+                // Provide specific error guidance
+                if (error.message.includes('no active Service Worker')) {
+                    debugLog.add('Service worker not active. Please refresh the page.');
+                    updateStatus('❌ Service worker not ready. Please refresh and try again.', 'error');
+                } else if (error.message.includes('database')) {
                     updateStatus('❌ Database error. Try clicking "Reset Everything" and refresh.', 'error');
                 }
             }
@@ -420,6 +487,34 @@
         function clearDebugLog() {
             debugLog.clear();
             updateStatus('Debug log cleared', 'info');
+        }
+        
+        async function checkServiceWorkerState() {
+            debugLog.add('Checking service worker state...');
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                debugLog.add(`Found ${registrations.length} service worker(s)`);
+                
+                for (let reg of registrations) {
+                    debugLog.add('Service Worker Details:', {
+                        scope: reg.scope,
+                        active: reg.active ? reg.active.state : 'none',
+                        waiting: reg.waiting ? reg.waiting.state : 'none',
+                        installing: reg.installing ? reg.installing.state : 'none'
+                    });
+                }
+                
+                if (swRegistration) {
+                    debugLog.add('Current swRegistration:', {
+                        scope: swRegistration.scope,
+                        active: swRegistration.active ? swRegistration.active.state : 'none'
+                    });
+                }
+                
+                updateStatus('Service worker state checked - see debug log', 'info');
+            } catch (error) {
+                debugLog.add('Error checking SW state:', error);
+            }
         }
     </script>
 </body>
