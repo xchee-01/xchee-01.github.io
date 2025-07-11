@@ -6,18 +6,18 @@ const DEBUG_MODE = true;
 
 // Firebase Configuration - From your Firebase Console
 const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
-    authDomain: "pwaapp-fe16c.firebaseapp.com",
-    projectId: "pwaapp-fe16c",
-    storageBucket: "pwaapp-fe16c.firebasestorage.app",
-    messagingSenderId: "138452600697",
-    appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+  apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+  authDomain: "pwaapp-fe16c.firebaseapp.com",
+  projectId: "pwaapp-fe16c",
+  storageBucket: "pwaapp-fe16c.firebasestorage.app",
+  messagingSenderId: "138452600697",
+  appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
 };
 
 // Your server configuration
 const CONFIG = {
     GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbwRUpi2Pai4DTuW-eZOK5RCWkA70c5wTunfqfpRgXDcz-PvEmF8nBDdXmhhWKxmSqptfQ/exec',
-    VAPID_PUBLIC_KEY: 'BJ2e3MqkVGtVSij2HHyTCsYlWTP2QyXSLoP7kRCzt843LO1f6iq6dS4DpVMVuHIXSR6RK71Laroq0hSqIJcZ6p0'
+    VAPID_PUBLIC_KEY: 'BEXBjinVivC6jAfhKZov_HMujSaEBZf3PLfYt_01O3pGDzZRh2xzZAnBeiNFQO4vuryTQKUfx6gbPj2fTE4bcGE'
 };
 
 // Debug logging system
