@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz App with Push Notifications</title>
-    <link rel="manifest" href="https://xchee-01.github.io/MCQ/test/app/manifest.json">
+    <link rel="manifest" href="/MCQ/test/app/manifest.json">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -77,40 +77,20 @@
             color: #333;
             margin-top: 20px;
         }
-        .config-warning {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-        .config-warning h4 {
-            margin-top: 0;
-            color: #856404;
-        }
-        .config-warning code {
+        .token-display {
             background: #f8f9fa;
-            padding: 2px 4px;
-            border-radius: 3px;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            word-break: break-all;
             font-family: monospace;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📚 Quiz App - Push Notifications Setup</h1>
-        
-        <div id="configWarning" class="config-warning" style="display:none;">
-            <h4>⚠️ Configuration Required</h4>
-            <p>Please update the Firebase <code>appId</code> in this file:</p>
-            <ol>
-                <li>Go to <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></li>
-                <li>Select project: <strong>pwaapp-fe16c</strong></li>
-                <li>Go to Project Settings → General</li>
-                <li>Find your web app and copy the <code>appId</code></li>
-                <li>Update the FIREBASE_CONFIG in this file</li>
-            </ol>
-        </div>
+        <h1>📚 Quiz App - Push Notifications</h1>
         
         <div id="status" class="status info">
             Initializing...
@@ -126,9 +106,16 @@
             📨 Send Test Notification
         </button>
         
+        <div id="tokenDisplay" class="token-display" style="display:none;">
+            <strong>FCM Token:</strong>
+            <div id="tokenValue"></div>
+            <button onclick="copyToken()" style="margin-top: 10px;">📋 Copy Token</button>
+        </div>
+        
         <h3>Debug Information</h3>
         <button onclick="showDebugInfo()">🐛 Show Debug Info</button>
         <button onclick="clearDebugLog()">🗑️ Clear Debug Log</button>
+        <button onclick="unregisterAll()" style="background: #dc3545;">🗑️ Reset Everything</button>
         
         <div id="debug" class="debug" style="display:none;"></div>
         
@@ -140,17 +127,15 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- Inline JavaScript for testing -->
     <script>
         // ============ CONFIGURATION START ============
-        // Your Firebase Configuration from Firebase Console
         const FIREBASE_CONFIG = {
-          apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
-          authDomain: "pwaapp-fe16c.firebaseapp.com",
-          projectId: "pwaapp-fe16c",
-          storageBucket: "pwaapp-fe16c.firebasestorage.app",
-          messagingSenderId: "138452600697",
-          appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+  apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+  authDomain: "pwaapp-fe16c.firebaseapp.com",
+  projectId: "pwaapp-fe16c",
+  storageBucket: "pwaapp-fe16c.firebasestorage.app",
+  messagingSenderId: "138452600697",
+  appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
         };
 
         const CONFIG = {
@@ -183,17 +168,12 @@
         };
 
         let messaging = null;
+        let swRegistration = null;
+        let currentToken = null;
 
         // Initialize on load
         window.addEventListener('load', async () => {
             debugLog.add('Page loaded');
-            
-            // Check configuration
-            if (FIREBASE_CONFIG.appId.includes('YOUR_APP_ID')) {
-                document.getElementById('configWarning').style.display = 'block';
-                updateStatus('⚠️ Firebase appId not configured!', 'warning');
-                debugLog.add('WARNING: Firebase appId needs to be updated');
-            }
             
             // Check if Firebase loaded
             if (typeof firebase === 'undefined') {
@@ -207,11 +187,7 @@
             try {
                 // Initialize Firebase
                 firebase.initializeApp(FIREBASE_CONFIG);
-                debugLog.add('Firebase initialized');
-                
-                // Get messaging
-                messaging = firebase.messaging();
-                debugLog.add('Messaging instance created');
+                debugLog.add('Firebase initialized with config', FIREBASE_CONFIG);
                 
                 // Check browser support
                 if (!('serviceWorker' in navigator)) {
@@ -225,36 +201,61 @@
                 }
                 
                 // Register service worker
-                const registration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js');
-                debugLog.add('Service worker registered');
+                debugLog.add('Registering service worker...');
+                swRegistration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js');
+                await navigator.serviceWorker.ready;
+                debugLog.add('Service worker registered and ready');
                 
-                messaging.useServiceWorker(registration);
+                // Get messaging instance
+                messaging = firebase.messaging();
+                debugLog.add('Messaging instance created');
                 
                 // Check existing token
                 try {
-                    const currentToken = await messaging.getToken({ vapidKey: CONFIG.VAPID_PUBLIC_KEY });
+                    currentToken = await messaging.getToken({ 
+                        vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                        serviceWorkerRegistration: swRegistration 
+                    });
+                    
                     if (currentToken) {
-                        debugLog.add('Existing token found: ' + currentToken);
+                        debugLog.add('Existing token found:', currentToken);
+                        displayToken(currentToken);
                         document.getElementById('enableBtn').disabled = true;
                         document.getElementById('testBtn').disabled = false;
-                        updateStatus('Push notifications already enabled!', 'success');
+                        updateStatus('✅ Push notifications already enabled!', 'success');
                     } else {
+                        debugLog.add('No existing token');
                         document.getElementById('enableBtn').disabled = false;
                         updateStatus('Ready to enable push notifications', 'info');
                     }
                 } catch (e) {
-                    debugLog.add('No existing token');
+                    debugLog.add('Token check error:', e);
                     document.getElementById('enableBtn').disabled = false;
                     updateStatus('Ready to enable push notifications', 'info');
                 }
                 
                 // Handle foreground messages
                 messaging.onMessage((payload) => {
-                    debugLog.add('Message received:', payload);
-                    const { title, body } = payload.notification;
+                    debugLog.add('Foreground message received:', payload);
+                    const { title, body, icon } = payload.notification || {};
+                    
+                    // Show notification even in foreground
                     if (Notification.permission === 'granted') {
-                        new Notification(title, { body });
+                        const notification = new Notification(title || 'New Message', { 
+                            body: body || 'You have a new message',
+                            icon: icon || '/icon-192x192.png',
+                            tag: 'quiz-notification',
+                            requireInteraction: false
+                        });
+                        
+                        notification.onclick = function() {
+                            window.focus();
+                            notification.close();
+                        };
                     }
+                    
+                    // Update UI
+                    updateStatus(`📬 New message: ${title}`, 'success');
                 });
                 
             } catch (error) {
@@ -267,40 +268,66 @@
             const status = document.getElementById('status');
             status.textContent = message;
             status.className = 'status ' + type;
-            debugLog.add('Status: ' + message);
+            debugLog.add('Status update: ' + message);
+        }
+
+        function displayToken(token) {
+            document.getElementById('tokenDisplay').style.display = 'block';
+            document.getElementById('tokenValue').textContent = token;
+            currentToken = token;
+        }
+
+        function copyToken() {
+            if (currentToken) {
+                navigator.clipboard.writeText(currentToken).then(() => {
+                    updateStatus('Token copied to clipboard!', 'success');
+                });
+            }
         }
 
         async function subscribeToPush() {
-            debugLog.add('Subscribe clicked');
+            debugLog.add('Subscribe button clicked');
             
             try {
                 // Request permission
+                debugLog.add('Requesting notification permission...');
                 const permission = await Notification.requestPermission();
-                debugLog.add('Permission: ' + permission);
+                debugLog.add('Permission result: ' + permission);
                 
                 if (permission !== 'granted') {
-                    updateStatus('Permission denied!', 'error');
+                    updateStatus('❌ Notification permission denied!', 'error');
                     return;
                 }
                 
-                // Get token
-                const token = await messaging.getToken({ vapidKey: CONFIG.VAPID_PUBLIC_KEY });
-                debugLog.add('Token received: ' + token);
+                // Get token with service worker registration
+                debugLog.add('Getting FCM token...');
+                const token = await messaging.getToken({ 
+                    vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                    serviceWorkerRegistration: swRegistration 
+                });
                 
                 if (token) {
+                    debugLog.add('Token received:', token);
+                    displayToken(token);
+                    
                     // Save to server
                     await saveTokenToServer(token);
                     
                     document.getElementById('enableBtn').disabled = true;
                     document.getElementById('testBtn').disabled = false;
-                    updateStatus('Push notifications enabled!', 'success');
+                    updateStatus('✅ Push notifications enabled successfully!', 'success');
                 } else {
-                    updateStatus('Failed to get token', 'error');
+                    throw new Error('No token received');
                 }
                 
             } catch (error) {
                 debugLog.add('Subscribe error:', error);
-                updateStatus('Failed: ' + error.message, 'error');
+                updateStatus('❌ Failed: ' + error.message, 'error');
+                
+                // If IndexedDB error, suggest reset
+                if (error.message.includes('database')) {
+                    updateStatus('❌ Database error. Try clicking "Reset Everything" and refresh.', 'error');
+                }
             }
         }
 
@@ -319,20 +346,22 @@
             };
             
             try {
-                await fetch(CONFIG.GAS_ENDPOINT, {
+                const response = await fetch(CONFIG.GAS_ENDPOINT, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(data)
                 });
-                debugLog.add('Token saved to server');
+                debugLog.add('Token saved to server (no-cors mode, no response available)');
             } catch (error) {
-                debugLog.add('Save error:', error);
+                debugLog.add('Server save error:', error);
+                // Don't fail the whole process if server save fails
             }
         }
 
         async function sendTestNotification() {
-            debugLog.add('Test notification clicked');
+            debugLog.add('Test notification button clicked');
+            updateStatus('📤 Sending test notification...', 'info');
             
             try {
                 await fetch(CONFIG.GAS_ENDPOINT, {
@@ -341,15 +370,44 @@
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
                         action: 'test',
+                        fcmToken: currentToken,
                         timestamp: new Date().toISOString()
                     })
                 });
                 
-                updateStatus('Test notification sent!', 'success');
-                debugLog.add('Test request sent');
+                updateStatus('✅ Test notification request sent! Check for notification...', 'success');
+                debugLog.add('Test request sent to server');
             } catch (error) {
                 debugLog.add('Test error:', error);
-                updateStatus('Test failed: ' + error.message, 'error');
+                updateStatus('❌ Test failed: ' + error.message, 'error');
+            }
+        }
+
+        async function unregisterAll() {
+            if (!confirm('This will reset all notifications. Continue?')) return;
+            
+            try {
+                // Delete token
+                if (messaging && currentToken) {
+                    await messaging.deleteToken();
+                    debugLog.add('Token deleted');
+                }
+                
+                // Unregister service workers
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+                
+                // Clear IndexedDB
+                const dbs = ['fcm_token_details_db', 'firebase-messaging-database'];
+                for (let db of dbs) {
+                    await indexedDB.deleteDatabase(db);
+                }
+                
+                updateStatus('✅ Reset complete. Please refresh the page.', 'success');
+            } catch (error) {
+                debugLog.add('Reset error:', error);
             }
         }
 
