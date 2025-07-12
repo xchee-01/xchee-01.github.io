@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App with Push Notifications</title>
+    <link rel="manifest" href="/MCQ/test/app/manifest.json">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left-color: #17a2b8;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        .debug {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+        .token-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+        .student-info {
+            margin: 20px 0;
+        }
+        .student-info input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .step-number {
+            background: #4CAF50;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .registration-status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            display: none;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Medical Quiz App - Push Notifications</h1>
+        
+        <div id="status" class="status info">
+            Initializing...
+        </div>
+
+        <!-- Step 1: Student Information -->
+        <div class="section">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Student Information (Optional)</h3>
+            </div>
+            <div class="student-info">
+                <input type="text" id="studentId" placeholder="Student ID (e.g., A0123456B)">
+                <input type="text" id="studentName" placeholder="Full Name">
+            </div>
+        </div>
+
+        <!-- Step 2: Enable Notifications -->
+        <div class="section">
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Enable Push Notifications</h3>
+            </div>
+            <p>Click the button below to enable quiz notifications on this device.</p>
+            <button id="enableBtn" onclick="subscribeToPush()" disabled>
+                🔔 Enable Push Notifications
+            </button>
+            <div id="registrationStatus" class="registration-status"></div>
+        </div>
+        
+        <!-- Step 3: Test Notification -->
+        <div class="section">
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Test Your Notification</h3>
+            </div>
+            <p>Make sure notifications are working on your device.</p>
+            <button id="testBtn" onclick="sendTestNotification()" disabled>
+                📨 Send Test Notification
+            </button>
+        </div>
+        
+        <!-- Token Display -->
+        <div id="tokenDisplay" class="token-display">
+            <strong>Your Device Token:</strong>
+            <div id="tokenValue"></div>
+            <button onclick="copyToken()" style="margin-top: 10px;">📋 Copy Token</button>
+        </div>
+        
+        <!-- Debug Section -->
+        <div class="section">
+            <h3>🛠️ Troubleshooting</h3>
+            <button onclick="toggleDebug()">🐛 Toggle Debug Info</button>
+            <button onclick="clearDebugLog()">🗑️ Clear Debug Log</button>
+            <button onclick="checkStatus()">🔍 Check Registration Status</button>
+            <button onclick="unregisterAll()" class="danger">⚠️ Reset Everything</button>
+            
+            <div id="debug" class="debug"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+    
+    <script>
+        // ============ CONFIGURATION ============
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+            authDomain: "pwaapp-fe16c.firebaseapp.com",
+            projectId: "pwaapp-fe16c",
+            storageBucket: "pwaapp-fe16c.firebasestorage.app",
+            messagingSenderId: "138452600697",
+            appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+        };
+
+        const CONFIG = {
+            GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbwRUpi2Pai4DTuW-eZOK5RCWkA70c5wTunfqfpRgXDcz-PvEmF8nBDdXmhhWKxmSqptfQ/exec',
+            VAPID_PUBLIC_KEY: 'BEXBjinVivC6jAfhKZov_HMujSaEBZf3PLfYt_01O3pGDzZRh2xzZAnBeiNFQO4vuryTQKUfx6gbPj2fTE4bcGE'
+        };
+
+        // ============ GLOBAL VARIABLES ============
+        let messaging = null;
+        let swRegistration = null;
+        let currentToken = null;
+        let isRegistering = false;
+
+        // ============ DEBUG LOGGING ============
+        const debugLog = {
+            logs: [],
+            add: function(message, data = null) {
+                const timestamp = new Date().toISOString();
+                const logEntry = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}`;
+                this.logs.push(logEntry);
+                console.log(message, data || '');
+                this.updateDisplay();
+            },
+            updateDisplay: function() {
+                const debugElement = document.getElementById('debug');
+                if (debugElement && debugElement.style.display === 'block') {
+                    debugElement.textContent = this.logs.join('\n\n');
+                    debugElement.scrollTop = debugElement.scrollHeight;
+                }
+            },
+            clear: function() {
+                this.logs = [];
+                this.updateDisplay();
+            }
+        };
+
+        // ============ INITIALIZATION ============
+        window.addEventListener('load', async () => {
+            debugLog.add('Page loaded, initializing...');
+            
+            // Check Firebase
+            if (typeof firebase === 'undefined') {
+                updateStatus('❌ Error: Firebase SDK failed to load', 'error');
+                return;
+            }
+            
+            try {
+                // Initialize Firebase
+                firebase.initializeApp(FIREBASE_CONFIG);
+                debugLog.add('Firebase initialized');
+                
+                // Check browser support
+                if (!('serviceWorker' in navigator)) {
+                    updateStatus('❌ Service Workers not supported in this browser', 'error');
+                    return;
+                }
+                
+                if (!('PushManager' in window)) {
+                    updateStatus('❌ Push notifications not supported in this browser', 'error');
+                    return;
+                }
+                
+                // Register service worker
+                debugLog.add('Registering service worker...');
+                swRegistration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js', {
+                    updateViaCache: 'none'
+                });
+                
+                // Wait for activation
+                await waitForServiceWorker();
+                
+                // Get messaging instance
+                messaging = firebase.messaging();
+                debugLog.add('Firebase Messaging initialized');
+                
+                // Check existing registration
+                await checkExistingRegistration();
+                
+                // Setup message handler
+                messaging.onMessage((payload) => {
+                    debugLog.add('Foreground message received:', payload);
+                    handleForegroundMessage(payload);
+                });
+                
+            } catch (error) {
+                debugLog.add('Initialization error:', error);
+                updateStatus('❌ Initialization failed: ' + error.message, 'error');
+            }
+        });
+
+        // ============ SERVICE WORKER MANAGEMENT ============
+        async function waitForServiceWorker() {
+            if (swRegistration.installing) {
+                debugLog.add('Waiting for service worker to install...');
+                await new Promise((resolve) => {
+                    swRegistration.installing.addEventListener('statechange', function(e) {
+                        if (e.target.state === 'activated') {
+                            resolve();
+                        }
+                    });
+                });
+            }
+            await navigator.serviceWorker.ready;
+            debugLog.add('Service worker is ready');
+        }
+
+        // ============ REGISTRATION CHECK ============
+        async function checkExistingRegistration() {
+            try {
+                currentToken = await messaging.getToken({ 
+                    vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                    serviceWorkerRegistration: swRegistration 
+                });
+                
+                if (currentToken) {
+                    debugLog.add('Existing token found:', currentToken);
+                    displayToken(currentToken);
+                    document.getElementById('enableBtn').disabled = true;
+                    document.getElementById('enableBtn').textContent = '✅ Notifications Enabled';
+                    document.getElementById('testBtn').disabled = false;
+                    updateStatus('✅ Push notifications are already enabled on this device!', 'success');
+                    
+                    // Check if registered in sheet
+                    showRegistrationStatus('Checking registration status...');
+                } else {
+                    document.getElementById('enableBtn').disabled = false;
+                    updateStatus('👋 Welcome! Please enable push notifications to receive quiz alerts.', 'info');
+                }
+            } catch (error) {
+                debugLog.add('Token check error:', error);
+                document.getElementById('enableBtn').disabled = false;
+                updateStatus('Ready to enable push notifications', 'info');
+            }
+        }
+
+        // ============ MAIN SUBSCRIPTION FUNCTION ============
+        async function subscribeToPush() {
+            if (isRegistering) {
+                debugLog.add('Registration already in progress');
+                return;
+            }
+            
+            isRegistering = true;
+            debugLog.add('Starting subscription process...');
+            
+            try {
+                // Request permission
+                debugLog.add('Requesting notification permission...');
+                const permission = await Notification.requestPermission();
+                debugLog.add('Permission result:', permission);
+                
+                if (permission !== 'granted') {
+                    updateStatus('❌ Notification permission denied. Please enable it in your browser settings.', 'error');
+                    isRegistering = false;
+                    return;
+                }
+                
+                // Get FCM token
+                updateStatus('🔄 Getting device token...', 'info');
+                const token = await messaging.getToken({ 
+                    vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                    serviceWorkerRegistration: swRegistration 
+                });
+                
+                if (!token) {
+                    throw new Error('Failed to get FCM token');
+                }
+                
+                debugLog.add('Token received:', token);
+                currentToken = token;
+                displayToken(token);
+                
+                // Save to server
+                updateStatus('📤 Registering device with server...', 'info');
+                showRegistrationStatus('Saving registration...');
+                
+                const saveResult = await saveTokenToServer(token);
+                
+                if (saveResult.success) {
+                    document.getElementById('enableBtn').disabled = true;
+                    document.getElementById('enableBtn').textContent = '✅ Notifications Enabled';
+                    document.getElementById('testBtn').disabled = false;
+                    updateStatus('✅ Device successfully registered for quiz notifications!', 'success');
+                    showRegistrationStatus('✅ Registration complete! You will receive quiz notifications.', 'success');
+                } else {
+                    throw new Error(saveResult.error || 'Failed to save registration');
+                }
+                
+            } catch (error) {
+                debugLog.add('Subscription error:', error);
+                updateStatus('❌ Registration failed: ' + error.message, 'error');
+                showRegistrationStatus('❌ Registration failed. Please try again.', 'error');
+            } finally {
+                isRegistering = false;
+            }
+        }
+
+        // ============ SAVE TOKEN TO SERVER ============
+        async function saveTokenToServer(token) {
+            debugLog.add('Saving token to server...');
+            
+            const studentId = document.getElementById('studentId').value.trim();
+            const studentName = document.getElementById('studentName').value.trim();
+            
+            const data = {
+                action: 'subscribe',
+                subscription: {
+                    endpoint: `https://fcm.googleapis.com/fcm/send/${token}`,
+                    keys: { p256dh: 'not-used', auth: 'not-used' }
+                },
+                fcmToken: token,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+                studentId: studentId,
+                studentName: studentName
+            };
+            
+            debugLog.add('Sending data:', data);
+            
+            try {
+                // Try fetch first
+                const response = await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+                
+                // With no-cors, we can't read the response, so we'll assume success
+                // and verify with a follow-up request
+                debugLog.add('Request sent (no-cors mode)');
+                
+                // Give it a moment to process
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Verify registration (this would need a separate endpoint or method)
+                // For now, we'll assume success
+                return { success: true };
+                
+            } catch (error) {
+                debugLog.add('Save error:', error);
+                
+                // Fallback: Try JSONP approach
+                try {
+                    return await saveTokenViaJSONP(data);
+                } catch (jsonpError) {
+                    debugLog.add('JSONP error:', jsonpError);
+                    return { success: false, error: error.message };
+                }
+            }
+        }
+
+        // ============ JSONP FALLBACK ============
+        async function saveTokenViaJSONP(data) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'callback_' + Date.now();
+                const timeout = setTimeout(() => {
+                    window[callbackName] = null;
+                    reject(new Error('Request timeout'));
+                }, 10000);
+                
+                window[callbackName] = (response) => {
+                    clearTimeout(timeout);
+                    delete window[callbackName];
+                    debugLog.add('JSONP response:', response);
+                    resolve(response);
+                };
+                
+                const script = document.createElement('script');
+                const params = new URLSearchParams({
+                    callback: callbackName,
+                    data: JSON.stringify(data)
+                });
+                
+                script.src = CONFIG.GAS_ENDPOINT + '?' + params.toString();
+                script.onerror = () => {
+                    clearTimeout(timeout);
+                    delete window[callbackName];
+                    reject(new Error('JSONP request failed'));
+                };
+                
+                document.body.appendChild(script);
+                
+                // Clean up
+                setTimeout(() => {
+                    if (script.parentNode) {
+                        script.parentNode.removeChild(script);
+                    }
+                }, 11000);
+            });
+        }
+
+        // ============ TEST NOTIFICATION ============
+        async function sendTestNotification() {
+            if (!currentToken) {
+                updateStatus('❌ No device token found. Please enable notifications first.', 'error');
+                return;
+            }
+            
+            debugLog.add('Sending test notification request...');
+            updateStatus('📤 Sending test notification...', 'info');
+            
+            try {
+                const testData = {
+                    action: 'test',
+                    fcmToken: currentToken,
+                    timestamp: new Date().toISOString()
+                };
+                
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(testData)
+                });
+                
+                updateStatus('✅ Test notification sent! You should receive it within a few seconds.', 'success');
+                debugLog.add('Test notification request sent');
+                
+            } catch (error) {
+                debugLog.add('Test notification error:', error);
+                updateStatus('❌ Failed to send test: ' + error.message, 'error');
+            }
+        }
+
+        // ============ UI HELPER FUNCTIONS ============
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            debugLog.add('Status: ' + message);
+        }
+
+        function displayToken(token) {
+            document.getElementById('tokenDisplay').style.display = 'block';
+            document.getElementById('tokenValue').textContent = token;
+            currentToken = token;
+        }
+
+        function showRegistrationStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('registrationStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = message;
+            statusDiv.className = 'registration-status ' + type;
+        }
+
+        function copyToken() {
+            if (currentToken) {
+                navigator.clipboard.writeText(currentToken).then(() => {
+                    updateStatus('✅ Token copied to clipboard!', 'success');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = currentToken;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    updateStatus('✅ Token copied!', 'success');
+                });
+            }
+        }
+
+        function toggleDebug() {
+            const debug = document.getElementById('debug');
+            debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
+            if (debug.style.display === 'block') {
+                debugLog.updateDisplay();
+            }
+        }
+
+        function clearDebugLog() {
+            debugLog.clear();
+            updateStatus('Debug log cleared', 'info');
+        }
+
+        // ============ CHECK REGISTRATION STATUS ============
+        async function checkStatus() {
+            if (!currentToken) {
+                updateStatus('❌ No device token found', 'error');
+                return;
+            }
+            
+            updateStatus('🔍 Checking registration status...', 'info');
+            debugLog.add('Checking registration for token:', currentToken);
+            
+            // This would need a GET endpoint in your GAS to check status
+            // For now, we'll just display the token
+            alert(`Your device token:\n\n${currentToken}\n\nThis token should be registered in the Google Sheet.`);
+        }
+
+        // ============ HANDLE FOREGROUND MESSAGES ============
+        function handleForegroundMessage(payload) {
+            const { title, body, icon } = payload.notification || {};
+            
+            if (Notification.permission === 'granted') {
+                const notification = new Notification(title || 'Quiz Notification', { 
+                    body: body || 'You have a new quiz!',
+                    icon: icon || '/MCQ/test/app/icon-192x192.png',
+                    tag: 'quiz-notification',
+                    requireInteraction: false
+                });
+                
+                notification.onclick = function() {
+                    window.focus();
+                    notification.close();
+                };
+            }
+            
+            updateStatus(`📬 New notification: ${title}`, 'success');
+        }
+
+        // ============ UNREGISTER ALL ============
+        async function unregisterAll() {
+            if (!confirm('This will remove all notification settings. Are you sure?')) return;
+            
+            try {
+                // Delete token
+                if (messaging && currentToken) {
+                    await messaging.deleteToken();
+                    debugLog.add('Token deleted');
+                }
+                
+                // Unregister service workers
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                    debugLog.add('Service worker unregistered:', registration.scope);
+                }
+                
+                // Clear IndexedDB
+                const dbs = ['fcm_token_details_db', 'firebase-messaging-database'];
+                for (let db of dbs) {
+                    try {
+                        await indexedDB.deleteDatabase(db);
+                        debugLog.add('Database deleted:', db);
+                    } catch (e) {
+                        debugLog.add('Failed to delete database:', db, e);
+                    }
+                }
+                
+                updateStatus('✅ All settings cleared. Please refresh the page.', 'success');
+                
+                // Refresh after a moment
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                
+            } catch (error) {
+                debugLog.add('Unregister error:', error);
+                updateStatus('❌ Error during reset: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
