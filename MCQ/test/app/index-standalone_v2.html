@@ -180,6 +180,19 @@
         <div id="status" class="status info">
             Initializing...
         </div>
+        
+        <!-- Known Issues Notice -->
+        <div id="deviceNotice" class="status warning" style="display: none;">
+            <strong>⚠️ Note for Vivo/OPPO/Xiaomi Users:</strong><br>
+            Some devices have aggressive battery optimization that may block notifications. 
+            Please ensure:
+            <ul style="margin: 10px 0;">
+                <li>Allow notifications for your browser in phone settings</li>
+                <li>Disable battery optimization for your browser</li>
+                <li>Add the browser to "Protected Apps" or "Autostart" list</li>
+                <li>Try using Chrome browser if using others</li>
+            </ul>
+        </div>
 
         <!-- Step 1: Student Information -->
         <div class="section">
@@ -245,6 +258,9 @@
             <button onclick="clearDebugLog()">🗑️ Clear Debug Log</button>
             <button onclick="checkStatus()">🔍 Check Registration Status</button>
             <button onclick="verifySpreadsheetEntry()">✅ Verify Spreadsheet Entry</button>
+            <button onclick="validateToken()">🔐 Validate Token</button>
+            <button onclick="refreshToken()" class="secondary">🔄 Refresh Token</button>
+            <button onclick="sendTestToAll()" class="secondary">📢 Test All Devices</button>
             <button onclick="unregisterAll()" class="danger">⚠️ Reset Everything</button>
             
             <div id="debug" class="debug"></div>
@@ -304,6 +320,13 @@
         // ============ INITIALIZATION ============
         window.addEventListener('load', async () => {
             debugLog.add('Page loaded, initializing...');
+            
+            // Check for problematic devices
+            const userAgent = navigator.userAgent.toLowerCase();
+            if (userAgent.includes('vivo') || userAgent.includes('oppo') || userAgent.includes('xiaomi') || userAgent.includes('miui')) {
+                document.getElementById('deviceNotice').style.display = 'block';
+                debugLog.add('Detected potentially problematic device: ' + navigator.userAgent);
+            }
             
             // Check Firebase
             if (typeof firebase === 'undefined') {
@@ -562,13 +585,18 @@
             }
             
             debugLog.add('Sending test notification request...');
-            updateStatus('📤 Sending test notification...', 'info');
+            updateStatus('📤 Sending test notification to THIS device only...', 'info');
             
             try {
                 const testData = {
                     action: 'test',
                     fcmToken: currentToken,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    deviceInfo: {
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        vendor: navigator.vendor
+                    }
                 };
                 
                 await fetch(CONFIG.GAS_ENDPOINT, {
@@ -578,13 +606,15 @@
                     body: JSON.stringify(testData)
                 });
                 
-                updateStatus('✅ Test notification sent! You should receive it within a few seconds.', 'success');
-                debugLog.add('Test notification request sent');
+                updateStatus('✅ Test notification sent to THIS device! You should receive it within 10 seconds. If not, try refreshing your token.', 'success');
+                debugLog.add('Test notification request sent to current device token');
                 
-                // Hide manual section if test succeeds
+                // Show troubleshooting after 10 seconds if needed
                 setTimeout(() => {
-                    document.getElementById('manualSection').style.display = 'none';
-                }, 3000);
+                    const retryInfo = document.getElementById('retryInfo');
+                    retryInfo.style.display = 'block';
+                    retryInfo.innerHTML = '💡 Not receiving notifications? Try: <button onclick="refreshToken()">🔄 Refresh Token</button>';
+                }, 10000);
                 
             } catch (error) {
                 debugLog.add('Test notification error:', error);
@@ -712,6 +742,122 @@ If not, use the "Manually Add to Spreadsheet" button above.
             }
             
             updateStatus(`📬 New notification: ${title}`, 'success');
+        }
+
+        // ============ REFRESH TOKEN ============
+        async function refreshToken() {
+            if (!messaging) {
+                updateStatus('❌ Messaging not initialized', 'error');
+                return;
+            }
+            
+            updateStatus('🔄 Refreshing device token...', 'info');
+            debugLog.add('Starting token refresh process');
+            
+            try {
+                // Delete old token
+                if (currentToken) {
+                    await messaging.deleteToken();
+                    debugLog.add('Old token deleted');
+                }
+                
+                // Get new token
+                const newToken = await messaging.getToken({ 
+                    vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                    serviceWorkerRegistration: swRegistration 
+                });
+                
+                if (!newToken) {
+                    throw new Error('Failed to get new token');
+                }
+                
+                debugLog.add('New token received:', newToken);
+                currentToken = newToken;
+                displayToken(newToken);
+                
+                // Save new token
+                const saveResult = await saveTokenToServer(newToken, false);
+                
+                if (saveResult.success || saveResult.assumed) {
+                    updateStatus('✅ Token refreshed successfully! Try sending a test notification now.', 'success');
+                    document.getElementById('testBtn').disabled = false;
+                } else {
+                    throw new Error('Failed to save new token');
+                }
+                
+            } catch (error) {
+                debugLog.add('Token refresh error:', error);
+                updateStatus('❌ Failed to refresh token: ' + error.message, 'error');
+            }
+        }
+
+        // ============ VALIDATE TOKEN ============
+        async function validateToken() {
+            if (!currentToken) {
+                updateStatus('❌ No token to validate', 'error');
+                return;
+            }
+            
+            updateStatus('🔍 Validating token...', 'info');
+            
+            const validationData = {
+                action: 'validateToken',
+                fcmToken: currentToken,
+                deviceInfo: {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    vendor: navigator.vendor,
+                    language: navigator.language,
+                    cookieEnabled: navigator.cookieEnabled,
+                    onLine: navigator.onLine,
+                    screenResolution: `${screen.width}x${screen.height}`,
+                    timestamp: new Date().toISOString()
+                }
+            };
+            
+            debugLog.add('Sending validation request:', validationData);
+            
+            try {
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(validationData)
+                });
+                
+                updateStatus('✅ Validation request sent. Check debug logs in Google Apps Script.', 'success');
+            } catch (error) {
+                debugLog.add('Validation error:', error);
+                updateStatus('❌ Validation failed: ' + error.message, 'error');
+            }
+        }
+
+        // ============ SEND TEST TO ALL ============
+        async function sendTestToAll() {
+            if (!confirm('This will send a test notification to ALL registered devices. Continue?')) return;
+            
+            updateStatus('📤 Sending test notification to all devices...', 'info');
+            
+            try {
+                const testData = {
+                    action: 'sendToAll',
+                    title: '🔔 Test Notification to All',
+                    body: 'This is a test notification sent to all registered devices.',
+                    timestamp: new Date().toISOString()
+                };
+                
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(testData)
+                });
+                
+                updateStatus('✅ Test notification sent to all devices!', 'success');
+            } catch (error) {
+                debugLog.add('Send to all error:', error);
+                updateStatus('❌ Failed to send: ' + error.message, 'error');
+            }
         }
 
         // ============ UNREGISTER ALL ============
