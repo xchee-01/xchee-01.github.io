@@ -49,6 +49,12 @@
             background: #ccc;
             cursor: not-allowed;
         }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #1976D2;
+        }
         button.danger {
             background: #dc3545;
         }
@@ -103,6 +109,14 @@
             font-size: 12px;
             display: none;
         }
+        .manual-section {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            border: 1px solid #90caf9;
+        }
         .student-info {
             margin: 20px 0;
         }
@@ -152,6 +166,11 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .retry-info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -185,6 +204,19 @@
                 🔔 Enable Push Notifications
             </button>
             <div id="registrationStatus" class="registration-status"></div>
+            <div class="retry-info" id="retryInfo" style="display: none;"></div>
+        </div>
+        
+        <!-- Manual Registration Section -->
+        <div id="manualSection" class="manual-section">
+            <h4>⚠️ Automatic registration may have failed</h4>
+            <p>If you don't receive notifications, try manually adding your device to the notification list:</p>
+            <button id="manualAddBtn" onclick="manuallyAddToSpreadsheet()" class="secondary">
+                📝 Manually Add to Spreadsheet
+            </button>
+            <button onclick="retryAutomaticRegistration()">
+                🔄 Retry Automatic Registration
+            </button>
         </div>
         
         <!-- Step 3: Test Notification -->
@@ -212,6 +244,7 @@
             <button onclick="toggleDebug()">🐛 Toggle Debug Info</button>
             <button onclick="clearDebugLog()">🗑️ Clear Debug Log</button>
             <button onclick="checkStatus()">🔍 Check Registration Status</button>
+            <button onclick="verifySpreadsheetEntry()">✅ Verify Spreadsheet Entry</button>
             <button onclick="unregisterAll()" class="danger">⚠️ Reset Everything</button>
             
             <div id="debug" class="debug"></div>
@@ -243,6 +276,7 @@
         let swRegistration = null;
         let currentToken = null;
         let isRegistering = false;
+        let registrationAttempts = 0;
 
         // ============ DEBUG LOGGING ============
         const debugLog = {
@@ -353,8 +387,8 @@
                     document.getElementById('testBtn').disabled = false;
                     updateStatus('✅ Push notifications are already enabled on this device!', 'success');
                     
-                    // Check if registered in sheet
-                    showRegistrationStatus('Checking registration status...');
+                    // Show manual section in case previous registration failed
+                    document.getElementById('manualSection').style.display = 'block';
                 } else {
                     document.getElementById('enableBtn').disabled = false;
                     updateStatus('👋 Welcome! Please enable push notifications to receive quiz alerts.', 'info');
@@ -374,7 +408,8 @@
             }
             
             isRegistering = true;
-            debugLog.add('Starting subscription process...');
+            registrationAttempts++;
+            debugLog.add(`Starting subscription process (attempt ${registrationAttempts})...`);
             
             try {
                 // Request permission
@@ -409,12 +444,19 @@
                 
                 const saveResult = await saveTokenToServer(token);
                 
-                if (saveResult.success) {
+                if (saveResult.success || saveResult.assumed) {
                     document.getElementById('enableBtn').disabled = true;
                     document.getElementById('enableBtn').textContent = '✅ Notifications Enabled';
                     document.getElementById('testBtn').disabled = false;
-                    updateStatus('✅ Device successfully registered for quiz notifications!', 'success');
-                    showRegistrationStatus('✅ Registration complete! You will receive quiz notifications.', 'success');
+                    
+                    if (saveResult.assumed) {
+                        updateStatus('⚠️ Registration sent. Please verify by sending a test notification.', 'warning');
+                        showRegistrationStatus('Registration sent - verification recommended', 'warning');
+                        document.getElementById('manualSection').style.display = 'block';
+                    } else {
+                        updateStatus('✅ Device successfully registered for quiz notifications!', 'success');
+                        showRegistrationStatus('✅ Registration complete! You will receive quiz notifications.', 'success');
+                    }
                 } else {
                     throw new Error(saveResult.error || 'Failed to save registration');
                 }
@@ -422,21 +464,22 @@
             } catch (error) {
                 debugLog.add('Subscription error:', error);
                 updateStatus('❌ Registration failed: ' + error.message, 'error');
-                showRegistrationStatus('❌ Registration failed. Please try again.', 'error');
+                showRegistrationStatus('❌ Registration failed. Try manual registration below.', 'error');
+                document.getElementById('manualSection').style.display = 'block';
             } finally {
                 isRegistering = false;
             }
         }
 
         // ============ SAVE TOKEN TO SERVER ============
-        async function saveTokenToServer(token) {
-            debugLog.add('Saving token to server...');
+        async function saveTokenToServer(token, isManual = false) {
+            debugLog.add(`Saving token to server (${isManual ? 'manual' : 'automatic'})...`);
             
             const studentId = document.getElementById('studentId').value.trim();
             const studentName = document.getElementById('studentName').value.trim();
             
             const data = {
-                action: 'subscribe',
+                action: isManual ? 'manualSubscribe' : 'subscribe',
                 subscription: {
                     endpoint: `https://fcm.googleapis.com/fcm/send/${token}`,
                     keys: { p256dh: 'not-used', auth: 'not-used' }
@@ -445,13 +488,13 @@
                 userAgent: navigator.userAgent,
                 timestamp: new Date().toISOString(),
                 studentId: studentId,
-                studentName: studentName
+                studentName: studentName,
+                isManual: isManual
             };
             
             debugLog.add('Sending data:', data);
             
             try {
-                // Try fetch first
                 const response = await fetch(CONFIG.GAS_ENDPOINT, {
                     method: 'POST',
                     headers: {
@@ -461,68 +504,54 @@
                     mode: 'no-cors'
                 });
                 
-                // With no-cors, we can't read the response, so we'll assume success
-                // and verify with a follow-up request
+                // With no-cors, we can't read the response
                 debugLog.add('Request sent (no-cors mode)');
                 
                 // Give it a moment to process
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 
-                // Verify registration (this would need a separate endpoint or method)
-                // For now, we'll assume success
-                return { success: true };
+                // Return assumed success for no-cors
+                return { success: true, assumed: true };
                 
             } catch (error) {
                 debugLog.add('Save error:', error);
-                
-                // Fallback: Try JSONP approach
-                try {
-                    return await saveTokenViaJSONP(data);
-                } catch (jsonpError) {
-                    debugLog.add('JSONP error:', jsonpError);
-                    return { success: false, error: error.message };
-                }
+                return { success: false, error: error.message };
             }
         }
 
-        // ============ JSONP FALLBACK ============
-        async function saveTokenViaJSONP(data) {
-            return new Promise((resolve, reject) => {
-                const callbackName = 'callback_' + Date.now();
-                const timeout = setTimeout(() => {
-                    window[callbackName] = null;
-                    reject(new Error('Request timeout'));
-                }, 10000);
+        // ============ MANUAL REGISTRATION ============
+        async function manuallyAddToSpreadsheet() {
+            if (!currentToken) {
+                updateStatus('❌ No device token found. Please enable notifications first.', 'error');
+                return;
+            }
+            
+            updateStatus('📤 Manually adding device to spreadsheet...', 'info');
+            document.getElementById('manualAddBtn').disabled = true;
+            
+            try {
+                const result = await saveTokenToServer(currentToken, true);
                 
-                window[callbackName] = (response) => {
-                    clearTimeout(timeout);
-                    delete window[callbackName];
-                    debugLog.add('JSONP response:', response);
-                    resolve(response);
-                };
-                
-                const script = document.createElement('script');
-                const params = new URLSearchParams({
-                    callback: callbackName,
-                    data: JSON.stringify(data)
-                });
-                
-                script.src = CONFIG.GAS_ENDPOINT + '?' + params.toString();
-                script.onerror = () => {
-                    clearTimeout(timeout);
-                    delete window[callbackName];
-                    reject(new Error('JSONP request failed'));
-                };
-                
-                document.body.appendChild(script);
-                
-                // Clean up
-                setTimeout(() => {
-                    if (script.parentNode) {
-                        script.parentNode.removeChild(script);
-                    }
-                }, 11000);
-            });
+                if (result.success || result.assumed) {
+                    updateStatus('✅ Manual registration sent! Send a test notification to verify.', 'success');
+                    showRegistrationStatus('✅ Manual registration complete!', 'success');
+                } else {
+                    throw new Error(result.error || 'Manual registration failed');
+                }
+            } catch (error) {
+                debugLog.add('Manual registration error:', error);
+                updateStatus('❌ Manual registration failed: ' + error.message, 'error');
+            } finally {
+                document.getElementById('manualAddBtn').disabled = false;
+            }
+        }
+
+        // ============ RETRY REGISTRATION ============
+        async function retryAutomaticRegistration() {
+            debugLog.add('Retrying automatic registration...');
+            document.getElementById('manualSection').style.display = 'none';
+            registrationAttempts = 0;
+            await subscribeToPush();
         }
 
         // ============ TEST NOTIFICATION ============
@@ -552,10 +581,40 @@
                 updateStatus('✅ Test notification sent! You should receive it within a few seconds.', 'success');
                 debugLog.add('Test notification request sent');
                 
+                // Hide manual section if test succeeds
+                setTimeout(() => {
+                    document.getElementById('manualSection').style.display = 'none';
+                }, 3000);
+                
             } catch (error) {
                 debugLog.add('Test notification error:', error);
                 updateStatus('❌ Failed to send test: ' + error.message, 'error');
             }
+        }
+
+        // ============ VERIFY SPREADSHEET ENTRY ============
+        async function verifySpreadsheetEntry() {
+            if (!currentToken) {
+                updateStatus('❌ No device token found', 'error');
+                return;
+            }
+            
+            updateStatus('🔍 Checking spreadsheet entry...', 'info');
+            debugLog.add('Verifying spreadsheet entry for token:', currentToken);
+            
+            // Display token info for manual verification
+            const info = `
+Token Information:
+- Token: ${currentToken.substring(0, 40)}...
+- Student ID: ${document.getElementById('studentId').value || 'Not provided'}
+- Student Name: ${document.getElementById('studentName').value || 'Not provided'}
+- Registration Time: ${new Date().toLocaleString()}
+
+Please check if this token appears in your Google Sheet.
+If not, use the "Manually Add to Spreadsheet" button above.
+            `;
+            
+            alert(info);
         }
 
         // ============ UI HELPER FUNCTIONS ============
@@ -619,9 +678,19 @@
             updateStatus('🔍 Checking registration status...', 'info');
             debugLog.add('Checking registration for token:', currentToken);
             
-            // This would need a GET endpoint in your GAS to check status
-            // For now, we'll just display the token
-            alert(`Your device token:\n\n${currentToken}\n\nThis token should be registered in the Google Sheet.`);
+            // Display comprehensive status
+            const statusInfo = {
+                token: currentToken,
+                tokenShort: currentToken.substring(0, 40) + '...',
+                studentId: document.getElementById('studentId').value || 'Not provided',
+                studentName: document.getElementById('studentName').value || 'Not provided',
+                browser: navigator.userAgent,
+                notificationPermission: Notification.permission,
+                registrationAttempts: registrationAttempts,
+                timestamp: new Date().toISOString()
+            };
+            
+            alert(`Registration Status:\n\n${JSON.stringify(statusInfo, null, 2)}`);
         }
 
         // ============ HANDLE FOREGROUND MESSAGES ============
