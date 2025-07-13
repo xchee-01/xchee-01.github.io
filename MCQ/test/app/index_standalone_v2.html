@@ -901,6 +901,89 @@ If not, use the "Manually Add to Spreadsheet" button above.
                 updateStatus('❌ Error during reset: ' + error.message, 'error');
             }
         }
+
+        async function debugNotificationIssue() {
+    console.log('=== NOTIFICATION DEBUG START ===');
+    
+    // 1. Check notification permission
+    console.log('Notification Permission:', Notification.permission);
+    
+    // 2. Check service worker
+    if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        console.log('Service Worker Registrations:', registrations.length);
+        registrations.forEach((reg, i) => {
+            console.log(`SW ${i}:`, {
+                scope: reg.scope,
+                active: reg.active?.state,
+                waiting: reg.waiting?.state,
+                installing: reg.installing?.state
+            });
+        });
+    }
+    
+    // 3. Check FCM token
+    if (messaging && currentToken) {
+        console.log('Current FCM Token:', currentToken);
+        console.log('Token first 50 chars:', currentToken.substring(0, 50));
+        
+        // 4. Test local notification
+        if (Notification.permission === 'granted') {
+            try {
+                const testNotif = new Notification('Local Test', {
+                    body: 'If you see this, local notifications work!',
+                    icon: '/MCQ/test/app/icon-192x192.png'
+                });
+                console.log('Local notification created successfully');
+            } catch (e) {
+                console.error('Local notification error:', e);
+            }
+        }
+    }
+    
+    // 5. Check for errors in IndexedDB (FCM storage)
+    try {
+        const dbs = await indexedDB.databases();
+        console.log('IndexedDB databases:', dbs.map(db => db.name));
+    } catch (e) {
+        console.log('IndexedDB check error:', e);
+    }
+    
+    // 6. Network connectivity test
+    try {
+        const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'key=dummy', // This will fail but shows if FCM is reachable
+            }
+        }).catch(e => e);
+        console.log('FCM endpoint reachable:', response.status !== 0);
+    } catch (e) {
+        console.log('FCM connectivity issue:', e);
+    }
+    
+    console.log('=== NOTIFICATION DEBUG END ===');
+}
+
+// Add debug button to your troubleshooting section
+function addDebugButton() {
+    const debugSection = document.querySelector('.section:last-child');
+    if (debugSection && !document.getElementById('deepDebugBtn')) {
+        const btn = document.createElement('button');
+        btn.id = 'deepDebugBtn';
+        btn.textContent = '🔬 Deep Debug Notifications';
+        btn.onclick = debugNotificationIssue;
+        btn.className = 'secondary';
+        debugSection.appendChild(btn);
+    }
+}
+
+// Run when page loads
+window.addEventListener('load', () => {
+    setTimeout(addDebugButton, 1000);
+});
+
+        
     </script>
 </body>
 </html>
