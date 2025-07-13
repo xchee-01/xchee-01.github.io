@@ -369,6 +369,21 @@
             <button id="testBtn" onclick="sendTestNotification()" disabled>
                 📨 Send Test Notification
             </button>
+            <button onclick="sendInteractiveNotificationToPhone()" class="secondary" style="margin-top: 10px;">
+                💬 Send Interactive Dialog to Phone
+            </button>
+            <div id="crossDeviceResult" style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 5px; display: none;">
+                <strong>For Cross-Device Testing:</strong>
+                <ol style="margin: 10px 0;">
+                    <li>Open this page on your computer</li>
+                    <li>Copy your phone's token from the phone</li>
+                    <li>Paste it here: <input type="text" id="targetPhoneToken" placeholder="Paste phone token here" style="width: 100%; margin: 10px 0; padding: 8px;"></li>
+                    <li>Click "Send to Specific Device" button</li>
+                </ol>
+                <button onclick="sendToSpecificDevice()" class="warning">
+                    📲 Send to Specific Device
+                </button>
+            </div>
         </div>
         
         <!-- Token Display -->
@@ -415,6 +430,7 @@
             <button onclick="validateToken()">🔐 Validate Token</button>
             <button onclick="refreshToken()" class="secondary">🔄 Refresh Token</button>
             <button onclick="sendTestToAll()" class="secondary">📢 Test All Devices</button>
+            <button onclick="exportMyToken()">📤 Export My Token</button>
             <button onclick="unregisterAll()" class="danger">⚠️ Reset Everything</button>
             
             <div id="debug" class="debug"></div>
@@ -1629,6 +1645,64 @@ If not, use the "Manually Add to Spreadsheet" button above.
             }
         }
 
+        // ============ NEW: INTERACTIVE NOTIFICATION TO PHONE ============
+        async function sendInteractiveNotificationToPhone() {
+            // First check if we're on the same device
+            if (currentToken) {
+                alert('You\'re on the same device! This feature is for sending from your computer to your phone.\n\nUse "Test Pop-up Notification" instead.');
+                return;
+            }
+            
+            // Show the cross-device section
+            document.getElementById('crossDeviceResult').style.display = 'block';
+            updateStatus('📱 To send to your phone, paste your phone\'s token below', 'info');
+        }
+
+        async function sendToSpecificDevice() {
+            const targetToken = document.getElementById('targetPhoneToken').value.trim();
+            
+            if (!targetToken) {
+                alert('Please paste your phone\'s token first!\n\n1. Open this page on your phone\n2. Enable notifications\n3. Copy the token\n4. Paste it here');
+                return;
+            }
+            
+            updateStatus('📤 Sending interactive notification to phone...', 'info');
+            
+            try {
+                const notificationData = {
+                    action: 'test',
+                    fcmToken: targetToken,
+                    notification: {
+                        title: '💬 Message from Computer',
+                        body: 'Tap an action below to respond:',
+                        // These settings make it more dialog-like
+                        requireInteraction: true,
+                        actions: [
+                            { action: 'yes', title: '✅ Yes, I see this!' },
+                            { action: 'test', title: '🧪 Run Phone Test' }
+                        ]
+                    },
+                    timestamp: new Date().toISOString()
+                };
+                
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(notificationData)
+                });
+                
+                updateStatus('✅ Interactive notification sent to phone! Check your phone now.', 'success');
+                
+                // Show what to expect
+                alert('📱 Check your phone!\n\nYou should see:\n• A pop-up notification at the top\n• Two action buttons you can tap\n• The notification will stay until you interact with it\n\nThis is the closest we can get to a dialog on another device!');
+                
+            } catch (error) {
+                debugLog.add('Send to phone error:', error);
+                updateStatus('❌ Failed to send: ' + error.message, 'error');
+            }
+        }
+
         // ============ UNREGISTER ALL ============
         async function unregisterAll() {
             if (!confirm('This will remove all notification settings. Are you sure?')) return;
@@ -1669,6 +1743,31 @@ If not, use the "Manually Add to Spreadsheet" button above.
                 debugLog.add('Unregister error:', error);
                 updateStatus('❌ Error during reset: ' + error.message, 'error');
             }
+        }
+
+        // ============ EXPORT TOKEN ============
+        function exportMyToken() {
+            if (!currentToken) {
+                alert('No token found! Please enable notifications first.');
+                return;
+            }
+            
+            const tokenInfo = {
+                token: currentToken,
+                device: getDeviceBrand() + ' - ' + getBrowserName(),
+                timestamp: new Date().toISOString()
+            };
+            
+            // Create a text for easy copying
+            const exportText = `📱 Device Token for Cross-Device Testing\n\nToken: ${currentToken}\n\nDevice: ${tokenInfo.device}\nExported: ${tokenInfo.timestamp}\n\nInstructions:\n1. Copy this entire token\n2. Open the quiz app on your computer\n3. Click "Send Interactive Dialog to Phone"\n4. Paste this token there`;
+            
+            // Try to copy to clipboard
+            navigator.clipboard.writeText(currentToken).then(() => {
+                alert(`✅ Token copied to clipboard!\n\n${exportText}`);
+            }).catch(() => {
+                // Fallback
+                prompt('Copy your token:', currentToken);
+            });
         }
 
         // ============ DIAGNOSE FCM ISSUES ============
