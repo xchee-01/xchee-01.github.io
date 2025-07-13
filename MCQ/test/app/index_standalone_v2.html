@@ -569,6 +569,75 @@
             }
         }
 
+                // ============ CHECK IF TOKEN EXIST ============
+        // Add this debug function to your HTML file
+async function debugCheckMyToken() {
+    if (!currentToken) {
+        console.log('No token found');
+        return;
+    }
+    
+    console.log('My FCM Token:', currentToken);
+    
+    // Check if it exists in spreadsheet
+    const checkData = {
+        action: 'checkToken',
+        fcmToken: currentToken
+    };
+    
+    try {
+        // Since you're using no-cors, you won't get a response
+        // Check the Google Apps Script logs instead
+        await fetch(CONFIG.GAS_ENDPOINT, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(checkData)
+        });
+        
+        console.log('Check request sent - view GAS logs for result');
+    } catch (error) {
+        console.error('Error checking token:', error);
+    }
+}
+
+                // ============ CHECK FCM ISSUES ============
+        async function diagnoseFCMIssue() {
+    console.log('=== FCM DIAGNOSTICS ===');
+    
+    // 1. Check service worker
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    console.log('Service Workers:', registrations.map(r => ({
+        scope: r.scope,
+        active: r.active?.state
+    })));
+    
+    // 2. Check current token
+    console.log('Current Token:', currentToken ? 'Present' : 'Missing');
+    if (currentToken) {
+        console.log('Token prefix:', currentToken.substring(0, 50));
+    }
+    
+    // 3. Check Firebase messaging
+    if (messaging) {
+        try {
+            // Try to get a fresh token
+            const freshToken = await messaging.getToken({
+                vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                serviceWorkerRegistration: swRegistration
+            });
+            console.log('Fresh token matches current:', freshToken === currentToken);
+        } catch (e) {
+            console.error('Error getting fresh token:', e);
+        }
+    }
+    
+    // 4. Check notification permission
+    console.log('Notification Permission:', Notification.permission);
+    
+    console.log('=== END DIAGNOSTICS ===');
+}
+
         // ============ RETRY REGISTRATION ============
         async function retryAutomaticRegistration() {
             debugLog.add('Retrying automatic registration...');
