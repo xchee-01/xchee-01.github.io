@@ -43,45 +43,56 @@ messaging.onBackgroundMessage((payload) => {
     const notificationBody = payload.notification?.body || 'You have a new quiz!';
     
     // Force high priority notification options
-    const notificationOptions = {
-        body: notificationBody,
-        icon: payload.notification?.icon || '/MCQ/test/app/icon-192x192.png',
-        badge: '/MCQ/test/app/icon-192x192.png',
-        tag: payload.data?.tag || `quiz-notification-${Date.now()}`,
-        data: {
-            ...payload.data,
-            url: payload.data?.url || '/MCQ/test/app/',
-            FCM_MSG: payload,
-            timestamp: new Date().toISOString()
-        },
-        
-        // HIGH PRIORITY SETTINGS
-        requireInteraction: true, // Don't auto-dismiss
-        renotify: true, // Always notify even if tag exists
-        silent: false, // Make sound
-        vibrate: [200, 100, 200], // Vibration pattern
-        
-        // Additional priority hints
+const notificationOptions = {
+    body: notificationBody,
+    icon: payload.notification?.icon || '/MCQ/test/app/icon-192x192.png',
+    badge: '/MCQ/test/app/icon-192x192.png',
+    tag: payload.data?.tag || `quiz-notification-${Date.now()}`,
+    data: {
+        ...payload.data,
+        url: payload.data?.url || '/MCQ/test/app/',
+        FCM_MSG: payload,
+        timestamp: new Date().toISOString()
+    },
+    
+    // HIGH PRIORITY SETTINGS
+    requireInteraction: true,
+    renotify: true,
+    silent: false,
+    vibrate: [200, 100, 200, 100, 200], // Longer vibration pattern
+    
+    // Additional priority hints
+    priority: 'high',
+    urgency: 'high',
+    
+    // Android-specific for heads-up
+    android: {
         priority: 'high',
-        urgency: 'high',
-        
-        // Visual attention grabbers
-        image: payload.notification?.image || '/MCQ/test/app/icon-512x512.png',
-        
-        // Action buttons
-        actions: [
-            {
-                action: 'open',
-                title: '📝 Take Quiz',
-                type: 'button'
-            },
-            {
-                action: 'later',
-                title: '⏰ Later',
-                type: 'button'
-            }
-        ]
-    };
+        vibrateTimingsMillis: [200, 100, 200, 100, 200],
+        visibility: 'public',
+        channelId: 'quiz-urgent' // Important for Android 8.0+
+    },
+    
+    // Visual attention grabbers
+    image: payload.notification?.image || '/MCQ/test/app/icon-512x512.png',
+    
+    // Action buttons
+    actions: [
+        {
+            action: 'open',
+            title: '📝 Take Quiz Now',
+            type: 'button'
+        },
+        {
+            action: 'later',
+            title: '⏰ Remind Later',
+            type: 'button'
+        }
+    ],
+    
+    // Sound (if you have a custom sound file)
+    // sound: '/MCQ/test/app/notification-sound.mp3'
+};
     
     // Try multiple notification methods to ensure display
     return Promise.all([
