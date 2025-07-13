@@ -24,6 +24,11 @@ function debugLog(message, data = null) {
     console.log(`[Firebase SW ${timestamp}] ${message}`, data || '');
 }
 
+// Device detection
+function isIOSDevice() {
+    return /iPad|iPhone|iPod|Mac/.test(self.navigator.userAgent);
+}
+
 // Force wake the service worker periodically
 let wakeInterval;
 function startWakeInterval() {
@@ -38,61 +43,71 @@ function startWakeInterval() {
 messaging.onBackgroundMessage((payload) => {
     debugLog('Received background message:', payload);
     
+    const isIOS = isIOSDevice();
+    debugLog('Device type:', isIOS ? 'iOS' : 'Android/Other');
+    
     // Extract notification data
     const notificationTitle = payload.notification?.title || 'Quiz Notification';
     const notificationBody = payload.notification?.body || 'You have a new quiz!';
     
-    // Force high priority notification options
-const notificationOptions = {
-    body: notificationBody,
-    icon: payload.notification?.icon || '/MCQ/test/app/icon-192x192.png',
-    badge: '/MCQ/test/app/icon-192x192.png',
-    tag: payload.data?.tag || `quiz-notification-${Date.now()}`,
-    data: {
-        ...payload.data,
-        url: payload.data?.url || '/MCQ/test/app/',
-        FCM_MSG: payload,
-        timestamp: new Date().toISOString()
-    },
-    
-    // HIGH PRIORITY SETTINGS
-    requireInteraction: true,
-    renotify: true,
-    silent: false,
-    vibrate: [200, 100, 200, 100, 200], // Longer vibration pattern
-    
-    // Additional priority hints
-    priority: 'high',
-    urgency: 'high',
-    
-    // Android-specific for heads-up
-    android: {
-        priority: 'high',
-        vibrateTimingsMillis: [200, 100, 200, 100, 200],
-        visibility: 'public',
-        channelId: 'quiz-urgent' // Important for Android 8.0+
-    },
-    
-    // Visual attention grabbers
-    image: payload.notification?.image || '/MCQ/test/app/icon-512x512.png',
-    
-    // Action buttons
-    actions: [
-        {
-            action: 'open',
-            title: '📝 Take Quiz Now',
-            type: 'button'
-        },
-        {
-            action: 'later',
-            title: '⏰ Remind Later',
-            type: 'button'
+    // Build notification options - adapt for iOS
+    const notificationOptions = {
+        body: notificationBody,
+        icon: payload.notification?.icon || '/MCQ/test/app/icon-192x192.png',
+        badge: '/MCQ/test/app/icon-192x192.png',
+        tag: payload.data?.tag || `quiz-notification-${Date.now()}`,
+        data: {
+            ...payload.data,
+            url: payload.data?.url || '/MCQ/test/app/',
+            FCM_MSG: payload,
+            timestamp: new Date().toISOString(),
+            isIOS: isIOS
         }
-    ],
+    };
     
-    // Sound (if you have a custom sound file)
-    // sound: '/MCQ/test/app/notification-sound.mp3'
-};
+    // iOS-specific adjustments
+    if (isIOS) {
+        // iOS doesn't support some features
+        notificationOptions.renotify = false;
+        notificationOptions.requireInteraction = false;
+        notificationOptions.vibrate = undefined;
+        notificationOptions.actions = []; // iOS web push doesn't support actions yet
+        
+        debugLog('Applied iOS notification adjustments');
+    } else {
+        // Android/Desktop specific settings for high priority
+        notificationOptions.requireInteraction = true;
+        notificationOptions.renotify = true;
+        notificationOptions.silent = false;
+        notificationOptions.vibrate = [200, 100, 200, 100, 200];
+        notificationOptions.priority = 'high';
+        notificationOptions.urgency = 'high';
+        
+        // Android-specific for heads-up
+        notificationOptions.android = {
+            priority: 'high',
+            vibrateTimingsMillis: [200, 100, 200, 100, 200],
+            visibility: 'public',
+            channelId: 'quiz-urgent'
+        };
+        
+        // Action buttons (not supported on iOS)
+        notificationOptions.actions = [
+            {
+                action: 'open',
+                title: '📝 Take Quiz Now',
+                type: 'button'
+            },
+            {
+                action: 'later',
+                title: '⏰ Remind Later',
+                type: 'button'
+            }
+        ];
+    }
+    
+    // Visual attention grabbers (works on both platforms)
+    notificationOptions.image = payload.notification?.image || '/MCQ/test/app/icon-512x512.png';
     
     // Try multiple notification methods to ensure display
     return Promise.all([
@@ -108,18 +123,18 @@ const notificationOptions = {
                 client.postMessage({
                     type: 'NOTIFICATION_RECEIVED',
                     payload: payload,
+                    isIOS: isIOS,
                     timestamp: new Date().toISOString()
                 });
             });
         }),
         
-        // Method 3: Force focus if possible
-        clients.matchAll({
+        // Method 3: Focus attempt (may not work on iOS)
+        !isIOS && clients.matchAll({
             type: 'window',
             includeUncontrolled: true
         }).then(windowClients => {
             if (windowClients.length > 0 && windowClients[0].focus) {
-                // This might help bring attention on some systems
                 debugLog('Attempting to focus client window');
                 return windowClients[0].focus().catch(e => {
                     debugLog('Focus attempt failed (expected):', e.message);
@@ -139,7 +154,8 @@ const notificationOptions = {
 self.addEventListener('notificationclick', (event) => {
     debugLog('Notification clicked:', {
         action: event.action,
-        notification: event.notification.tag
+        notification: event.notification.tag,
+        isIOS: event.notification.data?.isIOS
     });
     
     // Close the notification
@@ -206,6 +222,7 @@ self.addEventListener('notificationclose', (event) => {
 // Service Worker installation
 self.addEventListener('install', (event) => {
     debugLog('Firebase Service Worker installing...');
+    debugLog('Platform:', self.navigator.userAgent);
     self.skipWaiting();
 });
 
@@ -222,6 +239,12 @@ self.addEventListener('message', (event) => {
     if (event.data?.type === 'KEEP_ALIVE') {
         // Respond to keep-alive pings
         event.ports[0].postMessage({ alive: true });
+    } else if (event.data?.type === 'CHECK_IOS') {
+        // Check if running on iOS
+        event.ports[0].postMessage({ 
+            isIOS: isIOSDevice(),
+            userAgent: self.navigator.userAgent 
+        });
     }
 });
 
@@ -241,8 +264,14 @@ self.addEventListener('fetch', (event) => {
     // Only log non-asset requests to reduce noise
     if (!event.request.url.includes('.js') && 
         !event.request.url.includes('.css') && 
-        !event.request.url.includes('.png')) {
+        !event.request.url.includes('.png') &&
+        !event.request.url.includes('.json')) {
         debugLog('Fetch event:', event.request.url);
+    }
+    
+    // iOS specific: Handle offline functionality
+    if (isIOSDevice() && !navigator.onLine) {
+        debugLog('iOS device offline - serving from cache if available');
     }
 });
 
@@ -271,13 +300,20 @@ self.addEventListener('push', (event) => {
         // Fallback notification if onBackgroundMessage doesn't fire
         if (data.notification) {
             const title = data.notification.title || 'Quiz App Notification';
+            const isIOS = isIOSDevice();
+            
             const options = {
                 body: data.notification.body || 'You have a new message',
                 icon: '/MCQ/test/app/icon-192x192.png',
                 badge: '/MCQ/test/app/icon-192x192.png',
-                requireInteraction: true,
                 tag: 'fallback-' + Date.now()
             };
+            
+            // Adjust for iOS
+            if (!isIOS) {
+                options.requireInteraction = true;
+                options.vibrate = [200, 100, 200];
+            }
             
             event.waitUntil(
                 self.registration.showNotification(title, options)
@@ -288,4 +324,14 @@ self.addEventListener('push', (event) => {
     }
 });
 
-debugLog('Service Worker loaded and ready');
+// iOS-specific: Handle visibility change
+self.addEventListener('visibilitychange', () => {
+    if (isIOSDevice()) {
+        debugLog('iOS visibility change:', document.visibilityState);
+    }
+});
+
+debugLog('Service Worker loaded and ready', {
+    platform: self.navigator.userAgent,
+    isIOS: isIOSDevice()
+});
