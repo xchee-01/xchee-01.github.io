@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App with Push Notifications</title>
+    <link rel="manifest" href="/MCQ/test/app/manifest.json">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #1976D2;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.warning {
+            background: #ff9800;
+        }
+        button.warning:hover {
+            background: #e68900;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left-color: #17a2b8;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        .debug {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+        .debug-output {
+            background: #263238;
+            color: #aed581;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 500px;
+            overflow-y: auto;
+            margin: 20px 0;
+            display: none;
+        }
+        .token-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+        .manual-section {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            border: 1px solid #90caf9;
+        }
+        .student-info {
+            margin: 20px 0;
+        }
+        .student-info input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .step-number {
+            background: #4CAF50;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .registration-status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            display: none;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .retry-info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .mobile-debug-section {
+            background: #e8f5e9;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .debug-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .debug-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .debug-label {
+            font-weight: bold;
+            color: #555;
+            font-size: 12px;
+        }
+        .debug-value {
+            color: #333;
+            margin-top: 5px;
+            word-break: break-all;
+        }
+        
+        /* New styles for popup verification */
+        .popup-verification-section {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .verification-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .verification-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+        .verification-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+        }
+        .verification-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .verification-detail {
+            font-size: 14px;
+            color: #666;
+        }
+        .setup-guide {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+        .guide-step {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .notification-test-result {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Medical Quiz App - Push Notifications</h1>
+        
+        <div id="status" class="status info">
+            Initializing...
+        </div>
+        
+        <!-- Known Issues Notice -->
+        <div id="deviceNotice" class="status warning" style="display: none;">
+            <strong>⚠️ Note for Vivo/OPPO/Xiaomi Users:</strong><br>
+            Some devices have aggressive battery optimization that may block notifications. 
+            Please ensure:
+            <ul style="margin: 10px 0;">
+                <li>Allow notifications for your browser in phone settings</li>
+                <li>Disable battery optimization for your browser</li>
+                <li>Add the browser to "Protected Apps" or "Autostart" list</li>
+                <li>Enable "Pop on screen" or "Floating notifications"</li>
+                <li>Try using Chrome browser if using others</li>
+            </ul>
+        </div>
+
+        <!-- Step 1: Student Information -->
+        <div class="section">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Student Information (Optional)</h3>
+            </div>
+            <div class="student-info">
+                <input type="text" id="studentId" placeholder="Student ID (e.g., A0123456B)">
+                <input type="text" id="studentName" placeholder="Full Name">
+            </div>
+        </div>
+
+        <!-- Step 2: Enable Notifications -->
+        <div class="section">
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Enable Push Notifications</h3>
+            </div>
+            <p>Click the button below to enable quiz notifications on this device.</p>
+            <button id="enableBtn" onclick="subscribeToPush()" disabled>
+                🔔 Enable Push Notifications
+            </button>
+            <div id="registrationStatus" class="registration-status"></div>
+            <div class="retry-info" id="retryInfo" style="display: none;"></div>
+        </div>
+        
+        <!-- Manual Registration Section -->
+        <div id="manualSection" class="manual-section">
+            <h4>⚠️ Automatic registration may have failed</h4>
+            <p>If you don't receive notifications, try manually adding your device to the notification list:</p>
+            <button id="manualAddBtn" onclick="manuallyAddToSpreadsheet()" class="secondary">
+                📝 Manually Add to Spreadsheet
+            </button>
+            <button onclick="retryAutomaticRegistration()">
+                🔄 Retry Automatic Registration
+            </button>
+        </div>
+        
+        <!-- NEW: Pop-up Notification Verification Section -->
+        <div class="popup-verification-section">
+            <h3>🚨 Pop-up Notification Setup & Verification</h3>
+            <p>Complete these steps to enable pop-up notifications that appear on top of your screen:</p>
+            
+            <div class="verification-grid" id="verificationGrid">
+                <!-- Verification items will be populated by JavaScript -->
+            </div>
+            
+            <button onclick="runPopupVerification()" class="warning">
+                🔍 Run Pop-up Verification Check
+            </button>
+            <button onclick="showNotificationSetupGuide()" class="secondary">
+                📋 Show Setup Guide for My Device
+            </button>
+            <button onclick="testPopupNotification()">
+                🚨 Test Pop-up Notification
+            </button>
+            
+            <div id="setupGuide" class="setup-guide"></div>
+            <div id="notificationTestResult" class="notification-test-result"></div>
+        </div>
+        
+        <!-- Step 3: Test Notification -->
+        <div class="section">
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Test Your Notification</h3>
+            </div>
+            <p>Make sure notifications are working on your device.</p>
+            <button id="testBtn" onclick="sendTestNotification()" disabled>
+                📨 Send Test Notification
+            </button>
+        </div>
+        
+        <!-- Token Display -->
+        <div id="tokenDisplay" class="token-display">
+            <strong>Your Device Token:</strong>
+            <div id="tokenValue"></div>
+            <button onclick="copyToken()" style="margin-top: 10px;">📋 Copy Token</button>
+        </div>
+        
+        <!-- Mobile Debug Section -->
+        <div class="mobile-debug-section">
+            <h3>📱 Mobile Device Debugging</h3>
+            <p>Use these tools to diagnose notification issues on your mobile device:</p>
+            <div class="debug-grid">
+                <button onclick="mobileDeepDebug()" class="secondary">
+                    🔬 Mobile Deep Debug
+                </button>
+                <button onclick="quickDeviceInfo()">
+                    📊 Quick Device Info
+                </button>
+                <button onclick="testLocalNotification()">
+                    🔔 Test Local Notification
+                </button>
+                <button onclick="checkFirebaseStatus()">
+                    🔥 Check Firebase Status
+                </button>
+                <button onclick="diagnoseFCMIssue()">
+                    🩺 Diagnose FCM Issue
+                </button>
+                <button onclick="checkNotificationAPI()">
+                    🔌 Check Notification API
+                </button>
+            </div>
+            <div id="mobileDebugOutput" class="debug-output"></div>
+        </div>
+        
+        <!-- Debug Section -->
+        <div class="section">
+            <h3>🛠️ Troubleshooting</h3>
+            <button onclick="toggleDebug()">🐛 Toggle Debug Info</button>
+            <button onclick="clearDebugLog()">🗑️ Clear Debug Log</button>
+            <button onclick="checkStatus()">🔍 Check Registration Status</button>
+            <button onclick="verifySpreadsheetEntry()">✅ Verify Spreadsheet Entry</button>
+            <button onclick="validateToken()">🔐 Validate Token</button>
+            <button onclick="refreshToken()" class="secondary">🔄 Refresh Token</button>
+            <button onclick="sendTestToAll()" class="secondary">📢 Test All Devices</button>
+            <button onclick="unregisterAll()" class="danger">⚠️ Reset Everything</button>
+            
+            <div id="debug" class="debug"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+    
+    <script>
+        // ============ CONFIGURATION ============
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+            authDomain: "pwaapp-fe16c.firebaseapp.com",
+            projectId: "pwaapp-fe16c",
+            storageBucket: "pwaapp-fe16c.firebasestorage.app",
+            messagingSenderId: "138452600697",
+            appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+        };
+
+        const CONFIG = {
+            GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbwRUpi2Pai4DTuW-eZOK5RCWkA70c5wTunfqfpRgXDcz-PvEmF8nBDdXmhhWKxmSqptfQ/exec',
+            VAPID_PUBLIC_KEY: 'BEXBjinVivC6jAfhKZov_HMujSaEBZf3PLfYt_01O3pGDzZRh2xzZAnBeiNFQO4vuryTQKUfx6gbPj2fTE4bcGE'
+        };
+
+        // ============ GLOBAL VARIABLES ============
+        let messaging = null;
+        let swRegistration = null;
+        let currentToken = null;
+        let isRegistering = false;
+        let registrationAttempts = 0;
+        let verificationResults = {};
+
+        // ============ DEBUG LOGGING ============
+        const debugLog = {
+            logs: [],
+            add: function(message, data = null) {
+                const timestamp = new Date().toISOString();
+                const logEntry = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}`;
+                this.logs.push(logEntry);
+                console.log(message, data || '');
+                this.updateDisplay();
+            },
+            updateDisplay: function() {
+                const debugElement = document.getElementById('debug');
+                if (debugElement && debugElement.style.display === 'block') {
+                    debugElement.textContent = this.logs.join('\n\n');
+                    debugElement.scrollTop = debugElement.scrollHeight;
+                }
+            },
+            clear: function() {
+                this.logs = [];
+                this.updateDisplay();
+            }
+        };
+
+        // ============ NEW: POP-UP VERIFICATION FUNCTIONS ============
+        async function runPopupVerification() {
+            updateStatus('🔍 Running pop-up notification verification...', 'info');
+            
+            const verificationGrid = document.getElementById('verificationGrid');
+            verificationGrid.innerHTML = '';
+            
+            // List of checks to perform
+            const checks = [
+                {
+                    id: 'permission',
+                    title: 'Notification Permission',
+                    check: () => Notification.permission === 'granted',
+                    detail: `Current: ${Notification.permission}`,
+                    fix: 'Click "Enable Push Notifications" button'
+                },
+                {
+                    id: 'token',
+                    title: 'Device Token',
+                    check: () => currentToken && currentToken.length > 50,
+                    detail: currentToken ? 'Token present' : 'No token',
+                    fix: 'Enable notifications first'
+                },
+                {
+                    id: 'serviceWorker',
+                    title: 'Service Worker',
+                    check: () => swRegistration && swRegistration.active,
+                    detail: swRegistration ? 'Active' : 'Not registered',
+                    fix: 'Refresh the page'
+                },
+                {
+                    id: 'browser',
+                    title: 'Browser Support',
+                    check: () => {
+                        const ua = navigator.userAgent.toLowerCase();
+                        return ua.includes('chrome') || ua.includes('firefox') || ua.includes('samsung');
+                    },
+                    detail: getBrowserInfo(),
+                    fix: 'Use Chrome, Firefox, or Samsung Internet'
+                },
+                {
+                    id: 'androidVersion',
+                    title: 'Android Version',
+                    check: () => {
+                        const ua = navigator.userAgent;
+                        const androidMatch = ua.match(/Android (\d+)/);
+                        return !androidMatch || parseInt(androidMatch[1]) >= 8;
+                    },
+                    detail: getAndroidVersion(),
+                    fix: 'Update to Android 8.0 or higher'
+                },
+                {
+                    id: 'notWebView',
+                    title: 'Not in WebView',
+                    check: () => {
+                        const ua = navigator.userAgent.toLowerCase();
+                        return !ua.includes('wv') && !ua.includes('webview');
+                    },
+                    detail: isWebView() ? 'In WebView' : 'In Browser',
+                    fix: 'Open in Chrome or Firefox browser'
+                }
+            ];
+            
+            // Run each check and display results
+            for (const check of checks) {
+                const passed = check.check();
+                verificationResults[check.id] = passed;
+                
+                const item = document.createElement('div');
+                item.className = 'verification-item';
+                item.innerHTML = `
+                    <div class="verification-status">${passed ? '✅' : '❌'}</div>
+                    <div class="verification-title">${check.title}</div>
+                    <div class="verification-detail">${check.detail}</div>
+                    ${!passed ? `<div style="color: #dc3545; font-size: 12px; margin-top: 5px;">Fix: ${check.fix}</div>` : ''}
+                `;
+                verificationGrid.appendChild(item);
+            }
+            
+            // Check if all passed
+            const allPassed = Object.values(verificationResults).every(v => v);
+            
+            if (allPassed) {
+                updateStatus('✅ All checks passed! Your device should receive pop-up notifications.', 'success');
+                
+                // Show device-specific guide anyway
+                const guide = document.getElementById('notificationTestResult');
+                guide.style.display = 'block';
+                guide.innerHTML = `
+                    <strong>✅ Device Ready!</strong><br>
+                    To ensure pop-up notifications work:
+                    <ol>
+                        <li>Go to Settings → Apps → ${getBrowserName()}</li>
+                        <li>Tap Notifications</li>
+                        <li>Enable "Pop on screen" or "Show as pop-up"</li>
+                        <li>Set priority to "High" or "Urgent"</li>
+                    </ol>
+                    <button onclick="testPopupNotification()" style="margin-top: 10px;">Test Pop-up Now</button>
+                `;
+            } else {
+                updateStatus('⚠️ Some checks failed. Please fix the issues above.', 'warning');
+            }
+        }
+
+        function showNotificationSetupGuide() {
+            const guide = document.getElementById('setupGuide');
+            guide.style.display = 'block';
+            
+            const deviceBrand = getDeviceBrand().toLowerCase();
+            let specificGuide = '';
+            
+            // Device-specific guides
+            if (deviceBrand.includes('samsung')) {
+                specificGuide = `
+                    <h4>📱 Samsung Setup Guide:</h4>
+                    <ol class="guide-step">
+                        <li>Go to <strong>Settings → Apps</strong></li>
+                        <li>Find and tap <strong>${getBrowserName()}</strong></li>
+                        <li>Tap <strong>Notifications</strong></li>
+                        <li>Enable <strong>Show notifications</strong></li>
+                        <li>Tap on <strong>Quiz Notifications</strong> category</li>
+                        <li>Enable <strong>Show as pop-up</strong></li>
+                        <li>Set <strong>Sound and vibration</strong> to ON</li>
+                        <li>Enable <strong>Show on Lock screen</strong></li>
+                    </ol>
+                `;
+            } else if (deviceBrand.includes('xiaomi') || deviceBrand.includes('redmi') || deviceBrand.includes('poco')) {
+                specificGuide = `
+                    <h4>📱 Xiaomi/Redmi/POCO Setup Guide:</h4>
+                    <ol class="guide-step">
+                        <li>Go to <strong>Settings → Apps → Manage apps</strong></li>
+                        <li>Find <strong>${getBrowserName()}</strong></li>
+                        <li>Tap <strong>Notifications</strong></li>
+                        <li>Enable <strong>Show notifications</strong></li>
+                        <li>Enable <strong>Floating notifications</strong> (This is pop-up!)</li>
+                        <li>Enable <strong>Lock screen notifications</strong></li>
+                        <li>Go back and tap <strong>Other permissions</strong></li>
+                        <li>Enable <strong>Display pop-up windows</strong></li>
+                        <li>Go to <strong>Battery saver</strong></li>
+                        <li>Select <strong>No restrictions</strong></li>
+                    </ol>
+                    <p style="color: #dc3545;"><strong>Important:</strong> MIUI is very aggressive. Also check Security app → Permissions → Autostart and enable ${getBrowserName()}</p>
+                `;
+            } else if (deviceBrand.includes('vivo')) {
+                specificGuide = `
+                    <h4>📱 Vivo Setup Guide:</h4>
+                    <ol class="guide-step">
+                        <li>Go to <strong>Settings → Apps & permissions → Application manager</strong></li>
+                        <li>Find <strong>${getBrowserName()}</strong></li>
+                        <li>Tap <strong>Notifications</strong></li>
+                        <li>Enable <strong>Allow notifications</strong></li>
+                        <li>Enable <strong>Show on lock screen</strong></li>
+                        <li>Enable <strong>Notification pop-up style</strong></li>
+                        <li>Go back to <strong>Permission manager</strong></li>
+                        <li>Find <strong>Pop-ups and background pop-ups</strong></li>
+                        <li>Allow for <strong>${getBrowserName()}</strong></li>
+                        <li>Go to <strong>Battery → Background power consumption</strong></li>
+                        <li>Allow <strong>${getBrowserName()}</strong></li>
+                    </ol>
+                `;
+            } else if (deviceBrand.includes('oppo') || deviceBrand.includes('realme')) {
+                specificGuide = `
+                    <h4>📱 OPPO/Realme Setup Guide:</h4>
+                    <ol class="guide-step">
+                        <li>Go to <strong>Settings → Notification & status bar</strong></li>
+                        <li>Tap <strong>Manage notifications</strong></li>
+                        <li>Find <strong>${getBrowserName()}</strong></li>
+                        <li>Enable <strong>Allow notifications</strong></li>
+                        <li>Enable <strong>Show on lock screen</strong></li>
+                        <li>Enable <strong>Banner style</strong> (This is pop-up!)</li>
+                        <li>Go to <strong>Settings → Battery → App battery management</strong></li>
+                        <li>Find <strong>${getBrowserName()}</strong></li>
+                        <li>Disable <strong>Background freeze</strong></li>
+                        <li>Disable <strong>Abnormal apps optimization</strong></li>
+                    </ol>
+                `;
+            } else {
+                specificGuide = `
+                    <h4>📱 General Android Setup Guide:</h4>
+                    <ol class="guide-step">
+                        <li>Go to <strong>Settings → Apps & notifications</strong></li>
+                        <li>Find <strong>${getBrowserName()}</strong></li>
+                        <li>Tap <strong>Notifications</strong></li>
+                        <li>Enable <strong>Show notifications</strong></li>
+                        <li>Look for <strong>"Pop on screen"</strong>, <strong>"Heads up"</strong>, or <strong>"Floating"</strong></li>
+                        <li>Enable it and set priority to <strong>High</strong></li>
+                        <li>Enable <strong>Sound</strong> and <strong>Vibration</strong></li>
+                        <li>Check <strong>Battery optimization</strong></li>
+                        <li>Set to <strong>Don't optimize</strong> for ${getBrowserName()}</li>
+                    </ol>
+                `;
+            }
+            
+            guide.innerHTML = specificGuide + `
+                <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px;">
+                    <strong>🔧 Still not working?</strong>
+                    <ul style="margin: 10px 0;">
+                        <li>Try restarting your phone after changing settings</li>
+                        <li>Clear ${getBrowserName()} cache and data, then re-enable notifications</li>
+                        <li>Make sure Do Not Disturb is OFF</li>
+                        <li>Check if other apps show pop-up notifications</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        async function testPopupNotification() {
+            if (!currentToken) {
+                alert('❌ Please enable notifications first!');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('notificationTestResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '⏳ Sending pop-up test notification...';
+            
+            debugLog.add('Sending pop-up test notification...');
+            
+            const testData = {
+                action: 'test',
+                fcmToken: currentToken,
+                notification: {
+                    title: '🚨 URGENT: Pop-up Test!',
+                    body: 'If you see this as a pop-up on top of your screen, it\'s working! 🎉',
+                    priority: 'urgent'
+                },
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(testData)
+                });
+                
+                resultDiv.innerHTML = `
+                    <strong>✅ Pop-up test sent!</strong><br>
+                    <br>
+                    You should see a notification that:
+                    <ul>
+                        <li>Appears on TOP of your screen</li>
+                        <li>Shows even when using other apps</li>
+                        <li>Makes a sound and vibrates</li>
+                        <li>Has action buttons</li>
+                    </ul>
+                    <br>
+                    <strong>Don't see a pop-up?</strong> 
+                    <button onclick="showNotificationSetupGuide()" style="margin-left: 10px;">Show Setup Guide</button>
+                `;
+                
+                // Auto-check after 5 seconds
+                setTimeout(() => {
+                    const sawPopup = confirm('Did you see the notification as a POP-UP on top of your screen?');
+                    if (!sawPopup) {
+                        showNotificationSetupGuide();
+                    } else {
+                        resultDiv.innerHTML += '<br><br><strong style="color: #4CAF50;">🎉 Great! Pop-up notifications are working!</strong>';
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                debugLog.add('Pop-up test error:', error);
+                resultDiv.innerHTML = `❌ Failed to send test: ${error.message}`;
+            }
+        }
+
+        function checkNotificationAPI() {
+            let report = '🔌 Notification API Check:\n\n';
+            
+            // Check Notification API
+            report += `Notification API: ${('Notification' in window) ? '✅ Available' : '❌ Not available'}\n`;
+            report += `Permission: ${Notification.permission}\n`;
+            
+            // Check Service Worker
+            report += `\nService Worker API: ${('serviceWorker' in navigator) ? '✅ Available' : '❌ Not available'}\n`;
+            
+            // Check Push API
+            report += `Push API: ${('PushManager' in window) ? '✅ Available' : '❌ Not available'}\n`;
+            
+            // Check for secure context
+            report += `Secure Context: ${window.isSecureContext ? '✅ Yes' : '❌ No'}\n`;
+            
+            // Check for notification properties
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    report += '\nNotification Features:\n';
+                    report += `- requireInteraction: ${('requireInteraction' in Notification.prototype) ? '✅' : '❌'}\n`;
+                    report += `- vibrate: ${('vibrate' in navigator) ? '✅' : '❌'}\n`;
+                    report += `- actions: ${('actions' in Notification.prototype) ? '✅' : '❌'}\n`;
+                    report += `- image: ${('image' in Notification.prototype) ? '✅' : '❌'}\n`;
+                    report += `- badge: ${('badge' in Notification.prototype) ? '✅' : '❌'}\n`;
+                } catch (e) {
+                    report += `\nError checking features: ${e.message}\n`;
+                }
+            }
+            
+            alert(report);
+        }
+
+        // ============ HELPER FUNCTIONS ============
+        function getBrowserName() {
+            const ua = navigator.userAgent;
+            if (ua.includes('Chrome')) return 'Chrome';
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Samsung')) return 'Samsung Internet';
+            if (ua.includes('Opera')) return 'Opera';
+            return 'Your Browser';
+        }
+
+        function getBrowserInfo() {
+            const ua = navigator.userAgent;
+            const browser = getBrowserName();
+            const versionMatch = ua.match(/(Chrome|Firefox|Version)\/(\d+)/);
+            const version = versionMatch ? versionMatch[2] : 'Unknown';
+            return `${browser} v${version}`;
+        }
+
+        function getDeviceBrand() {
+            const ua = navigator.userAgent.toLowerCase();
+            if (ua.includes('samsung')) return 'Samsung';
+            if (ua.includes('xiaomi') || ua.includes('redmi') || ua.includes('poco')) return 'Xiaomi';
+            if (ua.includes('vivo')) return 'Vivo';
+            if (ua.includes('oppo')) return 'OPPO';
+            if (ua.includes('realme')) return 'Realme';
+            if (ua.includes('oneplus')) return 'OnePlus';
+            if (ua.includes('huawei')) return 'Huawei';
+            if (ua.includes('nokia')) return 'Nokia';
+            if (ua.includes('motorola')) return 'Motorola';
+            return 'Android';
+        }
+
+        function getAndroidVersion() {
+            const ua = navigator.userAgent;
+            const match = ua.match(/Android (\d+\.?\d*)/);
+            return match ? `Android ${match[1]}` : 'Unknown';
+        }
+
+        function isWebView() {
+            const ua = navigator.userAgent.toLowerCase();
+            return ua.includes('wv') || ua.includes('webview');
+        }
+
+        // ============ MOBILE DEBUG FUNCTIONS ============
+        async function mobileDeepDebug() {
+            const output = document.getElementById('mobileDebugOutput');
+            output.style.display = 'block';
+            output.textContent = 'Running deep debug... Please wait...\n\n';
+            
+            let debugInfo = '';
+            
+            try {
+                debugInfo += '=== MOBILE DEEP DEBUG REPORT ===\n';
+                debugInfo += `Timestamp: ${new Date().toISOString()}\n\n`;
+                
+                // 1. Device Info
+                debugInfo += '📱 DEVICE INFORMATION\n';
+                debugInfo += `User Agent: ${navigator.userAgent}\n`;
+                debugInfo += `Platform: ${navigator.platform}\n`;
+                debugInfo += `Vendor: ${navigator.vendor || 'N/A'}\n`;
+                debugInfo += `Language: ${navigator.language}\n`;
+                debugInfo += `Online: ${navigator.onLine}\n`;
+                debugInfo += `Cookie Enabled: ${navigator.cookieEnabled}\n`;
+                debugInfo += `Device Brand: ${getDeviceBrand()}\n`;
+                debugInfo += `Android Version: ${getAndroidVersion()}\n`;
+                debugInfo += `Browser: ${getBrowserInfo()}\n`;
+                debugInfo += `WebView: ${isWebView() ? 'Yes ⚠️' : 'No ✅'}\n`;
+                
+                // Connection info
+                if (navigator.connection) {
+                    debugInfo += `Connection Type: ${navigator.connection.effectiveType || 'Unknown'}\n`;
+                    debugInfo += `Downlink: ${navigator.connection.downlink || 'Unknown'} Mbps\n`;
+                }
+                debugInfo += '\n';
+                
+                // 2. Notification Status
+                debugInfo += '🔔 NOTIFICATION STATUS\n';
+                debugInfo += `Permission: ${Notification.permission}\n`;
+                debugInfo += `Pop-up Verification: ${Object.values(verificationResults).every(v => v) ? '✅ All passed' : '❌ Some failed'}\n`;
+                
+                // 3. Service Worker Status
+                debugInfo += '\n👷 SERVICE WORKER STATUS\n';
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        debugInfo += `Registrations Count: ${registrations.length}\n`;
+                        
+                        for (let i = 0; i < registrations.length; i++) {
+                            const reg = registrations[i];
+                            debugInfo += `\nRegistration ${i + 1}:\n`;
+                            debugInfo += `  Scope: ${reg.scope}\n`;
+                            debugInfo += `  Active: ${reg.active ? reg.active.state : 'None'}\n`;
+                            debugInfo += `  Waiting: ${reg.waiting ? reg.waiting.state : 'None'}\n`;
+                            debugInfo += `  Installing: ${reg.installing ? reg.installing.state : 'None'}\n`;
+                        }
+                    } catch (e) {
+                        debugInfo += `Error checking SW: ${e.message}\n`;
+                    }
+                } else {
+                    debugInfo += 'Service Worker NOT supported!\n';
+                }
+                
+                // 4. Firebase & FCM Status
+                debugInfo += '\n🔥 FIREBASE STATUS\n';
+                debugInfo += `Firebase Loaded: ${typeof firebase !== 'undefined'}\n`;
+                debugInfo += `Messaging Object: ${messaging ? 'Initialized' : 'Not initialized'}\n`;
+                debugInfo += `Current Token: ${currentToken ? 'Present' : 'Missing'}\n`;
+                if (currentToken) {
+                    debugInfo += `Token Preview: ${currentToken.substring(0, 30)}...\n`;
+                }
+                
+                // 5. IndexedDB Check (mobile-safe)
+                debugInfo += '\n💾 STORAGE STATUS\n';
+                if ('indexedDB' in window) {
+                    debugInfo += 'IndexedDB: Supported\n';
+                    
+                    // Try to check known FCM databases
+                    const dbNames = ['fcm_token_details_db', 'firebase-messaging-database'];
+                    for (const dbName of dbNames) {
+                        try {
+                            const req = indexedDB.open(dbName);
+                            await new Promise((resolve, reject) => {
+                                req.onsuccess = () => {
+                                    debugInfo += `  Database '${dbName}': Exists\n`;
+                                    req.result.close();
+                                    resolve();
+                                };
+                                req.onerror = () => {
+                                    debugInfo += `  Database '${dbName}': Not found\n`;
+                                    resolve();
+                                };
+                                setTimeout(resolve, 1000); // Timeout after 1 second
+                            });
+                        } catch (e) {
+                            debugInfo += `  Database '${dbName}': Error checking\n`;
+                        }
+                    }
+                } else {
+                    debugInfo += 'IndexedDB: NOT supported!\n';
+                }
+                
+                // 6. Test Firebase Token Refresh
+                if (messaging && currentToken) {
+                    debugInfo += '\n🔄 TOKEN REFRESH TEST\n';
+                    try {
+                        debugInfo += 'Attempting to get fresh token...\n';
+                        const freshToken = await messaging.getToken({
+                            vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                            serviceWorkerRegistration: swRegistration
+                        });
+                        
+                        if (freshToken === currentToken) {
+                            debugInfo += '✅ Token refresh successful (same token)\n';
+                        } else {
+                            debugInfo += '⚠️ Token changed during refresh!\n';
+                            debugInfo += `New token preview: ${freshToken.substring(0, 30)}...\n`;
+                        }
+                    } catch (e) {
+                        debugInfo += `❌ Token refresh failed: ${e.message}\n`;
+                    }
+                }
+                
+                // 7. Common Issues Check
+                debugInfo += '\n⚠️ COMMON ISSUES CHECK\n';
+                
+                // Check for problematic browsers
+                const ua = navigator.userAgent.toLowerCase();
+                if (ua.includes('vivo') || ua.includes('oppo') || ua.includes('xiaomi')) {
+                    debugInfo += '❗ Detected potentially problematic device brand\n';
+                    debugInfo += '   - Check battery optimization settings\n';
+                    debugInfo += '   - Add browser to protected apps\n';
+                    debugInfo += '   - Enable pop-up/floating notifications\n';
+                }
+                
+                // Check for WebView
+                if (ua.includes('wv') || ua.includes('webview')) {
+                    debugInfo += '❗ Running in WebView - notifications may not work\n';
+                    debugInfo += '   - Try opening in Chrome/Firefox instead\n';
+                }
+                
+                // Check for old browser versions
+                const chromeMatch = ua.match(/chrome\/(\d+)/);
+                if (chromeMatch && parseInt(chromeMatch[1]) < 80) {
+                    debugInfo += '❗ Old Chrome version detected - please update\n';
+                }
+                
+                debugInfo += '\n=== END OF DEBUG REPORT ===\n';
+                
+            } catch (error) {
+                debugInfo += `\n❌ Debug Error: ${error.message}\n`;
+            }
+            
+            output.textContent = debugInfo;
+        }
+
+        function quickDeviceInfo() {
+            const info = {
+                'Browser': getBrowserName(),
+                'Version': getBrowserInfo(),
+                'Device': getDeviceBrand(),
+                'Android': getAndroidVersion(),
+                'Permission': Notification.permission,
+                'Token': currentToken ? '✅ Present' : '❌ Missing',
+                'SW': swRegistration ? '✅ Active' : '❌ Inactive',
+                'Online': navigator.onLine ? '✅ Yes' : '❌ No',
+                'Firebase': typeof firebase !== 'undefined' ? '✅ Loaded' : '❌ Not loaded',
+                'WebView': isWebView() ? '⚠️ Yes' : '✅ No',
+                'Pop-up Ready': Object.values(verificationResults).every(v => v) ? '✅ Yes' : '❌ No'
+            };
+            
+            let message = '📊 Quick Device Info:\n\n';
+            for (const [key, value] of Object.entries(info)) {
+                message += `${key}: ${value}\n`;
+            }
+            
+            alert(message);
+        }
+
+        async function testLocalNotification() {
+            if (Notification.permission !== 'granted') {
+                alert('❌ Please enable notifications first!');
+                return;
+            }
+            
+            try {
+                // Try service worker notification first (works better on mobile)
+                if (swRegistration && swRegistration.active) {
+                    await swRegistration.showNotification('📱 Pop-up Test Notification', {
+                        body: 'This should appear as a pop-up on top of your screen!',
+                        icon: '/MCQ/test/app/icon-192x192.png',
+                        badge: '/MCQ/test/app/icon-192x192.png',
+                        vibrate: [200, 100, 200, 100, 200],
+                        requireInteraction: true,
+                        silent: false,
+                        actions: [
+                            { action: 'yes', title: '✅ I saw the pop-up!' },
+                            { action: 'no', title: '❌ Not a pop-up' }
+                        ]
+                    });
+                    alert('✅ Test notification sent via Service Worker!\n\nDid it appear as a POP-UP on top of your screen?');
+                } else {
+                    // Fallback to regular notification
+                    const notif = new Notification('📱 Test Notification', {
+                        body: 'Basic notification test',
+                        icon: '/MCQ/test/app/icon-192x192.png',
+                        requireInteraction: true
+                    });
+                    setTimeout(() => notif.close(), 5000);
+                    alert('✅ Basic notification sent!');
+                }
+            } catch (error) {
+                alert(`❌ Notification failed: ${error.message}`);
+            }
+        }
+
+        async function checkFirebaseStatus() {
+            let status = '🔥 Firebase Status Report:\n\n';
+            
+            try {
+                status += `Firebase SDK: ${typeof firebase !== 'undefined' ? '✅ Loaded' : '❌ Not loaded'}\n`;
+                status += `Messaging: ${messaging ? '✅ Initialized' : '❌ Not initialized'}\n`;
+                status += `Project ID: ${FIREBASE_CONFIG.projectId}\n`;
+                status += `Sender ID: ${FIREBASE_CONFIG.messagingSenderId}\n`;
+                status += `Token Status: ${currentToken ? '✅ Available' : '❌ Not available'}\n`;
+                
+                if (currentToken) {
+                    status += `\nToken Details:\n`;
+                    status += `Length: ${currentToken.length} characters\n`;
+                    status += `First 20 chars: ${currentToken.substring(0, 20)}...\n`;
+                    
+                    // Try to validate token format
+                    if (currentToken.length > 100 && currentToken.includes(':')) {
+                        status += `Format: ✅ Valid FCM token format\n`;
+                    } else {
+                        status += `Format: ⚠️ Unusual token format\n`;
+                    }
+                }
+                
+                status += `\nVAPID Key: ${CONFIG.VAPID_PUBLIC_KEY.substring(0, 20)}...\n`;
+                
+                // Check pop-up readiness
+                status += `\nPop-up Notifications: ${Object.values(verificationResults).every(v => v) ? '✅ Ready' : '❌ Not ready'}\n`;
+                
+            } catch (error) {
+                status += `\n❌ Error: ${error.message}\n`;
+            }
+            
+            alert(status);
+        }
+
+        // ============ INITIALIZATION ============
+        window.addEventListener('load', async () => {
+            debugLog.add('Page loaded, initializing...');
+            
+            // Check for problematic devices
+            const userAgent = navigator.userAgent.toLowerCase();
+            if (userAgent.includes('vivo') || userAgent.includes('oppo') || userAgent.includes('xiaomi') || userAgent.includes('miui')) {
+                document.getElementById('deviceNotice').style.display = 'block';
+                debugLog.add('Detected potentially problematic device: ' + navigator.userAgent);
+            }
+            
+            // Check Firebase
+            if (typeof firebase === 'undefined') {
+                updateStatus('❌ Error: Firebase SDK failed to load', 'error');
+                return;
+            }
+            
+            try {
+                // Initialize Firebase
+                firebase.initializeApp(FIREBASE_CONFIG);
+                debugLog.add('Firebase initialized');
+                
+                // Check browser support
+                if (!('serviceWorker' in navigator)) {
+                    updateStatus('❌ Service Workers not supported in this browser', 'error');
+                    return;
+                }
+                
+                if (!('PushManager' in window)) {
+                    updateStatus('❌ Push notifications not supported in this browser', 'error');
+                    return;
+                }
+                
+                // Register service worker
+                debugLog.add('Registering service worker...');
+                swRegistration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js', {
+                    updateViaCache: 'none'
+                });
+                
+                // Wait for activation
+                await waitForServiceWorker();
+                
+                // Get messaging instance
+                messaging = firebase.messaging();
+                debugLog.add('Firebase Messaging initialized');
+                
+                // Check existing registration
+                await checkExistingRegistration();
+                
+                // Setup message handler
+                messaging.onMessage((payload) => {
+                    debugLog.add('Foreground message received:', payload);
+                    handleForegroundMessage(payload);
+                });
+                
+                // Run initial pop-up verification
+                setTimeout(() => {
+                    runPopupVerification();
+                }, 2000);
+                
+            } catch (error) {
+                debugLog.add('Initialization error:', error);
+                updateStatus('❌ Initialization failed: ' + error.message, 'error');
+            }
+        });
+
+        // ============ SERVICE WORKER MANAGEMENT ============
+        async function waitForServiceWorker() {
+            if (swRegistration.installing) {
+                debugLog.add('Waiting for service worker to install...');
+                await new Promise((resolve) => {
+                    swRegistration.installing.addEventListener('statechange', function(e) {
+                        if (e.target.state === 'activated') {
+                            resolve();
+                        }
+                    });
+                });
+            }
+            await navigator.serviceWorker.ready;
+            debugLog.add('Service worker is ready');
+        }
+
+        // ============ REGISTRATION CHECK ============
+        async function checkExistingRegistration() {
+            try {
+                currentToken = await messaging.getToken({ 
+                    vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                    serviceWorkerRegistration: swRegistration 
+                });
+                
+                if (currentToken) {
+                    debugLog.add('Existing token found:', currentToken);
+                    displayToken(currentToken);
+                    document.getElementById('enableBtn').disabled = true;
+                    document.getElementById('enableBtn').textContent = '✅ Notifications Enabled';
+                    document.getElementById('testBtn').disabled = false;
+                    updateStatus('✅ Push notifications are already enabled on this device!', 'success');
+                    
+                    // Show manual section in case previous registration failed
+                    document.getElementById('manualSection').style.display = 'block';
+                } else {
+                    document.getElementById('enableBtn').disabled = false;
+                    updateStatus('👋 Welcome! Please enable push notifications to receive quiz alerts.', 'info');
+                }
+            } catch (error) {
+                debugLog.add('Token check error:', error);
+                document.getElementById('enableBtn').disabled = false;
+                updateStatus('Ready to enable push notifications', 'info');
+            }
+        }
+
+        // ============ MAIN SUBSCRIPTION FUNCTION ============
+        async function subscribeToPush() {
+            if (isRegistering) {
+                debugLog.add('Registration already in progress');
+                return;
+            }
+            
+            isRegistering = true;
+            registrationAttempts++;
+            debugLog.add(`Starting subscription process (attempt ${registrationAttempts})...`);
+            
+            try {
+                // Request permission
+                debugLog.add('Requesting notification permission...');
+                const permission = await Notification.requestPermission();
+                debugLog.add('Permission result:', permission);
+                
+                if (permission !== 'granted') {
+                    updateStatus('❌ Notification permission denied. Please enable it in your browser settings.', 'error');
+                    isRegistering = false;
+                    return;
+                }
+                
+                // Get FCM token
+                updateStatus('🔄 Getting device token...', 'info');
+                const token = await messaging.getToken({ 
+                    vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                    serviceWorkerRegistration: swRegistration 
+                });
+                
+                if (!token) {
+                    throw new Error('Failed to get FCM token');
+                }
+                
+                debugLog.add('Token received:', token);
+                currentToken = token;
+                displayToken(token);
+                
+                // Save to server
+                updateStatus('📤 Registering device with server...', 'info');
+                showRegistrationStatus('Saving registration...');
+                
+                const saveResult = await saveTokenToServer(token);
+                
+                if (saveResult.success || saveResult.assumed) {
+                    document.getElementById('enableBtn').disabled = true;
+                    document.getElementById('enableBtn').textContent = '✅ Notifications Enabled';
+                    document.getElementById('testBtn').disabled = false;
+                    
+                    if (saveResult.assumed) {
+                        updateStatus('⚠️ Registration sent. Please verify by sending a test notification.', 'warning');
+                        showRegistrationStatus('Registration sent - verification recommended', 'warning');
+                        document.getElementById('manualSection').style.display = 'block';
+                    } else {
+                        updateStatus('✅ Device successfully registered for quiz notifications!', 'success');
+                        showRegistrationStatus('✅ Registration complete! You will receive quiz notifications.', 'success');
+                    }
+                    
+                    // Run pop-up verification after registration
+                    setTimeout(() => {
+                        runPopupVerification();
+                    }, 1000);
+                } else {
+                    throw new Error(saveResult.error || 'Failed to save registration');
+                }
+                
+            } catch (error) {
+                debugLog.add('Subscription error:', error);
+                updateStatus('❌ Registration failed: ' + error.message, 'error');
+                showRegistrationStatus('❌ Registration failed. Try manual registration below.', 'error');
+                document.getElementById('manualSection').style.display = 'block';
+            } finally {
+                isRegistering = false;
+            }
+        }
+
+        // ============ SAVE TOKEN TO SERVER ============
+        async function saveTokenToServer(token, isManual = false) {
+            debugLog.add(`Saving token to server (${isManual ? 'manual' : 'automatic'})...`);
+            
+            const studentId = document.getElementById('studentId').value.trim();
+            const studentName = document.getElementById('studentName').value.trim();
+            
+            const data = {
+                action: isManual ? 'manualSubscribe' : 'subscribe',
+                subscription: {
+                    endpoint: `https://fcm.googleapis.com/fcm/send/${token}`,
+                    keys: { p256dh: 'not-used', auth: 'not-used' }
+                },
+                fcmToken: token,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+                studentId: studentId,
+                studentName: studentName,
+                isManual: isManual
+            };
+            
+            debugLog.add('Sending data:', data);
+            
+            try {
+                const response = await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+                
+                // With no-cors, we can't read the response
+                debugLog.add('Request sent (no-cors mode)');
+                
+                // Give it a moment to process
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Return assumed success for no-cors
+                return { success: true, assumed: true };
+                
+            } catch (error) {
+                debugLog.add('Save error:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // ============ MANUAL REGISTRATION ============
+        async function manuallyAddToSpreadsheet() {
+            if (!currentToken) {
+                updateStatus('❌ No device token found. Please enable notifications first.', 'error');
+                return;
+            }
+            
+            updateStatus('📤 Manually adding device to spreadsheet...', 'info');
+            document.getElementById('manualAddBtn').disabled = true;
+            
+            try {
+                const result = await saveTokenToServer(currentToken, true);
+                
+                if (result.success || result.assumed) {
+                    updateStatus('✅ Manual registration sent! Send a test notification to verify.', 'success');
+                    showRegistrationStatus('✅ Manual registration complete!', 'success');
+                } else {
+                    throw new Error(result.error || 'Manual registration failed');
+                }
+            } catch (error) {
+                debugLog.add('Manual registration error:', error);
+                updateStatus('❌ Manual registration failed: ' + error.message, 'error');
+            } finally {
+                document.getElementById('manualAddBtn').disabled = false;
+            }
+        }
+
+        // ============ RETRY REGISTRATION ============
+        async function retryAutomaticRegistration() {
+            debugLog.add('Retrying automatic registration...');
+            document.getElementById('manualSection').style.display = 'none';
+            registrationAttempts = 0;
+            await subscribeToPush();
+        }
+
+        // ============ TEST NOTIFICATION ============
+        async function sendTestNotification() {
+            if (!currentToken) {
+                updateStatus('❌ No device token found. Please enable notifications first.', 'error');
+                return;
+            }
+            
+            debugLog.add('Sending test notification request...');
+            updateStatus('📤 Sending test notification to THIS device only...', 'info');
+            
+            try {
+                const testData = {
+                    action: 'test',
+                    fcmToken: currentToken,
+                    timestamp: new Date().toISOString(),
+                    deviceInfo: {
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        vendor: navigator.vendor
+                    }
+                };
+                
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(testData)
+                });
+                
+                updateStatus('✅ Test notification sent to THIS device! You should receive it within 10 seconds. If not, try refreshing your token.', 'success');
+                debugLog.add('Test notification request sent to current device token');
+                
+                // Show troubleshooting after 10 seconds if needed
+                setTimeout(() => {
+                    const retryInfo = document.getElementById('retryInfo');
+                    retryInfo.style.display = 'block';
+                    retryInfo.innerHTML = '💡 Not receiving notifications? Try: <button onclick="refreshToken()">🔄 Refresh Token</button> or <button onclick="showNotificationSetupGuide()">📋 Setup Guide</button>';
+                }, 10000);
+                
+            } catch (error) {
+                debugLog.add('Test notification error:', error);
+                updateStatus('❌ Failed to send test: ' + error.message, 'error');
+            }
+        }
+
+        // ============ VERIFY SPREADSHEET ENTRY ============
+        async function verifySpreadsheetEntry() {
+            if (!currentToken) {
+                updateStatus('❌ No device token found', 'error');
+                return;
+            }
+            
+            updateStatus('🔍 Checking spreadsheet entry...', 'info');
+            debugLog.add('Verifying spreadsheet entry for token:', currentToken);
+            
+            // Display token info for manual verification
+            const info = `
+Token Information:
+- Token: ${currentToken.substring(0, 40)}...
+- Student ID: ${document.getElementById('studentId').value || 'Not provided'}
+- Student Name: ${document.getElementById('studentName').value || 'Not provided'}
+- Registration Time: ${new Date().toLocaleString()}
+- Device: ${getDeviceBrand()} - ${getBrowserName()}
+- Pop-up Ready: ${Object.values(verificationResults).every(v => v) ? 'Yes' : 'No'}
+
+Please check if this token appears in your Google Sheet.
+If not, use the "Manually Add to Spreadsheet" button above.
+            `;
+            
+            alert(info);
+        }
+
+        // ============ UI HELPER FUNCTIONS ============
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            debugLog.add('Status: ' + message);
+        }
+
+        function displayToken(token) {
+            document.getElementById('tokenDisplay').style.display = 'block';
+            document.getElementById('tokenValue').textContent = token;
+            currentToken = token;
+        }
+
+        function showRegistrationStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('registrationStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = message;
+            statusDiv.className = 'registration-status ' + type;
+        }
+
+        function copyToken() {
+            if (currentToken) {
+                navigator.clipboard.writeText(currentToken).then(() => {
+                    updateStatus('✅ Token copied to clipboard!', 'success');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = currentToken;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    updateStatus('✅ Token copied!', 'success');
+                });
+            }
+        }
+
+        function toggleDebug() {
+            const debug = document.getElementById('debug');
+            debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
+            if (debug.style.display === 'block') {
+                debugLog.updateDisplay();
+            }
+        }
+
+        function clearDebugLog() {
+            debugLog.clear();
+            updateStatus('Debug log cleared', 'info');
+        }
+
+        // ============ CHECK REGISTRATION STATUS ============
+        async function checkStatus() {
+            if (!currentToken) {
+                updateStatus('❌ No device token found', 'error');
+                return;
+            }
+            
+            updateStatus('🔍 Checking registration status...', 'info');
+            debugLog.add('Checking registration for token:', currentToken);
+            
+            // Display comprehensive status
+            const statusInfo = {
+                token: currentToken,
+                tokenShort: currentToken.substring(0, 40) + '...',
+                studentId: document.getElementById('studentId').value || 'Not provided',
+                studentName: document.getElementById('studentName').value || 'Not provided',
+                browser: getBrowserInfo(),
+                device: getDeviceBrand(),
+                notificationPermission: Notification.permission,
+                popupReady: Object.values(verificationResults).every(v => v),
+                registrationAttempts: registrationAttempts,
+                timestamp: new Date().toISOString()
+            };
+            
+            alert(`Registration Status:\n\n${JSON.stringify(statusInfo, null, 2)}`);
+        }
+
+        // ============ HANDLE FOREGROUND MESSAGES ============
+        function handleForegroundMessage(payload) {
+            const { title, body, icon } = payload.notification || {};
+            
+            if (Notification.permission === 'granted') {
+                const notification = new Notification(title || 'Quiz Notification', { 
+                    body: body || 'You have a new quiz!',
+                    icon: icon || '/MCQ/test/app/icon-192x192.png',
+                    tag: 'quiz-notification',
+                    requireInteraction: true,
+                    vibrate: [200, 100, 200]
+                });
+                
+                notification.onclick = function() {
+                    window.focus();
+                    notification.close();
+                };
+            }
+            
+            updateStatus(`📬 New notification: ${title}`, 'success');
+        }
+
+        // ============ REFRESH TOKEN ============
+        async function refreshToken() {
+            if (!messaging) {
+                updateStatus('❌ Messaging not initialized', 'error');
+                return;
+            }
+            
+            updateStatus('🔄 Refreshing device token...', 'info');
+            debugLog.add('Starting token refresh process');
+            
+            try {
+                // Delete old token
+                if (currentToken) {
+                    await messaging.deleteToken();
+                    debugLog.add('Old token deleted');
+                }
+                
+                // Get new token
+                const newToken = await messaging.getToken({ 
+                    vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                    serviceWorkerRegistration: swRegistration 
+                });
+                
+                if (!newToken) {
+                    throw new Error('Failed to get new token');
+                }
+                
+                debugLog.add('New token received:', newToken);
+                currentToken = newToken;
+                displayToken(newToken);
+                
+                // Save new token
+                const saveResult = await saveTokenToServer(newToken, false);
+                
+                if (saveResult.success || saveResult.assumed) {
+                    updateStatus('✅ Token refreshed successfully! Try sending a test notification now.', 'success');
+                    document.getElementById('testBtn').disabled = false;
+                    
+                    // Re-run verification
+                    setTimeout(() => {
+                        runPopupVerification();
+                    }, 1000);
+                } else {
+                    throw new Error('Failed to save new token');
+                }
+                
+            } catch (error) {
+                debugLog.add('Token refresh error:', error);
+                updateStatus('❌ Failed to refresh token: ' + error.message, 'error');
+            }
+        }
+
+        // ============ VALIDATE TOKEN ============
+        async function validateToken() {
+            if (!currentToken) {
+                updateStatus('❌ No token to validate', 'error');
+                return;
+            }
+            
+            updateStatus('🔍 Validating token...', 'info');
+            
+            const validationData = {
+                action: 'validateToken',
+                fcmToken: currentToken,
+                deviceInfo: {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    vendor: navigator.vendor,
+                    language: navigator.language,
+                    cookieEnabled: navigator.cookieEnabled,
+                    onLine: navigator.onLine,
+                    screenResolution: `${screen.width}x${screen.height}`,
+                    deviceBrand: getDeviceBrand(),
+                    browserInfo: getBrowserInfo(),
+                    popupReady: Object.values(verificationResults).every(v => v),
+                    timestamp: new Date().toISOString()
+                }
+            };
+            
+            debugLog.add('Sending validation request:', validationData);
+            
+            try {
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(validationData)
+                });
+                
+                updateStatus('✅ Validation request sent. Check debug logs in Google Apps Script.', 'success');
+            } catch (error) {
+                debugLog.add('Validation error:', error);
+                updateStatus('❌ Validation failed: ' + error.message, 'error');
+            }
+        }
+
+        // ============ SEND TEST TO ALL ============
+        async function sendTestToAll() {
+            if (!confirm('This will send a test notification to ALL registered devices. Continue?')) return;
+            
+            updateStatus('📤 Sending test notification to all devices...', 'info');
+            
+            try {
+                const testData = {
+                    action: 'sendToAll',
+                    title: '🔔 Test Notification to All',
+                    body: 'This is a test notification sent to all registered devices.',
+                    timestamp: new Date().toISOString()
+                };
+                
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(testData)
+                });
+                
+                updateStatus('✅ Test notification sent to all devices!', 'success');
+            } catch (error) {
+                debugLog.add('Send to all error:', error);
+                updateStatus('❌ Failed to send: ' + error.message, 'error');
+            }
+        }
+
+        // ============ UNREGISTER ALL ============
+        async function unregisterAll() {
+            if (!confirm('This will remove all notification settings. Are you sure?')) return;
+            
+            try {
+                // Delete token
+                if (messaging && currentToken) {
+                    await messaging.deleteToken();
+                    debugLog.add('Token deleted');
+                }
+                
+                // Unregister service workers
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                    debugLog.add('Service worker unregistered:', registration.scope);
+                }
+                
+                // Clear IndexedDB
+                const dbs = ['fcm_token_details_db', 'firebase-messaging-database'];
+                for (let db of dbs) {
+                    try {
+                        await indexedDB.deleteDatabase(db);
+                        debugLog.add('Database deleted:', db);
+                    } catch (e) {
+                        debugLog.add('Failed to delete database:', db, e);
+                    }
+                }
+                
+                updateStatus('✅ All settings cleared. Please refresh the page.', 'success');
+                
+                // Refresh after a moment
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                
+            } catch (error) {
+                debugLog.add('Unregister error:', error);
+                updateStatus('❌ Error during reset: ' + error.message, 'error');
+            }
+        }
+
+        // ============ DIAGNOSE FCM ISSUES ============
+        async function diagnoseFCMIssue() {
+            console.log('=== FCM DIAGNOSTICS ===');
+            const output = document.getElementById('mobileDebugOutput');
+            output.style.display = 'block';
+            let diagInfo = '=== FCM DIAGNOSTICS ===\n\n';
+            
+            try {
+                // 1. Check service worker
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                console.log('Service Workers:', registrations.map(r => ({
+                    scope: r.scope,
+                    active: r.active?.state
+                })));
+                diagInfo += `Service Workers: ${registrations.length} registered\n`;
+                registrations.forEach((r, i) => {
+                    diagInfo += `  SW${i}: ${r.scope} (${r.active?.state || 'no active'})\n`;
+                });
+                
+                // 2. Check current token
+                console.log('Current Token:', currentToken ? 'Present' : 'Missing');
+                diagInfo += `\nCurrent Token: ${currentToken ? 'Present' : 'Missing'}\n`;
+                if (currentToken) {
+                    console.log('Token prefix:', currentToken.substring(0, 50));
+                    diagInfo += `Token prefix: ${currentToken.substring(0, 50)}...\n`;
+                }
+                
+                // 3. Check Firebase messaging
+                if (messaging) {
+                    try {
+                        // Try to get a fresh token
+                        diagInfo += '\nTrying to get fresh token...\n';
+                        const freshToken = await messaging.getToken({
+                            vapidKey: CONFIG.VAPID_PUBLIC_KEY,
+                            serviceWorkerRegistration: swRegistration
+                        });
+                        console.log('Fresh token matches current:', freshToken === currentToken);
+                        diagInfo += `Fresh token matches current: ${freshToken === currentToken}\n`;
+                    } catch (e) {
+                        console.error('Error getting fresh token:', e);
+                        diagInfo += `Error getting fresh token: ${e.message}\n`;
+                    }
+                }
+                
+                // 4. Check notification permission
+                console.log('Notification Permission:', Notification.permission);
+                diagInfo += `\nNotification Permission: ${Notification.permission}\n`;
+                
+                // 5. Check pop-up readiness
+                diagInfo += `\nPop-up Notification Ready: ${Object.values(verificationResults).every(v => v) ? 'YES ✅' : 'NO ❌'}\n`;
+                if (!Object.values(verificationResults).every(v => v)) {
+                    diagInfo += 'Failed checks:\n';
+                    for (const [key, value] of Object.entries(verificationResults)) {
+                        if (!value) {
+                            diagInfo += `  - ${key}\n`;
+                        }
+                    }
+                }
+                
+                console.log('=== END DIAGNOSTICS ===');
+                diagInfo += '\n=== END DIAGNOSTICS ===';
+                
+                output.textContent = diagInfo;
+                
+            } catch (error) {
+                console.error('Diagnostic error:', error);
+                diagInfo += `\nDiagnostic error: ${error.message}`;
+                output.textContent = diagInfo;
+            }
+        }
+    </script>
+</body>
+</html>
