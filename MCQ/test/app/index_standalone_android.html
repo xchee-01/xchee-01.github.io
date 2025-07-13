@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Quiz App">
+    
+    <title>Quiz App with Push Notifications</title>
+    
+    <!-- Link to manifest -->
+    <link rel="manifest" href="/MCQ/test/app/manifest.json">
+    
+    <!-- iOS icons -->
+    <link rel="apple-touch-icon" href="/MCQ/test/app/icon-192x192.png">
+    
+    <style>
+        /* Your existing styles here */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Install Banner Styles */
+        .install-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #4CAF50;
+            color: white;
+            padding: 20px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        
+        .install-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .install-banner img {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+        }
+        
+        .install-banner-text h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        
+        .install-banner-text p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .install-banner-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .install-banner button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .install-banner button:active {
+            transform: scale(0.95);
+        }
+        
+        .install-btn {
+            background: white;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .dismiss-btn {
+            background: transparent;
+            color: white;
+            border: 1px solid white !important;
+        }
+        
+        /* Standalone mode indicator */
+        .standalone-indicator {
+            display: none;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        /* iOS specific install instructions */
+        .ios-install-instructions {
+            display: none;
+            background: #fff3cd;
+            color: #856404;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .ios-install-instructions h4 {
+            margin-top: 0;
+        }
+        
+        .ios-install-instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        /* Add your other existing styles here */
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left-color: #17a2b8;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <!-- Install Banner -->
+    <div id="installBanner" class="install-banner">
+        <div class="install-banner-content">
+            <img src="/MCQ/test/app/icon-192x192.png" alt="Quiz App">
+            <div class="install-banner-text">
+                <h3>Install Quiz App</h3>
+                <p>Install our app for easy access to quizzes!</p>
+            </div>
+        </div>
+        <div class="install-banner-buttons">
+            <button class="dismiss-btn" onclick="dismissInstallBanner()">Later</button>
+            <button class="install-btn" onclick="installPWA()">Install</button>
+        </div>
+    </div>
+
+    <!-- iOS Install Instructions -->
+    <div id="iosInstallInstructions" class="ios-install-instructions">
+        <h4>📱 Install on iOS</h4>
+        <p>To install this app on your iPhone/iPad:</p>
+        <ol>
+            <li>Tap the Share button <span style="font-size: 20px;">⬆️</span> at the bottom of Safari</li>
+            <li>Scroll down and tap "Add to Home Screen"</li>
+            <li>Tap "Add" in the top right corner</li>
+        </ol>
+        <button onclick="dismissIOSInstructions()">Got it!</button>
+    </div>
+
+    <!-- Standalone Mode Indicator -->
+    <div id="standaloneIndicator" class="standalone-indicator">
+        ✅ You're using the installed app version!
+    </div>
+
+    <div class="container">
+        <h1>📚 Medical Quiz App</h1>
+        
+        <div id="status" class="status info">
+            Initializing...
+        </div>
+        
+        <!-- Add an install button for manual trigger -->
+        <div class="section" id="installSection">
+            <h3>📱 Install App</h3>
+            <p>Install this app on your device for quick access and offline functionality.</p>
+            <button id="manualInstallBtn" onclick="manualInstallPrompt()" style="display:none;">
+                📥 Install App
+            </button>
+            <div id="installStatus"></div>
+        </div>
+        
+        <!-- Your existing sections here -->
+        <div class="section">
+            <h3>🔔 Push Notifications</h3>
+            <p>Enable notifications to receive quiz alerts.</p>
+            <button id="enableBtn" onclick="subscribeToPush()" disabled>
+                Enable Push Notifications
+            </button>
+        </div>
+        
+        <!-- Add your other sections here -->
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+    
+    <script>
+        // ============ PWA INSTALLATION HANDLING ============
+        let deferredPrompt;
+        let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        let isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                          window.navigator.standalone || 
+                          document.referrer.includes('android-app://');
+        
+        // Check if running in standalone mode
+        if (isStandalone) {
+            document.getElementById('standaloneIndicator').style.display = 'block';
+            document.getElementById('installSection').style.display = 'none';
+        }
+        
+        // Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('Install prompt available');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install banner or button
+            showInstallPrompt();
+        });
+        
+        // Show appropriate install prompt
+        function showInstallPrompt() {
+            if (isIOS && !isStandalone) {
+                // Show iOS instructions
+                document.getElementById('iosInstallInstructions').style.display = 'block';
+            } else if (deferredPrompt) {
+                // Show install banner for Android/Desktop
+                document.getElementById('installBanner').style.display = 'flex';
+                document.getElementById('manualInstallBtn').style.display = 'inline-block';
+            }
+        }
+        
+        // Install PWA
+        async function installPWA() {
+            if (!deferredPrompt) {
+                console.log('No install prompt available');
+                return;
+            }
+            
+            // Hide banner
+            document.getElementById('installBanner').style.display = 'none';
+            
+            // Show the prompt
+            deferredPrompt.prompt();
+            
+            // Wait for user choice
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response: ${outcome}`);
+            
+            if (outcome === 'accepted') {
+                updateStatus('✅ App installed successfully!', 'success');
+                document.getElementById('installStatus').innerHTML = '<p class="success">✅ App installed! You can now access it from your home screen.</p>';
+            } else {
+                updateStatus('App installation cancelled', 'info');
+            }
+            
+            deferredPrompt = null;
+        }
+        
+        // Manual install trigger
+        function manualInstallPrompt() {
+            if (deferredPrompt) {
+                installPWA();
+            } else if (isIOS) {
+                document.getElementById('iosInstallInstructions').style.display = 'block';
+            } else {
+                alert('App is already installed or cannot be installed on this device.');
+            }
+        }
+        
+        // Dismiss install banner
+        function dismissInstallBanner() {
+            document.getElementById('installBanner').style.display = 'none';
+            // Store dismissal in localStorage
+            localStorage.setItem('installBannerDismissed', 'true');
+            localStorage.setItem('installBannerDismissedDate', new Date().toISOString());
+        }
+        
+        // Dismiss iOS instructions
+        function dismissIOSInstructions() {
+            document.getElementById('iosInstallInstructions').style.display = 'none';
+            localStorage.setItem('iosInstructionsDismissed', 'true');
+        }
+        
+        // Check if should show install prompt on load
+        window.addEventListener('load', () => {
+            // Check if banner was dismissed recently (within 7 days)
+            const dismissedDate = localStorage.getItem('installBannerDismissedDate');
+            if (dismissedDate) {
+                const daysSinceDismissed = (new Date() - new Date(dismissedDate)) / (1000 * 60 * 60 * 24);
+                if (daysSinceDismissed < 7) {
+                    return; // Don't show banner
+                }
+            }
+            
+            // Show appropriate prompt after a delay
+            setTimeout(() => {
+                if (!isStandalone && !localStorage.getItem('iosInstructionsDismissed')) {
+                    showInstallPrompt();
+                }
+            }, 3000);
+        });
+        
+        // Listen for app installed event
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            updateStatus('✅ App successfully installed!', 'success');
+            document.getElementById('installSection').style.display = 'none';
+        });
+        
+        // ============ SERVICE WORKER REGISTRATION ============
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/MCQ/test/app/firebase-messaging-sw.js');
+                    console.log('Service Worker registered:', registration);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                updateStatus('🔄 New version available! Refresh to update.', 'info');
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error('Service Worker registration failed:', error);
+                }
+            });
+        }
+        
+        // ============ YOUR EXISTING FIREBASE AND NOTIFICATION CODE ============
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBqrBRmxmJSZmjHTSWhikZEzBegaogIzQI",
+            authDomain: "pwaapp-fe16c.firebaseapp.com",
+            projectId: "pwaapp-fe16c",
+            storageBucket: "pwaapp-fe16c.firebasestorage.app",
+            messagingSenderId: "138452600697",
+            appId: "1:138452600697:web:a1f3d2c96b1dafd84911a8"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const messaging = firebase.messaging();
+        
+        // Update status helper
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+        
+        // Your existing notification code here...
+        async function subscribeToPush() {
+            // Your existing push notification subscription code
+            updateStatus('Subscribing to push notifications...', 'info');
+            // Add your implementation here
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            // Check notification permission
+            if ('Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    document.getElementById('enableBtn').disabled = false;
+                    updateStatus('Ready to enable push notifications', 'info');
+                } else if (Notification.permission === 'denied') {
+                    updateStatus('Notifications blocked. Please enable in browser settings.', 'error');
+                } else {
+                    document.getElementById('enableBtn').disabled = false;
+                    updateStatus('Click to enable push notifications', 'info');
+                }
+            } else {
+                updateStatus('Push notifications not supported', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
