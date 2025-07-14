@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUS Quiz Notification Controller</title>
+    
+    <!-- Material Design Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* NUS Brand Colors */
+            --nus-blue: #003D7C;
+            --nus-blue-dark: #002855;
+            --nus-blue-light: #0056A6;
+            --nus-orange: #EF7C00;
+            --nus-orange-dark: #D66E00;
+            --nus-orange-light: #FF9A2E;
+            --nus-gray: #6B7280;
+            --nus-gray-light: #F3F4F6;
+            --nus-gray-dark: #374151;
+            
+            /* Applied Colors */
+            --primary-color: var(--nus-blue);
+            --primary-dark: var(--nus-blue-dark);
+            --primary-light: var(--nus-blue-light);
+            --secondary-color: var(--nus-orange);
+            --secondary-dark: var(--nus-orange-dark);
+            --secondary-light: var(--nus-orange-light);
+            --text-primary: #1F2937;
+            --text-secondary: var(--nus-gray);
+            --background: #FAFBFC;
+            --surface: #FFFFFF;
+            --error: #DC2626;
+            --success: #059669;
+            --warning: var(--nus-orange);
+            --info: var(--nus-blue-light);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+            --shadow-lg: 0 10px 24px rgba(0,0,0,0.15);
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--surface);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 30px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .header-content {
+            padding: 30px;
+            background: linear-gradient(135deg, var(--nus-blue) 0%, var(--nus-blue-dark) 100%);
+            color: white;
+            position: relative;
+        }
+
+        .header-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 0%, rgba(239, 124, 0, 0.1) 100%);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nus-badge {
+            display: inline-block;
+            background-color: var(--nus-orange);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background-color: var(--surface);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: var(--nus-gray-light);
+            border: 1px solid rgba(0, 61, 124, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--nus-orange);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--nus-blue);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background-color: var(--surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 61, 124, 0.1);
+        }
+
+        .control-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: var(--nus-blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timer-mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background-color: var(--nus-gray-light);
+            padding: 4px;
+            border-radius: 6px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: transparent;
+            color: var(--text-secondary);
+        }
+
+        .mode-btn.active {
+            background-color: var(--surface);
+            color: var(--nus-blue);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .timer-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .time-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #E5E7EB;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background-color: var(--surface);
+        }
+
+        .time-input:focus {
+            outline: none;
+            border-color: var(--nus-orange);
+            box-shadow: 0 0 0 3px rgba(239, 124, 0, 0.1);
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 16px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #E5E7EB;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--nus-orange);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .slider-value {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--nus-orange);
+        }
+
+        /* Countdown Display */
+        .countdown-section {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, var(--nus-gray-light) 0%, rgba(0, 61, 124, 0.05) 100%);
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .countdown-display {
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--nus-blue);
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            letter-spacing: 0.1em;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+
+        .countdown-label {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .progress-ring {
+            margin: 30px auto;
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-circle {
+            fill: none;
+            stroke: #E5E7EB;
+            stroke-width: 8;
+        }
+
+        .progress-ring-circle-progress {
+            fill: none;
+            stroke: var(--nus-orange);
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s linear;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background-color: var(--nus-orange);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--nus-orange-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--nus-gray-light);
+            color: var(--nus-blue);
+            border: 1px solid var(--nus-blue);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--nus-blue);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #B91C1C;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Students List */
+        .students-section {
+            background-color: var(--surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 61, 124, 0.1);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--nus-blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .refresh-btn {
+            padding: 8px 16px;
+            background-color: var(--surface);
+            border: 2px solid var(--nus-orange);
+            color: var(--nus-orange);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--nus-orange);
+            color: white;
+        }
+
+        .students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .student-card {
+            background-color: var(--surface);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            border: 2px solid var(--nus-gray-light);
+            position: relative;
+        }
+
+        .student-card:hover {
+            border-color: var(--nus-orange-light);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .student-card.selected {
+            border-color: var(--nus-orange);
+            background-color: rgba(239, 124, 0, 0.05);
+        }
+
+        .student-checkbox {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: var(--nus-orange);
+        }
+
+        .student-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+            padding-right: 40px;
+        }
+
+        .student-id {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .student-timer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--nus-gray-light);
+        }
+
+        .student-timer-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .student-timer-input {
+            width: 80px;
+            padding: 6px 10px;
+            border: 2px solid #E5E7EB;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .student-timer-input:focus {
+            outline: none;
+            border-color: var(--nus-orange);
+        }
+
+        .student-countdown {
+            margin-left: auto;
+            font-family: 'SF Mono', monospace;
+            font-weight: 600;
+            color: var(--nus-blue);
+            font-size: 1.1rem;
+        }
+
+        .student-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background-color: rgba(5, 150, 105, 0.1);
+            color: var(--success);
+        }
+
+        .status-inactive {
+            background-color: rgba(220, 38, 38, 0.1);
+            color: var(--error);
+        }
+
+        .status-sending {
+            background-color: rgba(239, 124, 0, 0.1);
+            color: var(--nus-orange);
+        }
+
+        .status-sent {
+            background-color: rgba(0, 61, 124, 0.1);
+            color: var(--nus-blue);
+        }
+
+        /* Select All Controls */
+        .select-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .select-all-btn {
+            padding: 8px 16px;
+            background-color: var(--nus-gray-light);
+            border: 1px solid var(--nus-gray);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .select-all-btn:hover {
+            background-color: var(--nus-blue);
+            color: white;
+            border-color: var(--nus-blue);
+        }
+
+        .selected-count {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--nus-gray-light);
+            border-top: 4px solid var(--nus-orange);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 16px 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+            border: 1px solid;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-success {
+            background-color: rgba(5, 150, 105, 0.1);
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .status-error {
+            background-color: rgba(220, 38, 38, 0.1);
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        .status-info {
+            background-color: rgba(0, 86, 166, 0.1);
+            color: var(--info);
+            border-color: var(--info);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .timer-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .countdown-display {
+                font-size: 3.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .stats-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .students-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Notification Animation */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .sending-notification {
+            animation: pulse 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1>
+                    <span class="material-icons" style="font-size: 2.5rem;">notifications_active</span>
+                    Quiz Notification Controller
+                    <span class="nus-badge">NUS</span>
+                </h1>
+                <p class="header-subtitle">Manage and send quiz notifications to registered students</p>
+            </div>
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalStudents">0</div>
+                    <div class="stat-label">Total Students</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="activeStudents">0</div>
+                    <div class="stat-label">Active Students</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="selectedStudents">0</div>
+                    <div class="stat-label">Selected Students</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="notificationsSent">0</div>
+                    <div class="stat-label">Notifications Sent</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h2 class="control-title">
+                <span class="material-icons">timer</span>
+                Timer Controls
+            </h2>
+            
+            <!-- Timer Mode Toggle -->
+            <div class="timer-mode-toggle">
+                <button class="mode-btn active" id="globalModeBtn" onclick="setTimerMode('global')">
+                    Global Timer
+                </button>
+                <button class="mode-btn" id="individualModeBtn" onclick="setTimerMode('individual')">
+                    Individual Timers
+                </button>
+            </div>
+            
+            <!-- Global Timer Controls -->
+            <div id="globalTimerControls">
+                <div class="timer-controls">
+                    <div class="control-group">
+                        <label class="control-label">Set Duration (seconds)</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="durationInput" class="time-input" min="1" max="60" value="10">
+                            <span class="input-suffix">seconds</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Or Use Slider</label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="durationSlider" class="slider" min="1" max="60" value="10">
+                            <div class="slider-value" id="sliderValue">10 seconds</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Countdown Display -->
+                <div class="countdown-section">
+                    <div class="countdown-label">Time Remaining</div>
+                    <div class="countdown-display" id="countdownDisplay">00:00</div>
+                    <div class="progress-ring">
+                        <svg width="200" height="200">
+                            <circle class="progress-ring-circle" cx="100" cy="100" r="90"></circle>
+                            <circle class="progress-ring-circle-progress" id="progressCircle" 
+                                    cx="100" cy="100" r="90"
+                                    stroke-dasharray="565.48" 
+                                    stroke-dashoffset="565.48"></circle>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="startBtn" class="btn btn-primary">
+                        <span class="material-icons">play_arrow</span>
+                        Start Timer
+                    </button>
+                    <button id="pauseBtn" class="btn btn-secondary" disabled>
+                        <span class="material-icons">pause</span>
+                        Pause
+                    </button>
+                    <button id="resetBtn" class="btn btn-danger" disabled>
+                        <span class="material-icons">stop</span>
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Individual Timer Message -->
+            <div id="individualTimerMessage" style="display: none; text-align: center; padding: 40px;">
+                <p style="color: var(--text-secondary); font-size: 1.1rem;">
+                    Set individual timers for each student below. Click "Start All Timers" when ready.
+                </p>
+                <button class="btn btn-primary" style="margin-top: 20px;" onclick="startAllIndividualTimers()">
+                    <span class="material-icons">play_arrow</span>
+                    Start All Timers
+                </button>
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="statusContainer"></div>
+
+        <!-- Students List -->
+        <div class="students-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span class="material-icons">people</span>
+                    Registered Students
+                </h2>
+                <button class="refresh-btn" onclick="fetchStudents()">
+                    <span class="material-icons" style="font-size: 1rem;">refresh</span>
+                    Refresh
+                </button>
+            </div>
+            
+            <!-- Select Controls -->
+            <div class="select-controls">
+                <button class="select-all-btn" onclick="toggleSelectAll()">
+                    Select All
+                </button>
+                <button class="select-all-btn" onclick="deselectAll()">
+                    Deselect All
+                </button>
+                <span class="selected-count" id="selectedCountText">0 students selected</span>
+            </div>
+            
+            <div id="studentsContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>Loading students...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbwRUpi2Pai4DTuW-eZOK5RCWkA70c5wTunfqfpRgXDcz-PvEmF8nBDdXmhhWKxmSqptfQ/exec',
+            SPREADSHEET_ID: '1wDC50js_wiLuaLIGjZ0eevEJz_Ub6SQlrJNUN89a0qM',
+            QUIZ_URL: 'https://xchee-01.github.io/MCQ/test/quiz_page_v1.html'
+        };
+
+        // State Management
+        let students = [];
+        let selectedStudents = new Set();
+        let countdownInterval = null;
+        let individualTimers = new Map();
+        let totalDuration = 10;
+        let remainingTime = 0;
+        let isPaused = false;
+        let notificationsSentCount = 0;
+        let timerMode = 'global'; // 'global' or 'individual'
+
+        // DOM Elements
+        const durationInput = document.getElementById('durationInput');
+        const durationSlider = document.getElementById('durationSlider');
+        const sliderValue = document.getElementById('sliderValue');
+        const countdownDisplay = document.getElementById('countdownDisplay');
+        const progressCircle = document.getElementById('progressCircle');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const studentsContainer = document.getElementById('studentsContainer');
+        const statusContainer = document.getElementById('statusContainer');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            fetchStudents();
+            updateCountdownDisplay(totalDuration);
+        });
+
+        // Timer Mode Toggle
+        function setTimerMode(mode) {
+            timerMode = mode;
+            document.getElementById('globalModeBtn').classList.toggle('active', mode === 'global');
+            document.getElementById('individualModeBtn').classList.toggle('active', mode === 'individual');
+            document.getElementById('globalTimerControls').style.display = mode === 'global' ? 'block' : 'none';
+            document.getElementById('individualTimerMessage').style.display = mode === 'individual' ? 'block' : 'none';
+            
+            // Reset any running timers
+            resetCountdown();
+            stopAllIndividualTimers();
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Sync input and slider
+            durationInput.addEventListener('input', (e) => {
+                const value = Math.min(60, Math.max(1, parseInt(e.target.value) || 1));
+                durationInput.value = value;
+                durationSlider.value = value;
+                sliderValue.textContent = `${value} seconds`;
+                totalDuration = value;
+                if (!countdownInterval) {
+                    updateCountdownDisplay(value);
+                }
+            });
+
+            durationSlider.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                durationInput.value = value;
+                sliderValue.textContent = `${value} seconds`;
+                totalDuration = value;
+                if (!countdownInterval) {
+                    updateCountdownDisplay(value);
+                }
+            });
+
+            // Button actions
+            startBtn.addEventListener('click', startCountdown);
+            pauseBtn.addEventListener('click', pauseCountdown);
+            resetBtn.addEventListener('click', resetCountdown);
+        }
+
+        // Fetch Students from Google Sheets
+        async function fetchStudents() {
+            showStatus('Loading students from spreadsheet...', 'info');
+            studentsContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>Loading students...</span></div>';
+
+            try {
+                // Method 1: Try using Google Apps Script endpoint
+                // Note: Your GAS needs to be modified to return JSONP or handle CORS
+                const scriptUrl = CONFIG.GAS_ENDPOINT;
+                
+                // Create a unique callback name
+                const callbackName = 'fetchStudentsCallback_' + Date.now();
+                
+                // Create promise to handle JSONP response
+                const jsonpPromise = new Promise((resolve, reject) => {
+                    window[callbackName] = (data) => {
+                        delete window[callbackName];
+                        resolve(data);
+                    };
+                    
+                    // Timeout after 10 seconds
+                    setTimeout(() => {
+                        delete window[callbackName];
+                        reject(new Error('Request timeout'));
+                    }, 10000);
+                });
+                
+                // Create script element for JSONP
+                const script = document.createElement('script');
+                script.src = `${scriptUrl}?action=getStudents&callback=${callbackName}`;
+                document.body.appendChild(script);
+                
+                // Wait for response
+                const data = await jsonpPromise;
+                document.body.removeChild(script);
+                
+                // Process the data
+                if (data && data.students) {
+                    students = data.students;
+                    displayStudents();
+                    updateStats();
+                    showStatus('Students loaded successfully!', 'success');
+                } else {
+                    throw new Error('Invalid data format');
+                }
+                
+            } catch (error) {
+                console.error('Error with GAS endpoint, trying Google Visualization API...', error);
+                
+                // Method 2: Use Google Visualization API as fallback
+                try {
+                    await fetchStudentsViaGoogleViz();
+                } catch (vizError) {
+                    console.error('Error fetching students:', vizError);
+                    showStatus('Failed to load students. Please check your connection and try again.', 'error');
+                }
+            }
+        }
+
+        // Alternative method using Google Visualization API
+        async function fetchStudentsViaGoogleViz() {
+            const sheetUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Subscriptions`;
+            
+            // Create a unique callback name
+            const callbackName = 'googleVizCallback_' + Date.now();
+            
+            // Create promise to handle response
+            const vizPromise = new Promise((resolve, reject) => {
+                window[callbackName] = (response) => {
+                    delete window[callbackName];
+                    resolve(response);
+                };
+                
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    delete window[callbackName];
+                    reject(new Error('Request timeout'));
+                }, 10000);
+            });
+            
+            // Create script element
+            const script = document.createElement('script');
+            script.src = `${sheetUrl}&tq=${encodeURIComponent('select *')}&callback=${callbackName}`;
+            document.body.appendChild(script);
+            
+            try {
+                // Wait for response
+                const response = await vizPromise;
+                document.body.removeChild(script);
+                
+                // Parse the Google Visualization response
+                if (response && response.table) {
+                    const rows = response.table.rows;
+                    const cols = response.table.cols;
+                    
+                    // Find column indices
+                    let colIndices = {
+                        timestamp: -1,
+                        active: -1,
+                        lastUsed: -1,
+                        studentId: -1,
+                        studentName: -1,
+                        fcmToken: -1
+                    };
+                    
+                    cols.forEach((col, index) => {
+                        const label = col.label.toLowerCase();
+                        if (label.includes('active')) colIndices.active = index;
+                        else if (label.includes('last used')) colIndices.lastUsed = index;
+                        else if (label.includes('student id')) colIndices.studentId = index;
+                        else if (label.includes('student name')) colIndices.studentName = index;
+                        else if (label.includes('fcm token')) colIndices.fcmToken = index;
+                        else if (label.includes('timestamp')) colIndices.timestamp = index;
+                    });
+                    
+                    // Process rows (skip header if present)
+                    students = [];
+                    rows.forEach((row, index) => {
+                        // Skip if no FCM token
+                        const fcmToken = row.c[colIndices.fcmToken]?.v;
+                        if (!fcmToken || fcmToken === 'not-used-for-fcm') return;
+                        
+                        const student = {
+                            name: row.c[colIndices.studentName]?.v || 'Unknown',
+                            id: row.c[colIndices.studentId]?.v || 'No ID',
+                            active: row.c[colIndices.active]?.v === 'Yes',
+                            token: fcmToken,
+                            lastUsed: row.c[colIndices.lastUsed]?.v || '',
+                            individualTime: 10 // Default individual time
+                        };
+                        
+                        students.push(student);
+                    });
+                    
+                    displayStudents();
+                    updateStats();
+                    showStatus(`Loaded ${students.length} students from spreadsheet!`, 'success');
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                // If all else fails, try direct fetch with proxy
+                await fetchStudentsViaProxy();
+            }
+        }
+
+        // Fallback method using a CORS proxy (for development)
+        async function fetchStudentsViaProxy() {
+            try {
+                // Note: In production, you should use your own proxy server
+                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/export?format=csv&gid=0`;
+                
+                const response = await fetch(proxyUrl + sheetUrl);
+                const csvText = await response.text();
+                
+                // Parse CSV
+                const rows = csvText.split('\n').map(row => row.split(','));
+                const headers = rows[0];
+                
+                // Find column indices
+                const colIndices = {
+                    active: headers.findIndex(h => h.toLowerCase().includes('active')),
+                    studentId: headers.findIndex(h => h.toLowerCase().includes('student id')),
+                    studentName: headers.findIndex(h => h.toLowerCase().includes('student name')),
+                    fcmToken: headers.findIndex(h => h.toLowerCase().includes('fcm token')),
+                    lastUsed: headers.findIndex(h => h.toLowerCase().includes('last used'))
+                };
+                
+                // Process data rows
+                students = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.length < headers.length) continue;
+                    
+                    const fcmToken = row[colIndices.fcmToken];
+                    if (!fcmToken || fcmToken === 'not-used-for-fcm') continue;
+                    
+                    students.push({
+                        name: row[colIndices.studentName] || 'Unknown',
+                        id: row[colIndices.studentId] || 'No ID',
+                        active: row[colIndices.active] === 'Yes',
+                        token: fcmToken,
+                        lastUsed: row[colIndices.lastUsed] || '',
+                        individualTime: 10
+                    });
+                }
+                
+                displayStudents();
+                updateStats();
+                showStatus(`Loaded ${students.length} students via proxy!`, 'success');
+                
+            } catch (error) {
+                console.error('Proxy fetch failed:', error);
+                showStatus('Unable to load students. Please ensure the spreadsheet is publicly accessible or update your Google Apps Script.', 'error');
+            }
+        }
