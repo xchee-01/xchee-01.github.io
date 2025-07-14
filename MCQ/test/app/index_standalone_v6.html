@@ -10,7 +10,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Quiz App">
-    <link rel="apple-touch-icon" href="/MCQ/test/app/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/MCQ/test/app/icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/MCQ/test/app/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/MCQ/test/app/icon-167x167.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/MCQ/test/app/icon-180x180.png">
+    
+    <!-- Android/Chrome -->
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Windows -->
+    <meta name="msapplication-TileColor" content="#4CAF50">
+    <meta name="msapplication-TileImage" content="/MCQ/test/app/icon-144x144.png">
     
     <style>
         body {
@@ -32,6 +43,15 @@
             color: #333;
             text-align: center;
             margin-bottom: 30px;
+        }
+        .platform-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #e3f2fd;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #1976d2;
+            margin-bottom: 20px;
         }
         .ios-banner {
             background: #007AFF;
@@ -330,6 +350,27 @@
             margin: 20px 0;
             display: none;
         }
+        .platform-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .feature-item {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .feature-supported {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .feature-unsupported {
+            color: #dc3545;
+            font-weight: bold;
+        }
         @media (prefers-color-scheme: dark) {
             body {
                 background: #1a1a1a;
@@ -352,6 +393,10 @@
 <body>
     <div class="container">
         <h1>📚 Medical Quiz App - Push Notifications</h1>
+        
+        <div class="platform-badge" id="platformBadge">
+            Detecting platform...
+        </div>
         
         <div id="status" class="status info">
             Initializing...
@@ -409,6 +454,12 @@
             <div class="retry-info" id="retryInfo" style="display: none;"></div>
         </div>
         
+        <!-- Platform Features Display -->
+        <div id="platformFeatures" class="section" style="display: none;">
+            <h3>📱 Platform Capabilities</h3>
+            <div class="platform-features" id="platformFeaturesGrid"></div>
+        </div>
+        
         <!-- Manual Registration Section -->
         <div id="manualSection" class="manual-section">
             <h4>⚠️ Automatic registration may have failed</h4>
@@ -453,6 +504,9 @@
             <p>Make sure notifications are working on your device.</p>
             <button id="testBtn" onclick="sendTestNotification()" disabled>
                 📨 Send Test Notification
+            </button>
+            <button onclick="testPlatformSpecificNotification()" class="secondary" style="margin-top: 10px;">
+                🎯 Test Platform-Specific Features
             </button>
             <button onclick="sendInteractiveNotificationToPhone()" class="secondary" style="margin-top: 10px;">
                 💬 Send Interactive Dialog to Phone
@@ -513,6 +567,9 @@
                 <button onclick="checkNotificationAPI()">
                     🔌 Check Notification API
                 </button>
+                <button onclick="testServiceWorkerCommunication()">
+                    🔗 Test SW Communication
+                </button>
             </div>
             <div id="mobileDebugOutput" class="debug-output"></div>
         </div>
@@ -564,13 +621,14 @@
         let isIOS = false;
         let isStandalone = false;
         let iOSVersion = null;
+        let currentPlatform = 'unknown';
 
         // ============ DEBUG LOGGING ============
         const debugLog = {
             logs: [],
             add: function(message, data = null) {
                 const timestamp = new Date().toISOString();
-                const logEntry = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}`;
+                const logEntry = `[${timestamp}] [${currentPlatform}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}`;
                 this.logs.push(logEntry);
                 console.log(message, data || '');
                 this.updateDisplay();
@@ -588,10 +646,32 @@
             }
         };
 
+        // ============ PLATFORM DETECTION ============
+        function detectPlatform() {
+            const ua = navigator.userAgent;
+            let platform = 'unknown';
+            
+            if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+                platform = 'ios';
+            } else if (/Mac/.test(ua) && !/Chrome/.test(ua) && /Safari/.test(ua)) {
+                platform = 'mac-safari';
+            } else if (/Mac/.test(ua)) {
+                platform = 'mac';
+            } else if (/Android/.test(ua)) {
+                platform = 'android';
+            } else if (/Windows/.test(ua)) {
+                platform = 'windows';
+            } else if (/Linux/.test(ua)) {
+                platform = 'linux';
+            }
+            
+            return platform;
+        }
+
         // ============ iOS DETECTION AND HANDLING ============
         function detectiOS() {
             const ua = navigator.userAgent;
-            isIOS = /iPad|iPhone|iPod|Mac/.test(ua) && !window.MSStream;
+            isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
             
             // Check if running as standalone PWA
             isStandalone = window.navigator.standalone === true || 
@@ -605,14 +685,56 @@
                 }
             }
             
-            debugLog.add('iOS Detection:', {
+            // Update current platform
+            currentPlatform = detectPlatform();
+            
+            // Update platform badge
+            const platformBadge = document.getElementById('platformBadge');
+            platformBadge.textContent = `Platform: ${currentPlatform.toUpperCase()}`;
+            
+            debugLog.add('Platform Detection:', {
+                platform: currentPlatform,
                 isIOS: isIOS,
                 isStandalone: isStandalone,
                 iOSVersion: iOSVersion,
                 userAgent: ua
             });
             
+            // Show platform features
+            displayPlatformFeatures();
+            
             return isIOS;
+        }
+
+        function displayPlatformFeatures() {
+            const featuresSection = document.getElementById('platformFeatures');
+            const featuresGrid = document.getElementById('platformFeaturesGrid');
+            
+            featuresSection.style.display = 'block';
+            featuresGrid.innerHTML = '';
+            
+            const features = {
+                'Basic Notifications': true,
+                'Pop-up Notifications': currentPlatform !== 'ios',
+                'Notification Actions': currentPlatform !== 'ios',
+                'Vibration': currentPlatform === 'android',
+                'Require Interaction': currentPlatform !== 'ios',
+                'Rich Images': currentPlatform !== 'ios',
+                'Background Sync': currentPlatform !== 'ios',
+                'Offline Support': true
+            };
+            
+            for (const [feature, supported] of Object.entries(features)) {
+                const item = document.createElement('div');
+                item.className = 'feature-item';
+                item.innerHTML = `
+                    <div>${feature}</div>
+                    <div class="${supported ? 'feature-supported' : 'feature-unsupported'}">
+                        ${supported ? '✅ Supported' : '❌ Not Supported'}
+                    </div>
+                `;
+                featuresGrid.appendChild(item);
+            }
         }
 
         function showiOSBanner() {
@@ -691,8 +813,9 @@
                     icon: '/MCQ/test/app/icon-192x192.png',
                     badge: '/MCQ/test/app/icon-192x192.png',
                     tag: 'ios-test',
-                    requireInteraction: false, // iOS doesn't support this
-                    vibrate: [200, 100, 200]
+                    // iOS doesn't support these:
+                    // requireInteraction: false,
+                    // vibrate: [200, 100, 200]
                 };
                 
                 if (swRegistration && swRegistration.active) {
@@ -706,6 +829,108 @@
             } catch (error) {
                 alert(`❌ iOS notification failed: ${error.message}`);
             }
+        }
+
+        // ============ PLATFORM-SPECIFIC TEST ============
+        async function testPlatformSpecificNotification() {
+            if (!currentToken) {
+                alert('❌ Please enable notifications first!');
+                return;
+            }
+            
+            updateStatus(`🎯 Testing ${currentPlatform} platform features...`, 'info');
+            
+            const testData = {
+                action: 'test',
+                fcmToken: currentToken,
+                notification: {
+                    title: `🎯 ${currentPlatform.toUpperCase()} Platform Test`,
+                    body: `Testing notification features specific to ${currentPlatform}`,
+                    priority: 'urgent'
+                },
+                isIOS: isIOS,
+                platform: currentPlatform,
+                timestamp: new Date().toISOString()
+            };
+            
+            debugLog.add('Sending platform-specific test:', testData);
+            
+            try {
+                await fetch(CONFIG.GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(testData)
+                });
+                
+                updateStatus(`✅ Platform test sent! Check for ${currentPlatform}-specific features.`, 'success');
+                
+                // Show what to expect
+                let expectations = '';
+                
+                switch(currentPlatform) {
+                    case 'ios':
+                        expectations = 'iOS: Basic notification with title, body, and icon.';
+                        break;
+                    case 'android':
+                        expectations = 'Android: Rich notification with actions, vibration, and high priority.';
+                        break;
+                    case 'windows':
+                    case 'mac':
+                    case 'linux':
+                        expectations = 'Desktop: Full-featured notification with actions and images.';
+                        break;
+                    default:
+                        expectations = 'Basic notification features.';
+                }
+                
+                setTimeout(() => {
+                    alert(`Platform: ${currentPlatform}\n\nExpected features:\n${expectations}`);
+                }, 1000);
+                
+            } catch (error) {
+                debugLog.add('Platform test error:', error);
+                updateStatus(`❌ Failed to send test: ${error.message}`, 'error');
+            }
+        }
+
+        // ============ TEST SERVICE WORKER COMMUNICATION ============
+        async function testServiceWorkerCommunication() {
+            if (!swRegistration || !swRegistration.active) {
+                alert('❌ Service Worker not active!');
+                return;
+            }
+            
+            debugLog.add('Testing Service Worker communication...');
+            
+            const channel = new MessageChannel();
+            
+            channel.port1.onmessage = (event) => {
+                debugLog.add('Response from SW:', event.data);
+                alert(`Service Worker Response:\nPlatform: ${event.data.platform || 'Unknown'}\nAlive: ${event.data.alive || false}`);
+            };
+            
+            swRegistration.active.postMessage(
+                { type: 'GET_PLATFORM' },
+                [channel.port2]
+            );
+            
+            // Also test notification through SW
+            const testChannel = new MessageChannel();
+            
+            testChannel.port1.onmessage = (event) => {
+                debugLog.add('Test notification result:', event.data);
+                if (event.data.success) {
+                    updateStatus(`✅ SW test notification sent (${event.data.platform})`, 'success');
+                } else {
+                    updateStatus(`❌ SW test failed: ${event.data.error}`, 'error');
+                }
+            };
+            
+            swRegistration.active.postMessage(
+                { type: 'TEST_NOTIFICATION' },
+                [testChannel.port2]
+            );
         }
 
         // ============ POP-UP VERIFICATION FUNCTIONS ============
@@ -743,10 +968,11 @@
                     title: 'Browser Support',
                     check: () => {
                         const ua = navigator.userAgent.toLowerCase();
-                        return ua.includes('chrome') || ua.includes('firefox') || ua.includes('samsung') || (isIOS && ua.includes('safari'));
+                        return ua.includes('chrome') || ua.includes('firefox') || ua.includes('samsung') || 
+                               (isIOS && ua.includes('safari')) || ua.includes('edge');
                     },
                     detail: getBrowserInfo(),
-                    fix: 'Use Chrome, Firefox, Safari (iOS), or Samsung Internet'
+                    fix: 'Use Chrome, Firefox, Safari (iOS), Edge, or Samsung Internet'
                 },
                 {
                     id: 'osVersion',
@@ -776,6 +1002,15 @@
                     },
                     detail: isIOS ? (isStandalone ? 'Installed' : 'Not installed') : (isWebView() ? 'In WebView' : 'In Browser'),
                     fix: isIOS ? 'Add to home screen from Safari' : 'Open in Chrome or Firefox browser'
+                },
+                {
+                    id: 'platform',
+                    title: 'Platform Compatibility',
+                    check: () => {
+                        return currentPlatform !== 'unknown';
+                    },
+                    detail: `Platform: ${currentPlatform}`,
+                    fix: 'Use a supported platform'
                 }
             ];
             
@@ -937,6 +1172,7 @@
                     priority: 'urgent'
                 },
                 isIOS: isIOS,
+                platform: currentPlatform,
                 timestamp: new Date().toISOString()
             };
             
@@ -956,7 +1192,7 @@
                         <li>Appears on TOP of your screen</li>
                         <li>Shows even when using other apps</li>
                         ${!isIOS ? '<li>Makes a sound and vibrates</li>' : '<li>Shows in notification center</li>'}
-                        ${!isIOS ? '<li>Has action buttons</li>' : ''}
+                        ${!isIOS && currentPlatform !== 'mac' ? '<li>Has action buttons</li>' : ''}
                     </ul>
                     <br>
                     <strong>Don't see a pop-up?</strong> 
@@ -995,6 +1231,9 @@
             // Check for secure context
             report += `Secure Context: ${window.isSecureContext ? '✅ Yes' : '❌ No'}\n`;
             
+            // Platform info
+            report += `\nPlatform: ${currentPlatform}\n`;
+            
             // iOS specific checks
             if (isIOS) {
                 report += `\niOS Specific:\n`;
@@ -1023,18 +1262,19 @@
         // ============ HELPER FUNCTIONS ============
         function getBrowserName() {
             const ua = navigator.userAgent;
-            if (isIOS && /Safari/.test(ua)) return 'Safari';
+            if (isIOS && /Safari/.test(ua) && !/Chrome/.test(ua)) return 'Safari';
             if (ua.includes('Chrome')) return 'Chrome';
             if (ua.includes('Firefox')) return 'Firefox';
             if (ua.includes('Samsung')) return 'Samsung Internet';
             if (ua.includes('Opera')) return 'Opera';
+            if (ua.includes('Edge')) return 'Edge';
             return 'Your Browser';
         }
 
         function getBrowserInfo() {
             const ua = navigator.userAgent;
             const browser = getBrowserName();
-            const versionMatch = ua.match(/(Chrome|Firefox|Version|Safari)\/(\d+)/);
+            const versionMatch = ua.match(/(Chrome|Firefox|Version|Safari|Edge)\/(\d+)/);
             const version = versionMatch ? versionMatch[2] : 'Unknown';
             return `${browser} v${version}`;
         }
@@ -1056,6 +1296,7 @@
             if (ua.includes('huawei')) return 'Huawei';
             if (ua.includes('nokia')) return 'Nokia';
             if (ua.includes('motorola')) return 'Motorola';
+            if (ua.includes('pixel')) return 'Google Pixel';
             return 'Android';
         }
 
@@ -1089,7 +1330,7 @@
                 // 1. Device Info
                 debugInfo += '📱 DEVICE INFORMATION\n';
                 debugInfo += `User Agent: ${navigator.userAgent}\n`;
-                debugInfo += `Platform: ${navigator.platform}\n`;
+                debugInfo += `Platform: ${currentPlatform}\n`;
                 debugInfo += `Vendor: ${navigator.vendor || 'N/A'}\n`;
                 debugInfo += `Language: ${navigator.language}\n`;
                 debugInfo += `Online: ${navigator.onLine}\n`;
@@ -1150,7 +1391,15 @@
                     debugInfo += `Token Preview: ${currentToken.substring(0, 30)}...\n`;
                 }
                 
-                // 5. IndexedDB Check (mobile-safe)
+                // 5. Platform Features
+                debugInfo += '\n📱 PLATFORM FEATURES\n';
+                debugInfo += `Basic Notifications: ${true ? '✅' : '❌'}\n`;
+                debugInfo += `Pop-up Notifications: ${currentPlatform !== 'ios' ? '✅' : '❌'}\n`;
+                debugInfo += `Notification Actions: ${currentPlatform !== 'ios' ? '✅' : '❌'}\n`;
+                debugInfo += `Vibration: ${currentPlatform === 'android' ? '✅' : '❌'}\n`;
+                debugInfo += `Require Interaction: ${currentPlatform !== 'ios' ? '✅' : '❌'}\n`;
+                
+                // 6. IndexedDB Check (mobile-safe)
                 debugInfo += '\n💾 STORAGE STATUS\n';
                 if ('indexedDB' in window) {
                     debugInfo += 'IndexedDB: Supported\n';
@@ -1180,7 +1429,7 @@
                     debugInfo += 'IndexedDB: NOT supported!\n';
                 }
                 
-                // 6. Test Firebase Token Refresh
+                // 7. Test Firebase Token Refresh
                 if (messaging && currentToken) {
                     debugInfo += '\n🔄 TOKEN REFRESH TEST\n';
                     try {
@@ -1201,7 +1450,7 @@
                     }
                 }
                 
-                // 7. Common Issues Check
+                // 8. Common Issues Check
                 debugInfo += '\n⚠️ COMMON ISSUES CHECK\n';
                 
                 if (isIOS && !isStandalone) {
@@ -1246,6 +1495,7 @@
 
         function quickDeviceInfo() {
             const info = {
+                'Platform': currentPlatform,
                 'Browser': getBrowserName(),
                 'Version': getBrowserInfo(),
                 'Device': getDeviceBrand(),
@@ -1278,25 +1528,36 @@
             try {
                 // Try service worker notification first (works better on mobile)
                 if (swRegistration && swRegistration.active) {
-                    await swRegistration.showNotification('📱 Pop-up Test Notification', {
-                        body: 'This should appear as a pop-up on top of your screen!',
+                    const options = {
+                        body: 'This should appear as a notification on your device!',
                         icon: '/MCQ/test/app/icon-192x192.png',
                         badge: '/MCQ/test/app/icon-192x192.png',
-                        vibrate: [200, 100, 200, 100, 200],
-                        requireInteraction: !isIOS, // iOS doesn't support this
-                        silent: false,
-                        actions: isIOS ? [] : [
-                            { action: 'yes', title: '✅ I saw the pop-up!' },
-                            { action: 'no', title: '❌ Not a pop-up' }
-                        ]
-                    });
-                    alert('✅ Test notification sent via Service Worker!\n\nDid it appear as a POP-UP on top of your screen?');
+                        tag: 'local-test-' + Date.now()
+                    };
+                    
+                    // Add platform-specific options
+                    if (currentPlatform === 'android') {
+                        options.vibrate = [200, 100, 200, 100, 200];
+                        options.requireInteraction = true;
+                        options.actions = [
+                            { action: 'yes', title: '✅ I saw it!' },
+                            { action: 'no', title: '❌ No pop-up' }
+                        ];
+                    } else if (currentPlatform !== 'ios') {
+                        options.requireInteraction = true;
+                        options.actions = [
+                            { action: 'yes', title: '✅ I saw it!' },
+                            { action: 'no', title: '❌ No pop-up' }
+                        ];
+                    }
+                    
+                    await swRegistration.showNotification(`📱 ${currentPlatform} Test`, options);
+                    alert(`✅ Test notification sent!\n\nPlatform: ${currentPlatform}\nDid it appear as expected?`);
                 } else {
                     // Fallback to regular notification
-                    const notif = new Notification('📱 Test Notification', {
+                    const notif = new Notification(`📱 ${currentPlatform} Test`, {
                         body: 'Basic notification test',
-                        icon: '/MCQ/test/app/icon-192x192.png',
-                        requireInteraction: !isIOS
+                        icon: '/MCQ/test/app/icon-192x192.png'
                     });
                     setTimeout(() => notif.close(), 5000);
                     alert('✅ Basic notification sent!');
@@ -1330,6 +1591,7 @@
                 }
                 
                 status += `\nVAPID Key: ${CONFIG.VAPID_PUBLIC_KEY.substring(0, 20)}...\n`;
+                status += `Platform: ${currentPlatform}\n`;
                 
                 // iOS specific
                 if (isIOS) {
@@ -1353,7 +1615,7 @@
         window.addEventListener('load', async () => {
             debugLog.add('Page loaded, initializing...');
             
-            // Detect iOS
+            // Detect platform
             detectiOS();
             showiOSBanner();
             
@@ -1530,7 +1792,7 @@
                 currentToken = token;
                 displayToken(token);
                 
-                // Save to server
+                // Save to server with platform info
                 updateStatus('📤 Registering device with server...', 'info');
                 showRegistrationStatus('Saving registration...');
                 
@@ -1592,7 +1854,9 @@
                     isStandalone: isStandalone,
                     iOSVersion: iOSVersion,
                     deviceBrand: getDeviceBrand(),
-                    browserInfo: getBrowserInfo()
+                    browserInfo: getBrowserInfo(),
+                    platform: currentPlatform,
+                    osVersion: getOSVersion()
                 }
             };
             
@@ -1673,9 +1937,11 @@
                     action: 'test',
                     fcmToken: currentToken,
                     timestamp: new Date().toISOString(),
+                    isIOS: isIOS,
+                    platform: currentPlatform,
                     deviceInfo: {
                         userAgent: navigator.userAgent,
-                        platform: navigator.platform,
+                        platform: currentPlatform,
                         vendor: navigator.vendor,
                         isIOS: isIOS,
                         isStandalone: isStandalone,
@@ -1690,7 +1956,7 @@
                     body: JSON.stringify(testData)
                 });
                 
-                updateStatus('✅ Test notification sent to THIS device! You should receive it within 10 seconds. If not, try refreshing your token.', 'success');
+                updateStatus(`✅ Test notification sent to THIS device (${currentPlatform})! You should receive it within 10 seconds.`, 'success');
                 debugLog.add('Test notification request sent to current device token');
                 
                 // Show troubleshooting after 10 seconds if needed
@@ -1725,6 +1991,7 @@ Token Information:
 - Registration Time: ${new Date().toLocaleString()}
 - Device: ${getDeviceBrand()} - ${getBrowserName()}
 - OS: ${getOSVersion()}
+- Platform: ${currentPlatform}
 - Pop-up Ready: ${Object.values(verificationResults).every(v => v) ? 'Yes' : 'No'}
 
 Please check if this token appears in your Google Sheet.
@@ -1804,6 +2071,7 @@ If not, use the "Manually Add to Spreadsheet" button above.
                 browser: getBrowserInfo(),
                 device: getDeviceBrand(),
                 os: getOSVersion(),
+                platform: currentPlatform,
                 notificationPermission: Notification.permission,
                 isIOS: isIOS,
                 isStandalone: isStandalone,
@@ -1821,13 +2089,21 @@ If not, use the "Manually Add to Spreadsheet" button above.
             const { title, body, icon } = payload.notification || {};
             
             if (Notification.permission === 'granted') {
-                const notification = new Notification(title || 'Quiz Notification', { 
+                const options = {
                     body: body || 'You have a new quiz!',
                     icon: icon || '/MCQ/test/app/icon-192x192.png',
-                    tag: 'quiz-notification',
-                    requireInteraction: !isIOS,
-                    vibrate: isIOS ? [] : [200, 100, 200]
-                });
+                    tag: 'quiz-notification'
+                };
+                
+                // Add platform-specific options
+                if (currentPlatform === 'android') {
+                    options.vibrate = [200, 100, 200];
+                    options.requireInteraction = true;
+                } else if (currentPlatform !== 'ios') {
+                    options.requireInteraction = true;
+                }
+                
+                const notification = new Notification(title || 'Quiz Notification', options);
                 
                 notification.onclick = function() {
                     window.focus();
@@ -1869,7 +2145,7 @@ If not, use the "Manually Add to Spreadsheet" button above.
                 currentToken = newToken;
                 displayToken(newToken);
                 
-                // Save new token
+                // Save new token with platform info
                 const saveResult = await saveTokenToServer(newToken, false);
                 
                 if (saveResult.success || saveResult.assumed) {
@@ -1904,7 +2180,7 @@ If not, use the "Manually Add to Spreadsheet" button above.
                 fcmToken: currentToken,
                 deviceInfo: {
                     userAgent: navigator.userAgent,
-                    platform: navigator.platform,
+                    platform: currentPlatform,
                     vendor: navigator.vendor,
                     language: navigator.language,
                     cookieEnabled: navigator.cookieEnabled,
@@ -1948,7 +2224,7 @@ If not, use the "Manually Add to Spreadsheet" button above.
                 const testData = {
                     action: 'sendToAll',
                     title: '🔔 Test Notification to All',
-                    body: 'This is a test notification sent to all registered devices.',
+                    body: `This is a test notification sent to all registered devices from ${currentPlatform}.`,
                     timestamp: new Date().toISOString()
                 };
                 
@@ -1995,13 +2271,8 @@ If not, use the "Manually Add to Spreadsheet" button above.
                     fcmToken: targetToken,
                     notification: {
                         title: '💬 Message from Computer',
-                        body: 'Tap an action below to respond:',
-                        // These settings make it more dialog-like
-                        requireInteraction: true,
-                        actions: [
-                            { action: 'yes', title: '✅ Yes, I see this!' },
-                            { action: 'test', title: '🧪 Run Phone Test' }
-                        ]
+                        body: 'This notification was sent from your computer!',
+                        priority: 'urgent'
                     },
                     timestamp: new Date().toISOString()
                 };
@@ -2016,7 +2287,7 @@ If not, use the "Manually Add to Spreadsheet" button above.
                 updateStatus('✅ Interactive notification sent to phone! Check your phone now.', 'success');
                 
                 // Show what to expect
-                alert('📱 Check your phone!\n\nYou should see:\n• A pop-up notification at the top\n• Two action buttons you can tap\n• The notification will stay until you interact with it\n\nThis is the closest we can get to a dialog on another device!');
+                alert('📱 Check your phone!\n\nYou should see:\n• A pop-up notification at the top\n• The notification will show it came from your computer\n• On Android, you may see action buttons\n\nThis demonstrates cross-device notification capability!');
                 
             } catch (error) {
                 debugLog.add('Send to phone error:', error);
@@ -2077,11 +2348,12 @@ If not, use the "Manually Add to Spreadsheet" button above.
                 token: currentToken,
                 device: getDeviceBrand() + ' - ' + getBrowserName(),
                 os: getOSVersion(),
+                platform: currentPlatform,
                 timestamp: new Date().toISOString()
             };
             
             // Create a text for easy copying
-            const exportText = `📱 Device Token for Cross-Device Testing\n\nToken: ${currentToken}\n\nDevice: ${tokenInfo.device}\nOS: ${tokenInfo.os}\nExported: ${tokenInfo.timestamp}\n\nInstructions:\n1. Copy this entire token\n2. Open the quiz app on your computer\n3. Click "Send Interactive Dialog to Phone"\n4. Paste this token there`;
+            const exportText = `📱 Device Token for Cross-Device Testing\n\nToken: ${currentToken}\n\nDevice: ${tokenInfo.device}\nOS: ${tokenInfo.os}\nPlatform: ${tokenInfo.platform}\nExported: ${tokenInfo.timestamp}\n\nInstructions:\n1. Copy this entire token\n2. Open the quiz app on your computer\n3. Click "Send Interactive Dialog to Phone"\n4. Paste this token there`;
             
             // Try to copy to clipboard
             navigator.clipboard.writeText(currentToken).then(() => {
@@ -2140,9 +2412,10 @@ If not, use the "Manually Add to Spreadsheet" button above.
                 console.log('Notification Permission:', Notification.permission);
                 diagInfo += `\nNotification Permission: ${Notification.permission}\n`;
                 
-                // 5. iOS specific
+                // 5. Platform specific
+                diagInfo += `\nPlatform: ${currentPlatform}\n`;
                 if (isIOS) {
-                    diagInfo += `\niOS Specific:\n`;
+                    diagInfo += `iOS Specific:\n`;
                     diagInfo += `- Standalone: ${isStandalone ? 'YES ✅' : 'NO ❌'}\n`;
                     diagInfo += `- Version: ${iOSVersion || 'Unknown'}\n`;
                     diagInfo += `- Push Capable: ${(iOSVersion >= 16 && isStandalone) ? 'YES ✅' : 'NO ❌'}\n`;
