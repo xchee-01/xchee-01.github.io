@@ -296,9 +296,8 @@
 
         .nav-buttons {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             margin-top: 30px;
-            gap: 20px;
         }
 
         .btn {
@@ -531,6 +530,35 @@
                 opacity: 0;
             }
         }
+
+        .finish-text {
+            text-align: center;
+            font-size: 1.3em;
+            color: #003D7C;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f0f7ff;
+            border-radius: 15px;
+            animation: fadeInScale 0.5s ease-out;
+        }
+
+        .retry-icon {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            display: inline-block;
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .lock-icon {
+            font-size: 2em;
+            color: #f44336;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -548,9 +576,8 @@
             <!-- Quiz content will be dynamically inserted here -->
         </div>
 
-        <div class="nav-buttons">
-            <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()" disabled>Previous</button>
-            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>Next</button>
+        <div class="nav-buttons" id="navButtons">
+            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>Next Question</button>
         </div>
 
         <div class="score-display hidden" id="scoreDisplay">
@@ -574,10 +601,24 @@
         <div class="modal-content">
             <div class="lion-emoji">🎉</div>
             <h2>Congratulations!</h2>
-            <p>You've completed all questions correctly!</p>
+            <p>Perfect score! You've unlocked the next location!</p>
             <p>Your next destination is: <strong id="nextLocation"></strong></p>
             <p>Find it on the <a href="https://ontheworldmap.com/singapore/national-university-of-singapore/nus-kent-ridge-campus-map.jpg" target="_blank" class="map-link">campus map</a></p>
             <button class="btn btn-primary" onclick="location.reload()">Start Over</button>
+        </div>
+    </div>
+
+    <!-- Incomplete Modal -->
+    <div class="modal hidden" id="incompleteModal">
+        <div class="modal-content">
+            <div class="lock-icon">🔒</div>
+            <h2>Almost There!</h2>
+            <p>You scored <strong><span id="finalScore"></span>/10</strong></p>
+            <p style="color: #f44336; font-weight: bold;">You need a perfect score of 10/10 to unlock the next location!</p>
+            <p>Don't worry, you can retry as many times as you need. Review the questions and try again!</p>
+            <button class="btn btn-primary" onclick="retryQuiz()">
+                <span class="retry-icon">↻</span> Try Again
+            </button>
         </div>
     </div>
 
@@ -596,6 +637,7 @@
         let selectedAnswers = new Array(quizData.length).fill(null);
         let answeredQuestions = new Array(quizData.length).fill(false);
         let streak = 0;
+        let quizCompleted = false;
 
         // Celebration messages
         const celebrationMessages = [
@@ -710,11 +752,6 @@
 
             answeredQuestions[currentQuestion] = true;
             document.getElementById('nextBtn').disabled = false;
-
-            // Check if all questions are answered correctly
-            if (score === quizData.length && answeredQuestions.every(a => a)) {
-                setTimeout(showSuccess, 1000);
-            }
         }
 
         function createMiniConfetti(element) {
@@ -776,19 +813,49 @@
             if (currentQuestion < quizData.length - 1) {
                 currentQuestion++;
                 displayQuestion();
+            } else {
+                // Quiz completed
+                quizCompleted = true;
+                showQuizComplete();
             }
         }
 
-        function previousQuestion() {
-            if (currentQuestion > 0) {
-                currentQuestion--;
-                displayQuestion();
+        function showQuizComplete() {
+            if (score === 10) {
+                // Perfect score - show success
+                showSuccess();
+            } else {
+                // Not perfect score - show retry message
+                document.getElementById('finalScore').textContent = score;
+                document.getElementById('incompleteModal').classList.remove('hidden');
+                document.getElementById('incompleteModal').style.display = 'block';
             }
+        }
+
+        function retryQuiz() {
+            // Reset everything
+            currentQuestion = 0;
+            score = 0;
+            selectedAnswers = new Array(quizData.length).fill(null);
+            answeredQuestions = new Array(quizData.length).fill(false);
+            streak = 0;
+            quizCompleted = false;
+            
+            // Hide modal and reset UI
+            document.getElementById('incompleteModal').style.display = 'none';
+            updateScore();
+            displayQuestion();
         }
 
         function updateButtons() {
-            document.getElementById('prevBtn').disabled = currentQuestion === 0;
-            document.getElementById('nextBtn').disabled = !answeredQuestions[currentQuestion];
+            const btn = document.getElementById('nextBtn');
+            btn.disabled = !answeredQuestions[currentQuestion];
+            
+            if (currentQuestion === quizData.length - 1) {
+                btn.textContent = 'Finish Quiz';
+            } else {
+                btn.textContent = 'Next Question';
+            }
         }
 
         function updateProgress() {
