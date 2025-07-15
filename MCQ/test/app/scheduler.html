@@ -259,6 +259,11 @@
             color: white;
         }
 
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
         .status-message {
             padding: 15px;
             border-radius: 8px;
@@ -759,7 +764,7 @@
         // CONFIGURATION - UPDATE THIS WITH YOUR DEPLOYED GAS URL
         // ============================================================================
         const CONFIG = {
-            GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbzwO8edVnsmMXYg4Cc_FGIKl8Ckm0sv2oZ7ja7RAdfl3UnZE9aDp2MISoaqWg3XnxZXLg/exec', // Replace with your actual deployed URL
+            GAS_ENDPOINT: 'YOUR_GOOGLE_APPS_SCRIPT_DEPLOYMENT_URL_HERE', // Replace with your actual deployed URL
             REQUEST_TIMEOUT: 30000, // 30 seconds
             RETRY_ATTEMPTS: 3,
             RETRY_DELAY: 1000 // 1 second
@@ -914,36 +919,231 @@
         });
 
         // ============================================================================
-        // API COMMUNICATION WITH REAL DATA
+        // API COMMUNICATION WITH GAS (NO-CORS WORKAROUND)
         // ============================================================================
+        // Google Apps Script doesn't support CORS properly, so we use these workarounds
+        
         async function makeGASRequest(action, data = {}) {
             const requestData = { action, ...data };
             logger.log('network', `Making request: ${action}`, requestData);
             logNetworkRequest('POST', CONFIG.GAS_ENDPOINT, requestData, 'pending');
 
+            // For reading data (GET-like operations), we'll use JSONP-style callback
+            if (action === 'getStudents' || action === 'ping') {
+                return makeGASGetRequest(action);
+            }
+            
+            // For write operations, use no-cors POST
+            return makeGASPostRequest(action, data);
+        }
+
+        // GET request using script tag (JSONP-style) for reading data
+        async function makeGASGetRequest(action) {
+            return new Promise((resolve, reject) => {
+                const callbackName = `gasCallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const timeout = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('Request timeout'));
+                }, CONFIG.REQUEST_TIMEOUT);
+
+                const cleanup = () => {
+                    clearTimeout(timeout);
+                    delete window[callbackName];
+                    if (script.parentNode) {
+                        script.parentNode.removeChild(script);
+                    }
+                };
+
+                // Create global callback
+                window[callbackName] = (response) => {
+                    cleanup();
+                    logger.log('network', `Response received: ${action}`, response);
+                    logNetworkRequest('GET', CONFIG.GAS_ENDPOINT, { action }, 'success');
+                    resolve(response);
+                };
+
+                // Create script tag
+                const script = document.createElement('script');
+                const url = new URL(CONFIG.GAS_ENDPOINT);
+                url.searchParams.append('action', action);
+                url.searchParams.append('callback', callbackName);
+                
+                script.src = url.toString();
+                script.onerror = () => {
+                    cleanup();
+                    logger.log('error', `Script loading failed: ${action}`);
+                    logNetworkRequest('GET', CONFIG.GAS_ENDPOINT, { action }, 'error');
+                    reject(new Error('Failed to load script'));
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        // POST request using no-cors for write operations
+        async function makeGASPostRequest(action, data) {
+            const requestData = { action, ...data };
+            
             try {
-                const response = await fetch(CONFIG.GAS_ENDPOINT, {
+                // Send the request with no-cors
+                await fetch(CONFIG.GAS_ENDPOINT, {
                     method: 'POST',
+                    mode: 'no-cors',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'text/plain',
                     },
                     body: JSON.stringify(requestData)
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const responseData = await response.json();
-                logger.log('network', `Response received: ${action}`, responseData);
+                logger.log('info', `Request sent (no-cors): ${action}`);
                 logNetworkRequest('POST', CONFIG.GAS_ENDPOINT, requestData, 'success');
                 
-                return responseData;
+                // For no-cors, we can't read the response, so we assume success
+                // Check the Debug_Logs sheet in Google Sheets for actual results
+                return { 
+                    success: true, 
+                    message: 'Request sent. Check Debug_Logs sheet for details.',
+                    note: 'Due to CORS limitations, response cannot be read directly.'
+                };
 
             } catch (error) {
                 logger.log('error', `Request failed: ${action}`, error);
                 logNetworkRequest('POST', CONFIG.GAS_ENDPOINT, requestData, 'error');
                 throw error;
+            }
+        }
+
+        // Alternative: Use fetch with mode 'no-cors' and handle limitations
+        async function loadStudentsAlternative() {
+            logger.log('info', 'Using alternative loading method for students');
+            showStatus('CORS limitation detected - showing alternatives', 'warn');
+            
+            const container = document.getElementById('studentsContainer');
+            container.innerHTML = `
+                <div class="empty-state" style="max-width: 800px; margin: 0 auto;">
+                    <div class="empty-state-icon">⚠️</div>
+                    <h3>CORS Limitation Detected</h3>
+                    <p>Google Apps Script has CORS restrictions. Choose an option below:</p>
+                    
+                    <div style="display: grid; gap: 20px; margin-top: 30px;">
+                        <!-- Option 1: Manual Data Entry -->
+                        <div style="background: #f0f9ff; border: 1px solid #0284c7; border-radius: 8px; padding: 20px; text-align: left;">
+                            <h4 style="color: #0c4a6e; margin-bottom: 10px;">Option 1: Manual Data Entry</h4>
+                            <p style="color: #075985; margin-bottom: 15px;">
+                                Copy student data from your Google Sheet and paste it here.
+                            </p>
+                            <button class="btn-primary" onclick="showManualDataEntry()">
+                                📝 Enter Data Manually
+                            </button>
+                        </div>
+                        
+                        <!-- Option 2: Use Sample Data -->
+                        <div style="background: #f0fdf4; border: 1px solid #16a34a; border-radius: 8px; padding: 20px; text-align: left;">
+                            <h4 style="color: #14532d; margin-bottom: 10px;">Option 2: Test with Sample Data</h4>
+                            <p style="color: #166534; margin-bottom: 15px;">
+                                Load sample students to test the scheduler functionality.
+                            </p>
+                            <button class="btn-success" onclick="loadSampleData()" style="background: #16a34a;">
+                                🧪 Load Sample Data
+                            </button>
+                        </div>
+                        
+                        <!-- Option 3: Check Debug Logs -->
+                        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 20px; text-align: left;">
+                            <h4 style="color: #78350f; margin-bottom: 10px;">Option 3: Check Server Logs</h4>
+                            <p style="color: #92400e; margin-bottom: 15px;">
+                                The request was sent. Check the Debug_Logs sheet in your Google Spreadsheet to see if data was retrieved.
+                            </p>
+                            <button class="btn-warning" onclick="window.open('https://docs.google.com/spreadsheets/d/${extractSheetId()}/edit#gid=0', '_blank')">
+                                📊 Open Google Sheet
+                            </button>
+                        </div>
+                        
+                        <!-- Option 4: Direct Test -->
+                        <div style="background: #fce7f3; border: 1px solid #ec4899; border-radius: 8px; padding: 20px; text-align: left;">
+                            <h4 style="color: #831843; margin-bottom: 10px;">Option 4: Test Direct Connection</h4>
+                            <p style="color: #9f1239; margin-bottom: 15px;">
+                                Test if the GAS endpoint is accessible directly.
+                            </p>
+                            <button class="btn-secondary" onclick="testDirectConnection()">
+                                🔌 Test Connection
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: left;">
+                        <h4 style="margin-bottom: 10px;">💡 Troubleshooting Tips:</h4>
+                        <ol style="margin-left: 20px; color: #666;">
+                            <li>Ensure your GAS is deployed with "Execute as: Me" and "Who has access: Anyone"</li>
+                            <li>Copy your deployed URL and update it in the CONFIG section of this HTML</li>
+                            <li>Try opening your GAS URL directly in a browser - you should see a JSON response</li>
+                            <li>Check the Execution logs in your Google Apps Script editor</li>
+                            <li>For testing, you can use a CORS proxy or browser extension</li>
+                        </ol>
+                    </div>
+                    
+                    <button class="btn-primary" onclick="loadStudents()" style="margin-top: 20px;">
+                        🔄 Try Auto-Load Again
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Helper function to extract sheet ID from the code
+        function extractSheetId() {
+            // Try to extract from the error messages or logs
+            const logs = logger.logs.filter(log => log.message.includes('1wDC50js'));
+            if (logs.length > 0) {
+                return '1wDC50js_wiLuaLIGjZ0eevEJz_Ub6SQlrJNUN89a0qM';
+            }
+            // Return the known sheet ID as fallback
+            return '1wDC50js_wiLuaLIGjZ0eevEJz_Ub6SQlrJNUN89a0qM';
+        }
+
+        // Test direct connection
+        async function testDirectConnection() {
+            showStatus('Testing direct connection...', 'info');
+            
+            try {
+                // Try a simple GET request
+                const url = new URL(CONFIG.GAS_ENDPOINT);
+                url.searchParams.append('test', 'true');
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                });
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    showStatus('Direct connection successful!', 'success');
+                    logger.log('success', 'Direct connection test passed', text);
+                    
+                    // Try to parse as JSON
+                    try {
+                        const data = JSON.parse(text);
+                        if (data.service) {
+                            showStatus('GAS endpoint is accessible!', 'success');
+                            // Retry loading students
+                            loadStudents();
+                        }
+                    } catch (e) {
+                        logger.log('warn', 'Response is not JSON', text);
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                logger.log('error', 'Direct connection failed', error);
+                showStatus(`Direct connection failed: ${error.message}. Please check console for details.`, 'error');
+                
+                // Provide more detailed error info
+                console.error('Connection Test Failed:', error);
+                console.log('Troubleshooting tips:');
+                console.log('1. Make sure your GAS is deployed as "Execute as: Me" and "Who has access: Anyone"');
+                console.log('2. Check that the URL is correct:', CONFIG.GAS_ENDPOINT);
+                console.log('3. Try opening the URL directly in your browser');
+                console.log('4. Check the Execution logs in your Google Apps Script editor');
             }
         }
 
@@ -996,28 +1196,40 @@
             try {
                 const response = await makeGASRequest('getStudents');
                 
-                if (response.success) {
+                if (response && response.success) {
                     handleStudentsResponse(response);
+                } else if (response && response.note) {
+                    // No-cors mode response
+                    loadStudentsAlternative();
                 } else {
-                    throw new Error(response.error || 'Failed to load students');
+                    throw new Error(response?.error || 'Failed to load students');
                 }
 
             } catch (error) {
                 logger.log('error', 'Failed to load students', error);
-                showStatus('Failed to load students: ' + error.message, 'error');
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">❌</div>
-                        <h3>Failed to load students</h3>
-                        <p>${error.message}</p>
-                        <p style="margin-top: 10px; font-size: 0.9em;">
-                            Make sure you've updated the GAS_ENDPOINT in the code with your deployed script URL.
-                        </p>
-                        <button class="btn-primary" onclick="loadStudents()" style="margin-top: 20px;">
-                            Try Again
-                        </button>
-                    </div>
-                `;
+                
+                // Check if it's a CORS error
+                if (error.message.includes('CORS') || error.message.includes('No-CORS')) {
+                    loadStudentsAlternative();
+                } else {
+                    showStatus('Failed to load students: ' + error.message, 'error');
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">❌</div>
+                            <h3>Failed to load students</h3>
+                            <p>${error.message}</p>
+                            <p style="margin-top: 10px; font-size: 0.9em;">
+                                Make sure you've updated the GAS_ENDPOINT in the code with your deployed script URL.
+                            </p>
+                            <button class="btn-primary" onclick="loadStudents()" style="margin-top: 20px;">
+                                Try Again
+                            </button>
+                            <button class="btn-secondary" onclick="testDirectConnection()" style="margin-top: 10px;">
+                                Test Connection
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }
 
@@ -1269,7 +1481,8 @@
                     isAppleDevice: student.isAppleDevice || false
                 });
 
-                if (response.success) {
+                if (response.success || response.note) {
+                    // For no-cors mode, we assume success
                     addLog(`Notification sent to ${student.learnerFullName}`, 'success');
                     showStatus(`Quiz notification sent to ${student.learnerFullName}`, 'success');
                     logger.log('success', `Notification sent successfully to ${student.learnerFullName}`);
@@ -1282,6 +1495,122 @@
                 addLog(`Failed to notify ${student.learnerFullName}: ${error.message}`, 'error');
                 showStatus(`Failed to send notification: ${error.message}`, 'error');
             }
+        }
+
+        // ============================================================================
+        // MANUAL DATA ENTRY (FALLBACK FOR CORS ISSUES)
+        // ============================================================================
+        function showManualDataEntry() {
+            const container = document.getElementById('studentsContainer');
+            container.innerHTML = `
+                <div style="background: #f0f9ff; border: 2px solid #0284c7; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h3 style="color: #0c4a6e; margin-bottom: 10px;">📝 Manual Data Entry Mode</h3>
+                    <p style="color: #075985; margin-bottom: 15px;">
+                        Due to CORS restrictions, you can manually enter student data from your Google Sheet.
+                        Copy the data from your Subscriptions sheet and paste it below.
+                    </p>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">
+                            Paste student data (one per line, format: Row,StudentID,StudentName,FCMToken,Platform):
+                        </label>
+                        <textarea id="manualDataInput" style="width: 100%; height: 200px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace; font-size: 0.9em;" placeholder="Example:
+2,acer,Xavier_1,eeSCr6nu65S-Q24n2CuTPQ:APA91bGBOr2caX8o4X5II8tI5MrIb-94lEiVU-X-2ONM2i8pC9YQhM6eo6thlVioAMs4ndflRYk5zfl2VhSgo4EHikafV3c7r33bzITiLL_GzCWCO9d9w-0,windows
+3,Android,Xavier_2,coyrEdZHscDdHmOOjZrb9m:APA91bElcQSz07qbaNou2TX4BoiKjihMd2CHIB6LqjuqHoTUczoDDUK_KrJxZH5d6FK4Y2XguUlHPXOctYyLMEporIbRZj9aF0R3jNbyuCp4NhuKgoTK_Go,android"></textarea>
+                    </div>
+                    <button class="btn-primary" onclick="processManualData()">
+                        Process Manual Data
+                    </button>
+                    <button class="btn-secondary" onclick="loadStudents()" style="margin-left: 10px;">
+                        Try Auto-Load Again
+                    </button>
+                </div>
+            `;
+        }
+
+        function processManualData() {
+            const textarea = document.getElementById('manualDataInput');
+            const data = textarea.value.trim();
+            
+            if (!data) {
+                showStatus('Please enter student data', 'error');
+                return;
+            }
+            
+            const students = [];
+            const lines = data.split('\n');
+            
+            lines.forEach((line, index) => {
+                const parts = line.trim().split(',');
+                if (parts.length >= 5) {
+                    const [row, studentID, studentName, token, platform] = parts;
+                    
+                    // Validate token
+                    if (token && token !== 'not-used-for-fcm' && token.length > 20) {
+                        students.push({
+                            recordRow: parseInt(row) || (index + 2),
+                            learnerID: studentID.trim(),
+                            learnerFullName: studentName.trim(),
+                            notificationToken: token.trim(),
+                            devicePlatform: platform.trim().toLowerCase(),
+                            isAppleDevice: platform.trim().toLowerCase() === 'ios',
+                            lastActivity: new Date().toISOString()
+                        });
+                    }
+                }
+            });
+            
+            if (students.length > 0) {
+                handleStudentsResponse({
+                    success: true,
+                    students: students,
+                    totalCount: students.length,
+                    summary: {
+                        manual: true,
+                        totalRows: lines.length
+                    }
+                });
+                showStatus(`Loaded ${students.length} students from manual entry`, 'success');
+            } else {
+                showStatus('No valid student data found. Check the format.', 'error');
+            }
+        }
+
+        // ============================================================================
+        // QUICK TEST WITH SAMPLE DATA
+        // ============================================================================
+        function loadSampleData() {
+            const sampleStudents = [
+                {
+                    recordRow: 2,
+                    learnerID: 'TEST001',
+                    learnerFullName: 'Test Student 1',
+                    notificationToken: 'sample_token_1_' + Math.random().toString(36).substr(2),
+                    devicePlatform: 'android',
+                    isAppleDevice: false,
+                    lastActivity: new Date().toISOString()
+                },
+                {
+                    recordRow: 3,
+                    learnerID: 'TEST002',
+                    learnerFullName: 'Test Student 2',
+                    notificationToken: 'sample_token_2_' + Math.random().toString(36).substr(2),
+                    devicePlatform: 'ios',
+                    isAppleDevice: true,
+                    lastActivity: new Date().toISOString()
+                }
+            ];
+            
+            handleStudentsResponse({
+                success: true,
+                students: sampleStudents,
+                totalCount: sampleStudents.length,
+                summary: {
+                    sample: true,
+                    note: 'Using sample data for testing'
+                }
+            });
+            
+            showStatus('Loaded sample data for testing', 'info');
         }
 
         function stopTimer(recordRow) {
