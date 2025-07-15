@@ -597,7 +597,7 @@
     <script>
         // Configuration
         const CONFIG = {
-            GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbwRUpi2Pai4DTuW-eZOK5RCWkA70c5wTunfqfpRgXDcz-PvEmF8nBDdXmhhWKxmSqptfQ/exec'
+            GAS_ENDPOINT: 'YOUR_GOOGLE_APPS_SCRIPT_DEPLOYMENT_URL_HERE' // Replace with your deployed GAS URL
         };
 
         // Global state
@@ -628,28 +628,28 @@
                 // We'll simulate the response for demonstration
                 // In production, you'd need to handle this differently
                 
-                // For demonstration, let's simulate some data
-                // Remove this in production when the actual endpoint returns data
+                // TODO: Remove this simulation block in production
+                // This is only for demonstration purposes
                 setTimeout(() => {
                     // Simulated response - replace with actual data handling
                     const simulatedData = {
                         success: true,
                         students: [
                             {
-                                rowIndex: 2,
-                                studentId: 'A0123456B',
-                                studentName: 'John Doe',
-                                fcmToken: 'dummy_token_1',
-                                platform: 'android',
-                                isIOS: false
+                                recordRow: 2,
+                                learnerID: 'A0123456B',
+                                learnerFullName: 'John Doe',
+                                notificationToken: 'dummy_token_1',
+                                devicePlatform: 'android',
+                                isAppleDevice: false
                             },
                             {
-                                rowIndex: 3,
-                                studentId: 'A0234567C',
-                                studentName: 'Jane Smith',
-                                fcmToken: 'dummy_token_2',
-                                platform: 'ios',
-                                isIOS: true
+                                recordRow: 3,
+                                learnerID: 'A0234567C',
+                                learnerFullName: 'Jane Smith',
+                                notificationToken: 'dummy_token_2',
+                                devicePlatform: 'ios',
+                                isAppleDevice: true
                             }
                         ]
                     };
@@ -711,16 +711,16 @@
         function createStudentCard(student) {
             const card = document.createElement('div');
             card.className = 'student-card';
-            card.id = `student-${student.rowIndex}`;
+            card.id = `student-${student.recordRow}`;
 
             card.innerHTML = `
                 <div class="student-header">
                     <div class="student-info">
-                        <div class="student-name">${student.studentName}</div>
+                        <div class="student-name">${student.learnerFullName}</div>
                         <div class="student-details">
-                            <span>ID: ${student.studentId}</span>
-                            <span class="platform-badge platform-${student.platform.toLowerCase()}">
-                                ${student.platform}
+                            <span>ID: ${student.learnerID}</span>
+                            <span class="platform-badge platform-${student.devicePlatform.toLowerCase()}">
+                                ${student.devicePlatform}
                             </span>
                         </div>
                     </div>
@@ -728,38 +728,38 @@
                 <div class="timer-controls">
                     <div class="timer-input-group">
                         <input type="number" 
-                               id="timer-input-${student.rowIndex}" 
+                               id="timer-input-${student.recordRow}" 
                                class="timer-input" 
                                min="1" 
                                max="60" 
                                value="30"
-                               onchange="updateSlider(${student.rowIndex})">
+                               onchange="updateSlider(${student.recordRow})">
                         <span>seconds</span>
                     </div>
                     <input type="range" 
-                           id="timer-slider-${student.rowIndex}" 
+                           id="timer-slider-${student.recordRow}" 
                            class="timer-slider" 
                            min="1" 
                            max="60" 
                            value="30"
-                           onchange="updateInput(${student.rowIndex})">
-                    <div class="countdown-display" id="countdown-${student.rowIndex}">
+                           onchange="updateInput(${student.recordRow})">
+                    <div class="countdown-display" id="countdown-${student.recordRow}">
                         --:--
                     </div>
                     <div class="action-buttons">
                         <button class="btn-primary btn-small" 
-                                id="start-btn-${student.rowIndex}"
-                                onclick="startTimer(${student.rowIndex})">
+                                id="start-btn-${student.recordRow}"
+                                onclick="startTimer(${student.recordRow})">
                             ▶️ Start
                         </button>
                         <button class="btn-danger btn-small" 
-                                id="stop-btn-${student.rowIndex}"
-                                onclick="stopTimer(${student.rowIndex})"
+                                id="stop-btn-${student.recordRow}"
+                                onclick="stopTimer(${student.recordRow})"
                                 style="display: none;">
                             ⏹️ Stop
                         </button>
                         <button class="btn-warning btn-small" 
-                                onclick="resetTimer(${student.rowIndex})">
+                                onclick="resetTimer(${student.recordRow})">
                             🔁 Reset
                         </button>
                     </div>
@@ -773,16 +773,16 @@
         }
 
         // Update slider when input changes
-        function updateSlider(rowIndex) {
-            const input = document.getElementById(`timer-input-${rowIndex}`);
-            const slider = document.getElementById(`timer-slider-${rowIndex}`);
+        function updateSlider(recordRow) {
+            const input = document.getElementById(`timer-input-${recordRow}`);
+            const slider = document.getElementById(`timer-slider-${recordRow}`);
             slider.value = input.value;
         }
 
         // Update input when slider changes
-        function updateInput(rowIndex) {
-            const slider = document.getElementById(`timer-slider-${rowIndex}`);
-            const input = document.getElementById(`timer-input-${rowIndex}`);
+        function updateInput(recordRow) {
+            const slider = document.getElementById(`timer-slider-${recordRow}`);
+            const input = document.getElementById(`timer-input-${recordRow}`);
             input.value = slider.value;
         }
 
@@ -790,33 +790,33 @@
         function applyGlobalTimer() {
             const globalValue = document.getElementById('globalTimerValue').value;
             students.forEach(student => {
-                document.getElementById(`timer-input-${student.rowIndex}`).value = globalValue;
-                document.getElementById(`timer-slider-${student.rowIndex}`).value = globalValue;
+                document.getElementById(`timer-input-${student.recordRow}`).value = globalValue;
+                document.getElementById(`timer-slider-${student.recordRow}`).value = globalValue;
             });
             showStatus(`Set all timers to ${globalValue} seconds`, 'success');
         }
 
         // Start timer for specific student
-        function startTimer(rowIndex) {
-            const student = students.find(s => s.rowIndex === rowIndex);
+        function startTimer(recordRow) {
+            const student = students.find(s => s.recordRow === recordRow);
             if (!student) return;
 
-            const seconds = parseInt(document.getElementById(`timer-input-${rowIndex}`).value);
+            const seconds = parseInt(document.getElementById(`timer-input-${recordRow}`).value);
             if (seconds < 1 || seconds > 60) {
                 showStatus('Timer must be between 1 and 60 seconds', 'error');
                 return;
             }
 
             // Update UI
-            const card = document.getElementById(`student-${rowIndex}`);
+            const card = document.getElementById(`student-${recordRow}`);
             card.classList.add('scheduled');
-            document.getElementById(`start-btn-${rowIndex}`).style.display = 'none';
-            document.getElementById(`stop-btn-${rowIndex}`).style.display = 'inline-block';
-            document.getElementById(`timer-input-${rowIndex}`).disabled = true;
-            document.getElementById(`timer-slider-${rowIndex}`).disabled = true;
+            document.getElementById(`start-btn-${recordRow}`).style.display = 'none';
+            document.getElementById(`stop-btn-${recordRow}`).style.display = 'inline-block';
+            document.getElementById(`timer-input-${recordRow}`).disabled = true;
+            document.getElementById(`timer-slider-${recordRow}`).disabled = true;
 
             // Set timer data
-            timers[rowIndex] = {
+            timers[recordRow] = {
                 student: student,
                 totalSeconds: seconds,
                 remainingSeconds: seconds,
@@ -824,24 +824,24 @@
             };
 
             // Start countdown
-            updateCountdown(rowIndex);
-            countdownIntervals[rowIndex] = setInterval(() => {
-                updateCountdown(rowIndex);
+            updateCountdown(recordRow);
+            countdownIntervals[recordRow] = setInterval(() => {
+                updateCountdown(recordRow);
             }, 100);
 
-            addLog(`Started ${seconds}s timer for ${student.studentName}`, 'info');
+            addLog(`Started ${seconds}s timer for ${student.learnerFullName}`, 'info');
             updateStats();
         }
 
         // Update countdown display
-        function updateCountdown(rowIndex) {
-            const timer = timers[rowIndex];
+        function updateCountdown(recordRow) {
+            const timer = timers[recordRow];
             if (!timer) return;
 
             const elapsed = (Date.now() - timer.startTime) / 1000;
             timer.remainingSeconds = Math.max(0, timer.totalSeconds - elapsed);
 
-            const display = document.getElementById(`countdown-${rowIndex}`);
+            const display = document.getElementById(`countdown-${recordRow}`);
             const minutes = Math.floor(timer.remainingSeconds / 60);
             const seconds = Math.floor(timer.remainingSeconds % 60);
             const tenths = Math.floor((timer.remainingSeconds % 1) * 10);
@@ -855,38 +855,38 @@
 
             // Timer completed
             if (timer.remainingSeconds <= 0) {
-                completeTimer(rowIndex);
+                completeTimer(recordRow);
             }
         }
 
         // Complete timer and send notification
-        async function completeTimer(rowIndex) {
-            const timer = timers[rowIndex];
+        async function completeTimer(recordRow) {
+            const timer = timers[recordRow];
             if (!timer) return;
 
             // Stop countdown
-            if (countdownIntervals[rowIndex]) {
-                clearInterval(countdownIntervals[rowIndex]);
-                delete countdownIntervals[rowIndex];
+            if (countdownIntervals[recordRow]) {
+                clearInterval(countdownIntervals[recordRow]);
+                delete countdownIntervals[recordRow];
             }
 
             // Update UI
-            const card = document.getElementById(`student-${rowIndex}`);
+            const card = document.getElementById(`student-${recordRow}`);
             card.classList.remove('scheduled');
             card.classList.add('notified');
-            document.getElementById(`countdown-${rowIndex}`).textContent = '✅ Sent';
-            document.getElementById(`countdown-${rowIndex}`).classList.remove('urgent');
+            document.getElementById(`countdown-${recordRow}`).textContent = '✅ Sent';
+            document.getElementById(`countdown-${recordRow}`).classList.remove('urgent');
 
             // Send notification
             await sendNotification(timer.student);
 
             // Cleanup
-            delete timers[rowIndex];
+            delete timers[recordRow];
             updateStats();
 
             // Reset UI after 3 seconds
             setTimeout(() => {
-                resetTimer(rowIndex);
+                resetTimer(recordRow);
             }, 3000);
         }
 
@@ -895,11 +895,11 @@
             try {
                 const data = {
                     action: 'sendScheduledNotification',
-                    rowIndex: student.rowIndex,
-                    fcmToken: student.fcmToken,
-                    studentName: student.studentName,
-                    studentId: student.studentId,
-                    isIOS: student.isIOS || false
+                    recordRow: student.recordRow,
+                    notificationToken: student.notificationToken,
+                    learnerFullName: student.learnerFullName,
+                    learnerID: student.learnerID,
+                    isAppleDevice: student.isAppleDevice || false
                 };
 
                 await fetch(CONFIG.GAS_ENDPOINT, {
@@ -909,52 +909,52 @@
                     body: JSON.stringify(data)
                 });
 
-                addLog(`Notification sent to ${student.studentName}`, 'success');
-                showStatus(`Quiz notification sent to ${student.studentName}`, 'success');
+                addLog(`Notification sent to ${student.learnerFullName}`, 'success');
+                showStatus(`Quiz notification sent to ${student.learnerFullName}`, 'success');
 
             } catch (error) {
                 console.error('Error sending notification:', error);
-                addLog(`Failed to notify ${student.studentName}: ${error.message}`, 'error');
+                addLog(`Failed to notify ${student.learnerFullName}: ${error.message}`, 'error');
                 showStatus(`Failed to send notification: ${error.message}`, 'error');
             }
         }
 
         // Stop timer for specific student
-        function stopTimer(rowIndex) {
-            if (countdownIntervals[rowIndex]) {
-                clearInterval(countdownIntervals[rowIndex]);
-                delete countdownIntervals[rowIndex];
+        function stopTimer(recordRow) {
+            if (countdownIntervals[recordRow]) {
+                clearInterval(countdownIntervals[recordRow]);
+                delete countdownIntervals[recordRow];
             }
 
-            if (timers[rowIndex]) {
-                const student = timers[rowIndex].student;
-                delete timers[rowIndex];
-                addLog(`Stopped timer for ${student.studentName}`, 'warning');
+            if (timers[recordRow]) {
+                const student = timers[recordRow].student;
+                delete timers[recordRow];
+                addLog(`Stopped timer for ${student.learnerFullName}`, 'warning');
             }
 
-            resetTimer(rowIndex);
+            resetTimer(recordRow);
             updateStats();
         }
 
         // Reset timer for specific student
-        function resetTimer(rowIndex) {
-            const card = document.getElementById(`student-${rowIndex}`);
+        function resetTimer(recordRow) {
+            const card = document.getElementById(`student-${recordRow}`);
             card.classList.remove('scheduled', 'notified');
             
-            document.getElementById(`start-btn-${rowIndex}`).style.display = 'inline-block';
-            document.getElementById(`stop-btn-${rowIndex}`).style.display = 'none';
-            document.getElementById(`timer-input-${rowIndex}`).disabled = false;
-            document.getElementById(`timer-slider-${rowIndex}`).disabled = false;
-            document.getElementById(`countdown-${rowIndex}`).textContent = '--:--';
-            document.getElementById(`countdown-${rowIndex}`).classList.remove('urgent');
+            document.getElementById(`start-btn-${recordRow}`).style.display = 'inline-block';
+            document.getElementById(`stop-btn-${recordRow}`).style.display = 'none';
+            document.getElementById(`timer-input-${recordRow}`).disabled = false;
+            document.getElementById(`timer-slider-${recordRow}`).disabled = false;
+            document.getElementById(`countdown-${recordRow}`).textContent = '--:--';
+            document.getElementById(`countdown-${recordRow}`).classList.remove('urgent');
         }
 
         // Start all timers
         function startAllTimers() {
             let started = 0;
             students.forEach(student => {
-                if (!timers[student.rowIndex]) {
-                    startTimer(student.rowIndex);
+                if (!timers[student.recordRow]) {
+                    startTimer(student.recordRow);
                     started++;
                 }
             });
@@ -969,8 +969,8 @@
         // Stop all timers
         function stopAllTimers() {
             let stopped = 0;
-            Object.keys(timers).forEach(rowIndex => {
-                stopTimer(parseInt(rowIndex));
+            Object.keys(timers).forEach(recordRow => {
+                stopTimer(parseInt(recordRow));
                 stopped++;
             });
             
@@ -984,7 +984,7 @@
         // Reset all timers
         function resetAllTimers() {
             students.forEach(student => {
-                resetTimer(student.rowIndex);
+                resetTimer(student.recordRow);
             });
             showStatus('All timers reset', 'success');
         }
