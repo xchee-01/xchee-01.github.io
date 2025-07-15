@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUS Masters in Precision Health - Amazing Race Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #003D7C 0%, #EF7C00 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background particles */
+        .bg-particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: floatUp 15s linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            animation: slideIn 0.6s ease-out;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        h1 {
+            color: #003D7C;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            animation: pulse 2s ease-in-out infinite;
+            position: relative;
+            display: inline-block;
+        }
+
+        h1::after {
+            content: '✨';
+            position: absolute;
+            top: -10px;
+            right: -30px;
+            font-size: 0.5em;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { 
+                transform: scale(1) rotate(0deg);
+                opacity: 0.5;
+            }
+            50% { 
+                transform: scale(1.5) rotate(180deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .subtitle {
+            color: #EF7C00;
+            font-size: 1.2em;
+            font-weight: 500;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #EF7C00, #003D7C);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 0%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.4),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .question-container {
+            margin: 30px 0;
+            opacity: 0;
+            animation: fadeInScale 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .question-number {
+            display: inline-block;
+            background: linear-gradient(135deg, #EF7C00, #003D7C);
+            color: white;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-bottom: 15px;
+            animation: rotateIn 0.6s ease-out;
+        }
+
+        @keyframes rotateIn {
+            from {
+                transform: rotate(-180deg) scale(0);
+            }
+            to {
+                transform: rotate(0) scale(1);
+            }
+        }
+
+        .question {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            transform-origin: center;
+        }
+
+        .option::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(239, 124, 0, 0.3), transparent);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+            border-radius: 50%;
+        }
+
+        .option:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .option:hover {
+            background: #e9ecef;
+            transform: translateX(5px) scale(1.02);
+            border-color: #EF7C00;
+            box-shadow: 0 5px 15px rgba(239, 124, 0, 0.2);
+        }
+
+        .option.selected {
+            background: #fff3e0;
+            border-color: #EF7C00;
+            transform: scale(1.02);
+        }
+
+        .option.correct {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            animation: correctAnswer 0.6s ease;
+        }
+
+        @keyframes correctAnswer {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1) rotate(2deg); }
+            100% { transform: scale(1); }
+        }
+
+        .option.incorrect {
+            background: #ffebee;
+            border-color: #f44336;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px) rotate(-2deg); }
+            40% { transform: translateX(10px) rotate(2deg); }
+            60% { transform: translateX(-10px) rotate(-2deg); }
+            80% { transform: translateX(10px) rotate(2deg); }
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: #EF7C00;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #d66e00;
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(239, 124, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: #003D7C;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #002855;
+            transform: scale(1.05);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            animation: modalSlideIn 0.5s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal h2 {
+            color: #003D7C;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .modal p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            z-index: 1001;
+            animation: confettiFall 3s linear forwards;
+        }
+
+        .confetti.round {
+            border-radius: 50%;
+        }
+
+        .confetti.square {
+            transform: rotate(45deg);
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .score-display {
+            text-align: center;
+            font-size: 1.2em;
+            color: #003D7C;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .score-display span {
+            font-weight: bold;
+            color: #EF7C00;
+            font-size: 1.3em;
+            animation: scoreUpdate 0.5s ease;
+        }
+
+        @keyframes scoreUpdate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.5); }
+            100% { transform: scale(1); }
+        }
+
+        .lion-emoji {
+            font-size: 3em;
+            animation: bounce 1s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.1); }
+        }
+
+        .map-link {
+            color: #EF7C00;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .map-link:hover {
+            color: #003D7C;
+            text-decoration: underline;
+        }
+
+        /* Success streak indicator */
+        .streak {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            color: #EF7C00;
+            opacity: 0;
+            transform: scale(0);
+            animation: streakPop 0.5s ease forwards;
+        }
+
+        @keyframes streakPop {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Celebration text */
+        .celebration-text {
+            position: fixed;
+            font-size: 2em;
+            font-weight: bold;
+            color: #EF7C00;
+            z-index: 1002;
+            animation: celebrationFloat 2s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes celebrationFloat {
+            0% {
+                transform: translateY(0) scale(0);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-50px) scale(1.2);
+            }
+            100% {
+                transform: translateY(-100px) scale(0.8);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦁 NUS Amazing Race</h1>
+            <p class="subtitle">Masters in Precision Health & Medicine 2025</p>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div id="quizContent">
+            <!-- Quiz content will be dynamically inserted here -->
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()" disabled>Previous</button>
+            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>Next</button>
+        </div>
+
+        <div class="score-display hidden" id="scoreDisplay">
+            Score: <span id="currentScore">0</span>/10
+        </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div class="modal" id="welcomeModal">
+        <div class="modal-content">
+            <div class="lion-emoji">🦁</div>
+            <h2>Welcome to NUS Amazing Race!</h2>
+            <p>Are you currently at <strong>Seminar Room M9</strong>?</p>
+            <p>Please confirm your location to begin the quiz.</p>
+            <button class="btn btn-primary" onclick="startQuiz()">Yes, I'm at M9!</button>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal hidden" id="successModal">
+        <div class="modal-content">
+            <div class="lion-emoji">🎉</div>
+            <h2>Congratulations!</h2>
+            <p>You've completed all questions correctly!</p>
+            <p>Your next destination is: <strong id="nextLocation"></strong></p>
+            <p>Find it on the <a href="https://ontheworldmap.com/singapore/national-university-of-singapore/nus-kent-ridge-campus-map.jpg" target="_blank" class="map-link">campus map</a></p>
+            <button class="btn btn-primary" onclick="location.reload()">Start Over</button>
+        </div>
+    </div>
+
+    <script>
+        // Base64 encoded quiz data
+        const encodedQuizData = "W3sicXVlc3Rpb24iOiJXaGF0IGlzIHRoZSBvZmZpY2lhbCBtYXNjb3Qgb2YgTlVTPyIsIm9wdGlvbnMiOlsiQSBkcmFnb24iLCJBIGxpb24iLCJBIHRpZ2VyIiwiQW4gZWFnbGUiLCJBIHBob2VuaXgiXSwiY29ycmVjdCI6MX0seyJxdWVzdGlvbiI6IkluIHdoaWNoIHllYXIgd2FzIE5VUyBvZmZpY2lhbGx5IGVzdGFibGlzaGVkPyIsIm9wdGlvbnMiOlsiMTkwNSIsIjE5NTUiLCIxOTgwIiwiMTk3NSIsIjE5NjUiXSwiY29ycmVjdCI6MX0seyJxdWVzdGlvbiI6IldoYXQgZG9lcyB0aGUgTWVybGlvbiwgU2luZ2Fwb3JlJ3MgbmF0aW9uYWwgaWNvbiwgcmVwcmVzZW50PyIsIm9wdGlvbnMiOlsiQSBkcmFnb24gYW5kIGEgZmlzaCIsIkEgbGlvbiBhbmQgYSBmaXNoIiwiQSB0aWdlciBhbmQgYSBzZWEgaG9yc2UiLCJBIGxpb24gYW5kIGFuIGVhZ2xlIiwiQSBkcmFnb24gYW5kIGEgcGhvZW5peCJdLCJjb3JyZWN0IjoxfSx7InF1ZXN0aW9uIjoiV2hpY2ggTlVTIGxpYnJhcnkgaXMga25vd24gZm9yIGl0cyBtb2Rlcm4gYXJjaGl0ZWN0dXJlIGFuZCAnZ3JlZW4nIGRlc2lnbj8iLCJvcHRpb25zIjpbIkNlbnRyYWwgTGlicmFyeSIsIkNoaW5lc2UgTGlicmFyeSIsIk1lZGljYWwgTGlicmFyeSIsIllhbGUtTlVTIENvbGxlZ2UgTGlicmFyeSIsIkVkdWNhdGlvbiBSZXNvdXJjZSBDZW50cmUiXSwiY29ycmVjdCI6M30seyJxdWVzdGlvbiI6IldoYXQgaXMgdGhlIG5hbWUgb2YgdGhlIGZhbW91cyBmb29kIGNvdXJ0IGF0IE5VUyB0aGF0J3MgYSBmYXZvcml0ZSBhbW9uZyBzdHVkZW50cz8iLCJvcHRpb25zIjpbIlRoZSBTdW1taXQiLCJGb29kIENsaXF1ZSIsIlRoZSBEZWNrIiwiVGVjaG5vIEVkZ2UiLCJGb29kIEp1bmN0aW9uIl0sImNvcnJlY3QiOjN9LHsicXVlc3Rpb24iOiJXaGljaCBNUlQgbGluZSBkaXJlY3RseSBjb25uZWN0cyB0byBOVVMgS2VudCBSaWRnZSBDYW1wdXM/Iiwib3B0aW9ucyI6WyJFYXN0LVdlc3QgTGluZSAoR3JlZW4pIiwiTm9ydGgtU291dGggTGluZSAoUmVkKSIsIkNpcmNsZSBMaW5lIChZZWxsb3cpIiwiRG93bnRvd24gTGluZSAoQmx1ZSkiLCJUaG9tc29uLUVhc3QgQ29hc3QgTGluZSAoQnJvd24pIl0sImNvcnJlY3QiOjJ9LHsicXVlc3Rpb24iOiJXaGF0IGlzIFNpbmdhcG9yZSdzIG5hdGlvbmFsIGZsb3dlcj8iLCJvcHRpb25zIjpbIlJhZmZsZXNpYSIsIkZyYW5naXBhbmkiLCJWYW5kYSBNaXNzIEpvYXF1aW0iLCJIaWJpc2N1cyIsIkxvdHVzIl0sImNvcnJlY3QiOjJ9LHsicXVlc3Rpb24iOiJXaGljaCBmYW1vdXMgYXJjaGl0ZWN0IGRlc2lnbmVkIHRoZSBpY29uaWMgVW5pdmVyc2l0eSBUb3duIGF0IE5VUz8iLCJvcHRpb25zIjpbIkkuTS4gUGVpIiwiTm9ybWFuIEZvc3RlciIsIlNhZmRpZSBBc3NvY2lhdGVzIiwiWmFoYSBIYWRpZCIsIkZyYW5rIEdlaHJ5Il0sImNvcnJlY3QiOjJ9LHsicXVlc3Rpb24iOiJXaGF0IGRvZXMgJ0tpYXN1JyBtZWFuIGluIFNpbmdhcG9yZWFuIGNvbnRleHQ/Iiwib3B0aW9ucyI6WyJGZWFyIG9mIGxvc2luZyBvdXQiLCJCZWluZyBraWFzdSIsIkJlaW5nIGdlbmVyb3VzIiwiQmVpbmcgYnJhdmUiLCJCZWluZyBjb25maWRlbnQiXSwiY29ycmVjdCI6MH0seyJxdWVzdGlvbiI6IldoaWNoIE5VUyBmYWN1bHR5IGlzIGhvbWUgdG8gdGhlIE1hc3RlcnMgaW4gUHJlY2lzaW9uIEhlYWx0aCBhbmQgTWVkaWNpbmUgcHJvZ3JhbW1lPyIsIm9wdGlvbnMiOlsiRmFjdWx0eSBvZiBTY2llbmNlIiwiWW9uZyBMb28gTGluIFNjaG9vbCBvZiBNZWRpY2luZSIsIkZhY3VsdHkgb2YgRW5naW5lZXJpbmciLCJTYXcgU3dlZSBIb2NrIFNjaG9vbCBvZiBQdWJsaWMgSGVhbHRoIiwiRmFjdWx0eSBvZiBEZW50aXN0cnkiXSwiY29ycmVjdCI6MX1d";
+        
+        // Base64 encoded location
+        const encodedLocation = "TGVjdHVyZSBUaGVhdHJlIDM2";
+        
+        // Decode the quiz data
+        const quizData = JSON.parse(atob(encodedQuizData));
+        
+        let currentQuestion = 0;
+        let score = 0;
+        let selectedAnswers = new Array(quizData.length).fill(null);
+        let answeredQuestions = new Array(quizData.length).fill(false);
+        let streak = 0;
+
+        // Celebration messages
+        const celebrationMessages = [
+            "Awesome! 🎉",
+            "Brilliant! ⭐",
+            "Perfect! 🌟",
+            "Excellent! 🎊",
+            "Outstanding! 🏆",
+            "Fantastic! 🎯",
+            "Superb! 💫",
+            "Amazing! 🌈",
+            "Wonderful! ✨",
+            "Great job! 🎈"
+        ];
+
+        // Create background particles
+        function createBackgroundParticles() {
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('bg-particle');
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                document.body.appendChild(particle);
+            }
+        }
+
+        // Show welcome modal on load
+        window.onload = function() {
+            createBackgroundParticles();
+            document.getElementById('welcomeModal').style.display = 'block';
+        };
+
+        function startQuiz() {
+            document.getElementById('welcomeModal').style.display = 'none';
+            document.getElementById('scoreDisplay').classList.remove('hidden');
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            const question = quizData[currentQuestion];
+            const quizContent = document.getElementById('quizContent');
+            
+            quizContent.innerHTML = `
+                <div class="question-container">
+                    <div class="question-number">${currentQuestion + 1}</div>
+                    <h2 class="question">${question.question}</h2>
+                    <div class="options">
+                        ${question.options.map((option, index) => `
+                            <div class="option ${selectedAnswers[currentQuestion] === index ? 'selected' : ''}" 
+                                 onclick="selectOption(${index})"
+                                 data-index="${index}">
+                                ${option}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            updateProgress();
+            updateButtons();
+
+            // Add staggered animation to options
+            const options = document.querySelectorAll('.option');
+            options.forEach((opt, index) => {
+                opt.style.opacity = '0';
+                opt.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    opt.style.transition = 'all 0.3s ease';
+                    opt.style.opacity = '1';
+                    opt.style.transform = 'translateX(0)';
+                }, 100 + (index * 50));
+            });
+        }
+
+        function selectOption(index) {
+            if (answeredQuestions[currentQuestion]) return;
+            
+            selectedAnswers[currentQuestion] = index;
+            const options = document.querySelectorAll('.option');
+            
+            options.forEach((opt, i) => {
+                opt.classList.remove('selected');
+                if (i === index) {
+                    opt.classList.add('selected');
+                }
+            });
+
+            // Check answer
+            if (index === quizData[currentQuestion].correct) {
+                options[index].classList.add('correct');
+                if (!answeredQuestions[currentQuestion]) {
+                    score++;
+                    streak++;
+                    updateScore();
+                    
+                    // Create mini confetti burst for correct answer
+                    createMiniConfetti(options[index]);
+                    
+                    // Show celebration text
+                    showCelebrationText();
+                    
+                    // Show streak if > 1
+                    if (streak > 1) {
+                        showStreak();
+                    }
+                }
+            } else {
+                options[index].classList.add('incorrect');
+                streak = 0;
+            }
+
+            answeredQuestions[currentQuestion] = true;
+            document.getElementById('nextBtn').disabled = false;
+
+            // Check if all questions are answered correctly
+            if (score === quizData.length && answeredQuestions.every(a => a)) {
+                setTimeout(showSuccess, 1000);
+            }
+        }
+
+        function createMiniConfetti(element) {
+            const rect = element.getBoundingClientRect();
+            const colors = ['#EF7C00', '#003D7C', '#FFD700', '#4CAF50', '#FF6B6B', '#9C27B0'];
+            
+            for (let i = 0; i < 20; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.classList.add(Math.random() > 0.5 ? 'round' : 'square');
+                confetti.style.left = (rect.left + rect.width / 2 + (Math.random() - 0.5) * 100) + 'px';
+                confetti.style.top = (rect.top + rect.height / 2) + 'px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = (5 + Math.random() * 5) + 'px';
+                confetti.style.height = confetti.style.width;
+                confetti.style.animationDuration = (2 + Math.random() * 1) + 's';
+                confetti.style.animationDelay = (Math.random() * 0.2) + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        function showCelebrationText() {
+            const message = celebrationMessages[currentQuestion];
+            const celebText = document.createElement('div');
+            celebText.classList.add('celebration-text');
+            celebText.textContent = message;
+            celebText.style.left = '50%';
+            celebText.style.top = '50%';
+            celebText.style.transform = 'translate(-50%, -50%)';
+            document.body.appendChild(celebText);
+            
+            setTimeout(() => celebText.remove(), 2000);
+        }
+
+        function showStreak() {
+            let streakElement = document.getElementById('streakIndicator');
+            if (!streakElement) {
+                streakElement = document.createElement('div');
+                streakElement.id = 'streakIndicator';
+                streakElement.classList.add('streak');
+                document.body.appendChild(streakElement);
+            }
+            
+            streakElement.textContent = `🔥 ${streak} in a row!`;
+            streakElement.style.animation = 'none';
+            setTimeout(() => {
+                streakElement.style.animation = 'streakPop 0.5s ease forwards';
+            }, 10);
+            
+            setTimeout(() => {
+                streakElement.style.opacity = '0';
+                streakElement.style.transform = 'scale(0)';
+            }, 3000);
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < quizData.length - 1) {
+                currentQuestion++;
+                displayQuestion();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                displayQuestion();
+            }
+        }
+
+        function updateButtons() {
+            document.getElementById('prevBtn').disabled = currentQuestion === 0;
+            document.getElementById('nextBtn').disabled = !answeredQuestions[currentQuestion];
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestion + 1) / quizData.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function updateScore() {
+            const scoreElement = document.getElementById('currentScore');
+            scoreElement.textContent = score;
+            scoreElement.style.animation = 'none';
+            setTimeout(() => {
+                scoreElement.style.animation = 'scoreUpdate 0.5s ease';
+            }, 10);
+        }
+
+        function showSuccess() {
+            document.getElementById('nextLocation').textContent = atob(encodedLocation);
+            document.getElementById('successModal').classList.remove('hidden');
+            document.getElementById('successModal').style.display = 'block';
+            
+            // Create massive confetti celebration
+            for (let i = 0; i < 100; i++) {
+                createConfetti();
+            }
+        }
+
+        function createConfetti() {
+            const colors = ['#EF7C00', '#003D7C', '#FFD700', '#4CAF50', '#FF6B6B', '#9C27B0', '#00BCD4'];
+            const confetti = document.createElement('div');
+            confetti.classList.add('confetti');
+            confetti.classList.add(Math.random() > 0.5 ? 'round' : 'square');
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.width = (8 + Math.random() * 8) + 'px';
+            confetti.style.height = confetti.style.width;
+            confetti.style.animationDelay = Math.random() * 3 + 's';
+            confetti.style.animationDuration = (3 + Math.random() * 2) + 's';
+            document.body.appendChild(confetti);
+            
+            setTimeout(() => confetti.remove(), 5000);
+        }
+    </script>
+</body>
+</html>
