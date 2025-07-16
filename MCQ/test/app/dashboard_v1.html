@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCQ Management System - NUS Medicine</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+    }
+    </script>
+    
+    <style>
+        :root {
+            --nus-blue: #003D7C;
+            --nus-orange: #EF7C00;
+            --nus-light-blue: #0066CC;
+            --nus-gray: #F5F5F5;
+            --nus-dark-gray: #333333;
+            --success-green: #28a745;
+            --error-red: #dc3545;
+            --warning-yellow: #ffc107;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--nus-gray);
+            color: var(--nus-dark-gray);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--nus-blue);
+        }
+
+        .title-section h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .tabs-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            gap: 0;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            color: var(--nus-dark-gray);
+            position: relative;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            color: var(--nus-orange);
+        }
+
+        .tab.active {
+            color: var(--nus-orange);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--nus-orange);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* API Key Section */
+        .api-key-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .api-key-section.error {
+            border-color: var(--error-red);
+        }
+
+        .api-key-header {
+            margin-bottom: 1rem;
+        }
+
+        .api-key-header h3 {
+            color: var(--nus-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .api-key-input-group {
+            display: flex;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        .api-key-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .api-key-input:focus {
+            outline: none;
+            border-color: var(--nus-orange);
+        }
+
+        .save-key-button {
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .save-key-button:hover {
+            background-color: var(--nus-light-blue);
+        }
+
+        .api-status {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .api-status.success {
+            color: var(--success-green);
+        }
+
+        .api-status.error {
+            color: var(--error-red);
+        }
+
+        /* Upload Section */
+        .upload-container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .upload-header {
+            margin-bottom: 2rem;
+        }
+
+        .upload-header h2 {
+            color: var(--nus-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-header p {
+            color: #666;
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed var(--nus-orange);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #FFF9F0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--nus-blue);
+            background-color: #F0F8FF;
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--nus-blue);
+            background-color: #E6F3FF;
+            transform: scale(1.02);
+        }
+
+        .drop-zone-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            background-color: var(--nus-orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+
+        .drop-zone-text h3 {
+            color: var(--nus-blue);
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .drop-zone-text p {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .upload-button {
+            background-color: var(--nus-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .upload-button:hover {
+            background-color: var(--nus-light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* File Input */
+        .file-input {
+            display: none;
+        }
+
+        /* Progress Section */
+        .progress-section {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 1rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-header h4 {
+            color: var(--nus-blue);
+        }
+
+        .progress-status {
+            padding: 0.25rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-processing {
+            background-color: #FFF3CD;
+            color: #856404;
+        }
+
+        .status-complete {
+            background-color: #D4EDDA;
+            color: #155724;
+        }
+
+        .status-error {
+            background-color: #F8D7DA;
+            color: #721C24;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #E0E0E0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--nus-orange);
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-details {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        /* Question Preview */
+        .question-preview {
+            background: var(--nus-gray);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.875rem;
+            font-family: monospace;
+            display: none;
+        }
+
+        .question-preview.active {
+            display: block;
+        }
+
+        /* Results Section */
+        .results-section {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--nus-gray);
+        }
+
+        .results-header h3 {
+            color: var(--nus-blue);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .export-button, .download-button {
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .export-button {
+            background-color: var(--success-green);
+        }
+
+        .export-button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .download-button {
+            background-color: var(--nus-orange);
+        }
+
+        .download-button:hover {
+            background-color: #D86E00;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--nus-gray);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--nus-orange);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.875rem;
+        }
+
+        /* Question Table */
+        .question-table-container {
+            overflow-x: auto;
+            margin-top: 2rem;
+        }
+
+        .question-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .question-table th {
+            background-color: var(--nus-blue);
+            color: white;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+        }
+
+        .question-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .question-table tr:hover {
+            background-color: var(--nus-gray);
+        }
+
+        .concept-tag {
+            display: inline-block;
+            background-color: var(--nus-orange);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Placeholder Sections */
+        .placeholder-section {
+            background: white;
+            border-radius: 12px;
+            padding: 4rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .placeholder-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 2rem;
+            background-color: var(--nus-gray);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 3rem;
+        }
+
+        .placeholder-section h2 {
+            color: var(--nus-blue);
+            margin-bottom: 1rem;
+        }
+
+        .placeholder-section p {
+            color: #666;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Error Message */
+        .error-message {
+            background-color: #FEE;
+            border: 1px solid var(--error-red);
+            color: var(--error-red);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .tabs-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab {
+                padding: 1rem;
+                white-space: nowrap;
+            }
+
+            .drop-zone {
+                padding: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .api-key-input-group {
+                flex-direction: column;
+            }
+
+            .button-group {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .export-button, .download-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">NUS</div>
+                <div class="title-section">
+                    <h1>MCQ Management System</h1>
+                    <div class="subtitle">Master of Medicine (Emergency Medicine)</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+        <div class="tabs-container">
+            <button class="tab active" onclick="switchTab('uploader')">
+                📤 Question Uploader
+            </button>
+            <button class="tab" onclick="switchTab('viewer')">
+                📋 Question Viewer
+            </button>
+            <button class="tab" onclick="switchTab('scheduler')">
+                📅 Scheduler
+            </button>
+            <button class="tab" onclick="switchTab('dashboard')">
+                📊 Instructor Dashboard
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Question Uploader Section -->
+        <section id="uploader" class="content-section active">
+            <!-- API Key Configuration -->
+            <div class="api-key-section" id="apiKeySection">
+                <div class="api-key-header">
+                    <h3>⚙️ API Configuration</h3>
+                    <p>Enter your Gemini API key to enable AI-powered question analysis</p>
+                </div>
+                <div class="api-key-input-group">
+                    <input 
+                        type="password" 
+                        id="apiKeyInput" 
+                        class="api-key-input" 
+                        placeholder="Enter your Gemini API key..."
+                        value=""
+                    />
+                    <button class="save-key-button" onclick="saveApiKey()">Save Key</button>
+                </div>
+                <div class="api-status" id="apiStatus"></div>
+            </div>
+
+            <div class="upload-container">
+                <div class="upload-header">
+                    <h2>Upload MCQ Questions</h2>
+                    <p>Upload your PDF file containing MCQ questions. Our AI will automatically extract and analyze each question.</p>
+                </div>
+
+                <!-- Drop Zone -->
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-icon">📄</div>
+                    <div class="drop-zone-text">
+                        <h3>Drag & Drop your PDF here</h3>
+                        <p>or</p>
+                        <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+                            Browse Files
+                        </button>
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" accept=".pdf" />
+                </div>
+                
+                <div class="error-message" id="errorMessage"></div>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-section" id="progressSection">
+                <div class="progress-card">
+                    <div class="progress-header">
+                        <h4>Processing: <span id="fileName"></span></h4>
+                        <span class="progress-status status-processing" id="progressStatus">Processing</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-details">
+                        <span id="progressText">Extracting questions...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="question-preview" id="questionPreview"></div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <div class="results-card">
+                    <div class="results-header">
+                        <h3>Analysis Complete</h3>
+                        <div class="button-group">
+                            <button class="download-button" onclick="downloadJSON()">
+                                💾 Download JSON
+                            </button>
+                            <button class="export-button" onclick="exportToSheets()">
+                                📊 Export to Google Sheets
+                            </button>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalQuestions">0</div>
+                            <div class="stat-label">Total Questions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="avgDifficulty">0</div>
+                            <div class="stat-label">Average Difficulty</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="topicsCount">0</div>
+                            <div class="stat-label">Topics Covered</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="imagesCount">0</div>
+                            <div class="stat-label">Questions with Images</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Question Preview Table -->
+                    <div class="question-table-container">
+                        <table class="question-table" id="questionTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Topic</th>
+                                    <th>Question</th>
+                                    <th>Difficulty</th>
+                                    <th>Bloom's Level</th>
+                                    <th>Concepts</th>
+                                </tr>
+                            </thead>
+                            <tbody id="questionTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Question Viewer Section -->
+        <section id="viewer" class="content-section">
+            <div class="placeholder-section">
+                <div class="placeholder-icon">📋</div>
+                <h2>Question Viewer</h2>
+                <p>View and search through all uploaded MCQ questions. Filter by topic, difficulty, concepts, and more. This feature is coming soon!</p>
+            </div>
+        </section>
+
+        <!-- Scheduler Section -->
+        <section id="scheduler" class="content-section">
+            <div class="placeholder-section">
+                <div class="placeholder-icon">📅</div>
+                <h2>Scheduler</h2>
+                <p>Schedule assessments and manage question distribution for your students. Set up adaptive learning paths based on performance. This feature is coming soon!</p>
+            </div>
+        </section>
+
+        <!-- Instructor Dashboard Section -->
+        <section id="dashboard" class="content-section">
+            <div class="placeholder-section">
+                <div class="placeholder-icon">📊</div>
+                <h2>Instructor Dashboard</h2>
+                <p>Monitor student performance, view analytics, and track learning progress across all topics and concepts. This feature is coming soon!</p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+        
+        // Global variables
+        let genAI = null;
+        let processedQuestions = [];
+        let currentFileName = '';
+        
+        // Initialize PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        // Load prompt and template from your provided files
+        const PROMPT_TEMPLATE = `You are an expert medical educator analyzing MCQ questions for an adaptive learning system. Your task is to analyze the following medical MCQ question and generate comprehensive metadata that will be used to create personalized learning paths for students.
+
+Question #{question_number}:
+
+Clinical Scenario: {clinical_scenario}
+
+Question: {question_stem}
+
+Options:
+{options}
+
+Correct Answer: {correct_answer}
+
+Please analyze this question and fill in the following metadata template with appropriate values:
+
+{template}
+
+Guidelines for analysis:
+
+1. **Topic**: Identify the primary medical specialty or domain (e.g., "Cardiology", "Pharmacology", "Emergency Medicine", "Neurology"). Be specific but not overly narrow.
+
+2. **Concepts**: List 2-4 key medical concepts that are tested by this question. These should be specific medical knowledge points, conditions, or principles that a student needs to understand to answer correctly.
+
+3. **Difficulty**: Rate from 1-10 based on:
+   - 1-3: Basic recall of facts or simple recognition
+   - 4-6: Understanding and application of concepts
+   - 7-8: Complex analysis or integration of multiple concepts
+   - 9-10: Expert-level synthesis or rare/specialized knowledge
+
+4. **Bloom's Level**: Classify according to Bloom's Taxonomy:
+   - "remember": Recall of facts, terms, basic concepts
+   - "understand": Explaining ideas, interpreting information
+   - "apply": Using information in new situations
+   - "analyze": Drawing connections among ideas
+   - "evaluate": Justifying decisions or courses of action
+   - "create": Producing new or original work
+
+5. **Prerequisites**: List 2-3 foundational concepts or topics that students should master BEFORE attempting this question. These should be more basic concepts that build up to the current question.
+
+6. **Next Concepts**: List 2-3 advanced topics or concepts that students should study AFTER mastering this question. These represent the natural progression in learning.
+
+7. **Performance Metrics**: Initialize as provided in the template (these will be updated as students attempt the question).
+
+Return ONLY the filled JSON object with no additional explanation or text. Ensure all fields from the template are included in your response.`;
+
+        const METADATA_TEMPLATE = {
+            "questionId": "[UNIQUE_ID]",
+            "topic": "[MAIN_TOPIC]",
+            "concepts": ["[CONCEPT_1]", "[CONCEPT_2]"],
+            "difficulty": "[1-10]",
+            "bloomLevel": "[remember|understand|apply|analyze|evaluate|create]",
+            "prerequisites": ["[PREREQ_CONCEPT_1]", "[PREREQ_CONCEPT_2]"],
+            "nextConcepts": ["[FOLLOW_UP_CONCEPT_1]", "[FOLLOW_UP_CONCEPT_2]"],
+            "performance": {
+                "attempts": 0,
+                "correctRate": 0.0,
+                "avgTimeSeconds": 0
+            }
+        };
+
+        // API Key Management
+        window.saveApiKey = function() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            if (!apiKey) {
+                showApiStatus('Please enter an API key', 'error');
+                return;
+            }
+            
+            // Initialize Gemini AI
+            try {
+                genAI = new GoogleGenerativeAI(apiKey);
+                localStorage.setItem('gemini_api_key', apiKey);
+                showApiStatus('API key saved successfully!', 'success');
+                document.getElementById('apiKeySection').style.borderColor = 'var(--success-green)';
+                setTimeout(() => {
+                    document.getElementById('apiKeySection').style.borderColor = 'transparent';
+                }, 3000);
+            } catch (error) {
+                showApiStatus('Invalid API key format', 'error');
+                document.getElementById('apiKeySection').classList.add('error');
+            }
+        };
+
+        function showApiStatus(message, type) {
+            const statusEl = document.getElementById('apiStatus');
+            statusEl.textContent = message;
+            statusEl.className = `api-status ${type}`;
+        }
+
+        // Load saved API key on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+                genAI = new GoogleGenerativeAI(savedKey);
+                showApiStatus('API key loaded from storage', 'success');
+            }
+        });
+
+        // Tab switching functionality
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        };
+
+        // File upload functionality
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const progressSection = document.getElementById('progressSection');
+        const resultsSection = document.getElementById('resultsSection');
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('drag-over');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('drag-over');
+        }
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        // Handle file selection
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                if (!genAI) {
+                    showError('Please configure your Gemini API key first');
+                    document.getElementById('apiKeySection').classList.add('error');
+                    return;
+                }
+                processPDF(files[0]);
+            } else {
+                showError('Please upload a PDF file');
+            }
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.add('active');
+            setTimeout(() => {
+                errorEl.classList.remove('active');
+            }, 5000);
+        }
+
+        // Process PDF file
+        async function processPDF(file) {
+            currentFileName = file.name;
+            processedQuestions = [];
+            
+            // Show progress section
+            progressSection.classList.add('active');
+            resultsSection.classList.remove('active');
+            document.getElementById('fileName').textContent = file.name;
+            
+            try {
+                updateProgress('Reading PDF file...', 10);
+                
+                // Read PDF file
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                
+                updateProgress('Extracting text from PDF...', 20);
+                
+                // Extract text from all pages
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n';
+                }
+                
+                updateProgress('Parsing questions...', 30);
+                
+                // Parse questions from text
+                const questions = parseQuestions(fullText);
+                
+                if (questions.length === 0) {
+                    throw new Error('No questions found in the PDF');
+                }
+                
+                // Show preview
+                document.getElementById('questionPreview').textContent = 
+                    `Found ${questions.length} questions. Processing with AI...`;
+                document.getElementById('questionPreview').classList.add('active');
+                
+                // Process each question with Gemini
+                for (let i = 0; i < questions.length; i++) {
+                    const question = questions[i];
+                    const progress = 30 + (i / questions.length) * 60;
+                    updateProgress(`Analyzing question ${i + 1} of ${questions.length}...`, progress);
+                    
+                    try {
+                        const metadata = await analyzeQuestionWithGemini(question);
+                        processedQuestions.push(metadata);
+                    } catch (error) {
+                        console.error(`Error processing question ${question.number}:`, error);
+                        // Add question with default metadata if AI fails
+                        processedQuestions.push(createDefaultMetadata(question));
+                    }
+                    
+                    // Small delay to avoid rate limiting
+                    await sleep(1000);
+                }
+                
+                updateProgress('Finalizing results...', 95);
+                await sleep(500);
+                
+                updateProgress('Complete!', 100);
+                document.getElementById('progressStatus').textContent = 'Complete';
+                document.getElementById('progressStatus').className = 'progress-status status-complete';
+                
+                // Show results
+                showResults();
+                
+            } catch (error) {
+                console.error('Error processing PDF:', error);
+                document.getElementById('progressStatus').textContent = 'Error';
+                document.getElementById('progressStatus').className = 'progress-status status-error';
+                updateProgress(`Error: ${error.message}`, 0);
+                showError(`Failed to process PDF: ${error.message}`);
+            }
+        }
+
+        // Parse questions from PDF text
+        function parseQuestions(text) {
+            const questions = [];
+            const answerKey = {};
+            
+            // First, find answer key
+            const answerKeyMatch = text.match(/Answer Key[\s\S]*?(\d+\.\s*[A-E][\s\S]*)/i);
+            if (answerKeyMatch) {
+                const answerText = answerKeyMatch[1];
+                const answerMatches = answerText.matchAll(/(\d+)\.\s*([A-E])/g);
+                for (const match of answerMatches) {
+                    answerKey[match[1]] = match[2];
+                }
+            }
+            
+            // Parse questions
+            const questionPattern = /(\d+)\.\s*([^]*?)(?=\d+\.|Answer Key|$)/g;
+            const matches = text.matchAll(questionPattern);
+            
+            for (const match of matches) {
+                const questionNumber = parseInt(match[1]);
+                const questionText = match[2];
+                
+                // Skip if this is part of answer key
+                if (questionText.length < 50) continue;
+                
+                // Extract options
+                const optionPattern = /([A-E])\.\s*([^A-E]*?)(?=[A-E]\.|$)/g;
+                const optionMatches = questionText.matchAll(optionPattern);
+                const options = {};
+                
+                let questionContent = questionText;
+                for (const optMatch of optionMatches) {
+                    options[optMatch[1]] = optMatch[2].trim();
+                    // Remove options from question content
+                    questionContent = questionContent.replace(optMatch[0], '');
+                }
+                
+                // Split clinical scenario and question stem
+                const lines = questionContent.trim().split('\n').filter(line => line.trim());
+                let clinicalScenario = '';
+                let questionStem = '';
+                
+                // Find the actual question (usually contains ?)
+                const questionLineIndex = lines.findIndex(line => line.includes('?'));
+                if (questionLineIndex >= 0) {
+                    clinicalScenario = lines.slice(0, questionLineIndex).join(' ').trim();
+                    questionStem = lines.slice(questionLineIndex).join(' ').trim();
+                } else if (lines.length > 1) {
+                    clinicalScenario = lines.slice(0, -1).join(' ').trim();
+                    questionStem = lines[lines.length - 1].trim();
+                } else {
+                    questionStem = lines[0] || '';
+                }
+                
+                questions.push({
+                    number: questionNumber,
+                    clinicalScenario,
+                    questionStem,
+                    options,
+                    correctAnswer: answerKey[questionNumber] || '',
+                    hasImage: /image|figure|shown|diagram/.test(questionText.toLowerCase())
+                });
+            }
+            
+            return questions;
+        }
+
+        // Analyze question with Gemini AI
+        async function analyzeQuestionWithGemini(question) {
+            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+            
+            // Format prompt
+            const prompt = PROMPT_TEMPLATE
+                .replace('{question_number}', question.number)
+                .replace('{clinical_scenario}', question.clinicalScenario)
+                .replace('{question_stem}', question.questionStem)
+                .replace('{options}', JSON.stringify(question.options, null, 2))
+                .replace('{correct_answer}', question.correctAnswer)
+                .replace('{template}', JSON.stringify(METADATA_TEMPLATE, null, 2));
+            
+            try {
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const text = response.text();
+                
+                // Extract JSON from response
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) {
+                    throw new Error('No JSON found in response');
+                }
+                
+                const metadata = JSON.parse(jsonMatch[0]);
+                
+                // Add question content to metadata
+                metadata.questionId = `Q${String(question.number).padStart(3, '0')}`;
+                metadata._question_content = {
+                    clinical_scenario: question.clinicalScenario,
+                    question_stem: question.questionStem,
+                    options: question.options,
+                    correct_answer: question.correctAnswer,
+                    has_image: question.hasImage
+                };
+                
+                return metadata;
+                
+            } catch (error) {
+                console.error('Gemini API error:', error);
+                return createDefaultMetadata(question);
+            }
+        }
+
+        // Create default metadata when AI fails
+        function createDefaultMetadata(question) {
+            return {
+                questionId: `Q${String(question.number).padStart(3, '0')}`,
+                topic: "Emergency Medicine",
+                concepts: ["Requires manual classification"],
+                difficulty: 5,
+                bloomLevel: "understand",
+                prerequisites: ["Basic medical knowledge"],
+                nextConcepts: ["Advanced emergency procedures"],
+                performance: {
+                    attempts: 0,
+                    correctRate: 0.0,
+                    avgTimeSeconds: 0
+                },
+                _question_content: {
+                    clinical_scenario: question.clinicalScenario,
+                    question_stem: question.questionStem,
+                    options: question.options,
+                    correct_answer: question.correctAnswer,
+                    has_image: question.hasImage
+                }
+            };
+        }
+
+        function updateProgress(text, percent) {
+            document.getElementById('progressText').textContent = text;
+            document.getElementById('progressPercent').textContent = percent + '%';
+            document.getElementById('progressFill').style.width = percent + '%';
+        }
+
+        function showResults() {
+            resultsSection.classList.add('active');
+            
+            // Calculate statistics
+            const totalQuestions = processedQuestions.length;
+            const avgDifficulty = (processedQuestions.reduce((sum, q) => 
+                sum + (parseInt(q.difficulty) || 5), 0) / totalQuestions).toFixed(1);
+            const topics = [...new Set(processedQuestions.map(q => q.topic))];
+            const imagesCount = processedQuestions.filter(q => 
+                q._question_content && q._question_content.has_image).length;
+            
+            // Update stats
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            document.getElementById('avgDifficulty').textContent = avgDifficulty;
+            document.getElementById('topicsCount').textContent = topics.length;
+            document.getElementById('imagesCount').textContent = imagesCount;
+            
+            // Populate question table
+            const tbody = document.getElementById('questionTableBody');
+            tbody.innerHTML = '';
+            
+            processedQuestions.forEach(q => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${q.questionId}</td>
+                    <td>${q.topic}</td>
+                    <td>${q._question_content.question_stem.substring(0, 50)}...</td>
+                    <td>${q.difficulty}</td>
+                    <td>${q.bloomLevel}</td>
+                    <td>${q.concepts.map(c => `<span class="concept-tag">${c}</span>`).join('')}</td>
+                `;
+            });
+        }
+
+        // Export functions
+        window.downloadJSON = function() {
+            const dataStr = JSON.stringify(processedQuestions, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `mcq_metadata_${currentFileName.replace('.pdf', '')}_${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        };
+
+        window.exportToSheets = function() {
+            // Generate CSV format for Google Sheets
+            const headers = [
+                'Question ID', 'Topic', 'Concepts', 'Difficulty', 'Bloom Level',
+                'Prerequisites', 'Next Concepts', 'Attempts', 'Correct Rate',
+                'Avg Time (sec)', 'Clinical Scenario', 'Question Stem',
+                'Options', 'Correct Answer', 'Has Image'
+            ];
+            
+            const rows = processedQuestions.map(q => [
+                q.questionId,
+                q.topic,
+                q.concepts.join('; '),
+                q.difficulty,
+                q.bloomLevel,
+                q.prerequisites.join('; '),
+                q.nextConcepts.join('; '),
+                q.performance.attempts,
+                q.performance.correctRate,
+                q.performance.avgTimeSeconds,
+                q._question_content.clinical_scenario,
+                q._question_content.question_stem,
+                JSON.stringify(q._question_content.options),
+                q._question_content.correct_answer,
+                q._question_content.has_image ? 'Yes' : 'No'
+            ]);
+            
+            // Create CSV content
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(cell => 
+                    `"${String(cell).replace(/"/g, '""')}"`
+                ).join(','))
+            ].join('\n');
+            
+            // For now, download as CSV
+            // In production, you would use Google Sheets API
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `mcq_for_sheets_${currentFileName.replace('.pdf', '')}_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            alert('CSV file downloaded! You can now import this into Google Sheets.\n\nFor automatic upload, integrate with Google Sheets API.');
+        };
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
