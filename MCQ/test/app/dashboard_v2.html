@@ -12,77 +12,6 @@
         "imports": {
             "@google/generative-ai": "https://esm.run/@google/generative-ai"
         }
-        
-        // Ultra-flexible parsing for difficult PDFs
-        function parseUltraFlexible(text) {
-            console.log('Using ultra-flexible parsing...');
-            const questions = [];
-            
-            // Remove common headers/footers
-            text = text.replace(/Page \d+/gi, '')
-                      .replace(/Master of Medicine.*?MCQ/gi, '')
-                      .replace(/SAMPLE/g, '');
-            
-            // Find anything that looks like a question number
-            const allMatches = [];
-            const patterns = [
-                /(\d+)[.)]\s*([^]+?)(?=\d+[.)]|Answer Key|$)/gi,
-                /Q(\d+)[:.]\s*([^]+?)(?=Q\d+|Answer Key|$)/gi,
-                /Question\s*(\d+)\s*[:.]\s*([^]+?)(?=Question|Answer Key|$)/gi
-            ];
-            
-            for (const pattern of patterns) {
-                const matches = Array.from(text.matchAll(pattern));
-                allMatches.push(...matches);
-            }
-            
-            // Sort by question number
-            allMatches.sort((a, b) => parseInt(a[1]) - parseInt(b[1]));
-            
-            // Extract answer key
-            const answerKey = {};
-            const answerMatch = text.match(/Answer Key.*$/is);
-            if (answerMatch) {
-                const answers = answerMatch[0].matchAll(/(\d+)[.):\s]*([A-E])/g);
-                for (const ans of answers) {
-                    answerKey[parseInt(ans[1])] = ans[2];
-                }
-            }
-            
-            for (const match of allMatches) {
-                const num = parseInt(match[1]);
-                const content = match[2];
-                
-                // Find any group of 4-5 items that could be options
-                const possibleOptions = content.match(/[A-E][.):\s-]+.+/g) || [];
-                
-                if (possibleOptions.length >= 4) {
-                    const options = {};
-                    for (const opt of possibleOptions) {
-                        const optMatch = opt.match(/([A-E])[.):\s-]+(.+)/);
-                        if (optMatch) {
-                            options[optMatch[1]] = optMatch[2].trim();
-                        }
-                    }
-                    
-                    // Extract question text (before options)
-                    const firstOptionIndex = content.indexOf(possibleOptions[0]);
-                    const questionText = content.substring(0, firstOptionIndex).trim();
-                    
-                    questions.push({
-                        number: num,
-                        clinicalScenario: '',
-                        questionStem: questionText,
-                        options: options,
-                        correctAnswer: answerKey[num] || '',
-                        hasImage: /image|figure|shown|below/i.test(questionText)
-                    });
-                }
-            }
-            
-            console.log(`Ultra-flexible parsing found ${questions.length} questions`);
-            return questions;
-        }
     }
     </script>
     
@@ -468,16 +397,11 @@
             border-radius: 8px;
             padding: 1rem;
             margin-top: 1rem;
-            max-height: 300px;
+            max-height: 200px;
             overflow-y: auto;
             font-size: 0.875rem;
-            display: none;
-        }
-
-        .question-preview pre {
             font-family: monospace;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            display: none;
         }
 
         .question-preview.active {
@@ -731,31 +655,7 @@
                 <div class="title-section">
                     <h1>MCQ Management System</h1>
                     <div class="subtitle">Master of Medicine (Emergency Medicine)</div>
-                <!-- Add example output section -->
-            <div style="margin-top: 2rem; padding: 1rem; background-color: #f0f8ff; border-radius: 8px; border: 1px solid #0066cc;">
-                <h4 style="color: var(--nus-blue); margin-bottom: 0.5rem;">📊 Example Analysis Output</h4>
-                <p style="font-size: 0.875rem; color: #666; margin-bottom: 1rem;">Here's what the AI will generate for each question:</p>
-                <pre style="background: white; padding: 1rem; border-radius: 4px; font-size: 0.75rem; overflow-x: auto;">
-{
-  "questionId": "Q001",
-  "topic": "Cardiac Electrophysiology",
-  "concepts": ["QT prolongation", "Cardiac action potential", "Phase 3 repolarization", "Ion channel disorders"],
-  "difficulty": 7,
-  "bloomLevel": "analyze",
-  "prerequisites": ["Basic cardiac physiology", "ECG interpretation", "Action potential phases"],
-  "nextConcepts": ["Torsades de pointes", "Congenital long QT syndrome", "Anti-arrhythmic drugs"],
-  "performance": {
-    "attempts": 0,
-    "correctRate": 0.0,
-    "avgTimeSeconds": 0
-  }
-}</pre>
-            <!-- Add test mode button -->
-            <div style="margin-top: 1rem; text-align: center;">
-                <button onclick="testWithSampleData()" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.875rem;">
-                    🧪 Test with Sample Data
-                </button>
-            </div>
+                </div>
             </div>
         </div>
     </header>
@@ -794,7 +694,7 @@
                         id="apiKeyInput" 
                         class="api-key-input" 
                         placeholder="Enter your Gemini API key..."
-                        value=""
+                        value=""  <!-- we will populate via prompt -->
                     />
                     <button class="save-key-button" onclick="saveApiKey()">Save Key</button>
                 </div>
@@ -923,21 +823,18 @@
         </section>
     </main>
 
-    <script type="module">
-        import { GoogleGenerativeAI } from "@google/generative-ai";
-        
-        // Global variables
-        let genAI = null;
-        let processedQuestions = [];
-        let currentFileName = '';
-        
-        // Initialize PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        
-        // Enhanced prompt for deeper analysis
-        const PROMPT_TEMPLATE = `You are an expert medical educator with extensive experience in emergency medicine and medical education. Your task is to deeply analyze each MCQ question and generate comprehensive metadata for an adaptive learning system.
+<script type="module">
+import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-IMPORTANT: Take your time to think carefully about each aspect of the question. Consider the clinical context, required knowledge, and educational value.
+/* ------------------------------------------------------------------
+   0.  Constants
+------------------------------------------------------------------ */
+const DEFAULT_API_KEY = "AIzaSyAPniwWCXBfqaq-_DyOQdbFbKgs6Itq1ZU";
+
+const PROMPT_TEMPLATE = `You are an expert medical educator analyzing MCQ questions for an adaptive learning system.
+Your task is to analyze the following medical MCQ question and generate comprehensive metadata that will be used to create personalized learning paths for students.
+
+Think step-by-step, justify your choices, and return the most accurate metadata possible.
 
 Question #{question_number}:
 
@@ -950,1271 +847,443 @@ Options:
 
 Correct Answer: {correct_answer}
 
-DEEP ANALYSIS INSTRUCTIONS:
+Return ONLY the filled JSON object below (no extra text):
 
-First, mentally work through the question:
-1. What medical knowledge is required to answer this correctly?
-2. What clinical reasoning skills are being tested?
-3. What are the common misconceptions that wrong answers represent?
-4. How does this relate to real-world emergency medicine practice?
+{template}`;
 
-Then fill in the following metadata template:
+const METADATA_TEMPLATE = {
+  questionId: "[UNIQUE_ID]",
+  topic: "[MAIN_TOPIC]",
+  concepts: ["[CONCEPT_1]", "[CONCEPT_2]"],
+  difficulty: "[1-10]",
+  bloomLevel: "[remember|understand|apply|analyze|evaluate|create]",
+  prerequisites: ["[PREREQ_CONCEPT_1]", "[PREREQ_CONCEPT_2]"],
+  nextConcepts: ["[FOLLOW_UP_CONCEPT_1]", "[FOLLOW_UP_CONCEPT_2]"],
+  performance: {
+    attempts: 0,
+    correctRate: 0.0,
+    avgTimeSeconds: 0
+  }
+};
 
-{template}
+/* ------------------------------------------------------------------
+   1.  Global state
+------------------------------------------------------------------ */
+let genAI = null;
+let processedQuestions = [];
+let currentFileName = "";
 
-DETAILED GUIDELINES:
+/* ------------------------------------------------------------------
+   2.  PDF.js worker
+------------------------------------------------------------------ */
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-1. **Topic**: Identify the PRIMARY medical specialty. Consider:
-   - If it's about heart rhythms/ECG → "Cardiology"
-   - If it's about drugs/medications → "Pharmacology"
-   - If it's about infections → "Infectious Diseases"
-   - If it's about brain/nerves → "Neurology"
-   - If it's about bones/joints → "Orthopedics"
-   - If it's about blood disorders → "Hematology"
-   - If it's about hormones → "Endocrinology"
-   - Be specific (e.g., "Cardiac Electrophysiology" rather than just "Cardiology" for arrhythmia questions)
+/* ------------------------------------------------------------------
+   3.  API-key helper
+------------------------------------------------------------------ */
+async function ensureAPIKey() {
+  // 1) Try localStorage first
+  let key = localStorage.getItem("gemini_api_key");
+  if (!key) {
+    // 2) Prompt user (empty default shown)
+    key = prompt(
+      "Enter your Gemini API key (leave empty to use the default):",
+      ""
+    );
+    // 3) Use default if nothing entered
+    key = key?.trim() || DEFAULT_API_KEY;
+    localStorage.setItem("gemini_api_key", key);
+  }
+  genAI = new GoogleGenerativeAI(key);
+  document.getElementById("apiKeyInput").value = key;
+  showApiStatus("API key configured ✔️", "success");
+}
 
-2. **Concepts**: List 2-4 SPECIFIC medical concepts. Examples:
-   - For a QT syndrome question: ["QT prolongation", "Cardiac action potential", "Ventricular arrhythmias", "Ion channel disorders"]
-   - For a drug reaction: ["Stevens-Johnson syndrome", "Drug hypersensitivity", "Mucocutaneous reactions"]
-   - Be precise and use proper medical terminology
+/* ------------------------------------------------------------------
+   4.  Overwrite saveApiKey so users can still change it later
+------------------------------------------------------------------ */
+window.saveApiKey = async function () {
+  const key = document.getElementById("apiKeyInput").value.trim();
+  if (!key) return showApiStatus("Empty key ignored", "error");
+  localStorage.setItem("gemini_api_key", key);
+  genAI = new GoogleGenerativeAI(key);
+  showApiStatus("API key updated ✔️", "success");
+};
 
-3. **Difficulty**: Rate 1-10 considering:
-   - 1-3: Basic facts (e.g., normal values, simple definitions)
-   - 4-6: Applied knowledge (e.g., recognizing conditions, basic management)
-   - 7-8: Complex reasoning (e.g., differential diagnosis, interpreting investigations)
-   - 9-10: Expert level (e.g., rare conditions, complex management decisions)
-   - Consider that emergency medicine residents are the target audience
+/* ------------------------------------------------------------------
+   5.  DOM ready hook
+------------------------------------------------------------------ */
+window.addEventListener("DOMContentLoaded", async () => {
+  await ensureAPIKey();
+});
 
-4. **Bloom's Level**:
-   - "remember": Factual recall (e.g., drug doses, normal values)
-   - "understand": Explaining mechanisms (e.g., why QT prolongation causes arrhythmias)
-   - "apply": Using knowledge in scenarios (e.g., choosing correct treatment)
-   - "analyze": Comparing options, interpreting data (e.g., ECG interpretation)
-   - "evaluate": Making clinical judgments (e.g., risk-benefit analysis)
+/* ------------------------------------------------------------------
+   6.  Tab switching
+------------------------------------------------------------------ */
+window.switchTab = function (tabName) {
+  document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
+  document.querySelectorAll(".content-section").forEach((section) =>
+    section.classList.remove("active")
+  );
 
-5. **Prerequisites**: What must students already know? Examples:
-   - For cardiac questions: ["Basic cardiac physiology", "ECG basics", "Normal cardiac conduction"]
-   - For pharmacology: ["Drug metabolism", "Receptor pharmacology", "Basic physiology"]
-   - Think about foundational knowledge from medical school
+  event.target.classList.add("active");
+  document.getElementById(tabName).classList.add("active");
+};
 
-6. **Next Concepts**: What should they learn next? Examples:
-   - After QT prolongation: ["Torsades de pointes management", "Genetic channelopathies", "Advanced ECG interpretation"]
-   - After basic drug reactions: ["Toxic epidermal necrolysis", "Drug desensitization protocols"]
-   - Consider the learning progression
+/* ------------------------------------------------------------------
+   7.  UI helpers
+------------------------------------------------------------------ */
+function showApiStatus(message, type) {
+  const statusEl = document.getElementById("apiStatus");
+  statusEl.textContent = message;
+  statusEl.className = `api-status ${type}`;
+}
 
-7. **Performance Metrics**: Keep the default values (0, 0.0, 0)
+/* ------------------------------------------------------------------
+   8.  File upload & drag-and-drop
+------------------------------------------------------------------ */
+const dropZone = document.getElementById("dropZone");
+const fileInput = document.getElementById("fileInput");
+const progressSection = document.getElementById("progressSection");
+const resultsSection = document.getElementById("resultsSection");
 
-CRITICAL: Your response must be ONLY the filled JSON object with actual values, not placeholders. Think deeply about the medical content and educational value before responding.`;
+["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+  dropZone.addEventListener(eventName, preventDefaults, false);
+  document.body.addEventListener(eventName, preventDefaults, false);
+});
 
-        const METADATA_TEMPLATE = {
-            "questionId": "Q001",
-            "topic": "Cardiology/Pharmacology/Neurology/etc",
-            "concepts": ["Concept 1", "Concept 2", "Concept 3"],
-            "difficulty": 5,
-            "bloomLevel": "remember/understand/apply/analyze/evaluate/create",
-            "prerequisites": ["Prerequisite topic 1", "Prerequisite topic 2"],
-            "nextConcepts": ["Advanced topic 1", "Advanced topic 2"],
-            "performance": {
-                "attempts": 0,
-                "correctRate": 0.0,
-                "avgTimeSeconds": 0
-            }
-        };
+function preventDefaults(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
 
-        // API Key Management
-        window.saveApiKey = function() {
-            const apiKey = document.getElementById('apiKeyInput').value.trim();
-            if (!apiKey) {
-                showApiStatus('Please enter an API key', 'error');
-                return;
-            }
-            
-            // Initialize Gemini AI
-            try {
-                genAI = new GoogleGenerativeAI(apiKey);
-                localStorage.setItem('gemini_api_key', apiKey);
-                showApiStatus('API key saved successfully!', 'success');
-                document.getElementById('apiKeySection').style.borderColor = 'var(--success-green)';
-                setTimeout(() => {
-                    document.getElementById('apiKeySection').style.borderColor = 'transparent';
-                // If still no questions, try ultra-flexible parsing
-                if (questions.length === 0) {
-                    console.log('Trying ultra-flexible parsing...');
-                    questions = parseUltraFlexible(fullText);
-                }, 3000);
-            } catch (error) {
-                showApiStatus('Invalid API key format', 'error');
-                document.getElementById('apiKeySection').classList.add('error');
-            }
-        };
+["dragenter", "dragover"].forEach((eventName) => {
+  dropZone.addEventListener(eventName, () => dropZone.classList.add("drag-over"));
+});
 
-        function showApiStatus(message, type) {
-            const statusEl = document.getElementById('apiStatus');
-            statusEl.textContent = message;
-            statusEl.className = `api-status ${type}`;
-        }
+["dragleave", "drop"].forEach((eventName) => {
+  dropZone.addEventListener(eventName, () => dropZone.classList.remove("drag-over"));
+});
 
-        // Load saved API key on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedKey = localStorage.getItem('gemini_api_key');
-            if (savedKey) {
-                document.getElementById('apiKeyInput').value = savedKey;
-                genAI = new GoogleGenerativeAI(savedKey);
-                showApiStatus('API key loaded from storage', 'success');
-            }
-        });
+dropZone.addEventListener("drop", (e) => {
+  const files = e.dataTransfer.files;
+  handleFiles(files);
+});
 
-        // Tab switching functionality
-        window.switchTab = function(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
-        };
+fileInput.addEventListener("change", () => handleFiles(fileInput.files));
 
-        // File upload functionality
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const progressSection = document.getElementById('progressSection');
-        const resultsSection = document.getElementById('resultsSection');
+function handleFiles(files) {
+  if (!files.length) return;
+  if (!files[0].type.includes("pdf")) {
+    showError("Please upload a PDF file");
+    return;
+  }
+  if (!genAI) {
+    showError("Please configure your Gemini API key first");
+    document.getElementById("apiKeySection").classList.add("error");
+    return;
+  }
+  processPDF(files[0]);
+}
 
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
+function showError(msg) {
+  const el = document.getElementById("errorMessage");
+  el.textContent = msg;
+  el.classList.add("active");
+  setTimeout(() => el.classList.remove("active"), 5000);
+}
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+/* ------------------------------------------------------------------
+   9.  PDF processing
+------------------------------------------------------------------ */
+async function processPDF(file) {
+  currentFileName = file.name;
+  processedQuestions = [];
 
-        // Highlight drop zone when item is dragged over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
+  progressSection.classList.add("active");
+  resultsSection.classList.remove("active");
+  document.getElementById("fileName").textContent = file.name;
+  document.getElementById("progressStatus").textContent = "Processing";
+  document.getElementById("progressStatus").className = "progress-status status-processing";
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
+  try {
+    updateProgress("Reading PDF file…", 10);
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(buffer).promise;
 
-        function highlight(e) {
-            dropZone.classList.add('drag-over');
-        }
+    updateProgress("Extracting text…", 20);
+    let fullText = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      fullText += textContent.items.map((item) => item.str).join(" ") + "\n";
+    }
 
-        function unhighlight(e) {
-            dropZone.classList.remove('drag-over');
-        }
+    updateProgress("Parsing questions…", 30);
+    const questions = parseQuestions(fullText);
+    if (!questions.length) throw new Error("No questions found");
 
-        // Handle dropped files
-        dropZone.addEventListener('drop', handleDrop, false);
+    document.getElementById("questionPreview").textContent =
+      `Found ${questions.length} questions. Processing with AI…`;
+    document.getElementById("questionPreview").classList.add("active");
 
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
-        }
+    for (let i = 0; i < questions.length; i++) {
+      const progress = 30 + (i / questions.length) * 60;
+      updateProgress(`Analyzing question ${i + 1} / ${questions.length}…`, progress);
 
-        // Handle file selection
-        fileInput.addEventListener('change', function() {
-            handleFiles(this.files);
-        });
+      try {
+        const metadata = await analyzeQuestionWithGemini(questions[i]);
+        processedQuestions.push(metadata);
+      } catch (err) {
+        console.error(err);
+        processedQuestions.push(createDefaultMetadata(questions[i]));
+      }
+      await sleep(1000);
+    }
 
-        function handleFiles(files) {
-            if (files.length > 0 && files[0].type === 'application/pdf') {
-                if (!genAI) {
-                    showError('Please configure your Gemini API key first');
-                    document.getElementById('apiKeySection').classList.add('error');
-                    return;
-                }
-                processPDF(files[0]);
-            } else {
-                showError('Please upload a PDF file');
-            }
-        }
+    updateProgress("Finalizing…", 95);
+    await sleep(500);
+    updateProgress("Complete!", 100);
+    document.getElementById("progressStatus").textContent = "Complete";
+    document.getElementById("progressStatus").className = "progress-status status-complete";
+    showResults();
+  } catch (err) {
+    console.error(err);
+    document.getElementById("progressStatus").textContent = "Error";
+    document.getElementById("progressStatus").className = "progress-status status-error";
+    updateProgress(`Error: ${err.message}`, 0);
+    showError(`Failed to process PDF: ${err.message}`);
+  }
+}
 
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.textContent = message;
-            errorEl.classList.add('active');
-            setTimeout(() => {
-                errorEl.classList.remove('active');
-            }, 5000);
-        }
+/* ------------------------------------------------------------------
+   10.  Question parsing
+------------------------------------------------------------------ */
+function parseQuestions(text) {
+  const questions = [];
+  const answerKey = {};
 
-        // Process PDF file
-        async function processPDF(file) {
-            currentFileName = file.name;
-            processedQuestions = [];
-            let fullText = ''; // Declare at function scope
-            
-            // Show progress section
-            progressSection.classList.add('active');
-            resultsSection.classList.remove('active');
-            document.getElementById('fileName').textContent = file.name;
-            
-            try {
-                updateProgress('Reading PDF file...', 10);
-                
-                // Read PDF file
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-                
-                updateProgress('Extracting text from PDF...', 20);
-                
-                // Extract text from all pages with better formatting
-                let fullText = '';
-                let extractionMethod = 'default';
-                
-                try {
-                    // Method 1: Detailed extraction with position tracking
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        
-                        if (textContent.items.length === 0) {
-                            console.log(`Page ${i} has no text items`);
-                            continue;
-                        }
-                        
-                        // Sort text items by Y position (top to bottom) then X position (left to right)
-                        const sortedItems = textContent.items.sort((a, b) => {
-                            const yDiff = b.transform[5] - a.transform[5]; // Y coordinate (inverted)
-                            if (Math.abs(yDiff) > 2) return yDiff;
-                            return a.transform[4] - b.transform[4]; // X coordinate
-                        });
-                        
-                        // Reconstruct text with proper line breaks
-                        let lastY = null;
-                        let pageText = '';
-                        
-                        for (const item of sortedItems) {
-                            const currentY = item.transform[5];
-                            
-                            // Add line break if Y position changed significantly
-                            if (lastY !== null && Math.abs(currentY - lastY) > 5) {
-                                pageText += '\n';
-                            } else if (lastY !== null && pageText && !pageText.endsWith(' ')) {
-                                // Add space between items on same line
-                                pageText += ' ';
-                            }
-                            
-                            pageText += item.str;
-                            lastY = currentY;
-                        }
-                        
-                        fullText += pageText + '\n\n';
-                    }
-                    
-                    extractionMethod = 'position-based';
-                    
-                } catch (error) {
-                    console.error('Position-based extraction failed:', error);
-                    
-                    // Fallback: Simple extraction
-                    fullText = '';
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        try {
-                            const page = await pdf.getPage(i);
-                            const textContent = await page.getTextContent();
-                            const pageText = textContent.items
-                                .map(item => item.str)
-                                .filter(str => str.trim())
-                                .join(' ');
-                            fullText += pageText + '\n';
-                        } catch (pageError) {
-                            console.error(`Error extracting page ${i}:`, pageError);
-                        }
-                    }
-                    extractionMethod = 'simple';
-                }
-                
-                console.log('=== PDF PARSING DIAGNOSTICS ===');
-                console.log('Text length:', fullText.length);
-                console.log('First 500 chars:', fullText.substring(0, 500));
-                console.log('Contains "Answer Key":', fullText.includes('Answer Key'));
-                console.log('Number of lines:', fullText.split('\n').length);
-                
-                // Check for question patterns
-                const questionPatternTest = fullText.match(/\d+\.\s+/g);
-                console.log('Question number patterns found:', questionPatternTest ? questionPatternTest.length : 0);
-                
-                const optionPatternTest = fullText.match(/[A-E]\.\s+/g);
-                console.log('Option patterns found:', optionPatternTest ? optionPatternTest.length : 0);
-                
-                // Log sample of text to help diagnose issues
-                const textSample = fullText.substring(0, 1000);
-                console.log('Text sample for debugging:');
-                console.log(textSample);
-                console.log('\nLooking for patterns like "1." in text:', /\d+\./.test(textSample));
-                console.log('Looking for patterns like "A." in text:', /[A-E]\./.test(textSample));
-                
-                // Additional cleanup for OCR or poorly formatted PDFs
-                fullText = fullText
-                    .replace(/\r\n/g, '\n')  // Normalize line endings
-                    .replace(/\n{3,}/g, '\n\n')  // Remove excessive line breaks
-                    .replace(/\s{3,}/g, '  ')  // Remove excessive spaces
-                    .replace(/[^\S\n]+/g, ' ')  // Normalize whitespace but keep newlines
-                    .replace(/[""]/g, '"')  // Normalize quotes
-                    .replace(/['']/g, "'")  // Normalize apostrophes
-                    .replace(/[–—]/g, '-');  // Normalize dashes
-                if (fullText.length < 1000) {
-                    console.log('Text seems too short, trying alternative extraction...');
-                    fullText = '';
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        const pageText = textContent.items.map(item => item.str).join(' ');
-                        fullText += pageText + '\n\n';
-                    }
-                }
-                
-                updateProgress('Parsing questions...', 30);
-                
-                // Parse questions from text
-                let questions = parseQuestions(fullText);
-                
-                // Try MCQ-specific parsing if no questions found
-                if (questions.length === 0) {
-                    console.log('Trying MCQ-specific parsing method...');
-                    questions = parseMCQFormat(fullText);
-                }
-                
-                // If still no questions, try fallback approach
-                if (questions.length === 0) {
-                    console.log('Trying fallback parsing method...');
-                    questions = parseFallbackMethod(fullText);
-                }
-                
-                if (questions.length === 0) {
-                    // Show the extracted text in the preview for debugging
-                    const sampleText = fullText.substring(0, 2000);
-                    const debugHtml = `
-                        <div style="color: #d73a49;">
-                            <strong>⚠️ No questions found in the PDF</strong><br><br>
-                            The PDF was successfully read, but no MCQ questions could be identified.<br><br>
-                            <strong>Expected format:</strong><br>
-                            • Questions numbered as: 1. 2. 3. etc.<br>
-                            • Options labeled as: A. B. C. D. E.<br>
-                            • Answer key section at the end<br><br>
-                            <details open>
-                                <summary style="cursor: pointer;"><strong>Extracted text preview:</strong></summary>
-                                <pre style="background: white; padding: 0.5rem; margin-top: 0.5rem; border-radius: 4px; max-height: 300px; overflow-y: auto;">${sampleText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-                            </details>
-                            <div style="margin-top: 1rem;">
-                                <button onclick="tryManualParsing()" style="background: var(--nus-blue); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
-                                    Try Manual Text Input
-                                </button>
-                            </div>
-                        </div>`;
-                    document.getElementById('questionPreview').innerHTML = debugHtml;
-                    document.getElementById('questionPreview').classList.add('active');
-                    
-                    throw new Error('No questions found. Please check the PDF format or try a different file.');
-                }
-                
-                // Show preview
-                document.getElementById('questionPreview').textContent = 
-                    `Found ${questions.length} questions. Processing with AI...`;
-                document.getElementById('questionPreview').classList.add('active');
-                
-                // Process each question with Gemini
-                const totalQuestions = questions.length;
-                let successCount = 0;
-                let errorCount = 0;
-                
-                for (let i = 0; i < questions.length; i++) {
-                    const question = questions[i];
-                    const progress = 30 + (i / questions.length) * 60;
-                    updateProgress(`Analyzing question ${i + 1} of ${totalQuestions}...`, progress);
-                    
-                    try {
-                        const metadata = await analyzeQuestionWithGemini(question);
-                        processedQuestions.push(metadata);
-                        successCount++;
-                        
-                        // Update preview with success
-                        const statusText = `✓ Q${question.number} analyzed successfully (${successCount}/${i + 1} success)`;
-                        console.log(statusText);
-                        
-                    } catch (error) {
-                        console.error(`Error processing question ${question.number}:`, error);
-                        errorCount++;
-                        
-                        // Add question with default metadata if AI fails
-                        const defaultMetadata = createDefaultMetadata(question);
-                        processedQuestions.push(defaultMetadata);
-                        
-                        // Update preview with error
-                        const statusText = `⚠ Q${question.number} used default analysis (${errorCount} errors)`;
-                        console.log(statusText);
-                    }
-                    
-                    // Rate limiting - adjust delay based on success/error
-                    const delay = errorCount > 2 ? 3000 : 1500; // Longer delay if errors
-                    await sleep(delay);
-                }
-                
-                updateProgress('Finalizing results...', 95);
-                await sleep(500);
-                
-                updateProgress('Complete!', 100);
-                document.getElementById('progressStatus').textContent = 'Complete';
-                document.getElementById('progressStatus').className = 'progress-status status-complete';
-                
-                // Show results
-                showResults();
-                
-            } catch (error) {
-                console.error('Error processing PDF:', error);
-                document.getElementById('progressStatus').textContent = 'Error';
-                document.getElementById('progressStatus').className = 'progress-status status-error';
-                updateProgress(`Error: ${error.message}`, 0);
-                
-                // Show extracted text for debugging
-                if (error.message.includes('No questions found')) {
-                    const debugInfo = `
-                    <div style="background: #fee; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
-                        <strong>Debug Information:</strong><br>
-                        The PDF was read but no questions could be parsed.<br><br>
-                        <strong>Troubleshooting:</strong><br>
-                        1. Ensure the PDF contains numbered questions (1. 2. 3. etc.)<br>
-                        2. Ensure options are labeled A. B. C. D. E.<br>
-                        3. Try a different PDF or check the format<br><br>
-                        <details>
-                            <summary>Click to see extracted text preview</summary>
-                            <pre style="max-height: 200px; overflow-y: auto; background: white; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.75rem;">${fullText ? fullText.substring(0, 2000) : 'No text extracted'}</pre>
-                        </details>
-                    </div>`;
-                    document.getElementById('questionPreview').innerHTML = debugInfo;
-                    document.getElementById('questionPreview').classList.add('active');
-                }
-                
-                showError(`Failed to process PDF: ${error.message}`);
-            }
-        }
+  const answerMatch = text.match(/Answer Key[\s\S]*?(\d+\.\s*[A-E][\s\S]*)/i);
+  if (answerMatch) {
+    const answerText = answerMatch[1];
+    for (const m of answerText.matchAll(/(\d+)\.\s*([A-E])/g)) {
+      answerKey[m[1]] = m[2];
+    }
+  }
 
-        // Parse questions from PDF text - IMPROVED VERSION
-        function parseQuestions(text) {
-            const questions = [];
-            const answerKey = {};
-            
-            console.log('Starting question parsing...');
-            
-            // First, find and extract answer key
-            const answerKeyMatch = text.match(/Answer\s*Key[\s\S]*$/i);
-            if (answerKeyMatch) {
-                const answerText = answerKeyMatch[0];
-                const answerMatches = answerText.matchAll(/(\d+)\.\s*([A-E])/g);
-                for (const match of answerMatches) {
-                    answerKey[parseInt(match[1])] = match[2];
-                }
-                console.log('Answer key extracted:', answerKey);
-                
-                // Remove answer key from main text
-                text = text.replace(answerKeyMatch[0], '');
-            }
-            
-            // Clean up text before parsing
-            // Remove common watermarks and headers
-            text = text.replace(/SAMPLE/g, '')
-                      .replace(/Master of Medicine.*?MCQ/g, '')
-                      .replace(/Page \d+/g, '')
-                      .replace(/---.*?---/g, '');
-            
-            // More flexible question pattern - look for number followed by period
-            // Allow for more variations in spacing and formatting
-            const patterns = [
-                /(\d+)\.\s*([^]*?)(?=\n\s*\d+\.|Answer Key|$)/gi,
-                /(\d+)\)\s*([^]*?)(?=\n\s*\d+\)|Answer Key|$)/gi,
-                /Question\s+(\d+)[:\s]+([^]*?)(?=Question\s+\d+|Answer Key|$)/gi
-            ];
-            
-            let matches = [];
-            for (const pattern of patterns) {
-                matches = Array.from(text.matchAll(pattern));
-                if (matches.length > 0) {
-                    console.log(`Found ${matches.length} matches with pattern ${pattern}`);
-                    break;
-                }
-            }
-            
-            for (const match of matches) {
-                const questionNumber = parseInt(match[1]);
-                let questionBlock = match[2].trim();
-                
-                // Skip if too short or is part of answer key
-                if (questionBlock.length < 50 || questionBlock.includes('Answer Key')) {
-                    console.log(`Skipping question ${questionNumber}: too short or part of answer key`);
-                    continue;
-                }
-                
-                console.log(`Processing question ${questionNumber}...`);
-                console.log('Question block preview:', questionBlock.substring(0, 200));
-                
-                // Find options - look for patterns like "A." or "A)"
-                const optionPatterns = [
-                    /([A-E])\.\s*([^\n]*?)(?=\s*[A-E][\.)]|\s*\n|$)/g,
-                    /([A-E])\)\s*([^\n]*?)(?=\s*[A-E][\.)]|\s*\n|$)/g,
-                    /\n\s*([A-E])\.\s*(.+?)(?=\n|$)/g,
-                    /([A-E])\.\s*(.+?)(?=[A-E]\.|$)/gs  // Added 's' flag for multiline
-                ];
-                
-                let options = {};
-                let optionStartIndex = -1;
-                let optionPattern = null;
-                
-                // Try each pattern to find options
-                for (const pattern of optionPatterns) {
-                    const tempOptions = {};
-                    let optMatches = Array.from(questionBlock.matchAll(pattern));
-                    
-                    // If not enough matches, try on each line separately
-                    if (optMatches.length < 4) {
-                        const lines = questionBlock.split('\n');
-                        for (const line of lines) {
-                            const lineMatches = Array.from(line.matchAll(pattern));
-                            optMatches = optMatches.concat(lineMatches);
-                        }
-                    }
-                    
-                    if (optMatches.length >= 4) {
-                        for (const optMatch of optMatches) {
-                            const letter = optMatch[1];
-                            const text = optMatch[2].trim();
-                            if (text && !tempOptions[letter]) {  // Don't overwrite existing options
-                                tempOptions[letter] = text;
-                            }
-                            if (optionStartIndex === -1 || optMatch.index < optionStartIndex) {
-                                optionStartIndex = optMatch.index;
-                            }
-                        }
-                        if (Object.keys(tempOptions).length >= 4) {
-                            options = tempOptions;
-                            optionPattern = pattern;
-                            break;
-                        }
-                    }
-                }
-                
-                // If still no options, try more aggressive line-by-line parsing
-                if (Object.keys(options).length < 4) {
-                    console.log('Trying more aggressive option parsing...');
-                    const lines = questionBlock.split('\n');
-                    options = {};
-                    optionStartIndex = -1;
-                    
-                    for (let i = 0; i < lines.length; i++) {
-                        const line = lines[i].trim();
-                        // Try multiple patterns for each line
-                        const patterns = [
-                            /^([A-E])[\.)\s]+(.+)$/,
-                            /^([A-E])\s+(.+)$/,
-                            /^([A-E]):(.+)$/,
-                            /^([A-E])-(.+)$/
-                        ];
-                        
-                        for (const pattern of patterns) {
-                            const optMatch = line.match(pattern);
-                            if (optMatch && optMatch[2].trim()) {
-                                options[optMatch[1]] = optMatch[2].trim();
-                                if (optionStartIndex === -1) {
-                                    optionStartIndex = questionBlock.indexOf(line);
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                console.log(`Found ${Object.keys(options).length} options`);
-                
-                if (Object.keys(options).length < 4) {
-                    console.log(`Question ${questionNumber}: Insufficient options, skipping`);
-                    continue;
-                }
-                
-                // Extract question content (before options)
-                const questionContent = optionStartIndex > 0 ? 
-                    questionBlock.substring(0, optionStartIndex).trim() : 
-                    questionBlock;
-                
-                // Split into clinical scenario and question stem
-                let clinicalScenario = '';
-                let questionStem = '';
-                
-                // Find question sentence (contains ? or starts with question word)
-                const sentences = questionContent.split(/(?<=[.!?])\s+/);
-                let questionSentenceIndex = -1;
-                
-                for (let i = sentences.length - 1; i >= 0; i--) {
-                    if (sentences[i].includes('?') || 
-                        sentences[i].match(/^(Which|What|How|When|Where|Who)/i)) {
-                        questionSentenceIndex = i;
-                        break;
-                    }
-                }
-                
-                if (questionSentenceIndex >= 0) {
-                    clinicalScenario = sentences.slice(0, questionSentenceIndex).join(' ').trim();
-                    questionStem = sentences.slice(questionSentenceIndex).join(' ').trim();
-                } else {
-                    // If no clear question, take the last sentence
-                    if (sentences.length > 1) {
-                        clinicalScenario = sentences.slice(0, -1).join(' ').trim();
-                        questionStem = sentences[sentences.length - 1].trim();
-                    } else {
-                        questionStem = questionContent;
-                    }
-                }
-                
-                // Clean up whitespace
-                clinicalScenario = clinicalScenario.replace(/\s+/g, ' ').trim();
-                questionStem = questionStem.replace(/\s+/g, ' ').trim();
-                
-                // Create question object
-                const question = {
-                    number: questionNumber,
-                    clinicalScenario: clinicalScenario || 'No clinical scenario provided',
-                    questionStem: questionStem || 'Question stem not found',
-                    options: options,
-                    correctAnswer: answerKey[questionNumber] || '',
-                    hasImage: /image|figure|shown|diagram|stain|below/i.test(questionContent)
-                };
-                
-                questions.push(question);
-                console.log(`Successfully parsed question ${questionNumber}`);
-                console.log('Question stem:', questionStem);
-                console.log('Options:', Object.keys(options));
-            }
-            
-            // Sort by question number
-            questions.sort((a, b) => a.number - b.number);
-            
-            console.log(`Total questions parsed: ${questions.length}`);
-            
-            // Log first question as example
-            if (questions.length > 0) {
-                console.log('Example parsed question:', JSON.stringify(questions[0], null, 2));
-            }
-            
-        // Fallback parsing method for difficult PDFs
-        function parseFallbackMethod(text) {
-            console.log('Using fallback parsing method...');
-            const questions = [];
-            const answerKey = {};
-            
-            // Extract answer key first
-            const answerKeySection = text.match(/Answer\s*Key[^]*$/i);
-            if (answerKeySection) {
-                const answerText = answerKeySection[0];
-                // Try different answer patterns
-                const patterns = [
-                    /(\d+)\.\s*([A-E])/g,
-                    /(\d+)\)\s*([A-E])/g,
-                    /Q(\d+):\s*([A-E])/g
-                ];
-                
-                for (const pattern of patterns) {
-                    const matches = Array.from(answerText.matchAll(pattern));
-                    if (matches.length > 0) {
-                        matches.forEach(match => {
-                            answerKey[parseInt(match[1])] = match[2];
-                        });
-                        break;
-                    }
-                }
-                
-                // Remove answer key from text
-                text = text.substring(0, text.indexOf(answerKeySection[0]));
-            }
-            
-            console.log('Answer key found:', answerKey);
-            
-            // Try to find questions by looking for numbered items
-            // This is more flexible and handles various formats
-            const lines = text.split('\n');
-            let currentQuestion = null;
-            let currentQuestionText = [];
-            let inOptions = false;
-            let currentOptions = {};
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                
-                // Check if this is a new question (starts with number)
-                const questionMatch = line.match(/^(\d+)[.)]\s*(.*)$/);
-                if (questionMatch && parseInt(questionMatch[1]) > 0) {
-                    // Save previous question if exists
-                    if (currentQuestion && Object.keys(currentOptions).length >= 4) {
-                        questions.push(processQuestionText(
-                            currentQuestion, 
-                            currentQuestionText.join(' '), 
-                            currentOptions, 
-                            answerKey[currentQuestion]
-                        ));
-                    }
-                    
-                    // Start new question
-                    currentQuestion = parseInt(questionMatch[1]);
-                    currentQuestionText = [questionMatch[2]];
-                    currentOptions = {};
-                    inOptions = false;
-                    console.log(`Found question ${currentQuestion}`);
-                    continue;
-                }
-                
-                // Check if this is an option
-                const optionMatch = line.match(/^([A-E])[.)]\s*(.*)$/);
-                if (optionMatch && currentQuestion) {
-                    inOptions = true;
-                    currentOptions[optionMatch[1]] = optionMatch[2].trim();
-                    continue;
-                }
-                
-                // Otherwise, add to current question text
-                if (currentQuestion && !inOptions) {
-                    currentQuestionText.push(line);
-                } else if (currentQuestion && inOptions && line.match(/^[A-E]/)) {
-                    // Continue previous option if it wrapped
-                    const lastOption = Object.keys(currentOptions).pop();
-                    if (lastOption) {
-                        currentOptions[lastOption] += ' ' + line;
-                    }
-                }
-            }
-            
-            // Don't forget the last question
-            if (currentQuestion && Object.keys(currentOptions).length >= 4) {
-                questions.push(processQuestionText(
-                    currentQuestion, 
-                    currentQuestionText.join(' '), 
-                    currentOptions, 
-                    answerKey[currentQuestion]
-                ));
-            }
-            
-            console.log(`Fallback method found ${questions.length} questions`);
-            return questions;
-        }
-        
-        // Helper function to process question text
-        function processQuestionText(number, fullText, options, correctAnswer) {
-            // Clean up the text
-            fullText = fullText.replace(/\s+/g, ' ').trim();
-            
-            // Find the question part
-            let clinicalScenario = '';
-            let questionStem = '';
-            
-            // Look for question indicators
-            const questionIndicators = ['Which', 'What', 'How', 'When', 'Where', 'Who', '?'];
-            let questionStart = -1;
-            
-            for (const indicator of questionIndicators) {
-                const index = fullText.lastIndexOf(indicator);
-                if (index > questionStart) {
-                    questionStart = index;
-                }
-            }
-            
-            if (questionStart > 0) {
-                // Find the start of the sentence containing the question
-                let sentenceStart = questionStart;
-                while (sentenceStart > 0 && fullText[sentenceStart - 1] !== '.' && fullText[sentenceStart - 1] !== '!') {
-                    sentenceStart--;
-                }
-                
-                clinicalScenario = fullText.substring(0, sentenceStart).trim();
-                questionStem = fullText.substring(sentenceStart).trim();
-            } else {
-                // If no clear question marker, assume last sentence is the question
-                const lastPeriod = fullText.lastIndexOf('.');
-                if (lastPeriod > 0 && lastPeriod < fullText.length - 50) {
-                    clinicalScenario = fullText.substring(0, lastPeriod + 1).trim();
-                    questionStem = fullText.substring(lastPeriod + 1).trim();
-                } else {
-                    questionStem = fullText;
-                }
-            }
-            
-            return {
-                number: number,
-                clinicalScenario: clinicalScenario || 'No clinical scenario',
-                questionStem: questionStem || fullText,
-                options: options,
-                correctAnswer: correctAnswer || '',
-                hasImage: /image|figure|shown|diagram|stain|below/i.test(fullText)
-            };
-        }
+  const qRegex = /(\d+)\.\s*([\s\S]*?)(?=\d+\.|Answer Key|$)/g;
+  for (const match of text.matchAll(qRegex)) {
+    const num = parseInt(match[1]);
+    let body = match[2].trim();
+    if (body.length < 50) continue;
 
-        // Analyze question with Gemini AI - IMPROVED VERSION
-        async function analyzeQuestionWithGemini(question) {
-            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-            
-            // Format the options nicely for the prompt
-            const formattedOptions = Object.entries(question.options)
-                .map(([letter, text]) => `${letter}. ${text}`)
-                .join('\n');
-            
-            // Create a more specific template with examples
-            const filledTemplate = {
-                "questionId": `Q${String(question.number).padStart(3, '0')}`,
-                "topic": "Specific medical specialty",
-                "concepts": ["Medical concept 1", "Medical concept 2", "Medical concept 3"],
-                "difficulty": 5,
-                "bloomLevel": "understand",
-                "prerequisites": ["Prerequisite 1", "Prerequisite 2"],
-                "nextConcepts": ["Advanced topic 1", "Advanced topic 2"],
-                "performance": {
-                    "attempts": 0,
-                    "correctRate": 0.0,
-                    "avgTimeSeconds": 0
-                }
-            };
-            
-            // Format prompt with actual question data
-            const prompt = PROMPT_TEMPLATE
-                .replace('{question_number}', question.number)
-                .replace('{clinical_scenario}', question.clinicalScenario || 'None provided')
-                .replace('{question_stem}', question.questionStem)
-                .replace('{options}', formattedOptions)
-                .replace('{correct_answer}', question.correctAnswer || 'Not provided')
-                .replace('{template}', JSON.stringify(filledTemplate, null, 2));
-            
-            try {
-                console.log(`Analyzing question ${question.number} with Gemini...`);
-                
-                // Add generation config for better JSON output
-                const generationConfig = {
-                    temperature: 0.3,  // Lower temperature for more consistent output
-                    topK: 40,
-                    topP: 0.95,
-                    maxOutputTokens: 1024,
-                };
-                
-                const result = await model.generateContent({
-                    contents: [{ role: "user", parts: [{ text: prompt }] }],
-                    generationConfig,
-                });
-                
-                const response = await result.response;
-                const text = response.text();
-                
-                console.log(`Gemini response for Q${question.number}:`, text.substring(0, 200) + '...');
-                
-                // More robust JSON extraction
-                let metadata;
-                
-                // Try to find JSON in the response
-                const jsonMatch = text.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    try {
-                        metadata = JSON.parse(jsonMatch[0]);
-                    } catch (e) {
-                        console.error('Failed to parse JSON from match:', e);
-                        // Try to clean up common issues
-                        let cleanedJson = jsonMatch[0]
-                            .replace(/,\s*}/, '}')  // Remove trailing commas
-                            .replace(/,\s*]/, ']')  // Remove trailing commas in arrays
-                            .replace(/'/g, '"');    // Replace single quotes with double quotes
-                        
-                        try {
-                            metadata = JSON.parse(cleanedJson);
-                        } catch (e2) {
-                            console.error('Failed to parse cleaned JSON:', e2);
-                            throw new Error('Invalid JSON in response');
-                        }
-                    }
-                } else {
-                    throw new Error('No JSON found in response');
-                }
-                
-                // Validate and clean metadata
-                metadata = validateAndCleanMetadata(metadata, question);
-                
-                // Add question content to metadata
-                metadata._question_content = {
-                    clinical_scenario: question.clinicalScenario,
-                    question_stem: question.questionStem,
-                    options: question.options,
-                    correct_answer: question.correctAnswer,
-                    has_image: question.hasImage
-                };
-                
-                console.log(`Successfully analyzed question ${question.number}`);
-                return metadata;
-                
-            } catch (error) {
-                console.error(`Gemini API error for question ${question.number}:`, error);
-                return createDefaultMetadata(question);
-            }
-        }
-        
-        // Validate and clean metadata
-        function validateAndCleanMetadata(metadata, question) {
-            // Ensure all required fields exist
-            const cleaned = {
-                questionId: metadata.questionId || `Q${String(question.number).padStart(3, '0')}`,
-                topic: metadata.topic || "Emergency Medicine",
-                concepts: Array.isArray(metadata.concepts) ? metadata.concepts : ["Requires analysis"],
-                difficulty: parseInt(metadata.difficulty) || 5,
-                bloomLevel: metadata.bloomLevel || "understand",
-                prerequisites: Array.isArray(metadata.prerequisites) ? metadata.prerequisites : ["Basic medical knowledge"],
-                nextConcepts: Array.isArray(metadata.nextConcepts) ? metadata.nextConcepts : ["Advanced concepts"],
-                performance: metadata.performance || {
-                    attempts: 0,
-                    correctRate: 0.0,
-                    avgTimeSeconds: 0
-                }
-            };
-            
-            // Validate difficulty is 1-10
-            if (cleaned.difficulty < 1 || cleaned.difficulty > 10) {
-                cleaned.difficulty = 5;
-            }
-            
-            // Validate Bloom's level
-            const validBloomLevels = ["remember", "understand", "apply", "analyze", "evaluate", "create"];
-            if (!validBloomLevels.includes(cleaned.bloomLevel)) {
-                cleaned.bloomLevel = "understand";
-            }
-            
-            // Ensure arrays have at least one item
-            if (cleaned.concepts.length === 0) {
-                cleaned.concepts = ["Requires manual classification"];
-            }
-            if (cleaned.prerequisites.length === 0) {
-                cleaned.prerequisites = ["Basic medical knowledge"];
-            }
-            if (cleaned.nextConcepts.length === 0) {
-                cleaned.nextConcepts = ["Advanced topics"];
-            }
-            
-            return cleaned;
-        }
+    const opts = {};
+    for (const om of body.matchAll(/([A-E])\.\s*([^A-E]*?)(?=[A-E]\.|$)/g)) {
+      opts[om[1]] = om[2].trim();
+    }
 
-        // Create default metadata when AI fails - IMPROVED VERSION
-        function createDefaultMetadata(question) {
-            // Try to make educated guesses based on question content
-            let topic = "Emergency Medicine";
-            let concepts = ["Requires manual classification"];
-            let difficulty = 5;
-            let bloomLevel = "understand";
-            
-            // Try to guess topic from keywords
-            const questionText = (question.clinicalScenario + ' ' + question.questionStem).toLowerCase();
-            
-            if (questionText.includes('ecg') || questionText.includes('arrhyth') || questionText.includes('heart') || questionText.includes('cardiac')) {
-                topic = "Cardiology";
-                concepts = ["Cardiac conditions", "ECG interpretation"];
-            } else if (questionText.includes('drug') || questionText.includes('medication') || questionText.includes('overdose')) {
-                topic = "Pharmacology";
-                concepts = ["Drug interactions", "Medication effects"];
-            } else if (questionText.includes('neuro') || questionText.includes('brain') || questionText.includes('nerve')) {
-                topic = "Neurology";
-                concepts = ["Neurological conditions", "Nervous system"];
-            } else if (questionText.includes('infection') || questionText.includes('bacteria') || questionText.includes('virus')) {
-                topic = "Infectious Diseases";
-                concepts = ["Infections", "Pathogens"];
-            } else if (questionText.includes('trauma') || questionText.includes('injury') || questionText.includes('fracture')) {
-                topic = "Trauma";
-                concepts = ["Trauma management", "Injuries"];
-            }
-            
-            // Guess difficulty based on question length and complexity
-            if (question.clinicalScenario.length > 200) {
-                difficulty = 7; // Longer scenarios usually more complex
-            }
-            
-            // Guess Bloom's level based on question stem
-            if (questionText.includes('most likely') || questionText.includes('differential')) {
-                bloomLevel = "analyze";
-            } else if (questionText.includes('best treatment') || questionText.includes('management')) {
-                bloomLevel = "apply";
-            } else if (questionText.includes('which') || questionText.includes('what')) {
-                bloomLevel = "remember";
-            }
-            
-            return {
-                questionId: `Q${String(question.number).padStart(3, '0')}`,
-                topic: topic,
-                concepts: concepts,
-                difficulty: difficulty,
-                bloomLevel: bloomLevel,
-                prerequisites: ["Basic " + topic.toLowerCase() + " knowledge", "Clinical assessment skills"],
-                nextConcepts: ["Advanced " + topic.toLowerCase() + " management", "Complex case analysis"],
-                performance: {
-                    attempts: 0,
-                    correctRate: 0.0,
-                    avgTimeSeconds: 0
-                },
-                _question_content: {
-                    clinical_scenario: question.clinicalScenario,
-                    question_stem: question.questionStem,
-                    options: question.options,
-                    correct_answer: question.correctAnswer,
-                    has_image: question.hasImage
-                }
-            };
-        }
+    // strip options from body
+    for (const letter of ["A", "B", "C", "D", "E"]) {
+      body = body.replace(new RegExp(`${letter}\\.[^]*?(?=[A-E]\\.|$)`, "g"), "").trim();
+    }
 
-        function updateProgress(text, percent) {
-            document.getElementById('progressText').textContent = text;
-            document.getElementById('progressPercent').textContent = percent + '%';
-            document.getElementById('progressFill').style.width = percent + '%';
-        }
+    const lines = body.split("\n").filter((l) => l.trim());
+    let scenario = "";
+    let stem = "";
+    const qIdx = lines.findIndex((l) => l.includes("?"));
+    if (qIdx >= 0) {
+      scenario = lines.slice(0, qIdx).join(" ").trim();
+      stem = lines.slice(qIdx).join(" ").trim();
+    } else {
+      scenario = lines.slice(0, -1).join(" ").trim();
+      stem = lines[lines.length - 1] || "";
+    }
 
-        function showResults() {
-            resultsSection.classList.add('active');
-            
-            // Calculate statistics
-            const totalQuestions = processedQuestions.length;
-            const avgDifficulty = (processedQuestions.reduce((sum, q) => 
-                sum + (parseInt(q.difficulty) || 5), 0) / totalQuestions).toFixed(1);
-            const topics = [...new Set(processedQuestions.map(q => q.topic))];
-            const imagesCount = processedQuestions.filter(q => 
-                q._question_content && q._question_content.has_image).length;
-            
-            // Update stats
-            document.getElementById('totalQuestions').textContent = totalQuestions;
-            document.getElementById('avgDifficulty').textContent = avgDifficulty;
-            document.getElementById('topicsCount').textContent = topics.length;
-            document.getElementById('imagesCount').textContent = imagesCount;
-            
-            // Populate question table
-            const tbody = document.getElementById('questionTableBody');
-            tbody.innerHTML = '';
-            
-            processedQuestions.forEach(q => {
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${q.questionId}</td>
-                    <td>${q.topic}</td>
-                    <td>${q._question_content.question_stem.substring(0, 50)}...</td>
-                    <td>${q.difficulty}</td>
-                    <td>${q.bloomLevel}</td>
-                    <td>${q.concepts.map(c => `<span class="concept-tag">${c}</span>`).join('')}</td>
-                `;
-            });
-        }
+    questions.push({
+      number: num,
+      clinicalScenario: scenario,
+      questionStem: stem,
+      options: opts,
+      correctAnswer: answerKey[num] || "",
+      hasImage: /image|figure|shown|diagram/i.test(body)
+    });
+  }
+  return questions;
+}
 
-        // Export functions
-        window.downloadJSON = function() {
-            const dataStr = JSON.stringify(processedQuestions, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `mcq_metadata_${currentFileName.replace('.pdf', '')}_${new Date().toISOString().slice(0, 10)}.json`;
-            link.click();
-            URL.revokeObjectURL(url);
-        };
+/* ------------------------------------------------------------------
+   11.  Gemini analysis
+------------------------------------------------------------------ */
+async function analyzeQuestionWithGemini(q) {
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-        window.exportToSheets = function() {
-            // Generate CSV format for Google Sheets
-            const headers = [
-                'Question ID', 'Topic', 'Concepts', 'Difficulty', 'Bloom Level',
-                'Prerequisites', 'Next Concepts', 'Attempts', 'Correct Rate',
-                'Avg Time (sec)', 'Clinical Scenario', 'Question Stem',
-                'Options', 'Correct Answer', 'Has Image'
-            ];
-            
-            const rows = processedQuestions.map(q => {
-                // Ensure all fields exist and are properly formatted
-                const questionContent = q._question_content || {};
-                
-                return [
-                    q.questionId || '',
-                    q.topic || '',
-                    Array.isArray(q.concepts) ? q.concepts.join('; ') : '',
-                    q.difficulty || 5,
-                    q.bloomLevel || '',
-                    Array.isArray(q.prerequisites) ? q.prerequisites.join('; ') : '',
-                    Array.isArray(q.nextConcepts) ? q.nextConcepts.join('; ') : '',
-                    (q.performance && q.performance.attempts) || 0,
-                    (q.performance && q.performance.correctRate) || 0,
-                    (q.performance && q.performance.avgTimeSeconds) || 0,
-                    questionContent.clinical_scenario || '',
-                    questionContent.question_stem || '',
-                    JSON.stringify(questionContent.options || {}),
-                    questionContent.correct_answer || '',
-                    questionContent.has_image ? 'Yes' : 'No'
-                ];
-            });
-            
-            // Create CSV content with proper escaping
-            const csvContent = [
-                headers.map(h => `"${h}"`).join(','),
-                ...rows.map(row => row.map(cell => {
-                    // Convert to string and escape quotes
-                    const cellStr = String(cell || '').replace(/"/g, '""');
-                    // Wrap in quotes if contains comma, newline, or quotes
-                    if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
-                        return `"${cellStr}"`;
-                    }
-                    return cellStr;
-                }).join(','))
-            ].join('\n');
-            
-            // Create BOM for Excel compatibility
-            const BOM = '\uFEFF';
-            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `mcq_for_sheets_${currentFileName.replace('.pdf', '')}_${new Date().toISOString().slice(0, 10)}.csv`;
-            link.click();
-            URL.revokeObjectURL(url);
-            
-            // Show success message
-            alert('CSV file downloaded successfully!\n\nYou can now:\n1. Open Google Sheets\n2. File → Import → Upload the CSV file\n3. The data will be properly formatted with all metadata\n\nFor automatic upload, you can integrate with Google Sheets API.');
-        };
+  const prompt = PROMPT_TEMPLATE
+    .replace("{question_number}", q.number)
+    .replace("{clinical_scenario}", q.clinicalScenario)
+    .replace("{question_stem}", q.questionStem)
+    .replace("{options}", JSON.stringify(q.options, null, 2))
+    .replace("{correct_answer}", q.correctAnswer)
+    .replace("{template}", JSON.stringify(METADATA_TEMPLATE, null, 2));
 
-        // Test function with sample data
-        window.testWithSampleData = function() {
-            const sampleText = `1. A 54-year-old woman presents with recurrent syncopal episodes due to prolonged QT syndrome. The image below shows the different phases (0, 1, 2, 3 and 4) of the action potential of a normal ventricular myocyte.
+  const result = await model.generateContent(prompt);
+  const text = await result.response.text();
 
-Which phase is affected in her condition?
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("No JSON found");
 
-A. 0
-B. 1
-C. 2
-D. 3
-E. 4
+  const meta = JSON.parse(jsonMatch[0]);
+  meta.questionId = `Q${String(q.number).padStart(3, "0")}`;
+  meta._question_content = {
+    clinical_scenario: q.clinicalScenario,
+    question_stem: q.questionStem,
+    options: q.options,
+    correct_answer: q.correctAnswer,
+    has_image: q.hasImage
+  };
+  return meta;
+}
 
-2. A 30-year-old woman presents with two days of fever associated with a generalized rash. She has oral ulcers and bilateral injected conjunctiva. She was recently treated for acne vulgaris.
+function createDefaultMetadata(q) {
+  return {
+    questionId: `Q${String(q.number).padStart(3, "0")}`,
+    topic: "Emergency Medicine",
+    concepts: ["Requires manual classification"],
+    difficulty: 5,
+    bloomLevel: "understand",
+    prerequisites: ["Basic medical knowledge"],
+    nextConcepts: ["Advanced emergency procedures"],
+    performance: { attempts: 0, correctRate: 0, avgTimeSeconds: 0 },
+    _question_content: {
+      clinical_scenario: q.clinicalScenario,
+      question_stem: q.questionStem,
+      options: q.options,
+      correct_answer: q.correctAnswer,
+      has_image: q.hasImage
+    }
+  };
+}
 
-Which medication is the most likely cause of her condition?
+/* ------------------------------------------------------------------
+   12.  Progress bar
+------------------------------------------------------------------ */
+function updateProgress(text, percent) {
+  document.getElementById("progressText").textContent = text;
+  document.getElementById("progressPercent").textContent = percent + "%";
+  document.getElementById("progressFill").style.width = percent + "%";
+}
 
-A. Benzoyl peroxide
-B. Clindamycin
-C. Co-trimoxazole
-D. Erythromycin
-E. Minocycline
+/* ------------------------------------------------------------------
+   13.  Results display
+------------------------------------------------------------------ */
+function showResults() {
+  resultsSection.classList.add("active");
 
-Answer Key
-1. C
-2. C`;
+  const total = processedQuestions.length;
+  const avgDiff = (
+    processedQuestions.reduce((s, q) => s + (parseInt(q.difficulty) || 5), 0) / total
+  ).toFixed(1);
+  const topics = [...new Set(processedQuestions.map((q) => q.topic))];
+  const imgs = processedQuestions.filter((q) => q._question_content.has_image).length;
 
-            console.log('Testing with sample data...');
-            const questions = parseQuestions(sampleText);
-            console.log('Parsed questions:', questions);
-            
-            if (questions.length > 0) {
-                alert(`✓ Test successful! Parsed ${questions.length} questions.\n\nThe parser is working correctly. If your PDF isn't being parsed, it may have different formatting.`);
-        // Manual parsing option
-        window.tryManualParsing = function() {
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.5);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 1000;
-            `;
-            
-            const content = document.createElement('div');
-            content.style.cssText = `
-                background: white;
-                padding: 2rem;
-                border-radius: 8px;
-                max-width: 90%;
-                width: 800px;
-                max-height: 90vh;
-                overflow-y: auto;
-            `;
-            
-            content.innerHTML = `
-                <h2 style="color: var(--nus-blue); margin-bottom: 1rem;">Manual Text Input</h2>
-                <p style="margin-bottom: 1rem;">Copy and paste your MCQ questions here:</p>
-                <textarea id="manualTextInput" style="width: 100%; height: 400px; padding: 1rem; border: 2px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 0.875rem;" placeholder="1. Your first question here...
+  document.getElementById("totalQuestions").textContent = total;
+  document.getElementById("avgDifficulty").textContent = avgDiff;
+  document.getElementById("topicsCount").textContent = topics.length;
+  document.getElementById("imagesCount").textContent = imgs;
 
-Which option is correct?
+  const tbody = document.getElementById("questionTableBody");
+  tbody.innerHTML = "";
+  processedQuestions.forEach((q) => {
+    const tr = tbody.insertRow();
+    tr.innerHTML = `
+      <td>${q.questionId}</td>
+      <td>${q.topic}</td>
+      <td>${q._question_content.question_stem.substring(0, 50)}…</td>
+      <td>${q.difficulty}</td>
+      <td>${q.bloomLevel}</td>
+      <td>${q.concepts.map((c) => `<span class="concept-tag">${c}</span>`).join("")}</td>
+    `;
+  });
+}
 
-A. Option 1
-B. Option 2
-C. Option 3
-D. Option 4
-E. Option 5
+/* ------------------------------------------------------------------
+   14.  Export functions
+------------------------------------------------------------------ */
+window.downloadJSON = function () {
+  const blob = new Blob([JSON.stringify(processedQuestions, null, 2)], {
+    type: "application/json"
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `mcq_metadata_${currentFileName.replace(".pdf", "")}_${new Date()
+    .toISOString()
+    .slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
-2. Your second question..."></textarea>
-                <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: flex-end;">
-                    <button onclick="this.closest('.modal').remove()" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
-                        Cancel
-                    </button>
-                    <button onclick="processManualText()" style="background: var(--nus-blue); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
-                        Process Text
-                    </button>
-                </div>
-            `;
-            
-            modal.appendChild(content);
-            modal.classList.add('modal');
-            document.body.appendChild(modal);
-        };
-        
-        window.processManualText = async function() {
-            const text = document.getElementById('manualTextInput').value;
-            if (!text.trim()) {
-                alert('Please paste your MCQ questions first.');
-                return;
-            }
-            
-            // Close modal
-            document.querySelector('.modal').remove();
-            
-            // Process the text
-            progressSection.classList.add('active');
-            resultsSection.classList.remove('active');
-            currentFileName = 'manual_input.txt';
-            document.getElementById('fileName').textContent = 'Manual Text Input';
-            
-            updateProgress('Parsing questions...', 30);
-            
-            const questions = parseQuestions(text);
-            if (questions.length === 0) {
-                showError('No questions could be parsed from the text. Please check the format.');
-                return;
-            }
-            
-            // Continue with normal processing
-            const sampleAnalysis = `Found ${questions.length} questions. Processing with AI...`;
-            document.getElementById('questionPreview').innerHTML = `<pre>${sampleAnalysis}</pre>`;
-            document.getElementById('questionPreview').classList.add('active');
-            
-            // Process with Gemini
-            processedQuestions = [];
-            for (let i = 0; i < questions.length; i++) {
-                const question = questions[i];
-                const progress = 30 + (i / questions.length) * 60;
-                updateProgress(`Analyzing question ${i + 1} of ${questions.length}...`, progress);
-                
-                try {
-                    const metadata = await analyzeQuestionWithGemini(question);
-                    processedQuestions.push(metadata);
-                } catch (error) {
-                    console.error(`Error processing question ${question.number}:`, error);
-                    processedQuestions.push(createDefaultMetadata(question));
-                }
-                
-                await sleep(1000);
-            }
-            
-            updateProgress('Complete!', 100);
-            document.getElementById('progressStatus').textContent = 'Complete';
-            document.getElementById('progressStatus').className = 'progress-status status-complete';
-            
-            showResults();
-        };
-    </script>
+window.exportToSheets = function () {
+  const headers = [
+    "Question ID",
+    "Topic",
+    "Concepts",
+    "Difficulty",
+    "Bloom Level",
+    "Prerequisites",
+    "Next Concepts",
+    "Attempts",
+    "Correct Rate",
+    "Avg Time (sec)",
+    "Clinical Scenario",
+    "Question Stem",
+    "Options",
+    "Correct Answer",
+    "Has Image"
+  ];
+  const rows = processedQuestions.map((q) => [
+    q.questionId,
+    q.topic,
+    q.concepts.join("; "),
+    q.difficulty,
+    q.bloomLevel,
+    q.prerequisites.join("; "),
+    q.nextConcepts.join("; "),
+    q.performance.attempts,
+    q.performance.correctRate,
+    q.performance.avgTimeSeconds,
+    q._question_content.clinical_scenario,
+    q._question_content.question_stem,
+    JSON.stringify(q._question_content.options),
+    q._question_content.correct_answer,
+    q._question_content.has_image ? "Yes" : "No"
+  ]);
+
+  const csvContent = [
+    headers.join(","),
+    ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+  ].join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `mcq_for_sheets_${currentFileName.replace(".pdf", "")}_${new Date()
+    .toISOString()
+    .slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  alert(
+    "CSV downloaded! Import it into Google Sheets.\nFor automatic upload, integrate with the Google Sheets API."
+  );
+};
+
+/* ------------------------------------------------------------------
+   15.  Utility
+------------------------------------------------------------------ */
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+</script>
 </body>
 </html>
