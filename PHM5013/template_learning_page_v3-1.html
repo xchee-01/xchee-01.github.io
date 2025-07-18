@@ -226,7 +226,6 @@
             transition: var(--transition);
             border: 1px solid transparent;
             scroll-margin-top: calc(var(--header-height) + 20px);
-            opacity: 1;
         }
 
         .dropdown-section:hover {
@@ -309,14 +308,13 @@
         .dropdown-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+            transition: max-height 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.6s ease;
             opacity: 0;
         }
 
         .dropdown-section.open .dropdown-content {
             max-height: 2000px;
             opacity: 1;
-            transition-delay: 0s, 0.1s;
         }
 
         .dropdown-inner {
@@ -594,14 +592,6 @@
         /* Smooth scrolling */
         html {
             scroll-behavior: smooth;
-            scroll-padding-top: calc(var(--header-height) + 20px);
-        }
-        
-        /* Smooth scroll polyfill for better control */
-        @media (prefers-reduced-motion: no-preference) {
-            html {
-                scroll-behavior: smooth;
-            }
         }
 
         /* Loading animation */
@@ -624,6 +614,22 @@
         .dropdown-section:nth-child(2) { animation-delay: 0.2s; }
         .dropdown-section:nth-child(3) { animation-delay: 0.3s; }
         .dropdown-section:nth-child(4) { animation-delay: 0.4s; }
+
+        /* Gentle section opening animation */
+        @keyframes gentleOpen {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-content {
+            animation: gentleOpen 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
     </style>
 </head>
 <body>
@@ -806,15 +812,10 @@
         // Toggle dropdown sections
         function toggleDropdown(header) {
             const section = header.parentElement;
-            const wasOpen = section.classList.contains('open');
+            const isOpen = section.classList.contains('open');
             
-            // Close all sections
-            document.querySelectorAll('.dropdown-section').forEach(s => {
-                s.classList.remove('open');
-            });
-            
-            // Open clicked section if it wasn't open
-            if (!wasOpen) {
+            // Only open sections, never close them
+            if (!isOpen) {
                 section.classList.add('open');
                 
                 // Update active nav
@@ -833,38 +834,29 @@
             });
         }
 
-        // Navigation click handler with smooth scroll
+        // Navigation click handler
         document.querySelectorAll('.nav-item[data-section]').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const sectionNum = item.dataset.section;
                 const section = document.querySelector(`.dropdown-section[data-section="${sectionNum}"]`);
                 
-                // Add a gentle fade effect to all sections
-                document.querySelectorAll('.dropdown-section').forEach(s => {
-                    s.style.opacity = '0.3';
-                    s.style.transition = 'opacity 0.5s ease';
-                });
+                // Open the section if it's not already open
+                if (!section.classList.contains('open')) {
+                    section.classList.add('open');
+                }
                 
-                // Smooth scroll to the section
-                const targetPosition = section.getBoundingClientRect().top + window.pageYOffset - 93;
-                
-                // Custom smooth scroll function for more control
-                smoothScrollTo(targetPosition, 800, () => {
-                    // After scrolling, update the sections
-                    document.querySelectorAll('.dropdown-section').forEach(s => {
-                        s.classList.remove('open');
-                        s.style.opacity = '1';
+                // Wait a tiny bit for the section to start opening, then scroll
+                setTimeout(() => {
+                    section.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start',
+                        inline: 'nearest'
                     });
-                    
-                    // Open the clicked section with a slight delay
-                    setTimeout(() => {
-                        section.classList.add('open');
-                    }, 100);
-                    
-                    // Update active nav
-                    updateActiveNav(sectionNum);
-                });
+                }, 100);
+                
+                // Update active nav
+                updateActiveNav(sectionNum);
                 
                 // Close sidebar on mobile
                 if (window.innerWidth <= 968) {
@@ -872,33 +864,6 @@
                 }
             });
         });
-        
-        // Custom smooth scroll function
-        function smoothScrollTo(target, duration, callback) {
-            const start = window.pageYOffset;
-            const distance = target - start;
-            const startTime = performance.now();
-            
-            function easeInOutCubic(t) {
-                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-            }
-            
-            function scrollAnimation(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const easeProgress = easeInOutCubic(progress);
-                
-                window.scrollTo(0, start + distance * easeProgress);
-                
-                if (progress < 1) {
-                    requestAnimationFrame(scrollAnimation);
-                } else if (callback) {
-                    callback();
-                }
-            }
-            
-            requestAnimationFrame(scrollAnimation);
-        }
 
         // Sidebar toggle for mobile
         function toggleSidebar() {
