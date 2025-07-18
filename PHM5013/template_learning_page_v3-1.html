@@ -226,6 +226,7 @@
             transition: var(--transition);
             border: 1px solid transparent;
             scroll-margin-top: calc(var(--header-height) + 20px);
+            opacity: 1;
         }
 
         .dropdown-section:hover {
@@ -308,11 +309,14 @@
         .dropdown-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+            opacity: 0;
         }
 
         .dropdown-section.open .dropdown-content {
             max-height: 2000px;
+            opacity: 1;
+            transition-delay: 0s, 0.1s;
         }
 
         .dropdown-inner {
@@ -590,6 +594,14 @@
         /* Smooth scrolling */
         html {
             scroll-behavior: smooth;
+            scroll-padding-top: calc(var(--header-height) + 20px);
+        }
+        
+        /* Smooth scroll polyfill for better control */
+        @media (prefers-reduced-motion: no-preference) {
+            html {
+                scroll-behavior: smooth;
+            }
         }
 
         /* Loading animation */
@@ -821,26 +833,38 @@
             });
         }
 
-        // Navigation click handler
+        // Navigation click handler with smooth scroll
         document.querySelectorAll('.nav-item[data-section]').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const sectionNum = item.dataset.section;
                 const section = document.querySelector(`.dropdown-section[data-section="${sectionNum}"]`);
                 
-                // Close all sections first
+                // Add a gentle fade effect to all sections
                 document.querySelectorAll('.dropdown-section').forEach(s => {
-                    s.classList.remove('open');
+                    s.style.opacity = '0.3';
+                    s.style.transition = 'opacity 0.5s ease';
                 });
                 
-                // Open the clicked section
-                section.classList.add('open');
+                // Smooth scroll to the section
+                const targetPosition = section.getBoundingClientRect().top + window.pageYOffset - 93;
                 
-                // Scroll to section
-                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                
-                // Update active nav
-                updateActiveNav(sectionNum);
+                // Custom smooth scroll function for more control
+                smoothScrollTo(targetPosition, 800, () => {
+                    // After scrolling, update the sections
+                    document.querySelectorAll('.dropdown-section').forEach(s => {
+                        s.classList.remove('open');
+                        s.style.opacity = '1';
+                    });
+                    
+                    // Open the clicked section with a slight delay
+                    setTimeout(() => {
+                        section.classList.add('open');
+                    }, 100);
+                    
+                    // Update active nav
+                    updateActiveNav(sectionNum);
+                });
                 
                 // Close sidebar on mobile
                 if (window.innerWidth <= 968) {
@@ -848,6 +872,33 @@
                 }
             });
         });
+        
+        // Custom smooth scroll function
+        function smoothScrollTo(target, duration, callback) {
+            const start = window.pageYOffset;
+            const distance = target - start;
+            const startTime = performance.now();
+            
+            function easeInOutCubic(t) {
+                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            }
+            
+            function scrollAnimation(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = easeInOutCubic(progress);
+                
+                window.scrollTo(0, start + distance * easeProgress);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(scrollAnimation);
+                } else if (callback) {
+                    callback();
+                }
+            }
+            
+            requestAnimationFrame(scrollAnimation);
+        }
 
         // Sidebar toggle for mobile
         function toggleSidebar() {
