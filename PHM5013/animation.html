@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Covalent Bond Formation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
+
+        :root {
+            --background-color: #121212;
+            --primary-text-color: #e0e0e0;
+            --atom1-color: #4a90e2;
+            --atom2-color: #50e3c2;
+            --electron-color: #ffffff;
+            --progress-bar-color: #4a90e2;
+            --container-bg: #1e1e1e;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--background-color);
+            font-family: 'Inter', sans-serif;
+            color: var(--primary-text-color);
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            background-color: var(--container-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        canvas {
+            background-color: var(--background-color);
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        
+        #explanation {
+            height: 40px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--progress-bar-color);
+            border-radius: 4px;
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <canvas id="bondCanvas" width="600" height="300"></canvas>
+    <p id="explanation">Press any key or click to start the animation.</p>
+    <div class="progress-container">
+        <div id="progressBar" class="progress-bar"></div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('bondCanvas');
+    const ctx = canvas.getContext('2d');
+    const explanation = document.getElementById('explanation');
+    const progressBar = document.getElementById('progressBar');
+
+    // --- Configuration ---
+    const atomRadius = 25;
+    const shellRadius = 65;
+    const electronRadius = 5;
+    const animationDuration = 8000; // in milliseconds
+
+    // --- State ---
+    let animationFrameId;
+    let startTime = null;
+    let animationRunning = false;
+
+    // --- Atom Objects ---
+    const atom1 = {
+        color: 'var(--atom1-color)',
+        x: 0,
+        y: canvas.height / 2,
+        nucleusRadius: 15
+    };
+
+    const atom2 = {
+        color: 'var(--atom2-color)',
+        x: 0,
+        y: canvas.height / 2,
+        nucleusRadius: 15
+    };
+
+    function drawAtom(atom) {
+        // Draw outer shell (semi-transparent)
+        ctx.beginPath();
+        ctx.arc(atom.x, atom.y, shellRadius, 0, Math.PI * 2);
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = atom.color;
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+        
+        // Draw nucleus
+        ctx.beginPath();
+        ctx.arc(atom.x, atom.y, atom.nucleusRadius, 0, Math.PI * 2);
+        ctx.fillStyle = atom.color;
+        ctx.fill();
+    }
+    
+    function drawElectron(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, electronRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'var(--electron-color)';
+        ctx.fill();
+    }
+    
+    // Linear interpolation function for smooth transitions
+    function lerp(start, end, t) {
+        return start * (1 - t) + end * t;
+    }
+
+    function animate(currentTime) {
+        if (!startTime) startTime = currentTime;
+        const elapsedTime = currentTime - startTime;
+        let progress = Math.min(elapsedTime / animationDuration, 1);
+
+        // --- Clear Canvas ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // --- Calculate positions based on progress ---
+        const startX1 = canvas.width * 0.2;
+        const endX1 = canvas.width / 2 - 40;
+        atom1.x = lerp(startX1, endX1, progress);
+
+        const startX2 = canvas.width * 0.8;
+        const endX2 = canvas.width / 2 + 40;
+        atom2.x = lerp(startX2, endX2, progress);
+
+        // --- Draw Atoms ---
+        drawAtom(atom1);
+        drawAtom(atom2);
+        
+        // --- Animate Electrons ---
+        let electron1X, electron1Y, electron2X, electron2Y;
+        const orbitAngle = (elapsedTime / 1000) * 2; // Speed of electron orbit
+
+        if (progress < 0.5) {
+            // Electrons orbit their own nucleus
+            electron1X = atom1.x + Math.cos(orbitAngle) * (shellRadius - 10);
+            electron1Y = atom1.y + Math.sin(orbitAngle) * (shellRadius - 10);
+            electron2X = atom2.x + Math.cos(orbitAngle + Math.PI) * (shellRadius - 10);
+            electron2Y = atom2.y + Math.sin(orbitAngle + Math.PI) * (shellRadius - 10);
+        } else {
+            // Electrons move to the shared region
+            const sharedX = canvas.width / 2;
+            const sharedYTop = canvas.height / 2 - 12;
+            const sharedYBottom = canvas.height / 2 + 12;
+
+            const transitionProgress = (progress - 0.5) * 2; // From 0 to 1
+            
+            const initialE1X = atom1.x; // Position at progress=0.5
+            const initialE1Y = atom1.y;
+            electron1X = lerp(initialE1X, sharedX, transitionProgress);
+            electron1Y = lerp(initialE1Y, sharedYTop, transitionProgress);
+
+            const initialE2X = atom2.x; // Position at progress=0.5
+            const initialE2Y = atom2.y;
+            electron2X = lerp(initialE2X, sharedX, transitionProgress);
+            electron2Y = lerp(initialE2Y, sharedYBottom, transitionProgress);
+        }
+
+        drawElectron(electron1X, electron1Y);
+        drawElectron(electron2X, electron2Y);
+
+        // --- Update UI ---
+        updateUI(progress);
+
+        // --- Continue or Stop Animation ---
+        if (progress < 1) {
+            animationFrameId = requestAnimationFrame(animate);
+        } else {
+            explanation.textContent = 'A stable covalent bond is formed. ✨';
+            animationRunning = false;
+        }
+    }
+
+    function updateUI(progress) {
+        // Update progress bar
+        progressBar.style.width = `${progress * 100}%`;
+        
+        // Update explanation text
+        explanation.style.opacity = 1;
+        if (progress < 0.05) {
+            explanation.textContent = 'Two atoms approach each other...';
+        } else if (progress < 0.5) {
+            explanation.textContent = 'Their electron shells begin to overlap...';
+        } else if (progress < 1) {
+            explanation.textContent = 'Electrons are shared to complete their outer shells...';
+        }
+    }
+
+    function startAnimation() {
+        if (animationRunning) return;
+        animationRunning = true;
+        
+        // Reset state
+        startTime = null;
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+        
+        // Start animation loop
+        animationFrameId = requestAnimationFrame(animate);
+    }
+    
+    // Initialize with a static drawing
+    function init() {
+        atom1.x = canvas.width * 0.2;
+        atom2.x = canvas.width * 0.8;
+        drawAtom(atom1);
+        drawAtom(atom2);
+        drawElectron(atom1.x, atom1.y - (shellRadius - 10));
+        drawElectron(atom2.x, atom2.y + (shellRadius - 10));
+        updateUI(0);
+    }
+
+    // Event listeners to start
+    window.addEventListener('keydown', startAnimation, { once: true });
+    window.addEventListener('click', startAnimation, { once: true });
+    
+    // Initial render
+    init();
+
+</script>
+</body>
+</html>
