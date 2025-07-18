@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sigma Bond Formation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #FFFFFF;
+            overflow: hidden;
+        }
+
+        canvas {
+            background-color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="bondCanvas" width="700" height="350"></canvas>
+
+<script>
+    const canvas = document.getElementById('bondCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Configuration
+    const ATOM1_COLOR = '#003D7C';
+    const ATOM2_COLOR = '#EF7C00';
+    const ELECTRON_COLOR = '#333333';
+    const BOND_COLOR = '#000000';
+
+    const shellRadius = 70;
+    const electronRadius = 6;
+    const animationDuration = 6000;
+
+    // State
+    let animationFrameId;
+    let startTime = null;
+    let animationRunning = false;
+
+    const atom1 = { color: ATOM1_COLOR, x: 0, y: canvas.height / 2, nucleusRadius: 18 };
+    const atom2 = { color: ATOM2_COLOR, x: 0, y: canvas.height / 2, nucleusRadius: 18 };
+
+    function drawAtom(atom) {
+        // Draw electron shell
+        ctx.globalAlpha = 0.15;
+        ctx.beginPath();
+        ctx.arc(atom.x, atom.y, shellRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = atom.color;
+        ctx.fill();
+        
+        // Draw nucleus
+        ctx.globalAlpha = 1.0;
+        ctx.beginPath();
+        ctx.arc(atom.x, atom.y, atom.nucleusRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = atom.color;
+        ctx.fill();
+    }
+
+    function drawElectron(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, electronRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = ELECTRON_COLOR;
+        ctx.fill();
+    }
+    
+    function drawBond(progress) {
+        if (progress > 0) {
+            ctx.globalAlpha = progress;
+            ctx.beginPath();
+            ctx.moveTo(atom1.x + atom1.nucleusRadius, atom1.y);
+            ctx.lineTo(atom2.x - atom2.nucleusRadius, atom2.y);
+            ctx.strokeStyle = BOND_COLOR;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    function lerp(start, end, t) {
+        return start * (1 - t) + end * t;
+    }
+
+    function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function animate(currentTime) {
+        if (!startTime) startTime = currentTime;
+        const elapsedTime = currentTime - startTime;
+        let progress = Math.min(elapsedTime / animationDuration, 1);
+        let easedProgress = easeInOutCubic(progress);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Animate atoms coming together
+        const startX1 = canvas.width * 0.2;
+        const endX1 = canvas.width / 2 - 50;
+        atom1.x = lerp(startX1, endX1, easedProgress);
+
+        const startX2 = canvas.width * 0.8;
+        const endX2 = canvas.width / 2 + 50;
+        atom2.x = lerp(startX2, endX2, easedProgress);
+        
+        // Draw atoms first
+        drawAtom(atom1);
+        drawAtom(atom2);
+        
+        // Animate electrons
+        let electron1X, electron1Y, electron2X, electron2Y;
+        const orbitAngle = (elapsedTime / 1000) * 2;
+
+        if (progress < 0.4) {
+            // Electrons orbiting their respective atoms
+            electron1X = atom1.x + Math.cos(orbitAngle) * (shellRadius - 15);
+            electron1Y = atom1.y + Math.sin(orbitAngle) * (shellRadius - 15);
+            electron2X = atom2.x + Math.cos(orbitAngle + Math.PI) * (shellRadius - 15);
+            electron2Y = atom2.y + Math.sin(orbitAngle + Math.PI) * (shellRadius - 15);
+        } else {
+            // Electrons moving to shared position
+            const sharedX = (atom1.x + atom2.x) / 2;
+            const sharedYTop = canvas.height / 2 - 20;
+            const sharedYBottom = canvas.height / 2 + 20;
+            const transitionProgress = easeInOutCubic((progress - 0.4) / 0.4);
+            
+            const electron1StartX = atom1.x + Math.cos(orbitAngle) * (shellRadius - 15);
+            const electron1StartY = atom1.y + Math.sin(orbitAngle) * (shellRadius - 15);
+            const electron2StartX = atom2.x + Math.cos(orbitAngle + Math.PI) * (shellRadius - 15);
+            const electron2StartY = atom2.y + Math.sin(orbitAngle + Math.PI) * (shellRadius - 15);
+            
+            electron1X = lerp(electron1StartX, sharedX, transitionProgress);
+            electron1Y = lerp(electron1StartY, sharedYTop, transitionProgress);
+            electron2X = lerp(electron2StartX, sharedX, transitionProgress);
+            electron2Y = lerp(electron2StartY, sharedYBottom, transitionProgress);
+        }
+
+        drawElectron(electron1X, electron1Y);
+        drawElectron(electron2X, electron2Y);
+        
+        // Draw bond line after electrons start sharing
+        if (progress > 0.6) {
+            const bondProgress = (progress - 0.6) / 0.4;
+            drawBond(bondProgress);
+        }
+
+        if (progress < 1) {
+            animationFrameId = requestAnimationFrame(animate);
+        } else {
+            // Animation complete - restart after a pause
+            setTimeout(() => {
+                startTime = null;
+                animationFrameId = requestAnimationFrame(animate);
+            }, 2000);
+        }
+    }
+    
+    function init() {
+        atom1.x = canvas.width * 0.2;
+        atom2.x = canvas.width * 0.8;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawAtom(atom1);
+        drawAtom(atom2);
+        drawElectron(atom1.x, atom1.y - (shellRadius - 15));
+        drawElectron(atom2.x, atom2.y + (shellRadius - 15));
+        
+        // Start animation immediately
+        startTime = null;
+        animationFrameId = requestAnimationFrame(animate);
+    }
+
+    init();
+</script>
+</body>
+</html>
