@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bond Energy Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #003D7C 0%, #005BAC 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            text-align: center;
+            font-size: 2.5em;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .header p {
+            text-align: center;
+            margin-top: 10px;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0,0,0,0.12);
+        }
+
+        .card h2 {
+            color: #003D7C;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            font-weight: 400;
+            border-bottom: 2px solid #EF7C00;
+            padding-bottom: 10px;
+        }
+
+        .molecule-builder {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .atom-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .atom-btn {
+            padding: 15px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .atom-btn:hover {
+            border-color: #EF7C00;
+            background: #FFF5E6;
+            transform: scale(1.05);
+        }
+
+        .atom-btn.selected {
+            background: #003D7C;
+            color: white;
+            border-color: #003D7C;
+        }
+
+        .bond-type-selector {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .bond-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .bond-btn:hover {
+            border-color: #EF7C00;
+            background: #FFF5E6;
+        }
+
+        .bond-btn.selected {
+            background: #EF7C00;
+            color: white;
+            border-color: #EF7C00;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #EF7C00 0%, #FF9A00 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(239,124,0,0.3);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .visualization {
+            position: relative;
+            height: 400px;
+            background: #fafafa;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .results {
+            background: #f0f7ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #003D7C;
+        }
+
+        .results h3 {
+            color: #003D7C;
+            margin-bottom: 15px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .result-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .result-value {
+            font-weight: 600;
+            color: #003D7C;
+            font-size: 1.1em;
+        }
+
+        .molecule-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .molecule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f9f9f9;
+            margin: 8px 0;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .molecule-item:hover {
+            background: #e9e9e9;
+        }
+
+        .molecule-formula {
+            font-weight: 500;
+            color: #003D7C;
+        }
+
+        .molecule-energy {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .remove-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background: #cc0000;
+        }
+
+        .info-box {
+            background: #E8F4FD;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #005BAC;
+        }
+
+        .info-box p {
+            color: #003D7C;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .axis-label {
+            position: absolute;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .x-label {
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .y-label {
+            left: 5px;
+            top: 50%;
+            transform: rotate(-90deg) translateX(-50%);
+            transform-origin: left center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>Bond Energy Calculator</h1>
+            <p>Interactive Molecular Bond Energy Analysis Tool</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="card">
+                <h2>Build Your Molecule</h2>
+                <div class="molecule-builder">
+                    <div>
+                        <h3 style="color: #666; font-size: 1.2em; margin-bottom: 10px;">Select Atoms:</h3>
+                        <div class="atom-selector">
+                            <button class="atom-btn" data-atom="H">H</button>
+                            <button class="atom-btn" data-atom="C">C</button>
+                            <button class="atom-btn" data-atom="N">N</button>
+                            <button class="atom-btn" data-atom="O">O</button>
+                            <button class="atom-btn" data-atom="F">F</button>
+                            <button class="atom-btn" data-atom="Cl">Cl</button>
+                            <button class="atom-btn" data-atom="Br">Br</button>
+                            <button class="atom-btn" data-atom="I">I</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 style="color: #666; font-size: 1.2em; margin-bottom: 10px;">Bond Type:</h3>
+                        <div class="bond-type-selector">
+                            <button class="bond-btn selected" data-bond="single">Single (—)</button>
+                            <button class="bond-btn" data-bond="double">Double (=)</button>
+                            <button class="bond-btn" data-bond="triple">Triple (≡)</button>
+                        </div>
+                    </div>
+
+                    <div id="selected-atoms" style="text-align: center; font-size: 1.2em; color: #003D7C; font-weight: 500;">
+                        Select two atoms to form a bond
+                    </div>
+
+                    <button class="action-btn" id="add-bond">Add Bond to Calculation</button>
+
+                    <div class="molecule-list" id="molecule-list">
+                        <h3 style="color: #666; font-size: 1.2em; margin-bottom: 10px;">Added Bonds:</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Energy Diagram</h2>
+                <div class="visualization">
+                    <canvas id="canvas"></canvas>
+                    <div class="axis-label x-label">Internuclear Distance (pm)</div>
+                    <div class="axis-label y-label">Energy (kJ/mol)</div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #003D7C;"></div>
+                        <span>Current Bond</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #EF7C00;"></div>
+                        <span>Bond Energy</span>
+                    </div>
+                </div>
+
+                <div class="results" id="results">
+                    <h3>Calculation Results</h3>
+                    <div class="result-item">
+                        <span class="result-label">Total Bond Energy:</span>
+                        <span class="result-value" id="total-energy">0 kJ/mol</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Number of Bonds:</span>
+                        <span class="result-value" id="bond-count">0</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Average Bond Energy:</span>
+                        <span class="result-value" id="avg-energy">0 kJ/mol</span>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <p><strong>Note:</strong> Bond energies are average values at 298K. Actual values may vary depending on the molecular environment. The energy curve shows the potential energy as a function of internuclear distance using the Morse potential approximation.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Bond energy data (kJ/mol) - scientifically accurate values
+        const bondEnergies = {
+            'H-H': { single: 436 },
+            'H-C': { single: 413 },
+            'H-N': { single: 391 },
+            'H-O': { single: 463 },
+            'H-F': { single: 567 },
+            'H-Cl': { single: 431 },
+            'H-Br': { single: 366 },
+            'H-I': { single: 299 },
+            'C-C': { single: 348, double: 614, triple: 839 },
+            'C-N': { single: 293, double: 615, triple: 891 },
+            'C-O': { single: 358, double: 743 },
+            'C-F': { single: 485 },
+            'C-Cl': { single: 328 },
+            'C-Br': { single: 276 },
+            'C-I': { single: 240 },
+            'N-N': { single: 163, double: 418, triple: 945 },
+            'N-O': { single: 201, double: 607 },
+            'O-O': { single: 146, double: 498 },
+            'F-F': { single: 158 },
+            'Cl-Cl': { single: 242 },
+            'Br-Br': { single: 193 },
+            'I-I': { single: 151 }
+        };
+
+        // Bond lengths (pm) for visualization
+        const bondLengths = {
+            'H-H': 74,
+            'H-C': 109,
+            'H-N': 101,
+            'H-O': 96,
+            'H-F': 92,
+            'H-Cl': 127,
+            'H-Br': 141,
+            'H-I': 161,
+            'C-C': 154,
+            'C-N': 147,
+            'C-O': 143,
+            'C-F': 135,
+            'C-Cl': 177,
+            'C-Br': 194,
+            'C-I': 214,
+            'N-N': 145,
+            'N-O': 140,
+            'O-O': 148,
+            'F-F': 142,
+            'Cl-Cl': 199,
+            'Br-Br': 228,
+            'I-I': 267
+        };
+
+        let selectedAtoms = [];
+        let selectedBondType = 'single';
+        let addedBonds = [];
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            drawEnergyDiagram();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Atom selection
+        document.querySelectorAll('.atom-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const atom = this.dataset.atom;
+                
+                if (selectedAtoms.length < 2) {
+                    selectedAtoms.push(atom);
+                    this.classList.add('selected');
+                } else {
+                    // Reset selection
+                    document.querySelectorAll('.atom-btn').forEach(b => b.classList.remove('selected'));
+                    selectedAtoms = [atom];
+                    this.classList.add('selected');
+                }
+                
+                updateSelectedDisplay();
+            });
+        });
+
+        // Bond type selection
+        document.querySelectorAll('.bond-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.bond-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedBondType = this.dataset.bond;
+            });
+        });
+
+        // Update selected atoms display
+        function updateSelectedDisplay() {
+            const display = document.getElementById('selected-atoms');
+            if (selectedAtoms.length === 0) {
+                display.textContent = 'Select two atoms to form a bond';
+            } else if (selectedAtoms.length === 1) {
+                display.textContent = `Selected: ${selectedAtoms[0]} — ?`;
+            } else {
+                const bondSymbol = selectedBondType === 'single' ? '—' : selectedBondType === 'double' ? '=' : '≡';
+                display.textContent = `Selected: ${selectedAtoms[0]} ${bondSymbol} ${selectedAtoms[1]}`;
+            }
+        }
+
+        // Get bond key
+        function getBondKey(atom1, atom2) {
+            const sorted = [atom1, atom2].sort();
+            return `${sorted[0]}-${sorted[1]}`;
+        }
+
+        // Add bond
+        document.getElementById('add-bond').addEventListener('click', function() {
+            if (selectedAtoms.length !== 2) {
+                alert('Please select two atoms to form a bond');
+                return;
+            }
+
+            const bondKey = getBondKey(selectedAtoms[0], selectedAtoms[1]);
+            const bondData = bondEnergies[bondKey];
+
+            if (!bondData || !bondData[selectedBondType]) {
+                alert(`Bond energy data not available for ${selectedAtoms[0]}-${selectedAtoms[1]} ${selectedBondType} bond`);
+                return;
+            }
+
+            const bond = {
+                atoms: [...selectedAtoms],
+                type: selectedBondType,
+                energy: bondData[selectedBondType],
+                key: bondKey
+            };
+
+            addedBonds.push(bond);
+            updateBondList();
+            updateResults();
+            drawEnergyDiagram();
+
+            // Reset selection
+            selectedAtoms = [];
+            document.querySelectorAll('.atom-btn').forEach(b => b.classList.remove('selected'));
+            updateSelectedDisplay();
+        });
+
+        // Update bond list
+        function updateBondList() {
+            const list = document.getElementById('molecule-list');
+            list.innerHTML = '<h3 style="color: #666; font-size: 1.2em; margin-bottom: 10px;">Added Bonds:</h3>';
+            
+            addedBonds.forEach((bond, index) => {
+                const bondSymbol = bond.type === 'single' ? '—' : bond.type === 'double' ? '=' : '≡';
+                const item = document.createElement('div');
+                item.className = 'molecule-item';
+                item.innerHTML = `
+                    <span class="molecule-formula">${bond.atoms[0]} ${bondSymbol} ${bond.atoms[1]}</span>
+                    <span class="molecule-energy">${bond.energy} kJ/mol</span>
+                    <button class="remove-btn" onclick="removeBond(${index})">Remove</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // Remove bond
+        function removeBond(index) {
+            addedBonds.splice(index, 1);
+            updateBondList();
+            updateResults();
+            drawEnergyDiagram();
+        }
+
+        // Update results
+        function updateResults() {
+            const totalEnergy = addedBonds.reduce((sum, bond) => sum + bond.energy, 0);
+            const avgEnergy = addedBonds.length > 0 ? totalEnergy / addedBonds.length : 0;
+
+            document.getElementById('total-energy').textContent = `${totalEnergy} kJ/mol`;
+            document.getElementById('bond-count').textContent = addedBonds.length;
+            document.getElementById('avg-energy').textContent = `${avgEnergy.toFixed(0)} kJ/mol`;
+        }
+
+        // Morse potential function
+        function morsePotential(r, De, re, a) {
+            const exp = Math.exp(-a * (r - re));
+            return De * (1 - exp) * (1 - exp) - De;
+        }
+
+        // Draw energy diagram
+        function drawEnergyDiagram() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const padding = 60;
+            const width = canvas.width - 2 * padding;
+            const height = canvas.height - 2 * padding;
+
+            // Draw axes
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+
+            // Draw grid
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = padding + (height * i / 10);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(canvas.width - padding, y);
+                ctx.stroke();
+            }
+
+            // Draw energy curves for added bonds
+            if (addedBonds.length > 0) {
+                addedBonds.forEach((bond, index) => {
+                    const bondLength = bondLengths[bond.key] || 150;
+                    const De = bond.energy;
+                    const re = bondLength;
+                    const a = 0.02; // Morse parameter
+
+                    ctx.strokeStyle = index === addedBonds.length - 1 ? '#003D7C' : '#cccccc';
+                    ctx.lineWidth = index === addedBonds.length - 1 ? 3 : 1;
+                    ctx.beginPath();
+
+                    for (let r = 50; r < 500; r += 2) {
+                        const energy = morsePotential(r, De, re, a);
+                        const x = padding + (r - 50) * width / 450;
+                        const y = canvas.height - padding - (energy + De) * height / (De * 1.5);
+                        
+                        if (r === 50) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+
+                    // Mark equilibrium point
+                    if (index === addedBonds.length - 1) {
+                        const eqX = padding + (bondLength - 50) * width / 450;
+                        const eqY = canvas.height - padding;
+                        
+                        ctx.fillStyle = '#EF7C00';
+                        ctx.beginPath();
+                        ctx.arc(eqX, eqY, 6, 0, 2 * Math.PI);
+                        ctx.fill();
+
+                        // Draw bond energy line
+                        ctx.strokeStyle = '#EF7C00';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.moveTo(eqX, eqY);
+                        ctx.lineTo(eqX, canvas.height - padding - De * height / (De * 1.5));
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                });
+            }
+
+            // Draw axis labels
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            
+            // X-axis labels
+            for (let i = 0; i <= 5; i++) {
+                const x = padding + (i * width / 5);
+                const label = 50 + (i * 90);
+                ctx.fillText(label, x, canvas.height - padding + 20);
+            }
+
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const y = canvas.height - padding - (i * height / 5);
+                const label = -600 + (i * 240);
+                ctx.fillText(label, padding - 10, y + 5);
+            }
+        }
+
+        // Initial draw
+        drawEnergyDiagram();
+    </script>
+</body>
+</html>
