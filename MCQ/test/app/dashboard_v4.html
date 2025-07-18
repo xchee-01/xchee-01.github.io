@@ -1492,10 +1492,19 @@ Return your analysis as a JSON object following this exact template:
         // Load saved API key on page load
         window.addEventListener('DOMContentLoaded', () => {
             const savedKey = localStorage.getItem('gemini_api_key');
+            const defaultKey = 'AIzaSyAPniwWCXBfqaq-_DyOQdbFbKgs6Itq1ZU';
+            
             if (savedKey) {
                 document.getElementById('apiKeyInput').value = savedKey;
                 genAI = new GoogleGenerativeAI(savedKey);
                 showApiStatus('API key loaded from storage', 'success');
+                document.getElementById('modelInfo').style.display = 'block';
+            } else {
+                // Use default API key
+                document.getElementById('apiKeyInput').value = defaultKey;
+                genAI = new GoogleGenerativeAI(defaultKey);
+                localStorage.setItem('gemini_api_key', defaultKey);
+                showApiStatus('Default API key loaded', 'success');
                 document.getElementById('modelInfo').style.display = 'block';
             }
             
@@ -1892,4 +1901,27 @@ Return your analysis as a JSON object following this exact template:
                 let clinicalScenario = '';
                 let questionStem = '';
                 
-                // Find the actual question (usually contains
+                // Find the actual question (usually contains ?)
+                const questionLineIndex = lines.findIndex(line => line.includes('?'));
+                if (questionLineIndex >= 0) {
+                    clinicalScenario = lines.slice(0, questionLineIndex).join(' ').trim();
+                    questionStem = lines.slice(questionLineIndex).join(' ').trim();
+                } else if (lines.length > 1) {
+                    clinicalScenario = lines.slice(0, -1).join(' ').trim();
+                    questionStem = lines[lines.length - 1].trim();
+                } else {
+                    questionStem = lines[0] || '';
+                }
+                
+                questions.push({
+                    number: questionNumber,
+                    clinicalScenario,
+                    questionStem,
+                    options,
+                    correctAnswer: answerKey[questionNumber] || '',
+                    hasImage: /image|figure|shown|diagram/.test(questionText.toLowerCase())
+                });
+            }
+            
+            return questions;
+        }
