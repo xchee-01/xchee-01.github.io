@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bond Energy Calculator</title>
+    <title>Interactive Lennard-Jones Potential Simulator</title>
     <style>
         * {
             margin: 0;
@@ -16,10 +16,11 @@
             background: #f5f5f5;
             color: #333;
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -48,12 +49,12 @@
 
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 2fr;
             gap: 30px;
             margin-bottom: 30px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             .main-content {
                 grid-template-columns: 1fr;
             }
@@ -64,12 +65,6 @@
             border-radius: 12px;
             padding: 30px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(0,0,0,0.12);
         }
 
         .card h2 {
@@ -81,203 +76,134 @@
             padding-bottom: 10px;
         }
 
-        .molecule-builder {
+        .molecule-selector {
             display: flex;
-            flex-direction: column;
-            gap: 20px;
+            gap: 15px;
+            margin-bottom: 30px;
         }
 
-        .atom-selector {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .atom-btn {
+        .molecule-btn {
+            flex: 1;
             padding: 15px;
             border: 2px solid #ddd;
             background: white;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-size: 1.1em;
-            font-weight: 500;
+            text-align: center;
         }
 
-        .atom-btn:hover {
+        .molecule-btn:hover {
             border-color: #EF7C00;
             background: #FFF5E6;
-            transform: scale(1.05);
+            transform: translateY(-2px);
         }
 
-        .atom-btn.selected {
+        .molecule-btn.selected {
             background: #003D7C;
             color: white;
             border-color: #003D7C;
         }
 
-        .bond-type-selector {
-            display: flex;
+        .molecule-btn h3 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .molecule-btn p {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .info-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
-            margin: 20px 0;
-        }
-
-        .bond-btn {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #ddd;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .bond-btn:hover {
-            border-color: #EF7C00;
-            background: #FFF5E6;
-        }
-
-        .bond-btn.selected {
-            background: #EF7C00;
-            color: white;
-            border-color: #EF7C00;
-        }
-
-        .action-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #EF7C00 0%, #FF9A00 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
             margin-top: 20px;
         }
 
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(239,124,0,0.3);
+        .info-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #003D7C;
         }
 
-        .action-btn:active {
-            transform: translateY(0);
+        .info-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #003D7C;
         }
 
         .visualization {
             position: relative;
+        }
+
+        .graph-container {
+            position: relative;
             height: 400px;
             background: #fafafa;
             border-radius: 8px;
-            overflow: hidden;
             margin-bottom: 20px;
         }
 
-        #canvas {
+        #graph-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        .molecule-display {
+            height: 200px;
+            position: relative;
+            background: linear-gradient(to bottom, #f0f7ff 0%, #e1f0ff 100%);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .molecule-display.dragging {
+            cursor: grabbing;
+        }
+
+        #molecule-canvas {
             width: 100%;
             height: 100%;
         }
 
-        .results {
-            background: #f0f7ff;
+        .instructions {
+            background: #E8F4FD;
             padding: 20px;
             border-radius: 8px;
-            margin-top: 20px;
-            border-left: 4px solid #003D7C;
-        }
-
-        .results h3 {
-            color: #003D7C;
-            margin-bottom: 15px;
-        }
-
-        .result-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            padding: 10px;
-            background: white;
-            border-radius: 6px;
-        }
-
-        .result-label {
-            font-weight: 500;
-            color: #666;
-        }
-
-        .result-value {
-            font-weight: 600;
-            color: #003D7C;
-            font-size: 1.1em;
-        }
-
-        .molecule-list {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-top: 20px;
-        }
-
-        .molecule-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: #f9f9f9;
-            margin: 8px 0;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-
-        .molecule-item:hover {
-            background: #e9e9e9;
-        }
-
-        .molecule-formula {
-            font-weight: 500;
-            color: #003D7C;
-        }
-
-        .molecule-energy {
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .remove-btn {
-            background: #ff4444;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-        }
-
-        .remove-btn:hover {
-            background: #cc0000;
-        }
-
-        .info-box {
-            background: #E8F4FD;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
+            margin-bottom: 20px;
             border-left: 4px solid #005BAC;
         }
 
-        .info-box p {
+        .instructions h3 {
             color: #003D7C;
-            font-size: 0.95em;
-            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+            color: #666;
+        }
+
+        .instructions li {
+            margin: 5px 0;
         }
 
         .legend {
             display: flex;
             gap: 20px;
+            justify-content: center;
             margin-top: 10px;
             font-size: 0.9em;
         }
@@ -290,410 +216,738 @@
 
         .legend-color {
             width: 20px;
-            height: 20px;
-            border-radius: 50%;
+            height: 3px;
+            border-radius: 2px;
         }
 
-        .axis-label {
+        .parameters-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .parameters-table th,
+        .parameters-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .parameters-table th {
+            background: #f0f7ff;
+            color: #003D7C;
+            font-weight: 600;
+        }
+
+        .equilibrium-badge {
             position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #44aa44;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.5s ease;
+            box-shadow: 0 4px 15px rgba(68,170,68,0.3);
+        }
+
+        .equilibrium-badge.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .energy-trail {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: rgba(239,124,0,0.6);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .reset-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: #555;
+            transform: translateY(-2px);
+        }
+
+        .drag-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            opacity: 0.8;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.4; }
+        }
+
+        .physics-info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
             font-size: 0.9em;
             color: #666;
         }
 
-        .x-label {
-            bottom: 5px;
-            left: 50%;
-            transform: translateX(-50%);
+        .damping-control {
+            margin-top: 20px;
         }
 
-        .y-label {
-            left: 5px;
-            top: 50%;
-            transform: rotate(-90deg) translateX(-50%);
-            transform-origin: left center;
+        .damping-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .slider {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #EF7C00;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #EF7C00;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="container">
-            <h1>Bond Energy Calculator</h1>
-            <p>Interactive Molecular Bond Energy Analysis Tool</p>
+            <h1>Interactive Lennard-Jones Potential Simulator</h1>
+            <p>Drag the atoms to explore intermolecular forces</p>
         </div>
     </div>
 
     <div class="container">
         <div class="main-content">
             <div class="card">
-                <h2>Build Your Molecule</h2>
-                <div class="molecule-builder">
-                    <div>
-                        <h3 style="color: #666; font-size: 1.2em; margin-bottom: 10px;">Select Atoms:</h3>
-                        <div class="atom-selector">
-                            <button class="atom-btn" data-atom="H">H</button>
-                            <button class="atom-btn" data-atom="C">C</button>
-                            <button class="atom-btn" data-atom="N">N</button>
-                            <button class="atom-btn" data-atom="O">O</button>
-                            <button class="atom-btn" data-atom="F">F</button>
-                            <button class="atom-btn" data-atom="Cl">Cl</button>
-                            <button class="atom-btn" data-atom="Br">Br</button>
-                            <button class="atom-btn" data-atom="I">I</button>
-                        </div>
-                    </div>
+                <h2>Controls</h2>
+                
+                <div class="instructions">
+                    <h3>How to Use:</h3>
+                    <ul>
+                        <li>Click and drag the right atom to compress or stretch the molecule</li>
+                        <li>Release to see the molecule oscillate to equilibrium</li>
+                        <li>Watch the energy change on the potential curve</li>
+                        <li>The equilibrium distance will be displayed when reached</li>
+                    </ul>
+                </div>
+                
+                <div class="molecule-selector">
+                    <button class="molecule-btn selected" data-molecule="H2">
+                        <h3>H₂</h3>
+                        <p>Hydrogen</p>
+                    </button>
+                    <button class="molecule-btn" data-molecule="Ar2">
+                        <h3>Ar₂</h3>
+                        <p>Argon</p>
+                    </button>
+                    <button class="molecule-btn" data-molecule="Ne2">
+                        <h3>Ne₂</h3>
+                        <p>Neon</p>
+                    </button>
+                </div>
 
-                    <div>
-                        <h3 style="color: #666; font-size: 1.2em; margin-bottom: 10px;">Bond Type:</h3>
-                        <div class="bond-type-selector">
-                            <button class="bond-btn selected" data-bond="single">Single (—)</button>
-                            <button class="bond-btn" data-bond="double">Double (=)</button>
-                            <button class="bond-btn" data-bond="triple">Triple (≡)</button>
-                        </div>
+                <div class="info-panel">
+                    <div class="info-item">
+                        <div class="info-label">Current Distance</div>
+                        <div class="info-value" id="distance-value">2.96 Å</div>
                     </div>
-
-                    <div id="selected-atoms" style="text-align: center; font-size: 1.2em; color: #003D7C; font-weight: 500;">
-                        Select two atoms to form a bond
+                    <div class="info-item">
+                        <div class="info-label">Potential Energy</div>
+                        <div class="info-value" id="energy-value">-0.13 kJ/mol</div>
                     </div>
-
-                    <button class="action-btn" id="add-bond">Add Bond to Calculation</button>
-
-                    <div class="molecule-list" id="molecule-list">
-                        <h3 style="color: #666; font-size: 1.2em; margin-bottom: 10px;">Added Bonds:</h3>
+                    <div class="info-item">
+                        <div class="info-label">Kinetic Energy</div>
+                        <div class="info-value" id="kinetic-value">0.00 kJ/mol</div>
                     </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Energy</div>
+                        <div class="info-value" id="total-value">-0.13 kJ/mol</div>
+                    </div>
+                </div>
+
+                <div class="damping-control">
+                    <div class="damping-label">
+                        <span>Damping Factor</span>
+                        <span id="damping-value">0.05</span>
+                    </div>
+                    <input type="range" id="damping-slider" class="slider" 
+                           min="0" max="0.2" step="0.01" value="0.05">
+                </div>
+
+                <button class="reset-btn" id="reset-btn">Reset to Far Distance</button>
+
+                <table class="parameters-table">
+                    <thead>
+                        <tr>
+                            <th>Molecule</th>
+                            <th>ε (kJ/mol)</th>
+                            <th>σ (Å)</th>
+                            <th>r₀ (Å)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>H₂</td>
+                            <td>0.13</td>
+                            <td>2.64</td>
+                            <td>2.96</td>
+                        </tr>
+                        <tr>
+                            <td>Ar₂</td>
+                            <td>1.00</td>
+                            <td>3.40</td>
+                            <td>3.82</td>
+                        </tr>
+                        <tr>
+                            <td>Ne₂</td>
+                            <td>0.31</td>
+                            <td>2.75</td>
+                            <td>3.09</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="physics-info">
+                    <strong>Physics Note:</strong> The damping factor simulates energy dissipation, allowing the molecule to settle at equilibrium. In real molecules, this occurs through quantum mechanical effects and energy transfer to the environment.
                 </div>
             </div>
 
             <div class="card">
-                <h2>Energy Diagram</h2>
-                <div class="visualization">
-                    <canvas id="canvas"></canvas>
-                    <div class="axis-label x-label">Internuclear Distance (pm)</div>
-                    <div class="axis-label y-label">Energy (kJ/mol)</div>
-                </div>
+                <h2>Potential Energy Diagram</h2>
                 
+                <div class="visualization">
+                    <div class="graph-container">
+                        <canvas id="graph-canvas"></canvas>
+                        <div class="equilibrium-badge" id="equilibrium-badge">
+                            Equilibrium: <span id="eq-distance">2.96</span> Å
+                        </div>
+                    </div>
+                    
+                    <div class="molecule-display" id="molecule-display">
+                        <canvas id="molecule-canvas"></canvas>
+                        <div class="drag-hint">Drag the atom!</div>
+                    </div>
+                </div>
+
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-color" style="background: #003D7C;"></div>
-                        <span>Current Bond</span>
+                        <span>Potential Energy Curve</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #EF7C00;"></div>
-                        <span>Bond Energy</span>
+                        <span>Current Position</span>
                     </div>
-                </div>
-
-                <div class="results" id="results">
-                    <h3>Calculation Results</h3>
-                    <div class="result-item">
-                        <span class="result-label">Total Bond Energy:</span>
-                        <span class="result-value" id="total-energy">0 kJ/mol</span>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #44aa44;"></div>
+                        <span>Equilibrium Point</span>
                     </div>
-                    <div class="result-item">
-                        <span class="result-label">Number of Bonds:</span>
-                        <span class="result-value" id="bond-count">0</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">Average Bond Energy:</span>
-                        <span class="result-value" id="avg-energy">0 kJ/mol</span>
-                    </div>
-                </div>
-
-                <div class="info-box">
-                    <p><strong>Note:</strong> Bond energies are average values at 298K. Actual values may vary depending on the molecular environment. The energy curve shows the potential energy as a function of internuclear distance using the Morse potential approximation.</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Bond energy data (kJ/mol) - scientifically accurate values
-        const bondEnergies = {
-            'H-H': { single: 436 },
-            'H-C': { single: 413 },
-            'H-N': { single: 391 },
-            'H-O': { single: 463 },
-            'H-F': { single: 567 },
-            'H-Cl': { single: 431 },
-            'H-Br': { single: 366 },
-            'H-I': { single: 299 },
-            'C-C': { single: 348, double: 614, triple: 839 },
-            'C-N': { single: 293, double: 615, triple: 891 },
-            'C-O': { single: 358, double: 743 },
-            'C-F': { single: 485 },
-            'C-Cl': { single: 328 },
-            'C-Br': { single: 276 },
-            'C-I': { single: 240 },
-            'N-N': { single: 163, double: 418, triple: 945 },
-            'N-O': { single: 201, double: 607 },
-            'O-O': { single: 146, double: 498 },
-            'F-F': { single: 158 },
-            'Cl-Cl': { single: 242 },
-            'Br-Br': { single: 193 },
-            'I-I': { single: 151 }
+        // Lennard-Jones parameters
+        const ljParameters = {
+            'H2': {
+                epsilon: 0.13,  // kJ/mol
+                sigma: 2.64,    // Angstroms
+                mass: 1.008,    // amu per atom
+                color: '#ffffff',
+                name: 'Hydrogen'
+            },
+            'Ar2': {
+                epsilon: 1.00,  // kJ/mol
+                sigma: 3.40,    // Angstroms
+                mass: 39.948,   // amu per atom
+                color: '#ff99ff',
+                name: 'Argon'
+            },
+            'Ne2': {
+                epsilon: 0.31,  // kJ/mol
+                sigma: 2.75,    // Angstroms
+                mass: 20.180,   // amu per atom
+                color: '#ffcc99',
+                name: 'Neon'
+            }
         };
 
-        // Bond lengths (pm) for visualization
-        const bondLengths = {
-            'H-H': 74,
-            'H-C': 109,
-            'H-N': 101,
-            'H-O': 96,
-            'H-F': 92,
-            'H-Cl': 127,
-            'H-Br': 141,
-            'H-I': 161,
-            'C-C': 154,
-            'C-N': 147,
-            'C-O': 143,
-            'C-F': 135,
-            'C-Cl': 177,
-            'C-Br': 194,
-            'C-I': 214,
-            'N-N': 145,
-            'N-O': 140,
-            'O-O': 148,
-            'F-F': 142,
-            'Cl-Cl': 199,
-            'Br-Br': 228,
-            'I-I': 267
-        };
+        // Physics simulation variables
+        let currentMolecule = 'H2';
+        let currentDistance = 2.96; // Start at equilibrium
+        let velocity = 0;
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartDistance = 0;
+        let isAnimating = false;
+        let animationId = null;
+        let hasReachedEquilibrium = false;
+        let dampingFactor = 0.05;
+        let energyTrail = [];
 
-        let selectedAtoms = [];
-        let selectedBondType = 'single';
-        let addedBonds = [];
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+        const graphCanvas = document.getElementById('graph-canvas');
+        const graphCtx = graphCanvas.getContext('2d');
+        const moleculeCanvas = document.getElementById('molecule-canvas');
+        const moleculeCtx = moleculeCanvas.getContext('2d');
+        const moleculeDisplay = document.getElementById('molecule-display');
 
-        // Set canvas size
-        function resizeCanvas() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            drawEnergyDiagram();
+        // Set canvas sizes
+        function resizeCanvases() {
+            graphCanvas.width = graphCanvas.offsetWidth;
+            graphCanvas.height = graphCanvas.offsetHeight;
+            moleculeCanvas.width = moleculeCanvas.offsetWidth;
+            moleculeCanvas.height = moleculeCanvas.offsetHeight;
+            draw();
         }
 
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
 
-        // Atom selection
-        document.querySelectorAll('.atom-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const atom = this.dataset.atom;
+        // Physics functions
+        function lennardJones(r, epsilon, sigma) {
+            const ratio = sigma / r;
+            const ratio6 = Math.pow(ratio, 6);
+            const ratio12 = Math.pow(ratio6, 2);
+            return 4 * epsilon * (ratio12 - ratio6);
+        }
+
+        function ljForce(r, epsilon, sigma) {
+            const ratio = sigma / r;
+            const ratio6 = Math.pow(ratio, 6);
+            const ratio12 = Math.pow(ratio6, 2);
+            return 24 * epsilon / r * (2 * ratio12 - ratio6);
+        }
+
+        function findEquilibrium(epsilon, sigma) {
+            return sigma * Math.pow(2, 1/6);
+        }
+
+        // Mouse/Touch events
+        function getEventX(e) {
+            return e.touches ? e.touches[0].clientX : e.clientX;
+        }
+
+        moleculeDisplay.addEventListener('mousedown', startDrag);
+        moleculeDisplay.addEventListener('touchstart', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+
+        function startDrag(e) {
+            const rect = moleculeCanvas.getBoundingClientRect();
+            const x = getEventX(e) - rect.left;
+            const centerX = moleculeCanvas.width / 2;
+            const atomX = centerX + (currentDistance * 30 / 2); // 30 pixels per Angstrom
+            
+            // Check if clicking near the right atom
+            if (Math.abs(x - atomX) < 30) {
+                isDragging = true;
+                dragStartX = getEventX(e);
+                dragStartDistance = currentDistance;
+                velocity = 0;
+                moleculeDisplay.classList.add('dragging');
+                e.preventDefault();
                 
-                if (selectedAtoms.length < 2) {
-                    selectedAtoms.push(atom);
-                    this.classList.add('selected');
-                } else {
-                    // Reset selection
-                    document.querySelectorAll('.atom-btn').forEach(b => b.classList.remove('selected'));
-                    selectedAtoms = [atom];
-                    this.classList.add('selected');
+                // Stop any ongoing animation
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    isAnimating = false;
                 }
-                
-                updateSelectedDisplay();
-            });
-        });
-
-        // Bond type selection
-        document.querySelectorAll('.bond-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.bond-btn').forEach(b => b.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedBondType = this.dataset.bond;
-            });
-        });
-
-        // Update selected atoms display
-        function updateSelectedDisplay() {
-            const display = document.getElementById('selected-atoms');
-            if (selectedAtoms.length === 0) {
-                display.textContent = 'Select two atoms to form a bond';
-            } else if (selectedAtoms.length === 1) {
-                display.textContent = `Selected: ${selectedAtoms[0]} — ?`;
-            } else {
-                const bondSymbol = selectedBondType === 'single' ? '—' : selectedBondType === 'double' ? '=' : '≡';
-                display.textContent = `Selected: ${selectedAtoms[0]} ${bondSymbol} ${selectedAtoms[1]}`;
             }
         }
 
-        // Get bond key
-        function getBondKey(atom1, atom2) {
-            const sorted = [atom1, atom2].sort();
-            return `${sorted[0]}-${sorted[1]}`;
-        }
-
-        // Add bond
-        document.getElementById('add-bond').addEventListener('click', function() {
-            if (selectedAtoms.length !== 2) {
-                alert('Please select two atoms to form a bond');
-                return;
-            }
-
-            const bondKey = getBondKey(selectedAtoms[0], selectedAtoms[1]);
-            const bondData = bondEnergies[bondKey];
-
-            if (!bondData || !bondData[selectedBondType]) {
-                alert(`Bond energy data not available for ${selectedAtoms[0]}-${selectedAtoms[1]} ${selectedBondType} bond`);
-                return;
-            }
-
-            const bond = {
-                atoms: [...selectedAtoms],
-                type: selectedBondType,
-                energy: bondData[selectedBondType],
-                key: bondKey
-            };
-
-            addedBonds.push(bond);
-            updateBondList();
-            updateResults();
-            drawEnergyDiagram();
-
-            // Reset selection
-            selectedAtoms = [];
-            document.querySelectorAll('.atom-btn').forEach(b => b.classList.remove('selected'));
-            updateSelectedDisplay();
-        });
-
-        // Update bond list
-        function updateBondList() {
-            const list = document.getElementById('molecule-list');
-            list.innerHTML = '<h3 style="color: #666; font-size: 1.2em; margin-bottom: 10px;">Added Bonds:</h3>';
+        function drag(e) {
+            if (!isDragging) return;
             
-            addedBonds.forEach((bond, index) => {
-                const bondSymbol = bond.type === 'single' ? '—' : bond.type === 'double' ? '=' : '≡';
-                const item = document.createElement('div');
-                item.className = 'molecule-item';
-                item.innerHTML = `
-                    <span class="molecule-formula">${bond.atoms[0]} ${bondSymbol} ${bond.atoms[1]}</span>
-                    <span class="molecule-energy">${bond.energy} kJ/mol</span>
-                    <button class="remove-btn" onclick="removeBond(${index})">Remove</button>
-                `;
-                list.appendChild(item);
-            });
-        }
-
-        // Remove bond
-        function removeBond(index) {
-            addedBonds.splice(index, 1);
-            updateBondList();
-            updateResults();
-            drawEnergyDiagram();
-        }
-
-        // Update results
-        function updateResults() {
-            const totalEnergy = addedBonds.reduce((sum, bond) => sum + bond.energy, 0);
-            const avgEnergy = addedBonds.length > 0 ? totalEnergy / addedBonds.length : 0;
-
-            document.getElementById('total-energy').textContent = `${totalEnergy} kJ/mol`;
-            document.getElementById('bond-count').textContent = addedBonds.length;
-            document.getElementById('avg-energy').textContent = `${avgEnergy.toFixed(0)} kJ/mol`;
-        }
-
-        // Morse potential function
-        function morsePotential(r, De, re, a) {
-            const exp = Math.exp(-a * (r - re));
-            return De * (1 - exp) * (1 - exp) - De;
-        }
-
-        // Draw energy diagram
-        function drawEnergyDiagram() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const dx = getEventX(e) - dragStartX;
+            const distanceChange = dx / 30; // 30 pixels per Angstrom
+            currentDistance = Math.max(2.0, Math.min(10.0, dragStartDistance + distanceChange));
             
+            updateValues();
+            draw();
+            e.preventDefault();
+        }
+
+        function endDrag(e) {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            moleculeDisplay.classList.remove('dragging');
+            hasReachedEquilibrium = false;
+            
+            // Start physics simulation
+            isAnimating = true;
+            energyTrail = [];
+            animate();
+        }
+
+        // Physics simulation
+        function animate() {
+            if (!isAnimating) return;
+            
+            const params = ljParameters[currentMolecule];
+            const r0 = findEquilibrium(params.epsilon, params.sigma);
+            
+            // Calculate force and acceleration
+            const force = ljForce(currentDistance, params.epsilon, params.sigma);
+            const reducedMass = params.mass / 2; // Reduced mass for diatomic
+            const acceleration = -force * 1e-3; // Scale factor for animation
+            
+            // Update velocity and position
+            velocity += acceleration;
+            velocity *= (1 - dampingFactor); // Apply damping
+            currentDistance += velocity * 0.01; // Time step
+            
+            // Boundary constraints
+            currentDistance = Math.max(2.0, Math.min(10.0, currentDistance));
+            
+            // Check for equilibrium
+            if (Math.abs(currentDistance - r0) < 0.01 && Math.abs(velocity) < 0.01) {
+                if (!hasReachedEquilibrium) {
+                    hasReachedEquilibrium = true;
+                    showEquilibriumBadge();
+                    currentDistance = r0; // Snap to exact equilibrium
+                    velocity = 0;
+                    isAnimating = false;
+                }
+            }
+            
+            // Add to energy trail
+            energyTrail.push({
+                x: currentDistance,
+                y: lennardJones(currentDistance, params.epsilon, params.sigma)
+            });
+            if (energyTrail.length > 50) energyTrail.shift();
+            
+            updateValues();
+            draw();
+            
+            if (isAnimating) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
+        // Show equilibrium badge
+        function showEquilibriumBadge() {
+            const badge = document.getElementById('equilibrium-badge');
+            const params = ljParameters[currentMolecule];
+            const r0 = findEquilibrium(params.epsilon, params.sigma);
+            
+            document.getElementById('eq-distance').textContent = r0.toFixed(2);
+            badge.classList.add('show');
+            
+            setTimeout(() => {
+                badge.classList.remove('show');
+            }, 3000);
+        }
+
+        // Update displayed values
+        function updateValues() {
+            const params = ljParameters[currentMolecule];
+            const potential = lennardJones(currentDistance, params.epsilon, params.sigma);
+            const kinetic = 0.5 * params.mass * velocity * velocity * 0.001; // Simplified kinetic energy
+            const total = potential + kinetic;
+            
+            document.getElementById('distance-value').textContent = currentDistance.toFixed(2) + ' Å';
+            document.getElementById('energy-value').textContent = potential.toFixed(3) + ' kJ/mol';
+            document.getElementById('kinetic-value').textContent = kinetic.toFixed(3) + ' kJ/mol';
+            document.getElementById('total-value').textContent = total.toFixed(3) + ' kJ/mol';
+        }
+
+        // Draw functions
+        function drawGraph() {
             const padding = 60;
-            const width = canvas.width - 2 * padding;
-            const height = canvas.height - 2 * padding;
-
+            const width = graphCanvas.width - 2 * padding;
+            const height = graphCanvas.height - 2 * padding;
+            
+            graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+            
+            const params = ljParameters[currentMolecule];
+            const minR = 2.0;
+            const maxR = 10.0;
+            const minE = -params.epsilon * 1.5;
+            const maxE = params.epsilon * 3;
+            
             // Draw axes
-            ctx.strokeStyle = '#666';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, canvas.height - padding);
-            ctx.lineTo(canvas.width - padding, canvas.height - padding);
-            ctx.stroke();
-
-            // Draw grid
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 1;
-            for (let i = 0; i <= 10; i++) {
-                const y = padding + (height * i / 10);
-                ctx.beginPath();
-                ctx.moveTo(padding, y);
-                ctx.lineTo(canvas.width - padding, y);
-                ctx.stroke();
+            graphCtx.strokeStyle = '#666';
+            graphCtx.lineWidth = 2;
+            graphCtx.beginPath();
+            graphCtx.moveTo(padding, padding);
+            graphCtx.lineTo(padding, graphCanvas.height - padding);
+            graphCtx.lineTo(graphCanvas.width - padding, graphCanvas.height - padding);
+            graphCtx.stroke();
+            
+            // Draw zero line
+            const zeroY = graphCanvas.height - padding - (-minE / (maxE - minE)) * height;
+            graphCtx.strokeStyle = '#ddd';
+            graphCtx.lineWidth = 1;
+            graphCtx.setLineDash([5, 5]);
+            graphCtx.beginPath();
+            graphCtx.moveTo(padding, zeroY);
+            graphCtx.lineTo(graphCanvas.width - padding, zeroY);
+            graphCtx.stroke();
+            graphCtx.setLineDash([]);
+            
+            // Draw LJ curve
+            graphCtx.strokeStyle = '#003D7C';
+            graphCtx.lineWidth = 3;
+            graphCtx.beginPath();
+            
+            for (let r = minR; r <= maxR; r += 0.01) {
+                const energy = lennardJones(r, params.epsilon, params.sigma);
+                const x = padding + ((r - minR) / (maxR - minR)) * width;
+                const y = graphCanvas.height - padding - ((energy - minE) / (maxE - minE)) * height;
+                
+                if (r === minR) {
+                    graphCtx.moveTo(x, y);
+                } else {
+                    graphCtx.lineTo(x, y);
+                }
             }
-
-            // Draw energy curves for added bonds
-            if (addedBonds.length > 0) {
-                addedBonds.forEach((bond, index) => {
-                    const bondLength = bondLengths[bond.key] || 150;
-                    const De = bond.energy;
-                    const re = bondLength;
-                    const a = 0.02; // Morse parameter
-
-                    ctx.strokeStyle = index === addedBonds.length - 1 ? '#003D7C' : '#cccccc';
-                    ctx.lineWidth = index === addedBonds.length - 1 ? 3 : 1;
-                    ctx.beginPath();
-
-                    for (let r = 50; r < 500; r += 2) {
-                        const energy = morsePotential(r, De, re, a);
-                        const x = padding + (r - 50) * width / 450;
-                        const y = canvas.height - padding - (energy + De) * height / (De * 1.5);
-                        
-                        if (r === 50) {
-                            ctx.moveTo(x, y);
-                        } else {
-                            ctx.lineTo(x, y);
-                        }
-                    }
-                    ctx.stroke();
-
-                    // Mark equilibrium point
-                    if (index === addedBonds.length - 1) {
-                        const eqX = padding + (bondLength - 50) * width / 450;
-                        const eqY = canvas.height - padding;
-                        
-                        ctx.fillStyle = '#EF7C00';
-                        ctx.beginPath();
-                        ctx.arc(eqX, eqY, 6, 0, 2 * Math.PI);
-                        ctx.fill();
-
-                        // Draw bond energy line
-                        ctx.strokeStyle = '#EF7C00';
-                        ctx.lineWidth = 2;
-                        ctx.setLineDash([5, 5]);
-                        ctx.beginPath();
-                        ctx.moveTo(eqX, eqY);
-                        ctx.lineTo(eqX, canvas.height - padding - De * height / (De * 1.5));
-                        ctx.stroke();
-                        ctx.setLineDash([]);
+            graphCtx.stroke();
+            
+            // Draw equilibrium point
+            const r0 = findEquilibrium(params.epsilon, params.sigma);
+            const eqX = padding + ((r0 - minR) / (maxR - minR)) * width;
+            const eqY = graphCanvas.height - padding - ((-params.epsilon - minE) / (maxE - minE)) * height;
+            
+            graphCtx.fillStyle = '#44aa44';
+            graphCtx.beginPath();
+            graphCtx.arc(eqX, eqY, 6, 0, 2 * Math.PI);
+            graphCtx.fill();
+            
+            // Draw energy trail
+            if (energyTrail.length > 1) {
+                graphCtx.strokeStyle = 'rgba(239,124,0,0.3)';
+                graphCtx.lineWidth = 2;
+                graphCtx.beginPath();
+                
+                energyTrail.forEach((point, i) => {
+                    const x = padding + ((point.x - minR) / (maxR - minR)) * width;
+                    const y = graphCanvas.height - padding - ((point.y - minE) / (maxE - minE)) * height;
+                    
+                    if (i === 0) {
+                        graphCtx.moveTo(x, y);
+                    } else {
+                        graphCtx.lineTo(x, y);
                     }
                 });
+                graphCtx.stroke();
             }
-
-            // Draw axis labels
-            ctx.fillStyle = '#666';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
             
-            // X-axis labels
-            for (let i = 0; i <= 5; i++) {
-                const x = padding + (i * width / 5);
-                const label = 50 + (i * 90);
-                ctx.fillText(label, x, canvas.height - padding + 20);
-            }
-
-            // Y-axis labels
-            ctx.textAlign = 'right';
-            for (let i = 0; i <= 5; i++) {
-                const y = canvas.height - padding - (i * height / 5);
-                const label = -600 + (i * 240);
-                ctx.fillText(label, padding - 10, y + 5);
-            }
+            // Draw current position
+            const currentEnergy = lennardJones(currentDistance, params.epsilon, params.sigma);
+            const currentX = padding + ((currentDistance - minR) / (maxR - minR)) * width;
+            const currentY = graphCanvas.height - padding - ((currentEnergy - minE) / (maxE - minE)) * height;
+            
+            graphCtx.fillStyle = '#EF7C00';
+            graphCtx.beginPath();
+            graphCtx.arc(currentX, currentY, 8, 0, 2 * Math.PI);
+            graphCtx.fill();
+            
+            // Draw axis labels
+            graphCtx.fillStyle = '#666';
+            graphCtx.font = '14px Arial';
+            graphCtx.textAlign = 'center';
+            graphCtx.fillText('Distance (Å)', graphCanvas.width / 2, graphCanvas.height - 10);
+            
+            graphCtx.save();
+            graphCtx.translate(15, graphCanvas.height / 2);
+            graphCtx.rotate(-Math.PI / 2);
+            graphCtx.fillText('Energy (kJ/mol)', 0, 0);
+            graphCtx.restore();
+            
+            // Draw scale
+            graphCtx.font = '12px Arial';
+            graphCtx.textAlign = 'right';
+            graphCtx.fillText('0', padding - 10, zeroY + 5);
         }
 
-        // Initial draw
-        drawEnergyDiagram();
+        function drawMolecule() {
+            moleculeCtx.clearRect(0, 0, moleculeCanvas.width, moleculeCanvas.height);
+            
+            const params = ljParameters[currentMolecule];
+            const centerY = moleculeCanvas.height / 2;
+            const centerX = moleculeCanvas.width / 2;
+            const scale = 30; // pixels per Angstrom
+            
+            // Calculate positions
+            const x1 = centerX - (currentDistance * scale / 2);
+            const x2 = centerX + (currentDistance * scale / 2);
+            
+            // Draw bond if close enough
+            if (currentDistance < params.sigma * 2) {
+                const bondStrength = Math.max(0.2, 1 - (currentDistance - params.sigma) / params.sigma);
+                moleculeCtx.strokeStyle = `rgba(150,150,150,${bondStrength})`;
+                moleculeCtx.lineWidth = 3;
+                moleculeCtx.beginPath();
+                moleculeCtx.moveTo(x1, centerY);
+                moleculeCtx.lineTo(x2, centerY);
+                moleculeCtx.stroke();
+            }
+            
+            // Draw force vectors
+            if (isAnimating && Math.abs(velocity) > 0.01) {
+                const force = ljForce(currentDistance, params.epsilon, params.sigma);
+                const arrowLength = Math.min(50, Math.abs(force) * 5);
+                
+                moleculeCtx.strokeStyle = force > 0 ? '#ff4444' : '#4444ff';
+                moleculeCtx.lineWidth = 2;
+                
+                // Left atom arrow
+                drawArrow(moleculeCtx, x1, centerY, x1 + (force > 0 ? arrowLength : -arrowLength), centerY);
+                
+                // Right atom arrow
+                drawArrow(moleculeCtx, x2, centerY, x2 + (force > 0 ? -arrowLength : arrowLength), centerY);
+            }
+            
+            // Draw atoms
+            const atomRadius = Math.sqrt(params.mass) * 3;
+            
+            // Add glow effect
+            const gradient1 = moleculeCtx.createRadialGradient(x1, centerY, 0, x1, centerY, atomRadius);
+            gradient1.addColorStop(0, params.color);
+            gradient1.addColorStop(0.7, params.color);
+            gradient1.addColorStop(1, 'rgba(0,0,0,0.1)');
+            
+            const gradient2 = moleculeCtx.createRadialGradient(x2, centerY, 0, x2, centerY, atomRadius);
+            gradient2.addColorStop(0, params.color);
+            gradient2.addColorStop(0.7, params.color);
+            gradient2.addColorStop(1, 'rgba(0,0,0,0.1)');
+            
+            moleculeCtx.fillStyle = gradient1;
+            moleculeCtx.beginPath();
+            moleculeCtx.arc(x1, centerY, atomRadius, 0, 2 * Math.PI);
+            moleculeCtx.fill();
+            
+            moleculeCtx.fillStyle = gradient2;
+            moleculeCtx.beginPath();
+            moleculeCtx.arc(x2, centerY, atomRadius, 0, 2 * Math.PI);
+            moleculeCtx.fill();
+            
+            // Draw atom labels
+            moleculeCtx.fillStyle = '#333';
+            moleculeCtx.font = 'bold 14px Arial';
+            moleculeCtx.textAlign = 'center';
+            moleculeCtx.textBaseline = 'middle';
+            const atomSymbol = currentMolecule.replace('2', '');
+            moleculeCtx.fillText(atomSymbol, x1, centerY);
+            moleculeCtx.fillText(atomSymbol, x2, centerY);
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headLength = 10;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function draw() {
+            drawGraph();
+            drawMolecule();
+        }
+
+        // Molecule selection
+        document.querySelectorAll('.molecule-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.molecule-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                currentMolecule = this.dataset.molecule;
+                
+                // Reset to equilibrium
+                const params = ljParameters[currentMolecule];
+                currentDistance = findEquilibrium(params.epsilon, params.sigma);
+                velocity = 0;
+                
+                // Stop animation
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    isAnimating = false;
+                }
+                
+                updateValues();
+                draw();
+            });
+        });
+
+        // Reset button
+        document.getElementById('reset-btn').addEventListener('click', function() {
+            currentDistance = 8.0;
+            velocity = 0;
+            hasReachedEquilibrium = false;
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                isAnimating = false;
+            }
+            
+            updateValues();
+            draw();
+        });
+
+        // Damping slider
+        document.getElementById('damping-slider').addEventListener('input', function() {
+            dampingFactor = parseFloat(this.value);
+            document.getElementById('damping-value').textContent = dampingFactor.toFixed(2);
+        });
+
+        // Initialize
+        const params = ljParameters[currentMolecule];
+        currentDistance = findEquilibrium(params.epsilon, params.sigma);
+        updateValues();
+        draw();
     </script>
 </body>
 </html>
