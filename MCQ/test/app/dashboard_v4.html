@@ -1492,19 +1492,10 @@ Return your analysis as a JSON object following this exact template:
         // Load saved API key on page load
         window.addEventListener('DOMContentLoaded', () => {
             const savedKey = localStorage.getItem('gemini_api_key');
-            const defaultKey = 'AIzaSyAPniwWCXBfqaq-_DyOQdbFbKgs6Itq1ZU';
-            
             if (savedKey) {
                 document.getElementById('apiKeyInput').value = savedKey;
                 genAI = new GoogleGenerativeAI(savedKey);
                 showApiStatus('API key loaded from storage', 'success');
-                document.getElementById('modelInfo').style.display = 'block';
-            } else {
-                // Use default API key
-                document.getElementById('apiKeyInput').value = defaultKey;
-                genAI = new GoogleGenerativeAI(defaultKey);
-                localStorage.setItem('gemini_api_key', defaultKey);
-                showApiStatus('Default API key loaded', 'success');
                 document.getElementById('modelInfo').style.display = 'block';
             }
             
@@ -1925,3 +1916,222 @@ Return your analysis as a JSON object following this exact template:
             
             return questions;
         }
+
+        // Analyze question with Gemini AI
+        async function analyzeQuestionWithGemini(question) {
+            const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+            
+            // Format prompt with current template
+            const prompt = PROMPT_TEMPLATE
+                .replace('{question_number}', question.number)
+                .replace('{clinical_scenario}', question.clinicalScenario)
+                .replace('{question_stem}', question.questionStem)
+                .replace('{options}', JSON.stringify(question.options, null, 2))
+                .replace('{correct_answer}', question.correctAnswer)
+                .replace('{template}', JSON.stringify(METADATA_TEMPLATE, null, 2));
+            
+            try {
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const text = response.text();
+                
+                // Extract JSON from response
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) {
+                    throw new Error('No JSON found in response');
+                }
+                
+                const metadata = JSON.parse(jsonMatch[0]);
+                
+                // Add question content to metadata
+                metadata.questionId = `Q${String(question.number).padStart(3, '0')}`;
+                metadata._question_content = {
+                    clinical_scenario: question.clinicalScenario,
+                    question_stem: question.questionStem,
+                    options: question.options,
+                    correct_answer: question.correctAnswer,
+                    has_image: question.hasImage
+                };
+                
+                return metadata;
+                
+            } catch (error) {
+                console.error('Gemini API error for question', question.number, ':', error);
+                
+                // If it's a model not found error, provide helpful message
+                if (error.message.includes('model')) {
+                    console.error('Model issue - try "gemini-2.0-flash-exp" or check available models at https://ai.google.dev/gemini-api/docs/models');
+                }
+                
+                throw error; // Re-throw to handle rate limits in the calling function
+            }
+        }
+
+        // Create default metadata when AI fails
+        function createDefaultMetadata(question) {
+            // Clone the template and fill with default values
+            const defaultMeta = JSON.parse(JSON.stringify(METADATA_TEMPLATE));
+            
+            // Replace placeholders with actual default values
+            const fillDefaults = (obj) => {
+                for (let key in obj) {
+                    if (typeof obj[key] === 'string') {
+                        if (key === 'questionId') {
+                            obj[key] = `Q${String(question.number).padStart(3, '0')}`;
+                        } else if (key === 'topic') {
+                            obj[key] = 'Emergency Medicine';
+                        } else if (key === 'difficulty') {
+                            obj[key] = 5;
+                        } else if (key === 'bloomLevel') {
+                            obj[key] = 'understand';
+                        } else if (obj[key].includes('[')) {
+                            obj[key] = 'Requires manual classification';
+                        }
+                    } else if (Array.isArray(obj[key])) {
+                        obj[key] = obj[key].map(item => 
+                            typeof item === 'string' && item.includes('[') 
+                                ? 'Requires manual classification' 
+                                : item
+                        );
+                    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                        fillDefaults(obj[key]);
+                    }
+                }
+            };
+            
+            fillDefaults(defaultMeta);
+            
+            // Add question content
+            defaultMeta._question_content = {
+                clinical_scenario: question.clinicalScenario,
+                question_stem: question.questionStem,
+                options: question.options,
+                correct_answer: question.correctAnswer,
+                has_image: question.hasImage
+            };
+            
+            return defaultMeta;
+        }
+
+        function updateProgress(text, percent) {
+            document.getElementById('progressText').textContent = text;
+            document.getElementById('progressPercent').textContent = percent + '%';
+            document.getElementById('progressFill').style.width = percent + '%';
+        }
+
+        function showResults() {
+            resultsSection.classList.add('active');
+            
+            // Calculate statistics
+            const totalQuestions = processedQuestions.length;
+            const avgDifficulty = (processedQuestions.reduce((sum, q) => {
+                const diff = parseInt(q.difficulty) || 5;
+                return sum + diff;
+            }, 0) / totalQuestions).toFixed(1);
+            
+            const topics = [...new Set(processedQuestions.map(q => q.topic || 'Unclassified'))];
+            const imagesCount = processedQuestions.filter(q => 
+                q._question_content && q._question_content.has_image).length;
+            
+            // Update stats
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            document.getElementById('avgDifficulty').textContent = avgDifficulty;
+            document.getElementById('topicsCount').textContent = topics.length;
+            document.getElementById('imagesCount').textContent = imagesCount;
+            
+            // Populate question table
+            const tbody = document.getElementById('questionTableBody');
+            tbody.innerHTML = '';
+            
+            processedQuestions.forEach(q => {
+                const row = tbody.insertRow();
+                const questionText = q._question_content ? 
+                    q._question_content.question_stem.substring(0, 50) : 'N/A';
+                const concepts = Array.isArray(q.concepts) ? 
+                    q.concepts.map(c => `<span class="concept-tag">${c}</span>`).join('') :
+                    '<span class="concept-tag">Unclassified</span>';
+                
+                row.innerHTML = `
+                    <td>${q.questionId || 'N/A'}</td>
+                    <td>${q.topic || 'Unclassified'}</td>
+                    <td>${questionText}...</td>
+                    <td>${q.difficulty || 'N/A'}</td>
+                    <td>${q.bloomLevel || q.bloomsLevel || 'N/A'}</td>
+                    <td>${concepts}</td>
+                `;
+            });
+        }
+
+        // Export functions
+        window.downloadJSON = function() {
+            const dataStr = JSON.stringify(processedQuestions, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `mcq_metadata_${currentFileName.replace('.pdf', '')}_${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        };
+
+        window.exportToSheets = function() {
+            // Generate CSV format for Google Sheets
+            const headers = [
+                'Question ID', 'Topic', 'Concepts', 'Difficulty', 'Bloom Level',
+                'Prerequisites', 'Next Concepts', 'Attempts', 'Correct Rate',
+                'Avg Time (sec)', 'Clinical Scenario', 'Question Stem',
+                'Options', 'Correct Answer', 'Has Image'
+            ];
+            
+            const rows = processedQuestions.map(q => {
+                // Extract data based on the current template structure
+                const getNestedValue = (obj, path, defaultValue = '') => {
+                    return path.split('.').reduce((acc, part) => acc && acc[part], obj) || defaultValue;
+                };
+                
+                return [
+                    q.questionId || '',
+                    q.topic || '',
+                    Array.isArray(q.concepts) ? q.concepts.join('; ') : '',
+                    q.difficulty || '',
+                    q.bloomLevel || q.bloomsLevel || '',
+                    Array.isArray(q.prerequisites) ? q.prerequisites.join('; ') : '',
+                    Array.isArray(q.nextConcepts) ? q.nextConcepts.join('; ') : '',
+                    getNestedValue(q, 'performance.attempts', 0),
+                    getNestedValue(q, 'performance.correctRate', 0),
+                    getNestedValue(q, 'performance.avgTimeSeconds', 0),
+                    getNestedValue(q, '_question_content.clinical_scenario', ''),
+                    getNestedValue(q, '_question_content.question_stem', ''),
+                    JSON.stringify(getNestedValue(q, '_question_content.options', {})),
+                    getNestedValue(q, '_question_content.correct_answer', ''),
+                    getNestedValue(q, '_question_content.has_image', false) ? 'Yes' : 'No'
+                ];
+            });
+            
+            // Create CSV content
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(cell => 
+                    `"${String(cell).replace(/"/g, '""')}"`
+                ).join(','))
+            ].join('\n');
+            
+            // For now, download as CSV
+            // In production, you would use Google Sheets API
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `mcq_for_sheets_${currentFileName.replace('.pdf', '')}_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            alert('CSV file downloaded! You can now import this into Google Sheets.\n\nFor automatic upload, integrate with Google Sheets API.');
+        };
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
